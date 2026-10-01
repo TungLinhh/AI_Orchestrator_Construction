@@ -152,9 +152,7 @@ pressing Run.
 
 **The office is a manager.** It routes to the department that owns the work,
 reviews the answer, **orders a rerun** with the findings as the new brief, and
-**escalates** rather than asking a third time. On a real run a department that
-produced nothing was rejected, retried, and escalated — and the run finished
-`running` rather than claiming success.
+**escalates** rather than asking a third time.
 
 ```
 d0  Executive Agent   running -> settled
@@ -163,6 +161,30 @@ d2  Finance Agent     completed  [accepted]
 
 root -> completed | executions 4 | review accepted 3 | rerun 0 | escalated 0
 ```
+
+**And when the work cannot be done, it says so instead of hanging.** A department
+that has been told exactly what is wrong twice is not going to be told a third time.
+The chain then fails, each tier up, carrying the reason the department wrote:
+
+```
+root -> failed | executions 4 | rerun 1 | escalated 1 | failed upward 2
+last_error: the work below this office was not accepted and could not be fixed:
+            - [tsk_…] 'reason' is a placeholder, not an answer: '[draft] reason'
+```
+
+Three defects were found in that path and all three are covered by tests that fail
+without their fix: the run used to stop with `nothing is runnable and no gate can be
+cleared` and tell the executive nothing; fixing that hang made the root settle
+`completed` over the failure, because a coordinator's review never looked at whether
+the coordinator itself finished; and then the office above it re-dispatched the failed
+office, turning a 4-task run into a 7-task one. A failed task is never retried.
+
+**A restatement is not an answer.** The keys are present, the values are long enough,
+and none of them is a placeholder — and the department has handed the brief straight
+back. Comparing the answer against the ask catches that. It does not demand that the
+answers disagree: "all three claims approved" is a legitimate finding and passes,
+because a check that required disagreement would have rejected a department that
+genuinely found nothing to object to.
 
 and the answer was *correct*, which is the part that matters:
 
@@ -175,6 +197,29 @@ and the answer was *correct*, which is the part that matters:
 **A department is held to a contract.** Promised keys must be present, not
 placeholders, and substantive; an empty answer fails. That matters because a review
 which accepts an empty answer is worse than no review — it is positive evidence.
+
+**Money is routed by the DOA matrix, and the matrix can refuse.** Every approval
+passes through it, and the amount decides who signs:
+
+```
+payment            0 – 100.000.000        procurement_lead
+payment      100.000.000 – 1.000.000.000  finance_manager
+payment    1.000.000.000 – 10.000.000.000 chief_accountant
+payment               ≥ 10.000.000.000    cfo
+```
+
+A request to move 30.000.000.000 arrives asking for `org_admin` — the default — and
+is recorded requiring `cfo`, because an agent that can name its own approver makes
+`required_approver_roles` a suggestion. A subject the matrix does not cover, an amount
+past every band, and a tenant with no matrix at all are all refusals.
+
+The levels are a **taxonomy, not a ladder**, which is where this could have gone
+badly wrong: `L3_HUMAN_APPROVAL` sorts after `L2_PARENT_REVIEW` and before
+`L4_BOUNDED_AUTONOMOUS`, so reading them ordinally says L4 outranks L3 — and L3 is the
+level where a *human* signs. The seeded matrix caps every band at `L3`, which under
+the correct reading means a human approves every amount. The first version compared
+the strings with `<=`, L4 beat L3, and every band was open to any agent: the matrix
+was inert, and `CURRENT_STATE.md` said so.
 
 **The playbook is executable.** All 28 SOPs are work a department can be handed,
 with step chains, control points and required outputs. Four carry the dossier's
@@ -190,14 +235,13 @@ and what the boundary is.
 **Tests.**
 
 ```console
-$ make test              # 2956 passed, 8 skipped
+$ make test              # 2982 passed, 3 skipped, 0 failed
 $ make test-e2e          # 34 passed (needs NATS + Temporal)
 $ make lint typecheck    # clean
 ```
 
-Those 8 skips are all environmental and all say which: 5 need NATS running, 3
-need a tenant that has delegated something. None is a defect being hidden, which
-is why the skips print their reason rather than passing quietly.
+Every skip prints its reason. With NATS up the acceptance suite loses its 5
+broker-gated skips; the rest need a tenant that has actually delegated something.
 
 **Seven faults in this pipeline were found by running a real model, and by no test
 whatsoever.** The worst: `expected_output_schema` appeared nowhere in the runtime,
@@ -292,7 +336,7 @@ something harmful are the hardest to test, they will be the least tested.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| `tests/unit` + `tests/integration` | 2956 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
+| `tests/unit` + `tests/integration` | 2982 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
 | `tests/e2e` | 34 | The 8 acceptance scenarios, the event pipeline through real NATS JetStream, and A2A against a spawned remote agent. Gated by `preflight-e2e`, so a missing broker is a failure rather than five skips |
 | `make lint` | clean | 669 findings fixed, including a typo in a target name that made a documented command fail on a clean machine |
 | `make typecheck` | clean | 140 source files, no `Any` escapes and no unused ignores |
@@ -341,9 +385,6 @@ finished is worse than none. The gaps that matter:
 
 **Blocking a real go-live**
 
-- **The DOA matrix is not enforced as money limits.** The dossier makes it the
-  spine of financial control; here authority is an `AutonomyLevel`, not an amount.
-  `seed-process` loads 8 DOA rows and nothing checks a payment against them.
 - **Shadow mode is not done.** The dossier sets 4 weeks of parallel running at
   >=95% agreement as the precondition for go-live. Nothing here compares a
   model's answer with a person's.
@@ -370,10 +411,16 @@ finished is worse than none. The gaps that matter:
   retry, a Gate session with a person on it. A tenant with the organisation and
   none of the paperwork.
 
-**On quality, honestly:** the models are free-tier and small. They complete the
-procedures above correctly, but they are not reliable enough to run unattended.
-The review loop exists precisely because of that — and it is the loop, not the
-model, that this project has actually proven.
+**What was actually measured about model quality, and what was not.** One free
+model was run on one procedure, and it got all three expense verdicts right. That is
+the whole of the evidence. Nothing here supports a general claim that models "are not
+reliable enough to run unattended" — that was an inference from a sample of one, and
+it has been removed rather than softened.
+
+What the evidence *does* support is narrower and more useful: the loop around the
+model is where the failures were, and every one of the eight was found by running the
+work. So the review loop is a control on the **organisation**, not a workaround for a
+weak model — and it is the loop this project has actually proven.
 
 The full list, with the reason for each, is
 [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
@@ -393,7 +440,7 @@ The full list, with the reason for each, is
 | [REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md) | What was surveyed, what it changed |
 | [LEGACY_SYSTEMS_REVIEW.md](docs/LEGACY_SYSTEMS_REVIEW.md) | What was taken and what was rejected, from two sibling systems |
 | [REUSABLE_COMPONENTS.md](docs/REUSABLE_COMPONENTS.md) | Each borrowed idea, its adaptation, and the test that proves it |
-| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 230 things that did not work, and what replaced them |
+| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 233 things that did not work, and what replaced them |
 | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | Every assumption, its status, and what happens if it is wrong |
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Dated status: works, partial, missing |
 

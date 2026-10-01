@@ -374,6 +374,167 @@ class TestItStopsRatherThanSpins:
         )
 
 
+class _NeverConforms(_TieredRuntime):
+    """Delegates down the tiers and the bottom tier *never* stops sending placeholders.
+
+    The counterpart to `_TieredRuntime`, for the case the retry budget exists for:
+    a department that has been told exactly what is wrong, twice, and still cannot
+    answer. Producing it on purpose is the only way to assert on what the
+    organisation does at the bound.
+    """
+
+    name = "never-conforms"
+
+    async def execute(self, task, context, *, execute_tool=None, **kwargs):  # type: ignore[no-untyped-def]
+        attempt = int((getattr(task, "input", None) or {}).get("attempt", 1) or 1)
+        label = (getattr(task, "input", None) or {}).get("stage") or str(task.goal)[:30]
+        self.calls.append((label, attempt))
+
+        if execute_tool is not None and context.delegate_options:
+            wanted = str((getattr(task, "input", None) or {}).get("owning_department") or "")
+            pick = next(
+                (
+                    o
+                    for o in context.delegate_options
+                    if wanted and _squash(wanted) in _squash(o.agent_name)
+                ),
+                None,
+            )
+            if pick is None:
+                pick = min(context.delegate_options, key=lambda o: o.agent_name)
+            await execute_tool(
+                tool_name="delegate_to_agent",
+                arguments={"agent_name": pick.agent_name, "objective": str(task.goal)[:200]},
+            )
+
+        declared = (getattr(task, "expected_output_schema", None) or {}) if task else {}
+        required = _required(declared)
+        # No attempt ever produces a real answer. `[draft]` on every promised key.
+        payload = (
+            {key: f"[draft] {key} — chưa xác định" for key in required}
+            if required
+            else {"summary": "Handed it to the office that owns it"}
+        )
+        return AgentResult(
+            status=AgentResultStatus.COMPLETED,
+            summary=f"done: {getattr(task, 'title', '')} (attempt {attempt})",
+            execution_id=str(getattr(task, "execution_id", None) or "exec_pending_00000000000000"),
+            task_id=str(task.task_id),
+            output=payload,
+        )
+
+
+class TestEscalationIsAnAnswerNotAHang:
+    """A department that cannot do the work must produce a *conclusion*.
+
+    Three separate defects met in the same scenario, and none of them was visible
+    while the retry loop was working:
+
+    * the run ended `running` with `stopped because: nothing is runnable and no gate
+      can be cleared`, on the stated policy that "the executive is then told the work
+      is unresolved" — the executive was told nothing;
+    * fixing that hang by failing the office made the **root** settle `completed`,
+      because a coordinator's review asks "did you coordinate" and never looks at
+      whether the coordinator itself finished;
+    * and then the root's office above it *re-dispatched* that failed office, which
+      turned a 4-task run into a 7-task one.
+
+    So: the department is sent back exactly once, escalates at the bound, the office
+    fails with the department's reason, the root fails with the office's, and
+    nothing is retried on the way up.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _never(self, monkeypatch):  # type: ignore[no-untyped-def]
+        import ai_orchestrator.application.pipeline as pipeline_module
+
+        rt = _NeverConforms()
+        monkeypatch.setattr(pipeline_module, "build_runtime", lambda *a, **k: rt)
+        return rt
+
+    async def _run(self, seeded, rt):  # type: ignore[no-untyped-def]
+        from ai_orchestrator.persistence.session import Database
+
+        root = await _root(
+            seeded,
+            goal="Một việc mà phòng ban dưới sẽ không bao giờ làm đúng",
+            routing={"owning_department": "Finance Agent", "owning_office": "back-office"},
+            contract={"required": ["verdicts", "reason"]},
+        )
+        db = Database.from_settings()
+        try:
+            return root, await run_pipeline(
+                db, seeded.organization_id, str(root.id), max_executions=20
+            )
+        finally:
+            await db.dispose()
+
+    async def test_the_run_ends_failed_rather_than_hanging(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        _root, outcome = await self._run(seeded, None)  # type: ignore[arg-type]
+
+        assert outcome.root_status == "failed", (
+            "a run over a department that never conformed did not end in a "
+            f"conclusion: {outcome.summary()}"
+        )
+        assert not outcome.finished, "the run reported success over work it could not do"
+        assert not outcome.stopped_because, (
+            f"the run hung instead of concluding: {outcome.summary()}"
+        )
+
+    async def test_the_department_is_sent_back_exactly_once(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        _, outcome = await self._run(seeded, None)  # type: ignore[arg-type]
+
+        assert outcome.reviews_rerun == 1, (
+            f"the department was sent back {outcome.reviews_rerun} time(s): {outcome.summary()}"
+        )
+        assert outcome.reviews_escalated == 1, (
+            f"the bound did not escalate exactly once: {outcome.summary()}"
+        )
+
+    async def test_nothing_above_the_failure_is_retried(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        """A task that has already failed is never sent back.
+
+        The office whose department escalated goes up as a failure. Re-dispatching
+        it produced seven tasks for the same work; the bound that exists to stop the
+        loop was being applied one tier too low, so the failure never bound.
+        """
+        _root, outcome = await self._run(seeded, None)  # type: ignore[arg-type]
+        assert len(outcome.steps) <= 5, (
+            f"the failure was retried upward, so the run grew: {outcome.summary()}"
+        )
+
+    async def test_the_root_carries_the_reason_the_department_gave(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        """The executive must be able to read *why*, several tiers down.
+
+        A failure with no reason is the same as the hang in a different shape: the
+        run concludes, and nobody can act on it.
+        """
+        root, _outcome = await self._run(seeded, None)  # type: ignore[arg-type]
+        reason = await _last_error(seeded, str(root.id)) or ""
+
+        assert reason.strip(), "the root failed without saying why"
+        assert "placeholder" in reason or "not accepted" in reason, (
+            f"the root's reason does not reach the department's finding: {reason!r}"
+        )
+
+    async def test_the_whole_tree_is_terminal(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        root, _ = await self._run(seeded, None)  # type: ignore[arg-type]
+        from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+        async def _subtree(session):  # type: ignore[no-untyped-def]
+            return await TaskRepository(session, seeded.organization_id).subtree_statuses(
+                str(root.id)
+            )
+
+        statuses = await _read_fresh(seeded, _subtree)
+        stuck = {
+            k: v
+            for k, v in statuses.items()
+            if v not in {"completed", "failed", "canceled", "expired"}
+        }
+        assert not stuck, f"the run concluded with work still open: {stuck}"
+
+
 class TestTheTreeIsReal:
     async def test_every_task_below_the_root_is_in_the_run(self, seeded, _tiered_runtime) -> None:  # type: ignore[no-untyped-def]
         """The pipeline must not leave an orphan behind and call it finished.

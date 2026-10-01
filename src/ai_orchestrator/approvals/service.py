@@ -23,6 +23,7 @@ import json
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import Select, and_, select, update
@@ -106,6 +107,78 @@ class ApprovalDecision:
     expires_at: datetime | None
 
 
+class DoaEnforcer:
+    """Resolves a requested action against the tenant's delegation-of-authority matrix.
+
+    Loaded once per tenant and consulted at `create`. A separate class rather than a
+    helper inside `ApprovalService` because the matrix is the one thing this service
+    cannot infer: a caller with no matrix in scope must get a refusal, not a pass.
+    """
+
+    __slots__ = ("_bands",)
+
+    def __init__(self, bands: Sequence[Any]) -> None:
+        self._bands = tuple(bands)
+
+    @property
+    def is_empty(self) -> bool:
+        """A tenant with no matrix is not a tenant permitted to act.
+
+        Reported separately from "no band for this subject", because the two are
+        different faults: a missing matrix is a deployment gap and an uncovered subject
+        is a policy gap, and they are fixed by different people.
+        """
+        return not self._bands
+
+    def resolve(self, subject_kind: str, amount: Any, *, agent_autonomy: str | None) -> Any:
+        """Delegate to `domain.doa`, and let its refusals through untouched.
+
+        `DoaRefusal` is deliberately not caught here. A caller that downgraded it to a
+        warning would be the exact defect this class exists to prevent, and it has to
+        be able to fail.
+        """
+        from ai_orchestrator.domain.doa import resolve
+
+        return resolve(self._bands, subject_kind, amount, agent_autonomy=agent_autonomy)
+
+    @classmethod
+    async def load(cls, session: AsyncSession, organization_id: str) -> DoaEnforcer:
+        """Read the tenant's bands and turn them into domain values.
+
+        The conversion is explicit rather than passing the ORM rows on. `DoaBand` is a
+        frozen value with a `covers()` method, and an ORM row is neither — the first
+        version of this handed the rows straight through and every lookup died on
+        `AttributeError: 'DoaMatrix' object has no attribute 'covers'`, which is the
+        same class of fault as the matrix being unloaded at all: it looks wired and
+        behaves inert.
+
+        `min_amount` and `max_amount` come off a `NUMERIC` column as `Decimal`, so the
+        money is exact here without a conversion of our own.
+        """
+        from ai_orchestrator.domain.doa import DoaBand
+        from ai_orchestrator.persistence.process import DoaMatrix
+
+        result = await session.execute(
+            select(DoaMatrix)
+            .where(DoaMatrix.organization_id == organization_id)
+            .order_by(DoaMatrix.subject_kind, DoaMatrix.min_amount, DoaMatrix.code)
+        )
+        return cls(
+            [
+                DoaBand(
+                    code=row.code,
+                    subject_kind=row.subject_kind,
+                    min_amount=Decimal(row.min_amount),
+                    max_amount=Decimal(row.max_amount) if row.max_amount is not None else None,
+                    approver_role_key=row.approver_role_key,
+                    fallback_role_key=row.fallback_role_key or "",
+                    max_agent_autonomy=row.max_agent_autonomy,
+                )
+                for row in result.scalars().all()
+            ]
+        )
+
+
 class ApprovalService:
     def __init__(
         self,
@@ -129,6 +202,9 @@ class ApprovalService:
         #: is to not repeat it, which is not a lesson to append to the agent's
         #: instructions.
         self._on_approved = on_approved
+        #: Loaded lazily and then kept, because the matrix does not change within a
+        #: request and re-reading it per approval would be a query per row.
+        self._doa: DoaEnforcer | None = None
 
     async def create(self, request: ApprovalRequest) -> Approval:
         """Record a pending approval.
@@ -140,6 +216,8 @@ class ApprovalService:
         if request.ttl_seconds <= 0:
             msg = "approval TTL must be positive; an approval that never expires is a deadlock"
             raise ValidationError(msg, details={"ttl_seconds": request.ttl_seconds})
+
+        await self._check_authority(request)
 
         approval = Approval(
             id=str(ApprovalId.create()),
@@ -164,6 +242,76 @@ class ApprovalService:
         self._session.add(approval)
         await self._session.flush()
         return approval
+
+    async def _check_authority(self, request: ApprovalRequest) -> None:
+        """Route the request through the DOA matrix before it can become an approval.
+
+        **This is the wiring the matrix never had.** Eight bands were seeded and read
+        by nothing, so a request for thirty billion dong was recorded with exactly the
+        same `required_approver_roles` as a request for three thousand. Nothing about
+        the amount reached anybody who was supposed to sign.
+
+        Three outcomes, and all three are refusals rather than warnings:
+
+        * **No matrix in this tenant.** `NotImplementedError`, because an approval
+          created without a matrix is an approval whose approver nobody chose.
+        * **A subject the matrix does not cover.** `ValidationError` naming the
+          subject, so the gap is visible in the row a person reads.
+        * **A band exists but the agent's level cannot settle it.** The approval is
+          created with the *band's* approver role substituted for whatever the caller
+          asked for. An agent cannot name the person who signs its own request; if it
+          could, `required_approver_roles` would be a suggestion.
+
+        The third is a correction rather than a refusal on purpose: the request is
+        legitimate, it just needs a different approver, and refusing outright would
+        leave the run with no path forward at all.
+        """
+        from ai_orchestrator.domain.doa import DoaRefusal
+
+        subject_kind = str(request.action_payload.get("subject_kind") or "").strip()
+        if not subject_kind:
+            # Not every approval is about money. `required_approver_roles` still
+            # applies and is still enforced at `decide`; there is no band to consult.
+            return
+        amount = request.action_payload.get("amount")
+        if amount is None:
+            raise ValidationError(
+                f"the payload declares subject_kind={subject_kind!r} but carries no amount, "
+                f"so the DOA matrix has nothing to resolve",
+                details={"subject_kind": subject_kind},
+            )
+
+        if self._doa is None:
+            self._doa = await DoaEnforcer.load(self._session, self._org)
+        enforcer = self._doa
+        if enforcer.is_empty:
+            raise NotImplementedError(
+                "this tenant has no delegation-of-authority matrix, so nobody can be "
+                "chosen to approve. Run `make seed-process`."
+            )
+
+        try:
+            decision = enforcer.resolve(
+                subject_kind,
+                amount,
+                agent_autonomy=str(request.action_payload.get("agent_autonomy") or "") or None,
+            )
+        except DoaRefusal as refusal:
+            raise ValidationError(
+                f"the delegation-of-authority matrix does not authorise this: {refusal}",
+                details={"subject_kind": subject_kind, "amount": str(amount)},
+            ) from refusal
+
+        required = frozenset(decision.approver_role_key.split(","))
+        if request.required_approver_roles != required:
+            logger.info(
+                "approval.doa_approver_substituted",
+                task_id=request.task_id,
+                band=decision.band.code,
+                requested=sorted(request.required_approver_roles),
+                required=sorted(required),
+            )
+        request.required_approver_roles = required
 
     async def get(self, approval_id: str) -> Approval:
         result = await self._session.execute(
@@ -434,4 +582,4 @@ def _redact_action(payload: dict[str, Any], classification: DataClassification) 
     return out
 
 
-__all__ = ["ApprovalDecision", "ApprovalRequest", "ApprovalService"]
+__all__ = ["ApprovalDecision", "ApprovalRequest", "ApprovalService", "DoaEnforcer"]

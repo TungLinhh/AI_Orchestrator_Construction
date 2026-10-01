@@ -102,6 +102,7 @@ class PipelineOutcome:
     stopped_because: str = ""
     waiting_for_human: list[str] = field(default_factory=list)
     settled: list[str] = field(default_factory=list)
+    settled_failed: list[str] = field(default_factory=list)
 
     @property
     def finished(self) -> bool:
@@ -116,6 +117,8 @@ class PipelineOutcome:
             f"  escalated      : {self.reviews_escalated}",
             f"  settled upward : {len(self.settled)}",
         ]
+        if self.settled_failed:
+            lines.append(f"  failed upward  : {len(self.settled_failed)}")
         if self.waiting_for_human:
             lines.append(f"  waiting on a person: {len(self.waiting_for_human)}")
         if self.stopped_because:
@@ -275,10 +278,11 @@ async def run_pipeline(
             settled = await settle_finished(
                 session, organization_id, root_task_id, max_attempts=max_attempts
             )
-            if settled:
+            if settled.completed or settled.failed:
                 await session.commit()
                 await database.bind_tenant(session, organization_id)
-                outcome.settled.extend(settled)
+                outcome.settled.extend(settled.completed)
+                outcome.settled_failed.extend(settled.failed)
                 continue
 
             ready = await _next_ready(session, organization_id, root_task_id)
@@ -364,13 +368,25 @@ async def run_pipeline(
     return outcome
 
 
+@dataclass(slots=True)
+class Settled:
+    """What closing the tree did: what was reported complete, and what was failed.
+
+    Two lists rather than one, because conflating them is how a run reports a
+    tidy summary over a department that never did the work.
+    """
+
+    completed: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
+
+
 async def settle_finished(
     session: Any,
     organization_id: str,
     root_id: str,
     *,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-) -> list[str]:
+) -> Settled:
     """Complete the tasks whose work below them has finished and passed review.
 
     **This is the step that makes the organisation autonomous.** A coordination
@@ -379,15 +395,26 @@ async def settle_finished(
     Without this the office stays `running` forever, and a driver that re-runs
     `running` tasks loops until it hits its bound.
 
-    A task is settled only when **every** task below it is terminal **and** its
-    review accepted all of them. An escalation, or a department that failed, leaves
-    it `running` on purpose: the executive is then told the work is unresolved
-    rather than handed a tidy summary of a failure.
+    A task is settled as **complete** only when every task below it is terminal
+    **and** its review accepted all of them.
+
+    A task whose review **escalated** is failed instead, with the findings as its
+    reason. That is the change this function was missing. It used to skip such a
+    task and leave it `running`, on the reasoning that "the executive is then told
+    the work is unresolved" -- and the executive was told nothing, because a task
+    nobody settles is a task nobody reports. The run ended with `escalated 1`,
+    `settled upward 0` and `stopped because: nothing is runnable and no gate can
+    be cleared`, which is a hang dressed as a policy.
+
+    Failing is the truthful terminal state here: the office did its job twice and
+    the department could not do the work, and the executive's answer to that is not
+    a tidy summary. It propagates upward one tier at a time, so the root ends
+    `failed` carrying the reason the department gave.
     """
-    from ai_orchestrator.application.work_review import review_office_work
+    from ai_orchestrator.application.work_review import ESCALATION_CATEGORY, review_office_work
 
     tasks_repo = TaskRepository(session, organization_id)
-    settled: list[str] = []
+    result = Settled()
     tree = await _tree(session, organization_id, root_id)
     for task in tree:
         # `!=`, not `is not`: two equal strings are usually two objects, and
@@ -399,15 +426,51 @@ async def settle_finished(
         review = await review_office_work(
             session, organization_id, str(task.id), max_attempts=max_attempts
         )
-        if review.waiting or review.rerun or review.escalated:
+        if review.waiting or review.rerun:
+            continue
+        if review.escalated:
+            await tasks_repo.transition(
+                str(task.id),
+                Transition.FAIL,
+                error=_escalation_reason(review),
+                failure_category=ESCALATION_CATEGORY,
+            )
+            result.failed.append(str(task.id))
             continue
         if not review.all_accepted:
+            # Reviewed, nothing running, nothing rerun, nothing escalated, and
+            # still not accepted: the coordinator's own work did not hold up.
+            await tasks_repo.transition(
+                str(task.id),
+                Transition.FAIL,
+                error=_rejection_reason(review),
+                failure_category="review_rejected",
+            )
+            result.failed.append(str(task.id))
             continue
         summary = await _report_from_children(session, organization_id, str(task.id))
         await tasks_repo.set_latest_summary(str(task.id), summary)
         await tasks_repo.transition(str(task.id), Transition.COMPLETE)
-        settled.append(str(task.id))
-    return settled
+        result.completed.append(str(task.id))
+    return result
+
+
+def _escalation_reason(review: Any) -> str:
+    """Why this office gave up, written for a person reading the task row."""
+    lines = ["the work below this office was not accepted and could not be fixed:"]
+    for item in review.escalated:
+        detail = "; ".join(item.verdict.findings) or item.why
+        lines.append(f"- [{item.task_id}] {detail}")
+    return "\n".join(lines)[:2000]
+
+
+def _rejection_reason(review: Any) -> str:
+    """Why a coordinator's own work did not hold up."""
+    lines = ["this coordinator did not produce a usable answer:"]
+    for item in review.reviewed:
+        detail = "; ".join(item.verdict.findings) or item.why
+        lines.append(f"- [{item.task_id}] {detail}")
+    return "\n".join(lines)[:2000]
 
 
 async def _report_from_children(session: Any, org_id: str, task_id: str) -> str:
@@ -514,4 +577,11 @@ async def _collect_waiting(
         outcome.stopped_because = "waiting on a person to approve a gate"
 
 
-__all__ = ["MAX_EXECUTIONS", "PipelineOutcome", "StepLog", "run_pipeline", "settle_finished"]
+__all__ = [
+    "MAX_EXECUTIONS",
+    "PipelineOutcome",
+    "Settled",
+    "StepLog",
+    "run_pipeline",
+    "settle_finished",
+]

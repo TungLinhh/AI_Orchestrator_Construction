@@ -169,6 +169,102 @@ class TestAnEmptyAnswerIsNotAnAnswer:
         ).ok
 
 
+class TestARestatementIsNotAnAnswer:
+    """The answer that is the question again.
+
+    Every other check here passes it: the keys are present, the values are long
+    enough, and none of them is a placeholder. Measured on the scenario catalogue,
+    three plausible-but-empty answers got through before this check existed:
+
+        PASS  lặp lại câu hỏi
+        PASS  copy lại goal
+
+    An agent handed a brief can return the brief, and it will be forwarded upward
+    as a finding. The check needs the brief itself, so it is optional -- omitting
+    `source_text` costs this check and nothing else.
+    """
+
+    BRIEF = (
+        "Chuẩn bị hồ sơ thanh toán giai đoạn 2 cho dự án Bãi Tràm Estates. "
+        "Hãy giao phần đối chiếu số liệu PO-GRN cho bộ phận Mua sắm."
+    )
+
+    def test_the_brief_returned_under_the_promised_keys_fails(self) -> None:
+        verdict = assess_output(
+            output={"verdicts": self.BRIEF, "reason": self.BRIEF},
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            source_text=self.BRIEF,
+        )
+        assert not verdict.ok
+        assert any("repeats the task" in f for f in verdict.findings)
+
+    def test_a_restatement_inside_a_list_fails_too(self) -> None:
+        """The echo is judged on the whole value, not per element.
+
+        Asked for `verdicts`, an agent will return a list of dicts whose fields
+        restate the brief one at a time. Checking each string separately would miss
+        that every one of them is the ask again.
+        """
+        verdict = assess_output(
+            output={
+                "verdicts": [{"claim": "Bãi Tràm Estates"}, {"claim": "giai đoạn 2"}],
+                "reason": "Bãi Tràm Estates giai đoạn 2",
+            },
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            source_text=self.BRIEF,
+        )
+        assert not verdict.ok
+
+    def test_a_real_answer_passes(self) -> None:
+        verdict = assess_output(
+            output={
+                "verdicts": [
+                    {"claim": "Minh Châu 3.600.000", "verdict": "approve"},
+                    {"claim": "Văn phòng pháp chế 32.000.000", "verdict": "conditional"},
+                ],
+                "reason": "Khoản 32tr vượt hạn mức 20tr nên chuyển CEO quyết định.",
+            },
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            source_text=self.BRIEF,
+        )
+        assert verdict.ok, verdict.findings
+
+    def test_an_answer_that_agrees_on_every_item_is_not_an_echo(self) -> None:
+        """Every verdict "approve" is a *possible real answer*, and must pass.
+
+        Written because the tempting version of this check -- require the answers to
+        disagree -- would have been wrong, and would have rejected a department that
+        genuinely found nothing to object to. The brief of this test is to catch
+        restatement, not to demand disagreement.
+        """
+        verdict = assess_output(
+            output={
+                "verdicts": [{"claim": "khoản một", "verdict": "approve"}] * 3,
+                "reason": "Cả ba khoản đều dưới hạn mức 5.000.000 nên không cần trình duyệt.",
+            },
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            source_text=self.BRIEF,
+        )
+        assert verdict.ok, verdict.findings
+
+    def test_a_short_value_sharing_a_word_with_the_brief_is_not_an_echo(self) -> None:
+        """Overlap means nothing on a value too short to carry a finding."""
+        verdict = assess_output(
+            output={"verdicts": "đã đối chiếu", "reason": "PO và GRN khớp hoàn toàn."},
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            source_text=self.BRIEF,
+        )
+        assert verdict.ok, verdict.findings
+
+    def test_without_the_brief_only_this_check_is_lost(self) -> None:
+        """`source_text` is optional, and omitting it must not reject anything."""
+        verdict = assess_output(
+            output={"verdicts": self.BRIEF, "reason": self.BRIEF},
+            expected_output_schema={"required": ["verdicts", "reason"]},
+        )
+        assert verdict.ok, "omitting the brief must not turn into a rejection"
+
+
 class TestTheRerunBound:
     def test_a_rejection_with_attempts_left_is_sent_back(self) -> None:
         verdict = ReviewVerdict(ok=False, findings=("verdicts is a placeholder",))

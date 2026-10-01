@@ -65,6 +65,20 @@ ACTION_ESCALATED = "task.review_escalated"
 #: a crash as "nothing to review" would let a broken department look idle.
 JUDGEABLE = (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.EXPIRED)
 
+#: Written into `tasks.failure_category` when a task is failed *because* the review
+#: escalated it, as opposed to because its run crashed.
+#:
+#: This is the distinction between the two reasons a task below the office can be
+#: `failed`, and it decides whether it may be sent back. A crash is transient and is
+#: retried. An escalation has already spent the retry budget and is not. Both are
+#: `failed`, so the status alone cannot tell them apart -- and reading it as though it
+#: could was the first version of this rule, which broke the retry-on-crash behaviour
+#: that `test_a_failed_department_run_is_sent_back_not_ignored` was written to keep.
+#:
+#: `pipeline.settle_finished` writes the same value, which is why it lives here: two
+#: modules that must agree on a string should not each hold their own copy of it.
+ESCALATION_CATEGORY = "review_escalated"
+
 
 @dataclass(slots=True)
 class ReviewedTask:
@@ -136,35 +150,90 @@ async def self_review_of_a_coordinator(
 ) -> ReviewVerdict:
     """Was this coordinator's own work finished?
 
-    Two things, both facts rather than opinions: it delegated something, and
-    everything it delegated has reached a terminal state. Its report to the office
-    is then assumed to have been written, because a coordinator with live children
-    is not waiting to report -- it is still working.
+    Three things, all facts rather than opinions: it delegated something,
+    everything it delegated has reached a terminal state, and **everything it
+    delegated actually succeeded**.
+
+    The third check is the one that was missing, and it is why an escalation used
+    to end a run in a hang instead of in an answer. "All terminal" is satisfied by
+    a child that *failed*, so an office whose department had been sent back twice
+    and escalated passed its own review and reported upward as if it had an answer.
+    Measured on a real run: `escalated 1`, `settled upward 0`, root left at
+    `running` with `stopped because: nothing is runnable and no gate can be cleared`
+    -- the executive was told nothing at all, which is not "told the work is
+    unresolved".
+
+    A coordinator whose child failed has not done its job, so it fails too, and the
+    reason carries upward until the root states the truth.
     """
     from ai_orchestrator.domain.review import Check
 
     children = await _children(session, org_id, str(task.id))
-    live = [
-        c
-        for c in children
-        if TaskStatus(c.status) not in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.EXPIRED)
+    terminal = (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.EXPIRED)
+    live = [c for c in children if TaskStatus(c.status) not in terminal]
+    broken = [
+        c for c in children if TaskStatus(c.status) in (TaskStatus.FAILED, TaskStatus.EXPIRED)
     ]
     checks = (
         Check("delegated", bool(children), f"{len(children)} task(s) below"),
         Check("work_finished", not live, f"{len(live)} still open"),
+        Check(
+            "children_succeeded",
+            not broken,
+            "all below completed" if not broken else f"{len(broken)} of {len(children)} failed",
+        ),
     )
     ok = all(c.passed for c in checks)
     findings: tuple[str, ...] = ()
-    if not ok:
+    if live:
+        findings = ("it delegated work that has not finished, so it has nothing to report yet",)
+    elif broken:
+        why = "; ".join(f"{c.title[:60]} -> {c.status}" for c in broken[:5])
         findings = (
-            (
-                "it delegated work that has not finished, so it has nothing to report yet"
-                if live
-                else "it has no delegated work below it, so it is not a coordinator "
-                "and must answer for itself"
-            ),
+            f"the work below it did not succeed, so it cannot report an answer. "
+            f"{len(broken)} of {len(children)} task(s) failed or expired: {why}",
+        )
+    elif not children:
+        findings = (
+            "it has no delegated work below it, so it is not a coordinator "
+            "and must answer for itself",
         )
     return ReviewVerdict(ok=ok, checks=checks, findings=findings)
+
+
+def _brief_of(child: Task) -> str:
+    """Everything the department was told, as one block of text.
+
+    The echo check compares the answer against the ask, so it needs the whole ask:
+    the goal, the title, and the `brief` the delegation carried. A retry carries all
+    three *plus* the review findings, and the findings are the office's words rather
+    than the brief's -- including them would let a department hide a restatement
+    behind the very text it was sent back for not restating.
+    """
+    payload = child.input or {}
+    parts = [str(child.goal or ""), str(child.title or "")]
+    for key in ("brief", "objective"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            parts.append(value)
+    return "\n".join(parts)
+
+
+def _failed_child_verdict(child: Task) -> ReviewVerdict:
+    """The verdict on a child that is itself `failed` or `expired`.
+
+    It carries the child's own reason rather than inventing one, because the child
+    wrote down exactly what went wrong -- often the department's findings, several
+    tiers down -- and that text is what the executive needs.
+    """
+    from ai_orchestrator.domain.review import Check
+
+    reason = (child.last_error or "").strip() or f"it ended {child.status} with no reason recorded"
+    return ReviewVerdict(
+        ok=False,
+        checks=(Check("child_succeeded", False, str(child.status)),),
+        findings=(f"the work it was given did not succeed: {reason}",),
+    )
 
 
 def _current_attempts(children: list[Task]) -> list[Task]:
@@ -258,31 +327,47 @@ async def review_office_work(
         agent_id = str(child.owner_agent_id or "")
         attempt = attempt_of(child)
 
-        # **A child that delegated is a coordinator, and is judged as one.**
+        # **A child that failed has produced nothing, so it cannot be accepted.**
         #
-        # The contract on a coordinator is the *worker's* contract, inherited on the
-        # way down, and a coordinator that produced no `verdicts` of its own was
-        # being rejected by the very office above it that it had just reported to.
-        # Measured: the root settled as `running` forever, "nothing is runnable and
-        # no gate can be cleared", because the office's review of the chief failed
-        # it for not reproducing the department's keys.
+        # Checked from the child's *own* status, before any judgement about its output.
+        # The reason is the shape of the review below it: a coordinator is judged by a
+        # self-review, so the parent asks "did you coordinate", the coordinator answers
+        # from its own children, and neither of them ever looks at whether the
+        # coordinator itself finished.
         #
-        # So the question for a coordinator is not "did you produce the worker's
-        # output" but "did you coordinate": did you delegate, and is everything you
-        # delegated finished. That is checkable, and it is the right question --
-        # the answer itself was already checked, on the department.
-        delegated_down = bool(await _children(session, organization_id, str(child.id)))
-        if delegated_down:
-            verdict = await self_review_of_a_coordinator(
-                session, organization_id, child, attempt=attempt
-            )
+        # Measured: an office whose department was sent back twice and escalated sat at
+        # `failed` carrying the reason, and the root still settled `completed` —
+        # `failed upward 1`, `settled upward 1`, `root -> completed`. A run reported
+        # success over a department that never did the work.
+        if TaskStatus(child.status) in (TaskStatus.FAILED, TaskStatus.EXPIRED):
+            verdict = _failed_child_verdict(child)
         else:
-            verdict = assess_output(
-                output=child.output,
-                expected_output_schema=child.expected_output_schema,
-                attempt=attempt,
-                max_attempts=max_attempts,
-            )
+            # **A child that delegated is a coordinator, and is judged as one.**
+            #
+            # The contract on a coordinator is the *worker's* contract, inherited on the
+            # way down, and a coordinator that produced no `verdicts` of its own was
+            # being rejected by the very office above it that it had just reported to.
+            # Measured: the root settled as `running` forever, "nothing is runnable and
+            # no gate can be cleared", because the office's review of the chief failed
+            # it for not reproducing the department's keys.
+            #
+            # So the question for a coordinator is not "did you produce the worker's
+            # output" but "did you coordinate": did it delegate, is everything it
+            # delegated finished, and did all of it succeed. The answer itself was
+            # already checked, on the department.
+            delegated_down = bool(await _children(session, organization_id, str(child.id)))
+            if delegated_down:
+                verdict = await self_review_of_a_coordinator(
+                    session, organization_id, child, attempt=attempt
+                )
+            else:
+                verdict = assess_output(
+                    output=child.output,
+                    expected_output_schema=child.expected_output_schema,
+                    attempt=attempt,
+                    max_attempts=max_attempts,
+                    source_text=_brief_of(child),
+                )
 
         if verdict.ok:
             await audit.record(
@@ -309,7 +394,30 @@ async def review_office_work(
             )
             continue
 
-        again, why = should_rerun(verdict, attempt=attempt, max_attempts=max_attempts)
+        child_failed = TaskStatus(child.status) in (TaskStatus.FAILED, TaskStatus.EXPIRED)
+        already_escalated = child_failed and child.failure_category == ESCALATION_CATEGORY
+        if already_escalated:
+            # **Never re-dispatch a task that already escalated.**
+            #
+            # Not because it failed -- a crash *is* sent back, because a crash is often
+            # transient and treating it as unjudgeable would let a broken department
+            # look idle. But *this* failure is the review's own verdict on a work item
+            # that has already spent its whole retry budget, and asking again spends a
+            # second budget on a third attempt at the same question.
+            #
+            # Written first as "never retry a failed task", which broke two existing
+            # tests and would have broken the retry-on-crash behaviour on purpose. The
+            # distinction that matters is *who* decided, not *what* the status is.
+            again, why = (
+                False,
+                (
+                    "the task below was already escalated after its full retry budget, "
+                    "so re-dispatching it would ask the same question a third time -- "
+                    "escalating with its reason instead"
+                ),
+            )
+        else:
+            again, why = should_rerun(verdict, attempt=attempt, max_attempts=max_attempts)
         await audit.record(
             actor=Actor(id=office_agent_id, kind=ActorType.AGENT),
             action=ACTION_REJECTED,
@@ -481,6 +589,7 @@ __all__ = [
     "ACTION_ESCALATED",
     "ACTION_REJECTED",
     "ACTION_RERUN",
+    "ESCALATION_CATEGORY",
     "ReviewOutcome",
     "ReviewedTask",
     "attempt_of",

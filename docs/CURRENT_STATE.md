@@ -646,3 +646,65 @@ tests carry their own corpus path rather than inheriting the ingest default.
 came from running a real model, and the eighth came from letting somebody who had
 never seen the project read the instructions. Neither was found by a test, and
 the test suite was green throughout both.
+
+## Verified on 2026-10-01 (ninth pass: the controls, not the model)
+
+The eighth pass was about a fresh clone. This one is about what the clone revealed
+about the controls themselves — and every item below was a wrong answer with a
+specific number attached to it, not an absence of work.
+
+**An escalation now concludes instead of hanging.** F231. Before: `root -> running`,
+`escalated 1`, `settled upward 0`, `stopped because: nothing is runnable and no gate
+can be cleared`, with a docstring claiming the executive was being told. Fixing that
+exposed two more, in sequence: the root then settled `completed` over the failure,
+because a coordinator's review never looked at whether the coordinator finished; and
+the failed office was then re-dispatched, making a 4-task run into a 7-task one.
+Now:
+
+```
+root -> failed | executions 4 | rerun 1 | escalated 1 | failed upward 2
+```
+
+with the department's own finding carried up two tiers in `last_error`. A failed task
+is never retried.
+
+**A restatement is caught.** F231's companion. Three plausible-but-empty answers got
+through the contract checks before the echo check existed — the brief returned under
+the promised keys, and the goal copied verbatim. Comparing the answer against the ask
+rejects those. It deliberately does **not** require the answers to disagree: "all
+three claims approved" is a real finding and passes.
+
+**The DOA matrix is enforced as money limits.** F232. Eight seeded bands, consulted by
+nobody, so a 30bn payment and a 3.000đ one were recorded with identical approvers.
+`domain/doa.py` resolves the band and refuses where the matrix is silent, and every
+approval now passes through it on the way in — so the amount decides who signs, and an
+agent cannot name its own approver.
+
+Two things about that were nearly wrong in a way that would have cost money:
+
+* `L3_HUMAN_APPROVAL` sorts before `L4_BOUNDED_AUTONOMOUS`, so an ordinal reading
+  says L4 outranks L3 — and L3 is where a *human* signs. Read ordinally, the seeded
+  matrix (every band capped at `L3`) was open to any agent. Read correctly, it means a
+  human approves every amount.
+* `Decimal("3.600.000")` raises, so every amount in the dossier's own format was
+  refused as unreadable. The grouping character is `.`, and the locale is now declared
+  by the caller rather than guessed.
+
+**Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
+the suite is 2982 unit and integration tests, 3 skipped, 0 failed, and
+`make lint` and `make typecheck` are clean.
+
+**Two existing tests caught a wrong fix in this pass, which is worth recording.** The
+rule was first written as "never retry a task that has already failed", and it broke
+`test_a_failed_department_run_is_sent_back_not_ignored` — correctly. A *crashed*
+department run must be sent back: a crash is often transient, and treating it as
+unjudgeable lets a broken department look idle. The distinction that matters is *who*
+decided the failure, not what the status says, so the two are now separated by
+`failure_category`: a crash is retried, an escalation is not.
+
+**On model quality, the claim was removed rather than softened.** This file previously
+said the models "are not reliable enough to run unattended". One free model was run on
+one procedure and got all three expense verdicts right — that is the whole of the
+evidence, and it does not support a general claim in either direction. What the
+evidence does support is that all eight faults were in the loop around the model, not
+in the model.

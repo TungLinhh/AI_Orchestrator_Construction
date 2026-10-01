@@ -138,6 +138,58 @@ def _substantive(value: Any) -> tuple[bool, str]:
     return True, ""
 
 
+#: How much of a value's own wording may also appear in the task it was answering
+#: before it counts as an echo rather than an answer.
+#:
+#: Measured against the scenario catalogue, a real finding names the claims, the
+#: amounts and the policy, and shares almost nothing with the brief. A restatement
+#: shares nearly all of it. 0.85 sits above "mentions the subject" and below
+#: "parrots it".
+ECHO_OVERLAP = 0.85
+
+#: Below this many distinct words a value is too short for overlap to mean anything,
+#: and `"approve"` against a brief that happens to contain "approve" is not an echo.
+ECHO_MIN_WORDS = 4
+
+#: Below this many characters the task text is too short to be echoed meaningfully.
+ECHO_MIN_SOURCE = 24
+
+
+def _words(text: str) -> set[str]:
+    """Distinct lowercased words, ignoring punctuation.
+
+    Deliberately crude. The question is "did the agent answer, or repeat the brief",
+    and repetition survives normalisation: case, accents, spacing and punctuation
+    all change while the words do not.
+    """
+    import re
+
+    return {w for w in re.split(r"[^\w]+", text.lower(), flags=re.UNICODE) if w}
+
+
+def _echo(value: Any, source_words: set[str]) -> bool:
+    """Whether this value is the task handed back rather than an answer to it.
+
+    Measured on a structured value as a whole rather than key by key, because the
+    shape of an echo is the whole thing: asked to review three claims, an agent will
+    sometimes return `[{"claim": "the three claims"}, ...]`, and judging each string
+    alone would miss that every one of them is the brief again.
+    """
+    if isinstance(value, dict):
+        text = " ".join(str(v) for v in value.values())
+    elif isinstance(value, (list, tuple, set)):
+        text = " ".join(str(v) for v in value)
+    elif isinstance(value, str):
+        text = value
+    else:
+        return False
+
+    value_words = _words(text)
+    if len(value_words) < ECHO_MIN_WORDS:
+        return False
+    return len(value_words & source_words) / len(value_words) >= ECHO_OVERLAP
+
+
 def required_keys(schema: Any) -> tuple[str, ...]:
     """The keys an output was promised, from whatever shape the contract uses.
 
@@ -165,6 +217,7 @@ def assess_output(
     expected_output_schema: Any = None,
     attempt: int = 1,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    source_text: str = "",
 ) -> ReviewVerdict:
     """Decide whether this output can be sent to the executive.
 
@@ -172,11 +225,17 @@ def assess_output(
     is good -- a second attempt is judged exactly as strictly as the first, or a
     department learns that retrying is enough -- only whether a rejection may be
     turned into another run.
+
+    `source_text` is the brief the task was given (goal, title, or the `brief` the
+    delegation carried). It is optional, and omitting it costs one check rather than
+    correctness -- but it is the only way to catch the answer that is the question
+    again, which every other check here passes.
     """
     checks: list[Check] = []
     findings: list[str] = []
 
     wanted = required_keys(expected_output_schema)
+    source_words = _words(source_text) if len(source_text.strip()) >= ECHO_MIN_SOURCE else set()
 
     if output is None:
         checks.append(Check("produced", False, "the run wrote no output at all"))
@@ -246,6 +305,13 @@ def assess_output(
                 f"Put the real finding there."
             )
             continue
+        if source_words and _echo(value, source_words):
+            checks.append(Check(f"echo:{key}", False, "restates the task it was given"))
+            findings.append(
+                f"'{key}' repeats the task back rather than answering it: {str(value)[:80]!r}. "
+                f"Answer it -- name the specific claims, figures and decision."
+            )
+            continue
         substantive, why = _substantive(value)
         checks.append(Check(f"substantive:{key}", substantive, why))
         if not substantive:
@@ -282,6 +348,9 @@ def should_rerun(
 
 __all__ = [
     "DEFAULT_MAX_ATTEMPTS",
+    "ECHO_MIN_SOURCE",
+    "ECHO_MIN_WORDS",
+    "ECHO_OVERLAP",
     "MIN_TEXT_LENGTH",
     "PLACEHOLDER_MARKERS",
     "Check",

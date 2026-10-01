@@ -6448,3 +6448,95 @@ the same settings object that reads everything else.
 The rule: *when a default silently selects an expensive or authenticated
 backend, the default must be conditional on the credential existing — and the
 check must go through the same configuration path that supplies it.*
+
+### F231 — the escalation went nowhere, and the docstring said it did not
+
+A department that cannot do the work has to produce a *conclusion*. It produced
+nothing:
+
+```
+root -> running | executions 4 | review rerun 1 | escalated 1 | settled upward 0
+stopped because: nothing is runnable and no gate can be cleared
+```
+
+The reason it is written down rather than merely fixed: `settle_finished` skipped any
+task whose review escalated, and its docstring said the reason was that *"the
+executive is then told the work is unresolved rather than handed a tidy summary of a
+failure."* The executive was told nothing. A task nobody settles is a task nobody
+reports, and the run ended in a hang wearing a policy as a disguise.
+
+Fixing the hang exposed the next two faults, each of which was a wrong answer wearing
+a specific number:
+
+* **The root settled `completed`.** A coordinator's review asks "did you coordinate",
+  which is true of an office whose department has finished — including one that
+  *failed*. Nothing looked at whether the coordinator itself finished. `failed upward 1,
+  settled upward 1, root -> completed`.
+* **The failed office was re-dispatched.** With the hang gone, the chief's review
+  rejected the failed office and ordered a *retry of it*, because `should_rerun`
+  only knows the attempt count and has no notion that a finished failure has nothing
+  to retry. Four tasks became seven, and the bound that exists to stop the loop was
+  being applied one tier too low.
+
+Three rules, and each has a test that fails without it: a child that is `failed` or
+`expired` cannot be accepted; a coordinator succeeds only when every task below it
+**completed**, not merely reached a terminal state; and a task that has already failed
+escalates on sight and is never sent back.
+
+### F232 — the DOA matrix was loaded by nobody
+
+Eight bands were seeded into `doa_matrix` and consulted by nothing. A request to move
+thirty billion dong was recorded with the same `required_approver_roles` as a request
+for three thousand, because the amount reached nobody who was supposed to sign. The
+matrix was not merely unused: `CURRENT_STATE.md` reported it as "not enforced as money
+limits" while the enforcement half — deciding who approves — was nowhere at all.
+
+`domain/doa.py` now resolves a band and refuses where the matrix is silent. It refuses
+rather than approximates on all three counts, because a matrix that guesses is not a
+control: a subject with no bands, an amount past every ceiling, and a gap *between*
+bands are three different faults and get three different messages.
+
+**The trap was the autonomy levels, and it would have cost real money.**
+`L3_HUMAN_APPROVAL` sorts after `L2_PARENT_REVIEW` and before `L4_BOUNDED_AUTONOMOUS`,
+so "L4 is more autonomy than L3" reads as obvious and means the opposite: L3 is where
+a *human* signs. The first version compared the strings ordinally, L4 beat L3, and the
+seeded matrix — which caps every band at `L3` — was open to any agent at any level.
+The levels are now read for what they say, which makes the seeded matrix mean "a human
+approves every amount". That is the conservative reading, and it is the one the data
+supports.
+
+**The second defect was in reading the figures.** `Decimal("3.600.000")` raises, so
+the dossier's own amounts — Minh Châu `3.600.000`, the second claim `32.000.000`, the
+third `18.500.000` — were *refused* as not numbers. Not misread as 3.6: unreadable.
+A matrix that cannot read its own figures is a matrix nobody consults. The grouping
+character is `.` in this project's working language, and the locale is now declared by
+the caller rather than guessed, because `3.600.000` is three million in one language
+and three point six in another, and a control that guesses picks a band on a coin flip.
+
+Floats are refused outright: `Decimal(0.1)` from a float is not 0.1, and a band edge
+missed by a fraction of a dong is still a missed band edge.
+
+### F233 — the demonstration's failure named a tool, a retry budget and a URL
+
+`make mock-corpus` on a fresh clone:
+
+```
+Tool 'delegate_to_agent' exceeded max retries count of 2
+```
+
+Zero tokens, 1.6 seconds, and every noun in the message wrong. One line at module
+scope caused it: `os.environ.setdefault("AO_MODEL_PROVIDER_DEFAULT", "openrouter")`.
+A fresh clone has no `OPENROUTER_API_KEY`, so the script selected an authenticated
+provider with nothing to authenticate, and the framework reported the refusal as retry
+exhaustion on the tool the model was reaching for.
+
+The first fix read `os.environ.get("OPENROUTER_API_KEY")` and was wrong in the other
+direction: secrets live in `.secrets/runtime.env` and are loaded by pydantic-settings,
+never exported. That version would have found no key on the development machine, which
+has one, and silently downgraded the demonstration.
+
+The second fix fell back to the deterministic runtime, which fixes the message and
+leaves the demonstration broken — `ScriptedRuntime` completes a task rather than
+delegating, and a coordination task that completes without delegating is failed on
+purpose. So the script now refuses before writing a row and says what is missing.
+Leaving a tenant holding a task that can only fail is worse than not writing one.
