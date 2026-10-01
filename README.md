@@ -189,6 +189,10 @@ $ make test-e2e          # 34 passed (needs NATS + Temporal)
 $ make lint typecheck    # clean
 ```
 
+Those 8 skips are all environmental and all say which: 5 need NATS running, 3
+need a tenant that has delegated something. None is a defect being hidden, which
+is why the skips print their reason rather than passing quietly.
+
 **Seven faults in this pipeline were found by running a real model, and by no test
 whatsoever.** The worst: `expected_output_schema` appeared nowhere in the runtime,
 and `AgentResult` was built without an `output` field — so every declared contract
