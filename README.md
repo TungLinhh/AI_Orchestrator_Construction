@@ -170,7 +170,7 @@ and what the boundary is.
 **Tests.**
 
 ```console
-$ make test              # 2926 passed, 3 skipped
+$ make test              # 2956 passed, 8 skipped
 $ make test-e2e          # 34 passed (needs NATS + Temporal)
 $ make lint typecheck    # clean
 ```
@@ -182,11 +182,18 @@ was *unsatisfiable* by a real model, while 2914 tests passed because the scripte
 runtime sets one. All seven are in
 [`docs/FAILED_APPROACHES.md`](docs/FAILED_APPROACHES.md), F225-F228.
 
+**An eighth was found by cloning the repository and running `make setup`** — the
+seed printed `units 7, agents 7` over a tenant holding ten of each, because it
+counted its spec lists instead of its inserts. Nothing failed, because the seed
+did its job correctly and the *report* was false (F229). That is the shape that
+keeps recurring here, and it is why the standing instruction is to run the thing
+rather than read it.
+
 ---
 
 ## The domain model
 
-Seven concepts that are routinely conflated, kept apart because each collapse
+Eight concepts that are routinely conflated, kept apart because each collapse
 produces a specific failure.
 
 ```mermaid
@@ -257,14 +264,16 @@ something harmful are the hardest to test, they will be the least tested.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| `tests/unit` + `tests/integration` | 2926 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
+| `tests/unit` + `tests/integration` | 2956 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
 | `tests/e2e` | 34 | The 8 acceptance scenarios, the event pipeline through real NATS JetStream, and A2A against a spawned remote agent. Gated by `preflight-e2e`, so a missing broker is a failure rather than five skips |
 | `make lint` | clean | 669 findings fixed, including a typo in a target name that made a documented command fail on a clean machine |
 | `make typecheck` | clean | 140 source files, no `Any` escapes and no unused ignores |
 
 Seven defects in the review and delegation path were found by **running a real
-model**, not by any of the above. A green suite is evidence about the functions it
-calls, and not about the path a model actually takes — see F225-F228.
+model**, and an eighth by **cloning the repo and running `make setup`**, not by any
+of the above. A green suite is evidence about the functions it calls, and not about
+the path a model actually takes, nor about what the tool prints when it is done —
+see F225-F229.
 
 Deterministic by default: `AO_MODEL_PROVIDER_DEFAULT=fake` is forced in
 `tests/conftest.py`, so the suite cannot spend money. Real-provider calls are a
@@ -356,7 +365,7 @@ The full list, with the reason for each, is
 | [REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md) | What was surveyed, what it changed |
 | [LEGACY_SYSTEMS_REVIEW.md](docs/LEGACY_SYSTEMS_REVIEW.md) | What was taken and what was rejected, from two sibling systems |
 | [REUSABLE_COMPONENTS.md](docs/REUSABLE_COMPONENTS.md) | Each borrowed idea, its adaptation, and the test that proves it |
-| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 228 things that did not work, and what replaced them |
+| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 229 things that did not work, and what replaced them |
 | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | Every assumption, its status, and what happens if it is wrong |
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Dated status: works, partial, missing |
 

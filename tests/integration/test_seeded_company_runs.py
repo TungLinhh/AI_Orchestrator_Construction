@@ -25,11 +25,18 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
+from structlog.testing import capture_logs
 
 from ai_orchestrator.agent_runtime import ScriptedRuntime
 from ai_orchestrator.application.task_execution import TaskExecutionService
 from ai_orchestrator.domain.ids import AgentId, ToolId, ToolVersionId
-from ai_orchestrator.persistence.models import Agent, Organization, Tool, ToolVersion
+from ai_orchestrator.persistence.models import (
+    Agent,
+    Organization,
+    OrgUnit,
+    Tool,
+    ToolVersion,
+)
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.seed import seed
 
@@ -64,6 +71,53 @@ async def test_every_seeded_id_is_accepted_by_its_own_type(seeded) -> None:
                 id_type(str(row.id)),
                 (f"a seeded {model.__tablename__} row has an id its own type rejects: {row.id!r}"),
             )
+
+
+async def test_the_seed_reports_what_it_actually_created(tenant) -> None:
+    """The seed's own log line must match the tenant it just wrote.
+
+    It did not. `units=len(DEPARTMENTS)` and `agents=len(department_agents) + 1`
+    counted the spec lists, which exclude the three offices and their three
+    agents -- so the log said `units 7, agents 7` over a tenant holding 10 and 10,
+    and every downstream reading of that number was wrong by a third. Nothing
+    failed: the seed worked, and the report about the seed was false.
+
+    Asserting the log is the only instrument that catches it, because a count
+    that is merely *correct* cannot tell you a count is being taken at all.
+    """
+    org_id = tenant.organization_id
+    org = (
+        await tenant.session.execute(select(Organization).where(Organization.id == org_id))
+    ).scalar_one()
+    # structlog does not route through stdlib logging, so `caplog` cannot see
+    # this line at all -- an assertion against caplog would pass vacuously.
+    with capture_logs() as captured:
+        await seed(tenant.session, into=org)
+
+    record = next(r for r in captured if r.get("event") == "seed.created")
+
+    units = (
+        (await tenant.session.execute(select(OrgUnit).where(OrgUnit.organization_id == org_id)))
+        .scalars()
+        .all()
+    )
+    agents = (
+        (await tenant.session.execute(select(Agent).where(Agent.organization_id == org_id)))
+        .scalars()
+        .all()
+    )
+
+    assert record["units"] == len(units), (
+        f"the seed reported {record['units']} units and wrote {len(units)}"
+    )
+    assert record["agents"] == len(agents), (
+        f"the seed reported {record['agents']} agents and wrote {len(agents)}"
+    )
+    # The three tiers are what the count is for, so assert the shape too: a
+    # count of 10 is only correct for 1 company + 3 offices + 6 departments.
+    assert {u.unit_type for u in units} == {"company", "office", "department"}
+    assert sum(1 for u in units if u.unit_type == "office") == 3
+    assert sum(1 for u in units if u.unit_type == "department") == 6
 
 
 async def test_a_seeded_agent_can_actually_execute_a_task(seeded) -> None:

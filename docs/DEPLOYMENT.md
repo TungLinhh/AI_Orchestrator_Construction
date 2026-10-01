@@ -34,6 +34,20 @@ and Kubernetes are deferred to M15 and listed as not-built in `CURRENT_STATE.md`
 | Temporal CLI | 1.9.1 (server 1.32.0) | release binary into `.devdata/bin/` |
 | Node | 20+ | as installed; only `make page`'s console check needs it |
 
+On Debian or Ubuntu the same three come from apt, and `scripts/pgctl.py` finds
+them without configuration — it looks on `PATH` first, then
+`/usr/lib/postgresql/16/bin`:
+
+```bash
+sudo apt-get install -y postgresql-16 postgresql-server-dev-16 build-essential git
+git clone https://github.com/pgvector/pgvector.git
+make -C pgvector PG_CONFIG=/usr/lib/postgresql/16/bin/pg_config install
+```
+
+Install a **running** server yourself or let `make setup` create one under
+`.devdata/pg`; `initdb` refuses to initialise a cluster as root, so run these as
+an ordinary user.
+
 `.devdata/` is git-ignored, so the two server binaries are **not** in the
 repository. `make page` and `make setup` do not need them; `make dev`,
 `make test-e2e` and anything touching events or workflows do. Fetch the release
@@ -64,6 +78,9 @@ make -C "$(brew --prefix)/opt/pgvector" \
 make -C "$(brew --prefix)/opt/pgvector" \
      PG_CONFIG="$(brew --prefix)/opt/postgresql@16/bin/pg_config" install
 ```
+
+On Linux, `apt-get install postgresql-16-pgvector` is usually correct already;
+only a source install needs `PG_CONFIG`.
 
 `brew install pgvector` reports success and pours a keg, and `CREATE EXTENSION
 vector` then fails with *could not open extension control file*, because the

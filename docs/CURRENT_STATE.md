@@ -578,3 +578,71 @@ measurement, and each has a test named after the failure:
 **The lesson worth keeping:** a green suite covering a function is not evidence
 about the path a real producer takes. Every one of these lived in the gap between
 what the tests exercised and what the model did.
+
+## Verified on 2026-10-01 (eighth pass: somebody else clones it)
+
+The previous seven passes all ran inside the directory the project was built in.
+This one did not: clone the repository to an empty directory and follow the
+README, which is the only reading of it that a new person will ever have.
+
+```
+$ git clone git@github.com:TungLinhh/AI_Orchestrator_Construction.git
+$ cd AI_Orchestrator_Construction
+$ AO_POSTGRES_PORT=55444 make setup
+...
+upgrade 0028 -> 0029, Record how many calls a run actually made, so the ceiling
+                stops being a guess.
+seeded organization: autonomous-demo-company (org_01m3tp2a44ze3j02q30bmpm7fc)
+spine for org_01m3tp2a44ze3j02q30bmpm7fc: {'gates': 6, 'criteria': 45, 'sops': 28,
+  'forbidden_zones': 6, 'doa': 8, 'sop_steps': 5, 'raci': 14}
+  setup complete. Next:  make dev
+```
+
+Clean clone, no `.secrets/`, no `.venv/`, no `.devdata/`. All 29 migrations, the
+organisation and the governance spine built from nothing, on a port that is not
+the one this machine normally uses.
+
+**It found a defect nothing else had.** The seed's own log line said
+`{"agents": 7, "units": 7}` over a tenant holding ten of each. The seed was
+correct; the report about the seed was not, because it counted `len(DEPARTMENTS)`
+— a list that predates the office tier and excludes it. Fixed and covered by
+`test_the_seed_reports_what_it_actually_created`, which had to be wrong twice
+first: `caplog` cannot observe a structlog line at all, and re-seeding the
+fixture's tenant failed on an integrity constraint rather than on the count.
+F229.
+
+**What the clone also forced into the open**, all of it invisible from inside:
+
+- The corpus paths were absolute and pointed at another project on this machine.
+  `AO_CORPUS_ROOT` / `AO_CORPUS_ROOTS` now override them, and the construction
+  ingest names the directory it searched, so a report of zeros is diagnosable.
+- `docs/DEPLOYMENT.md` documented `make pgvector` and `make pgctl`. Neither
+  target exists.
+- `.devdata/` is git-ignored, so the NATS and Temporal binaries are not in the
+  repository and `make dev` cannot work on a fresh clone until they are fetched.
+  The fetch commands are now written down, and the URLs were checked with
+  `curl -IL`, returning 200.
+- `make page` executes the page's JavaScript under Node. Node is a prerequisite
+  and was not listed as one.
+
+**The gate, run clean after the fixes** — with nothing else touching the
+database, because the first attempt at this number came back `1 failed` and the
+failure was mine: `make setup` on the verification clone and a construction ingest
+were writing to the same cluster while the suite ran. It is worth recording that
+the run only became trustworthy once nothing else was running.
+
+```
+make lint      311 files already formatted, all checks passed
+make typecheck Success: no issues found in 141 source files
+make test      2956 passed, 8 skipped, 0 failed in 845.87s (0:14:05)
+```
+
+Eight skips, not three: an earlier entry in this file reported three for a
+*narrower* selection. Nothing regressed to skip, and the corpus-dependent tests
+were re-run on their own to confirm it — 172 passed, none skipped, because those
+tests carry their own corpus path rather than inheriting the ingest default.
+
+**The lesson, and it is the same one as F18-F30 and F225-F229:** seven faults
+came from running a real model, and the eighth came from letting somebody who had
+never seen the project read the instructions. Neither was found by a test, and
+the test suite was green throughout both.

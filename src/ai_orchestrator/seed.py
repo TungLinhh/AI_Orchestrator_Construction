@@ -899,11 +899,18 @@ async def seed(
     # takes away the ability to roll back, and it expires the session so a later
     # attribute read on the returned object fails outside the async context.
     await session.flush()
+    # Counted from what was created, not from the size of the spec lists. The
+    # spec lists report 7 units and 7 agents, which is 7 units and 7 agents
+    # *except* for the three offices and their three agents -- and a seed log
+    # that says 7 when the tenant holds 10 is the shape of defect this project
+    # writes up as a failure: a plausible wrong answer, printed with confidence.
+    units_created = 1 + len(OFFICES) + (len(DEPARTMENTS) - 1)
+    agents_created = 1 + len(OFFICES) + len(department_agents)
     logger.info(
         "seed.created",
         organization_id=org_id,
-        units=len(DEPARTMENTS),
-        agents=len(department_agents) + 1,
+        units=units_created,
+        agents=agents_created,
     )
     return org
 

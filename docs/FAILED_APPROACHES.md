@@ -6361,3 +6361,49 @@ already fails it with a reason.
 
 **The rule:** *a green suite covering a function is not evidence about the path a
 real producer takes. Stub what you test, and say so in the suite's name.*
+
+### F229 — the seed reported 7 of the 10 things it had just created
+
+Found by cloning the repository to a fresh directory and reading the output of
+`make setup`, which is a thing nobody had done since the offices were added:
+
+```
+{"agents": 7, "event": "seed.created", "units": 7}
+seeded organization: autonomous-demo-company (org_01m3tp2a44ze3j02q30bmpm7fc)
+```
+
+Ten agents and ten units exist in that tenant — one company, three offices, six
+departments. The seed wrote all ten and then reported seven, because it counted
+the *spec lists* rather than what it had inserted:
+
+```python
+units=len(DEPARTMENTS),                 # 7: the chief + 6 departments
+agents=len(department_agents) + 1,      # 7: the departments + the chief
+```
+
+Both expressions predate the office tier. Neither raised. The seed did its job
+correctly and every number describing its work was wrong by a third — which is
+the F18-F30 shape again: *a plausible wrong answer, printed with confidence*.
+
+It survived 2954 passing tests because nothing asserted on the log. The existing
+seed test walked every seeded id to prove each was usable by its own type, which
+is a real check, and a check about a different property entirely.
+
+Fixed by counting `1 + len(OFFICES) + len(DEPARTMENTS) - 1` and
+`1 + len(OFFICES) + len(department_agents)`, and covered by
+`test_the_seed_reports_what_it_actually_created`, which compares the reported
+numbers against the rows in the tenant and asserts the tier shape as well.
+
+**Two things that test had to get right, and got wrong first:**
+
+1. **`caplog` cannot see this line.** The platform logs through structlog, which
+   does not route through stdlib logging. An assertion against `caplog.records`
+   raised `StopIteration`; written as `next(..., None)` it would have passed
+   forever while checking nothing.
+2. **Seeding the fixture's tenant a second time** failed on an integrity
+   constraint, so the test failed for a reason that had nothing to do with the
+   defect it was written for. A test that fails for the wrong reason is worse
+   than a test that does not fail: it looks like coverage.
+
+The rule generalises: *a count is only evidence if something compares it to the
+rows it claims to describe.*
