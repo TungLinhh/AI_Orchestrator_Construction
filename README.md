@@ -96,8 +96,14 @@ ORGS=$(cat .devdata/ui/tenant.txt) make mock-corpus
 
 That runs one coordination task through the real execution machinery — the
 delegation tree, the events and the approval are produced by the product, not
-written by the script — and it works with or without a provider key. It clears
-everything except Projects, Documents and Gates, which need real input:
+written by the script. It needs a provider key, because the showcase is a
+`coordination` task and the platform fails one that completes without
+delegating; the script refuses and says so rather than leaving you a task that
+can only fail. Without a key, `make mock-corpus-norun` still writes the queue and
+the approval, so the Approvals view has something in it.
+
+It clears everything except Projects, Documents and Gates, which need real
+input:
 
 **Reference data.** The Projects and Documents surfaces read a corpus of client
 spreadsheets that is deliberately not in this repository. Point at your own:
