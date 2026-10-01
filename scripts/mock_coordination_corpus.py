@@ -84,22 +84,22 @@ from ai_orchestrator.persistence.session import Database  # noqa: E402
 #: A free real model, when there is a key to spend. Read through `get_settings()` rather
 #: than `os.environ`, because the key lives in `.secrets/runtime.env` and is *not*
 #: exported — so an `os.environ` check would decide there is no credential on a machine
-#: that has one, and silently downgrade the demonstration to the scripted runtime.
+#: that has one, and quietly downgrade the demonstration. F230.
 #:
 #: Defaulting a *provider* unconditionally meant a fresh clone, which has no key, reached
-#: a real provider with nothing to authenticate and the showcase task failed with
+#: a real provider with nothing to authenticate, and the showcase task failed with:
 #:
 #:     Tool 'delegate_to_agent' exceeded max retries count of 2
 #:
-#: which names the tool and the retry budget, and neither of the two things that were
-#: actually wrong. An operator reading that opens the tool's configuration. This script
-#: exists to show a delegation tree, and the deterministic runtime produces one, so a
-#: missing key now falls back rather than reporting a failure that looks like a defect in
-#: the platform. F230.
-os.environ.setdefault(
-    "AO_MODEL_PROVIDER_DEFAULT",
-    "openrouter" if get_settings().openrouter_api_key.get_secret_value() else "fake",
-)
+#: which names a tool, a retry budget and a URL, and misses the only relevant fact. There
+#: is deliberately no fallback to the deterministic runtime here: `ScriptedRuntime`
+#: completes a task rather than delegating, and a `coordination` task that completes
+#: without delegating is failed on purpose — so the fallback would replace one wrong
+#: message with a correct one and the same broken demonstration. This script's job is to
+#: show a delegation tree, and only a model can produce one. Refusing clearly beats
+#: pretending.
+HAS_MODEL_KEY = bool(get_settings().openrouter_api_key.get_secret_value())
+os.environ.setdefault("AO_MODEL_PROVIDER_DEFAULT", "openrouter" if HAS_MODEL_KEY else "fake")
 
 #: Written on every row this script creates. One query tells a person which is which, and it
 #: is what `--reset` deletes.
@@ -528,6 +528,27 @@ async def main() -> int:
                 "this will find them already present."
             )
         return 0
+
+    # Refuse before writing anything, and say exactly what is missing. The showcase is a
+    # `coordination` task, and the platform fails one that completes without delegating —
+    # on purpose. Only a model produces the delegation this script exists to show, and
+    # the deterministic runtime is a test double, not a demonstration. Writing the rows
+    # and then reporting a failure leaves the tenant holding a task that can only fail.
+    if not args.no_run and not HAS_MODEL_KEY:
+        print(
+            "  no model credential: this needs a real model, because the showcase is a\n"
+            "  coordination task and the platform fails one that completes without\n"
+            "  delegating -- which is the thing this script exists to show.\n"
+            "\n"
+            "  add a free key to .secrets/runtime.env, then re-run:\n"
+            "\n"
+            "      echo 'OPENROUTER_API_KEY=sk-or-v1-...' >> .secrets/runtime.env\n"
+            "      make seed-free-model\n"
+            "      make mock-corpus\n"
+            "\n"
+            "  or create the rows without running the task:  make mock-corpus-norun"
+        )
+        return 2
 
     tally = await build(org, run_the_task=not args.no_run)
     print(f"  org: {org}")
