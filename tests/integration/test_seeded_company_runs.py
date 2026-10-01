@@ -113,11 +113,21 @@ async def test_the_seed_reports_what_it_actually_created(tenant) -> None:
     assert record["agents"] == len(agents), (
         f"the seed reported {record['agents']} agents and wrote {len(agents)}"
     )
-    # The three tiers are what the count is for, so assert the shape too: a
-    # count of 10 is only correct for 1 company + 3 offices + 6 departments.
+    # The three tiers are what the count is for, so assert the shape too: a count of
+    # 11 is only correct for 1 company + 3 offices + 7 departments.
+    #
+    # The 7 is IT, added as the seventh department so `ONX-BO-IT-SOP-007` and
+    # `ONX-PMO-KNW-SOP-006` stopped having no owner. This is the assertion that failed
+    # when it was seeded and not updated — which is the point of writing the shape
+    # rather than only the total: a total alone would have gone from 10 to 11 without
+    # saying anything about the shape behind it.
     assert {u.unit_type for u in units} == {"company", "office", "department"}
     assert sum(1 for u in units if u.unit_type == "office") == 3
-    assert sum(1 for u in units if u.unit_type == "department") == 6
+    assert sum(1 for u in units if u.unit_type == "department") == 7
+    assert len(agents) == 11
+    it = [a for a in agents if a.name == "IT Agent"]
+    assert len(it) == 1, "the seventh department did not seed its agent"
+    assert it[0].org_unit_id is not None, "the IT agent has no unit to report from"
 
 
 async def test_a_seeded_agent_can_actually_execute_a_task(seeded) -> None:

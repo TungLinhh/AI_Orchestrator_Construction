@@ -6580,3 +6580,113 @@ outcome, and `CURRENT_STATE.md` says so rather than counting it as verified.
 the deterministic runtime behaving correctly — it never delegates — and reading it as
 "the platform cannot delegate" inverts the cause. `run_pipeline.py` prints its
 `provider:` line for exactly this reason; it is the first thing to check.
+
+### F235 — a seventh department was added without its instructions
+
+IT was added as the seventh department so the two ownerless SOPs would have an owner.
+It seeded a unit, an agent, a role and a definition, and then **the seed died twenty
+seconds into a demo** with `KeyError: 'IT Director'`.
+
+The cause is `SYSTEM_PROMPTS`, keyed by the agent's *title*, and `seed()` reads it at
+line 930 with a plain subscript. Adding a department meant editing three lists —
+`DEPARTMENTS`, `OFFICE_OF`, `AGENT_BY_DEPARTMENT` — and the fourth was the one that
+bites.
+
+**The suite already caught this and I ran a subset.** `test_the_seed_tree_is_three_
+tiers.py` asserts that every department has an entry, and it exists precisely because
+a previous restructuring added three titles and the seed died with
+`KeyError: 'Procurement Director'`. It fired correctly this time. The mistake was mine:
+I ran the integration suite to see the blast radius and read the errors as if that
+were the whole of it, when one of the four failures was a unit test in a file I had
+not thought to run.
+
+**And a guard that had to become a decision rather than a number.**
+`test_the_three_tiers_are_fully_specified` asserted exactly two departments per
+office. Back Office now has three. The tempting repair is `assert len(names) >= 2`,
+and that would have kept passing while the tree became six departments with one office
+empty and another carrying four — the shape that test was written to catch, per its
+own docstring. So the distribution is now *named* (`2 / 2 / 3`, seven in total): a
+future change to the roster is a deliberate edit to that test rather than a drift past
+it.
+
+The rule: *adding an entry to a lookup means every lookup keyed by the same thing.*
+There is no compiler for it here, and the only instrument is the test that already
+exists — which means running the whole suite, not the part that looks affected.
+
+### F236 — a shadow run that agreed with a person in Vietnamese did not
+
+Shadow mode compares the model's answer with the person's. The first implementation
+folded diacritics on the answer and compared against a vocabulary written with them,
+so `ĐỒNG Ý` folded to `dồng ý`, matched nothing, and was recorded as a **total
+disagreement** with a person who had written `approve`.
+
+The two words differ by one character and the disagreement was complete. A rate
+computed over such comparisons would have been confidently wrong in a way that looks
+like a model that cannot read the language, and the fix is to fold both sides.
+
+Three related refusals are in the same module because each of them would otherwise
+have produced agreement on evidence that does not exist: a model that answered two of
+three claims is **refused** rather than scored on the two; an answer that cannot be
+normalised at all is refused rather than coerced; and a run that is too young to
+support a rate is reported as too young however well it agreed.
+
+**A normalisation that folds one side of a comparison reports spelling as
+disagreement.** Same family as F229's seed count and F232's `3.600.000`: each was a
+plausible reading that was confidently wrong, and each was found by looking at the
+value rather than at the code that produced it.
+
+### F237 — six documented `make` targets could not be run
+
+`make seed-hiring` on a machine with more than one tenant holding the catalogue:
+
+```
+scripts/seed_hiring_request.py: error: argument --org: expected one argument
+```
+
+Six targets passed `--org $(ORGS)` bare. `ORGS` resolves through
+`catalogue_org.py`, which **refuses** to guess when several tenants hold the catalogue
+and prints the refusal to stderr — so `$(shell … 2>/dev/null)` correctly yields the
+empty string, and the target then hands argparse a flag with nothing after it.
+
+`seed-docs` already had the guard (`$(if $(ORGS),--org $(ORGS))`) with a comment
+saying the flag is omitted when unset. **The other six did not**, and the fix was to
+copy the one that worked rather than to work out why six others differed.
+
+The failure is loud, which is the good case. What made it worth an entry is the
+shape: one correct example sat in the same file and the other six were written without
+it, and nothing in the build notices that pattern. `make test-e2e` and `make lint` are
+green on a Makefile in which six documented commands do not run.
+
+### F238 — the console's own department count was a literal, and the picker was too
+
+Three faults in one afternoon, all the same shape: a number that lives somewhere else
+was written down a second time somewhere it did not belong.
+
+**The page check.** `check("all six departments are present", depts.offices.length === 6)`
+failed the day the seventh department was added, reporting
+`all six departments are present -- 7`. That is the worst way this project has
+misreported: the page looked as though it had invented a department. The number now
+comes from `ai_orchestrator.seed.DEPARTMENTS` at make time.
+
+**Getting that number in was itself broken twice.** The first attempt read
+`$(shell $(PY) -c ...)` in the Makefile, which is `uv run -c` — not a valid invocation.
+`$(shell)` swallows the failure and yields the empty string, so the check compared the
+department count against **0**. Passing the argument as a fallback of `7` was the second
+wrong move: it would have made the check pass for the wrong reason, and
+"reading it from the API" would have been worse still, since comparing a value to itself
+proves nothing.
+
+**The tenant picker.** `first_org.py` matched `3 offices and 6 departments` as literals.
+Adding IT meant *no tenant on the machine matched*, and the script correctly refused —
+which left the console pointing at nothing at all. It now derives both counts from the
+seed, which is what stopped it drifting in the first place.
+
+**And the reason the console opened an empty tenant was a third copy of the same idea.**
+`seed_hiring_request.py` chose its tenant by *"the one with the most `sop_definitions`"*
+while `first_org.py` chose by structure. They disagreed, hiring was seeded into a tenant
+the console was not looking at, and the page reported *no gates* with no error anywhere.
+That is worse than a crash: the command succeeded and the consequence appeared somewhere
+else entirely.
+
+The rule, now applied three times over: *a count, a name or a shape that the seed owns
+belongs to the seed. Read it, or take it as a parameter — never write it down twice.*

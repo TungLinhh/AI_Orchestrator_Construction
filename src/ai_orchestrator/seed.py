@@ -261,6 +261,39 @@ DEPARTMENTS: list[DepartmentSpec] = [
         tools=["internal_database_query", "document_reader", "write_report"],
         parent_slug="back-office",
     ),
+    # **The seventh department, and why it exists.**
+    #
+    # Two of the dossier's twenty-eight SOPs had no owner: `ONX-BO-IT-SOP-007`
+    # (IT administration, access control, data security and backup) and
+    # `ONX-PMO-KNW-SOP-006` (knowledge management and the lessons-learned register).
+    # The runner refused both rather than assign them, which was right — an
+    # access-provisioning run inside Finance or QA would produce a plausible answer to
+    # a question nobody asked — and refusing is not a resolution. The dossier names an
+    # IT function; this build did not have one, so the SOPs were ownerless by omission.
+    #
+    # It sits under **Back Office**, with Finance and HR, because that is where
+    # systems, records and people administration already are in this tree.
+    #
+    # **Its tools are deliberately the read-only ones plus the delegation tool.**
+    # This is the department whose job is to grant access, so it is the one department
+    # whose tools must not include anything that grants it. `internal_database_query`
+    # and `document_reader` let it check whether a request is legitimate;
+    # `write_report` lets it record what it decided. Nothing here provisions an
+    # account, and `domain/autonomy.py` keeps provisioning out of an agent's reach
+    # regardless of what the seed binds.
+    DepartmentSpec(
+        name="IT",
+        slug="it",
+        purpose=(
+            "Information systems, access control, data security, backup and the knowledge register."
+        ),
+        agent_name="IT Agent",
+        agent_title="IT Director",
+        capabilities=["review", "reporting"],
+        skills=["reporting", "analysis"],
+        tools=["internal_database_query", "document_reader", "write_report"],
+        parent_slug="back-office",
+    ),
 ]
 
 
@@ -552,6 +585,31 @@ SYSTEM_PROMPTS: dict[str, str] = {
         "administration. You may delegate research to a subordinate.\n"
         "When you assess a candidate, score each stated requirement separately and "
         "say plainly what the evidence does not establish."
+    ),
+    # **Written last, and deliberately the most careful of the seven.**
+    #
+    # IT is the department whose job is to grant access, so it is the one whose
+    # instructions must not read like a nudge toward doing it. It reviews access
+    # requests and records what it decided; `domain/autonomy.py` keeps provisioning
+    # out of an agent's reach whatever the prompt says, so this text has to agree with
+    # that rather than restate it.
+    #
+    # Which is why the failure mode named here is the *boring* one: an agent asked to
+    # review an access request and asked to say plainly what the evidence does not
+    # establish will produce a paragraph of good practice, which is exactly what this
+    # department must not be measured on.
+    "IT Director": (
+        "You are the IT Director. You own information systems, access control, data "
+        "security, backup, and the knowledge register. You may delegate research to "
+        "a subordinate.\n"
+        "You REVIEW access requests; you do not grant them. For every request, name "
+        "the person it is for, the role it grants, the systems it touches, and the "
+        "date the access should be withdrawn. If any of those four is missing from the "
+        "request, say so and refuse it — a request without a withdrawal date is an "
+        "access grant with no end, which is the failure this department exists to "
+        "prevent.\n"
+        "For backup and recovery, state the date of the last restore test. 'Backups are "
+        "configured' is not a recovery test, and reporting it as one is the error."
     ),
 }
 

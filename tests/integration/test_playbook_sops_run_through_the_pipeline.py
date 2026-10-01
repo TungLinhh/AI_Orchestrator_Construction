@@ -319,16 +319,48 @@ class TestTheGapsAreReported:
     async def test_running_an_unassigned_sop_says_so_instead_of_guessing(
         self, seeded, capsys
     ) -> None:  # type: ignore[no-untyped-def]
-        """The operator's command must report the gap, not pick a department."""
+        """The operator's command must report the gap, not pick a department.
+
+        **The catalogue no longer has a gap to offer**, so this used to reach in and
+        take `unassigned()[0]`. A seventh department closed it, and taking the first
+        element of an empty list is how this test would have started failing for a
+        reason that had nothing to do with what it checks.
+
+        So the gap is constructed instead. The refusal is the behaviour under test and
+        it has to keep working whatever the catalogue contains: the next SOP nobody
+        has given a home yet must not be guessed at, and that is precisely the case
+        this can no longer borrow from real data.
+        """
+        from dataclasses import replace as dataclass_replace
+
         from ai_orchestrator.domain.errors import ValidationError
         from ai_orchestrator.persistence.session import Database
 
+        homeless = dataclass_replace(BY_CODE["ONX-BO-IT-SOP-007"], department=None)
+        assert homeless.department is None
+
         runner = _runner()
         db = Database.from_settings()
-        code = unassigned()[0].code
         try:
             with pytest.raises(ValidationError, match="no owning department"):
-                await runner.create_sop_task(db, seeded.organization_id, BY_CODE[code])
+                await runner.create_sop_task(db, seeded.organization_id, homeless)
         finally:
             await db.dispose()
         del capsys
+
+    async def test_every_sop_in_the_catalogue_can_now_be_run(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        """The other half of closing the gap: the catalogue is fully runnable.
+
+        Stated as a count and a sweep rather than left implicit, because a refusal that
+        works and a catalogue with no refusals are different properties and only one of
+        them is a happy accident.
+        """
+        from ai_orchestrator.application.playbook import PLAYBOOK, unassigned
+
+        assert not unassigned(), (
+            "a SOP is without a department again; see "
+            "test_no_sop_is_left_without_a_home for what that costs"
+        )
+        assert len(PLAYBOOK) == 28
+        for sop in PLAYBOOK:
+            assert sop.department, f"{sop.code} has no department"

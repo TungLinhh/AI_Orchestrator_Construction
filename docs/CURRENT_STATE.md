@@ -691,7 +691,7 @@ Two things about that were nearly wrong in a way that would have cost money:
   by the caller rather than guessed.
 
 **Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
-the suite is 2982 unit and integration tests, 3 skipped, 0 failed, and
+the suite is 3037 unit and integration tests, 3 skipped, 0 failed, and
 `make lint` and `make typecheck` are clean.
 
 **Two existing tests caught a wrong fix in this pass, which is worth recording.** The
@@ -733,3 +733,46 @@ picks `ScriptedRuntime`, which never delegates, so a coordination task fails wit
 `no_delegation`. That is the separation-of-duties rule working against a test double,
 not the platform failing to delegate. The script prints its `provider:` line for
 precisely this reason.
+
+## Verified on 2026-10-02 (tenth pass: the seventh department, and shadow mode)
+
+Two things recorded as "not built" have been built, and one of them had been
+recorded as not built **for the wrong reason**.
+
+**Shadow mode has its machinery. `ARCHITECTURE_DECISIONS.md` §D6 said "not
+attempted — it needs 4 weeks of real traffic", and that was half right.** Four weeks
+cannot be manufactured. But `domain/promotion.py` already gated on `shadow_runs` and
+`shadow_agreements`, and `agent_shadow_runs` already had `would_have_decided`,
+`actually_decided`, `agreed` and a required `divergence`. The gate, the table and the
+thresholds all existed and **nothing wrote to them**, so the number the promotion gate
+read was zero forever — which reads as "the model disagrees with everybody" rather than
+"nothing is recorded". That is the third time this project has shipped a control fully
+specified and never consulted, after the DOA matrix.
+
+`domain/shadow.py` decides whether two answers are the same answer and
+`application/shadow.py` writes the comparison down. 41 unit and 11 integration tests.
+
+Three refusals in it are the design: a partial answer is refused rather than scored on
+what it answered; an answer that cannot be normalised is refused rather than coerced;
+and a run too young to support a rate is reported as too young however well it agreed.
+The dossier's thresholds are **4 weeks and 95%**, kept separate from
+`promotion.PromotionPolicy`'s engineered 5-runs-and-80%, which answers a different
+question and must not be allowed to soften a business precondition.
+
+**The seventh department.** IT exists under Back Office, with the other two of its
+tier. The roster is now 2 / 2 / 3 across the three offices. It exists because
+`ONX-BO-IT-SOP-007` (IT administration, access control, backup) and
+`ONX-PMO-KNW-SOP-006` (the knowledge register) had no owner, and the runner refusing
+both is correct and is also not a resolution. **HR was never missing** — it is in the
+roster and has been throughout; the two that were dropped in an earlier restructure
+were HR and Procurement *as standalone offices*, which is F213.
+
+**A seventh department seeded without its instructions** — F235. `KeyError: 'IT
+Director'`, twenty seconds into a demo, because `SYSTEM_PROMPTS` is keyed by agent
+title and adding a department meant touching four lists. The test that exists for
+exactly this fired correctly; I ran the integration suite, read the errors as the
+whole picture, and it was a unit test in a file I did not think to run.
+
+**What is still not done, precisely:** the four weeks of traffic, which cannot be
+shortened; a corpus for the Projects surface; and a Gate session with a person on it
+and some failed work to retry, both of which are content rather than code.

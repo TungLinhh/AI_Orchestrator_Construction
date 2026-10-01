@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from pathlib import Path
 
 from sqlalchemy import text
 
@@ -36,14 +37,25 @@ from ai_orchestrator.persistence.session import Database
 
 #: What the current seed builds. A tenant that does not have this shape is not the
 #: product, and the checks written against the product will not apply to it.
-WANTED_OFFICES = 3
-WANTED_DEPARTMENTS = 6
+#:
+#: **Read from the seed rather than written here, because it was written here and it
+#: went stale.** Adding the seventh department left `WANTED_DEPARTMENTS = 6`, and the
+#: picker then selected a six-department tenant while the one the console had just
+#: been pointed at was the seven-department one. The console opened a stale tenant and
+#: said "no projects -- run `make seed-construction`" about a tenant that had never
+#: been short of documents.
+#:
+#: That is this project's own shape, one layer down: a literal that duplicates a fact
+#: which lives somewhere else. The office and department counts are not this script's
+#: to decide, so it asks the module that builds them. The duplicate definitions below
+#: were the tell -- the same two names, written twice, in one file.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from ai_orchestrator.seed import DEPARTMENTS, OFFICES
 
-#: How the current seed builds the organisation: three offices, six departments.
-#: Matched structurally, because a tenant that does not have this shape is not the
-#: product and the checks written against the product will not apply to it.
-WANTED_OFFICES = 3
-WANTED_DEPARTMENTS = 6
+WANTED_OFFICES = len(OFFICES)
+#: `DEPARTMENTS[0]` is the executive, which is a department-shaped entry and not a
+#: department unit -- the same distinction the seed itself makes.
+WANTED_DEPARTMENTS = len(DEPARTMENTS) - 1
 
 #: How many candidates to try, newest first. More than one because the newest
 #: tenant on a working machine is often a throwaway from a test run.

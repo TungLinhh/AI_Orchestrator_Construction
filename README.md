@@ -62,6 +62,21 @@ make setup      # venv, PostgreSQL cluster on :55432, migrations, the organisati
 make page       # starts the API on :8099 and verifies the console against real data
 ```
 
+`make setup` builds this, 7 departments in a 2 / 2 / 3 shape:
+
+```
+Executive Agent
+├── Front Office Agent    Sales · Procurement
+├── Middle Office Agent   Design · QA/QC-HSE
+└── Back Office Agent     Finance · HR · IT
+```
+
+IT is the seventh because the other six left two of the dossier's 28 SOPs with no
+owner: `BO-IT-SOP-007` (IT administration, access control, backup) and
+`PMO-KNW-SOP-006` (the knowledge register). Both were **refused by the runner** rather
+than assigned — an access-provisioning run inside Finance or QA produces a plausible
+answer to a question nobody asked — and refusing is not a resolution.
+
 Open **http://127.0.0.1:8099/api/v1/ui**.
 
 That is the whole onboarding. `make setup` creates the cluster, runs 29 migrations
@@ -238,10 +253,19 @@ the correct reading means a human approves every amount. The first version compa
 the strings with `<=`, L4 beat L3, and every band was open to any agent: the matrix
 was inert, and `CURRENT_STATE.md` said so.
 
-**The playbook is executable.** All 28 SOPs are work a department can be handed,
-with step chains, control points and required outputs. Four carry the dossier's
+**The playbook is executable.** All 28 SOPs are work a department can be handed, with
+step chains, control points and required outputs. Four carry the dossier's
 AI-forbidden zones — hiring, payroll, Gate decisions, stop-work orders — enforced as
-contracts rather than as prose in a prompt.
+contracts rather than as prose in a prompt. **Every one of the 28 now has an owning
+department**; two did not until the seventh was added.
+
+**Shadow mode compares the model's answer with the person's.** Every comparison is
+written to `agent_shadow_runs` — what the model would have decided, what actually
+happened, whether they agreed, and why they differed when they did not — which is what
+`domain/promotion.py` was already gating on and had nothing to read. The dossier's
+go-live precondition is **4 weeks of parallel running at >=95% agreement**, and the
+report names both separately: ten perfect runs in one day read as `100% agreement` and
+`1 day of 28`, and are not ready.
 
 **A2A is reachable.** A department can call an agent that does not share this
 database, over JSON-RPC, to a real process on a socket. Inside the company
@@ -252,7 +276,7 @@ and what the boundary is.
 **Tests.**
 
 ```console
-$ make test              # 2982 passed, 3 skipped, 0 failed
+$ make test              # 3037 passed, 3 skipped, 0 failed
 $ make test-e2e          # 34 passed (needs NATS + Temporal)
 $ make lint typecheck    # clean
 ```
@@ -353,10 +377,10 @@ something harmful are the hardest to test, they will be the least tested.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| `tests/unit` + `tests/integration` | 2982 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
+| `tests/unit` + `tests/integration` | 3037 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
 | `tests/e2e` | 34 | The 8 acceptance scenarios, the event pipeline through real NATS JetStream, and A2A against a spawned remote agent. Gated by `preflight-e2e`, so a missing broker is a failure rather than five skips |
 | `make lint` | clean | 669 findings fixed, including a typo in a target name that made a documented command fail on a clean machine |
-| `make typecheck` | clean | 140 source files, no `Any` escapes and no unused ignores |
+| `make typecheck` | clean | 144 source files, no `Any` escapes and no unused ignores |
 
 Seven defects in the review and delegation path were found by **running a real
 model**, and two more by **cloning the repo and following its own README**, not by
@@ -402,16 +426,13 @@ finished is worse than none. The gaps that matter:
 
 **Blocking a real go-live**
 
-- **Shadow mode is not done.** The dossier sets 4 weeks of parallel running at
-  >=95% agreement as the precondition for go-live. Nothing here compares a
-  model's answer with a person's.
+- **Shadow mode has the machinery but not the four weeks.** `domain/shadow.py`
+  compares a model's answer with a person's and judges the dossier's precondition;
+  `application/shadow.py` writes every comparison to `agent_shadow_runs`. What is
+  missing is *traffic* — 4 weeks of parallel running cannot be manufactured, and the
+  report says "not ready, 9 days of 28" until they exist rather than passing a rate.
 - **No deployment.** No Dockerfile, no compose, no Kubernetes — deliberately, per
   the note above. `make setup && make page` is the whole story.
-- **Two SOPs have no owning department.** The dossier names 18; this build has 6,
-  so `BO-IT-SOP-007` (systems and access control) and `PMO-KNW-SOP-006` (knowledge
-  management) are **refused by the runner** rather than assigned to a department
-  that does not do the work. An access-provisioning run inside QA or Finance would
-  produce a plausible answer to a question nobody asked.
 
 **Partial**
 
@@ -457,7 +478,7 @@ The full list, with the reason for each, is
 | [REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md) | What was surveyed, what it changed |
 | [LEGACY_SYSTEMS_REVIEW.md](docs/LEGACY_SYSTEMS_REVIEW.md) | What was taken and what was rejected, from two sibling systems |
 | [REUSABLE_COMPONENTS.md](docs/REUSABLE_COMPONENTS.md) | Each borrowed idea, its adaptation, and the test that proves it |
-| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 234 things that did not work, and what replaced them |
+| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 239 things that did not work, and what replaced them |
 | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | Every assumption, its status, and what happens if it is wrong |
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Dated status: works, partial, missing |
 

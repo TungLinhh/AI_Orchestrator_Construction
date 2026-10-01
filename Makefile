@@ -202,10 +202,21 @@ seed-test-reference:
 # works if the caller happens to set a variable it reads is a target nobody has run.
 ORGS ?= $(shell $(PY) scripts/catalogue_org.py 2>/dev/null)
 
+# How many departments the seed builds, read from the seed.
+#
+# The console check used to carry a literal of 6 and failed with "all six departments
+# are present -- 7" the day the seventh was added, which reads as though the platform
+# had invented a department. A number passed in here cannot drift from the roster.
+# `uv run python -c`, not `uv run -c`: the latter is not a valid invocation and fails
+# silently inside `$$(shell)`, which is how the first version of this came back empty
+# and the check compared the department count against **0**.
+DEPARTMENT_COUNT = $(shell $(PY) python -c "import sys; sys.path.insert(0, 'src'); \
+  from ai_orchestrator.seed import DEPARTMENTS; print(len(DEPARTMENTS) - 1)")
+
 # The eight agents of the dossier's register, for one organization. Discovers which
 # organization holds the SOP catalogue and copies it in first.
 seed-agents:
-	@$(PY) scripts/seed_agent_register.py --org $(ORGS)
+	@$(PY) scripts/seed_agent_register.py $(if $(ORGS),--org $(ORGS))
 
 # Publish the dossier's twenty-eight SOPs as controlled documents: a parsed code on
 # `documents`, revision 1, and one mandatory distribution to each SOP's own owner role.
@@ -241,16 +252,26 @@ seed-docs-dry:
 # The recruitment demo: ONX-BO-HR-SOP-004 as eight taskable stages with a person in the loop.
 # Idempotent -- a re-run adopts the existing root rather than making a second chain.
 seed-hiring:
-	@$(PY) scripts/seed_hiring_request.py --org $(ORGS)
+	@$(PY) scripts/seed_hiring_request.py $(if $(ORGS),--org $(ORGS))
 
+# `reset_hiring_request.py` requires `--org`, so the guard has to be a sentence rather
+# than an omitted flag: dropping it turned a clear refusal into argparse's "the
+# following arguments are required: --org", which says nothing about *why* there is no
+# org. `ORGS` is empty precisely when several tenants hold the catalogue, and that is
+# the thing worth saying.
 hiring-reset:
+	@test -n "$(ORGS)" || { \
+	  echo "ORGS is empty, so no tenant could be chosen. Several tenants hold the dossier"; \
+	  echo "catalogue, and refusing to guess between them is deliberate. Pass one:"; \
+	  echo "    make hiring-reset ORGS=org_..."; \
+	  exit 2; }
 	@$(PY) scripts/reset_hiring_request.py --org $(ORGS)
 
 mock-corpus:
-	@$(PY) scripts/mock_coordination_corpus.py --org $(ORGS)
+	@$(PY) scripts/mock_coordination_corpus.py $(if $(ORGS),--org $(ORGS))
 
 mock-corpus-norun:
-	@$(PY) scripts/mock_coordination_corpus.py --org $(ORGS) --no-run
+	@$(PY) scripts/mock_coordination_corpus.py $(if $(ORGS),--org $(ORGS)) --no-run
 
 # Remove what `scripts/demo_real_run.py` leaves behind. **Dry run unless --apply**, because
 # this deletes 630+ rows of audit history and the application role is not allowed to do that
@@ -262,13 +283,13 @@ supersede-duplicates:
 	@$(PY) scripts/supersede_duplicate_tasks.py
 
 clear-demo:
-	@$(PY) scripts/clear_demo_residue.py --org $(ORGS)
+	@$(PY) scripts/clear_demo_residue.py $(if $(ORGS),--org $(ORGS))
 
 clear-demo-apply:
-	@$(PY) scripts/clear_demo_residue.py --org $(ORGS) --apply
+	@$(PY) scripts/clear_demo_residue.py $(if $(ORGS),--org $(ORGS)) --apply
 
 mock-corpus-reset:
-	@$(PY) scripts/mock_coordination_corpus.py --org $(ORGS) --reset
+	@$(PY) scripts/mock_coordination_corpus.py $(if $(ORGS),--org $(ORGS)) --reset
 
 # Run the whole dossier fleet, once, on real work from the real corpus.
 #
@@ -403,7 +424,8 @@ verify-page: ## Execute the served UI against the live API and check what it ren
 	@mkdir -p .devdata/ui
 	@curl -sf -o .devdata/ui/served.html "$(BASE)/api/v1/ui?org=$(ORG)" \
 		|| (echo "could not fetch the page from $(BASE)" && exit 1)
-	@node scripts/verify_page.mjs "$(BASE)" "$(ORG)" .devdata/ui/served.html
+	@node scripts/verify_page.mjs "$(BASE)" "$(ORG)" .devdata/ui/served.html \
+	  --departments "$(DEPARTMENT_COUNT)"
 
 # ----------------------------------------------------------------- clean ---
 clean: ## Remove caches and build artifacts

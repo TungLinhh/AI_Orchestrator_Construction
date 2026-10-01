@@ -1,28 +1,29 @@
-"""The six departments, and the tree that reports to the CEO.
+"""The seven departments, and the tree that reports to the CEO.
 
 ## Why the shape changed
 
 The product's navigation was built around **projects**: six construction projects, 240 WBS
 nodes, 2778 progress readings. That is real and it is measured, and it is not what this
-organisation is run on. What it is run on is **six departments with different scopes of
+organisation is run on. What it is run on is **seven departments with different scopes of
 work** -- Procurement, HR, Sales, Finance, QA, Design -- and the question a manager opens the
-page to answer is *what is each of those six doing right now*, not *how is that piling
+page to answer is *what is each of those departments doing right now*, not *how is that piling
 going*.
 
 So the hierarchy here is the organisation's, not the schedule's:
 
 ```
 Executive Agent            the CEO
-├── Procurement Agent      one of the six
+├── Procurement Agent      one of the departments
 ├── HR Agent
 ├── Sales/BD Agent
 ├── Finance Agent
 ├── QA/QC-HSE Agent
 ├── Design/M&E Agent
+├── IT Agent               the seventh; added when BO-IT-SOP-007 had no home
 └── the rest               Knowledge, Project Mgmt, and the block placeholders
 ```
 
-The six are the departments the register names with a *business* scope. The rest are shown
+Those six are the departments the register names with a *business* scope. The rest are shown
 as a second tier rather than hidden, because an agent that exists and cannot be seen is
 worse than one that is not configured.
 
@@ -77,7 +78,7 @@ def _now() -> float:
 #: and `Thiết kế & M&E` on an otherwise English page, `QA/QC-HSE` untranslated
 #: even within the tuple.
 #:
-#: It decided membership. `second_tier` excluded the six *by name*, so the three
+#: It decided membership. `second_tier` excluded them *by name*, so the three
 #: that had drifted failed their own exclusion and rendered as offices -- the
 #: Offices band showed six boxes, three of them departments. And the department
 #: band looked the same names up, so those three also rendered as "no agent named
@@ -101,7 +102,7 @@ DEPARTMENT_SLUGS: tuple[str, ...] = (
 CHIEF_AGENT_NAME = "Executive Agent"
 
 #: Every agent in a unit that has a parent unit -- the middle tier. Excludes the
-#: chief and the six departments, which are rendered from their own lists.
+#: chief and the seven departments, which are rendered from their own lists.
 _TREE_BY_TIER = """
 SELECT a.id, a.name, a.lifecycle_status, a.runtime_status, a.health,
        a.autonomy_ceiling, a.granted_level, a.model_profile, a.kill_switch,

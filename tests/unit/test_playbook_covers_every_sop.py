@@ -27,6 +27,7 @@ import pytest
 
 from ai_orchestrator.application.playbook import (
     AGENT_BY_DEPARTMENT,
+    BY_CODE,
     FORBIDDEN_DECIDE,
     FORBIDDEN_STOP_WORK,
     PLAYBOOK,
@@ -246,13 +247,52 @@ class TestStretchedIsVisible:
         assert "ONX-BO-LEG-SOP-006" in stretched
         assert by_code("ONX-BO-LEG-SOP-006").department == "Procurement"
 
-    def test_the_unmapped_sops_are_the_ones_with_no_defensible_home(self) -> None:
-        unassigned_codes = {sop.code for sop in unassigned()}
-        assert unassigned_codes == {"ONX-BO-IT-SOP-007", "ONX-PMO-KNW-SOP-006"}, (
-            "the list of SOPs with no home changed. That is allowed -- a seventh "
-            "department would be the right answer -- but it must be deliberate, "
-            f"and this is where it is written down. Now: {sorted(unassigned_codes)}"
+    def test_no_sop_is_left_without_a_home(self) -> None:
+        """The gap this test watched is closed, and this is where that is recorded.
+
+        It used to assert exactly which two SOPs had no defensible owner:
+        `ONX-BO-IT-SOP-007` (IT administration, access control, backup) and
+        `ONX-PMO-KNW-SOP-006` (the knowledge register). Its own failure message said a
+        seventh department would be the right answer, but it had to be deliberate.
+
+        It was. **IT now exists under Back Office**, and both are its work — which is
+        the only defensible reading, because an access-provisioning run inside Finance
+        or QA produces a plausible answer to a question nobody asked.
+
+        So the assertion is inverted from "these two are unmapped" to "none is", and
+        strengthened: every SOP's department must be a department the seed actually
+        builds. Asserting only that the list is empty would pass just as happily if a
+        SOP were pointed at a department that does not exist.
+        """
+        from ai_orchestrator.seed import DEPARTMENTS
+
+        left_over = sorted(sop.code for sop in unassigned())
+        assert not left_over, (
+            "a SOP has no owning department again. Refusing one is correct and is not "
+            f"a resolution; give it a department that does the work. Now unassigned: "
+            f"{left_over}"
         )
+
+        seeded = {d.name for d in DEPARTMENTS[1:]}
+        assert seeded == {
+            "Sales",
+            "Procurement",
+            "QA/QC-HSE",
+            "Design",
+            "Finance",
+            "HR",
+            "IT",
+        }, f"the roster changed; this test names it so a change is deliberate: {seeded}"
+
+        stranded = {s.code: s.department for s in PLAYBOOK if s.department not in seeded}
+        assert not stranded, f"these SOPs name a department the seed does not build: {stranded}"
+
+        formerly_stranded = BY_CODE["ONX-BO-IT-SOP-007"], BY_CODE["ONX-PMO-KNW-SOP-006"]
+        for sop in formerly_stranded:
+            assert sop.department == "IT", (
+                f"{sop.code} was the SOP with no defensible home; it is now owned by "
+                f"{sop.department!r}, which is not the IT department"
+            )
 
 
 class TestTheForbiddenZones:

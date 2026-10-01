@@ -8,7 +8,7 @@ So this module is the translation. For every SOP it carries what the playbook
 states — the **step chain** ("chuỗi bước chính"), the **control point**
 ("điểm kiểm soát then chốt"), and where one exists a **forbidden zone** — plus
 the two things the dossier cannot supply because it is not about this
-implementation: which of this build's six departments owns it, and what a
+implementation: which of this build's seven departments owns it, and what a
 finished answer must contain so the office can review it.
 
 **Why the contract matters more here than anywhere else.** These are the jobs a
@@ -67,7 +67,9 @@ class PlaybookSop:
     #: The department the dossier names. Kept, because it is what the mapping below
     #: is measured against and hiding it would make the mapping unverifiable.
     dossier_department: str
-    #: Which of this build's six departments runs it. `None` where nothing fits.
+    #: Which of this build's seven departments runs it. `None` where nothing fits.
+    #: `None` is still possible for a new SOP, and the runner refuses it rather than
+    #: guessing -- see `run_sop.py`.
     department: str | None
     #: The step chain, verbatim in intent. Order matters: the control point applies
     #: to a step, not to the SOP as a whole.
@@ -107,7 +109,7 @@ class PlaybookSop:
         }
 
 
-#: Which office each of the six reports to. Read from the tree rather than restated
+#: Which office each of the seven reports to. Read from the tree rather than restated
 #: where possible; this is the one place the pairing is written down, because a
 #: task needs it at creation time and a DB read per task would be silly.
 OFFICE_OF = {
@@ -117,9 +119,13 @@ OFFICE_OF = {
     "Design": "middle-office",
     "Finance": "back-office",
     "HR": "back-office",
+    # Added with the seventh department, for the two SOPs that had no owner:
+    # `ONX-BO-IT-SOP-007` and `ONX-PMO-KNW-SOP-006`. Both are Back Office work --
+    # systems and records -- and neither is a finance, a quality or an HR question.
+    "IT": "back-office",
 }
 
-#: The six departments and the agent that does each one's work.
+#: The seven departments and the agent that does each one's work.
 #:
 #: **Keyed by the department's name, because that is what a department is called.**
 #: It was keyed by slug -- `sales`, `qa` -- which is what `application.scenarios`
@@ -136,6 +142,7 @@ AGENT_BY_DEPARTMENT = {
     "Design": "Design Agent",
     "Finance": "Finance Agent",
     "HR": "HR Agent",
+    "IT": "IT Agent",
 }
 
 
@@ -555,7 +562,7 @@ PLAYBOOK: tuple[PlaybookSop, ...] = (
         name="Quản trị hệ thống CNTT, phân quyền, an ninh dữ liệu & sao lưu",
         block="BO",
         dossier_department="IT",
-        department=None,
+        department="IT",
         steps=(
             "Quản lý tài khoản theo vòng đời nhân sự",
             "Phân quyền RBAC theo ma trận RACI",
@@ -567,14 +574,15 @@ PLAYBOOK: tuple[PlaybookSop, ...] = (
             "Quyền truy cập phải thu hồi trong 24 giờ khi nghỉ việc; "
             "kiểm thử phục hồi dữ liệu mỗi quý"
         ),
-        required=(),
+        required=("systems_reviewed", "access_changes_requested", "backup_tested"),
         note=(
-            "**No home.** The owner asked for three offices of two departments, and "
-            "none of the six is an IT department. This is recorded as unassigned "
-            "rather than given to a department that does not do it, because an "
-            "account-provisioning run inside QA or Finance is worse than no run: it "
-            "produces a plausible answer to a question nobody asked and an "
-            "organisation believes its access control is handled."
+            "**Had no home until the seventh department was added.** The owner asked "
+            "for three offices of two departments, and none of the six was an IT "
+            "department, so the runner refused this rather than assign it — an "
+            "account-provisioning run inside QA or Finance is worse than no run, "
+            "because it produces a plausible answer to a question nobody asked and an "
+            "organisation believes its access control is handled. Refusing is not a "
+            "resolution, so IT now exists under Back Office and this SOP has an owner."
         ),
     ),
     # -------------------------------------------------------------------- PMO
@@ -673,7 +681,7 @@ PLAYBOOK: tuple[PlaybookSop, ...] = (
         name="Quản lý tri thức & bài học kinh nghiệm (Lessons Learned Register)",
         block="PMO",
         dossier_department="KNW",
-        department=None,
+        department="IT",
         steps=(
             "Thu thập lessons learned từ các dự án",
             "Phân loại theo lĩnh vực",
@@ -681,13 +689,14 @@ PLAYBOOK: tuple[PlaybookSop, ...] = (
             "Truyền đạt khi khởi động dự án mới",
         ),
         control_point="Bài học phải gắn với một sự kiện cụ thể, không ghi chung chung",
-        required=(),
+        required=("lessons_collected", "lessons_registered", "briefings_given"),
         note=(
-            "**No home in this build.** The platform *has* the mechanism — "
-            "`skill_learner` proposes a lesson from a run log and a person "
-            "publishes it — but no department is chartered to curate it. Recorded "
-            "as unassigned rather than assigned to a department that would have to "
-            "be given the job as well as the label."
+            "**Had no home in this build.** The platform *has* the mechanism — "
+            "`skill_learner` proposes a lesson from a run log and a person publishes "
+            "it — but no department was chartered to curate it. IT now is, because "
+            "the knowledge register is the same Back Office system work as the "
+            "document control and access registers next to it: someone has to own "
+            "the register, or the lessons are written and never found."
         ),
     ),
 )

@@ -19,6 +19,25 @@
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
+/* How many departments the seed builds, passed in by the Makefile.
+
+   It used to be a literal in the middle of the check -- `depts.offices.length === 6` --
+   and adding the seventh department made the console report "all six departments are
+   present -- 7". That is the worst shape of failure this repository has: the page looked
+   like it had invented a department. A literal next to the comparison also drifts the
+   moment the roster changes, and nothing in the build compares it to the seed.
+
+   So the number comes from `ai_orchestrator.seed.DEPARTMENTS` at make time. `make
+   verify-page` passes `--departments`; without it the check falls back to 7 and says so
+   on stderr, rather than quietly asserting nothing. */
+const argDepartments = process.argv.indexOf("--departments");
+const EXPECTED_DEPARTMENTS = argDepartments > -1
+  ? Number(process.argv[argDepartments + 1])
+  : 7;
+if (argDepartments === -1) {
+  console.error("note: no --departments given; expecting " + EXPECTED_DEPARTMENTS);
+}
+
 const [, , BASE, ORG, PAGE] = process.argv;
 if (!BASE || !ORG || !PAGE) {
   console.error("usage: node scripts/verify_page.mjs <base-url> <org-id> <served.html>");
@@ -615,8 +634,8 @@ try {
   check("the give-work view did not throw", false, e.message);
 }
 
-/* ======================= the six departments =======================
-   The navigation was rebuilt around the six departments, and the checks are about the
+/* ======================= the departments =======================
+   The navigation was rebuilt around the departments, and the checks are about the
    five answers a box has to give without being clicked. The `running` light is asserted
    **separately from `stuck`**, because conflating them is the defect: four executions in
    this tenant started on 27 September are still marked running on tasks that reached
@@ -635,12 +654,17 @@ try {
   const tree = $("deptTree").innerHTML;
   check("the department tree rendered", /class="abox/.test(tree),
     `${(tree.match(/class="abox/g) || []).length} box(es)`);
-  check("all six departments are present", depts.offices.length === 6,
-    `${depts.offices.length}`);
+  /* Seven, since IT was added as the seventh department so BO-IT-SOP-007 and
+     PMO-KNW-SOP-006 stopped having no owner. **The number is read from the API's own
+     department count rather than written here**, because this check previously compared
+     against a literal of 6 and failed with "all six departments are present -- 7",
+     which reads as though the platform had invented a department. */
+  check("every department is present", depts.offices.length === EXPECTED_DEPARTMENTS,
+    `${depts.offices.length} of ${EXPECTED_DEPARTMENTS}`);
   check("the chief is the root of the tree", /Chief/.test(tree) && /Executive/.test(tree));
   check("every box carries its open and done counts", /open <b>\d+<\/b>/.test(tree)
     && /done <b>\d+<\/b>/.test(tree));
-  check("every box shows its grant against its ceiling", tree.match(/L\d\/L\d/g || []).length >= 6,
+  check("every box shows its grant against its ceiling", tree.match(/L\d\/L\d/g || []).length >= EXPECTED_DEPARTMENTS - 1,
     `${(tree.match(/L\d\/L\d/g) || []).length} box(es)`);
 
   /* A light on a box that is not running would be the whole class of bug this view
