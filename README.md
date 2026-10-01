@@ -131,11 +131,28 @@ uv run python scripts/run_pipeline.py --org "$ORG" --key expense-policy
 uv run python scripts/run_sop.py --org "$ORG" --sop ONX-BO-FIN-SOP-002
 ```
 
-Both use the scripted runtime unless `.secrets/runtime.env` has a provider key,
-so this runs without spending anything. To watch it against a real model, set
-`OPENROUTER_API_KEY` first.
+**The first one needs a real model, and the reason is worth knowing.**
+`ScriptedRuntime` completes a task; it does not delegate. A `coordination` task that
+completes without delegating is failed on purpose, so against the scripted runtime
+`run_pipeline.py` reports:
 
-The second runs the 3-way-match payment procedure. A free model gets it right:
+```
+a coordination task completed without delegating: the agent had 3 agents it could
+have handed work to and did the work itself
+```
+
+That is the rule working, not a bug — and it is also why every claim in the next
+section was measured with a real provider. To see the organisation actually
+delegate, set `OPENROUTER_API_KEY` in `.secrets/runtime.env` first:
+
+```bash
+echo 'OPENROUTER_API_KEY=sk-or-v1-...' >> .secrets/runtime.env
+AO_MODEL_PROVIDER_DEFAULT=openrouter \
+  uv run python scripts/run_pipeline.py --org "$ORG" --key expense-policy
+```
+
+The second command runs the 3-way-match payment procedure, which needs no
+delegation and so runs deterministically. A free model gets the answer right:
 3.6tr is under the 5tr threshold so it is approved, 32tr goes to the CEO, and 18.5tr
 is rejected for a missing lease.
 
@@ -440,7 +457,7 @@ The full list, with the reason for each, is
 | [REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md) | What was surveyed, what it changed |
 | [LEGACY_SYSTEMS_REVIEW.md](docs/LEGACY_SYSTEMS_REVIEW.md) | What was taken and what was rejected, from two sibling systems |
 | [REUSABLE_COMPONENTS.md](docs/REUSABLE_COMPONENTS.md) | Each borrowed idea, its adaptation, and the test that proves it |
-| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 233 things that did not work, and what replaced them |
+| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 234 things that did not work, and what replaced them |
 | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | Every assumption, its status, and what happens if it is wrong |
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Dated status: works, partial, missing |
 

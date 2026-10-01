@@ -932,12 +932,32 @@ def _user_prompt(task: Any, context: AgentContext) -> str:
 
     schema = getattr(context.task, "expected_output_schema", None)
     if coordinating:
+        # **Name the tool, and name the colleagues.** Measured on a free real model:
+        # told only "call the delegation tool", it completed the task itself and the
+        # platform failed it -- `a coordination task completed without delegating: the
+        # agent had 3 agents it could have delegated to`. It had them *listed* and it
+        # still had to guess that the tool for handing work to them was called
+        # `delegate_to_agent`, and which of the three names to pass.
+        #
+        # This is F228 one level up. There, the required output keys were enforced on a
+        # field the model was never told to write; here, a delegation was enforced on a
+        # tool the prompt described but did not name. A rule about a call the producer
+        # cannot see the name of is not a rule the producer can satisfy.
+        options = getattr(context, "delegate_options", ())
+        who = ", ".join(f"'{o.agent_name}'" for o in list(options)[:8]) or "(none listed)"
         lines += [
             "",
             "YOUR JOB HERE IS NOT TO ANSWER. You have colleagues below you and this "
-            "work belongs to one of them. Call the delegation tool with the exact "
-            "name of the office or department that owns it, and give it the work. "
-            "Do not produce the answer yourself and do not answer in JSON.",
+            "work belongs to one of them.",
+            "",
+            f"Call the tool `delegate_to_agent`, passing the agent_name of the one "
+            f"colleague who owns the work, and an objective describing it. "
+            f"These are the colleagues you may delegate to: {who}",
+            "",
+            "Do not produce the answer yourself. Do not answer in JSON. A "
+            "coordination task that completes without delegating is a FAILED run, so "
+            "if you are unsure who to pick, pick the closest one and delegate -- "
+            "answering alone is not an option.",
         ]
     elif isinstance(schema, dict) and schema:
         wanted = schema.get("required")

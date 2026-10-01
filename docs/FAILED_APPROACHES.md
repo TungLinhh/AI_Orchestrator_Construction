@@ -6540,3 +6540,43 @@ leaves the demonstration broken — `ScriptedRuntime` completes a task rather th
 delegating, and a coordination task that completes without delegating is failed on
 purpose. So the script now refuses before writing a row and says what is missing.
 Leaving a tenant holding a task that can only fail is worse than not writing one.
+
+### F234 — a delegation was enforced on a tool the prompt never named
+
+`run_pipeline.py` against a free real model, after F231-F233 were fixed:
+
+```
+root -> failed | executions 1
+a coordination task completed without delegating: the agent had 3 agents it
+could have handed work to and did the work itself
+```
+
+The rule is right — a coordinator that does the work itself has broken the separation
+of duties, and the platform refusing is the control working. The prompt was wrong.
+It said:
+
+> Call the delegation tool with the exact name of the office or department that owns
+> it
+
+"the delegation tool" is not a name. The model had three colleagues listed and had to
+infer that the way to reach them was a tool called `delegate_to_agent`, and which of
+the three names to pass as `agent_name`. It inferred wrong, and the run failed on a
+guess it had no way to avoid.
+
+This is F228 one level up. There, the required output keys were enforced on a field
+the model was never told to write. Here, a delegation was enforced on a tool the
+prompt described but did not name. The prompt now names the tool and lists the
+colleagues it may hand work to.
+
+**Verified against code, not against a model.** The provider gateway had no usable
+model for the `primary` profile at the time of writing — `no usable model for profile
+'primary': openrouter/qwen/qwen3.8-27b:free...` — so the fix has not been shown to
+make the model delegate. It removes a stated ambiguity; it is not evidence of an
+outcome, and `CURRENT_STATE.md` says so rather than counting it as verified.
+
+**And a trap worth writing down, because it looks like a broken pipeline.** With no
+`OPENROUTER_API_KEY` in `.secrets/runtime.env`, the pipeline selects
+`ScriptedRuntime`, and the run fails with the same `no_delegation` message. That is
+the deterministic runtime behaving correctly — it never delegates — and reading it as
+"the platform cannot delegate" inverts the cause. `run_pipeline.py` prints its
+`provider:` line for exactly this reason; it is the first thing to check.

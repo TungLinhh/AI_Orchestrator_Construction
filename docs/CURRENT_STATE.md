@@ -708,3 +708,28 @@ one procedure and got all three expense verdicts right — that is the whole of 
 evidence, and it does not support a general claim in either direction. What the
 evidence does support is that all eight faults were in the loop around the model, not
 in the model.
+
+### The same day, two more findings
+
+**The console's document register now has content** — `seed-process` had never been
+run on the tenant `first_org.py` selects, so it held 0 `sop_definitions` and
+`seed-document-register` therefore had nothing to publish: 28 controlled documents
+and 84 distribution rows went in, and those checks pass. The remaining page failures
+are projects (no corpus), events and tasks (no work run on this tenant), a Gate
+session with a person on it, and failed work to retry.
+
+**A delegation was enforced on a tool the prompt never named** — F234. The prompt said
+"call the delegation tool"; the model had to guess the tool is called
+`delegate_to_agent`. It guessed wrong and the run failed. The prompt now names the
+tool and lists the colleagues.
+
+**That fix is unverified against a model, and is recorded as such.** The provider
+gateway had no usable model for the `primary` profile when it was written — the free
+tier's daily cap — so no claim is made that it fixes the outcome. It removes a stated
+ambiguity in the prompt and nothing more.
+
+**And one thing that looks broken but is not:** with no provider key, `run_pipeline.py`
+picks `ScriptedRuntime`, which never delegates, so a coordination task fails with
+`no_delegation`. That is the separation-of-duties rule working against a test double,
+not the platform failing to delegate. The script prints its `provider:` line for
+precisely this reason.
