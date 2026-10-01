@@ -85,6 +85,20 @@ make seed-free-model
 
 `.secrets/` is git-ignored and has to stay that way.
 
+**Content for the console.** A freshly seeded tenant is an organisation with no
+work in it, so `make page` reports its content checks as failing — it is looking
+for a task, an approval, a delegation and a gate, and there is nothing yet. Give
+it something to show:
+
+```bash
+ORGS=$(cat .devdata/ui/tenant.txt) make mock-corpus
+```
+
+That runs one coordination task through the real execution machinery — the
+delegation tree, the events and the approval are produced by the product, not
+written by the script — and it works with or without a provider key. It clears
+everything except Projects, Documents and Gates, which need real input:
+
 **Reference data.** The Projects and Documents surfaces read a corpus of client
 spreadsheets that is deliberately not in this repository. Point at your own:
 
@@ -182,12 +196,16 @@ was *unsatisfiable* by a real model, while 2914 tests passed because the scripte
 runtime sets one. All seven are in
 [`docs/FAILED_APPROACHES.md`](docs/FAILED_APPROACHES.md), F225-F228.
 
-**An eighth was found by cloning the repository and running `make setup`** — the
-seed printed `units 7, agents 7` over a tenant holding ten of each, because it
-counted its spec lists instead of its inserts. Nothing failed, because the seed
-did its job correctly and the *report* was false (F229). That is the shape that
-keeps recurring here, and it is why the standing instruction is to run the thing
-rather than read it.
+**The next two were found by cloning the repository into an empty directory and
+following this README** — the first time anybody had read it from outside since
+the offices were added. The seed printed `units 7, agents 7` over a tenant holding
+ten of each, counting its spec lists instead of its inserts (F229). And
+`make mock-corpus` failed with `Tool 'delegate_to_agent' exceeded max retries
+count of 2`, which named a tool, a retry budget and a URL, and missed the only
+relevant fact — that the script had selected an authenticated provider on a
+machine with no credential for it (F230). Both are the same shape: something
+reported a confident, specific answer that was not the problem. That is why the
+standing instruction in this repository is to run the thing rather than read it.
 
 ---
 
@@ -270,10 +288,10 @@ something harmful are the hardest to test, they will be the least tested.
 | `make typecheck` | clean | 140 source files, no `Any` escapes and no unused ignores |
 
 Seven defects in the review and delegation path were found by **running a real
-model**, and an eighth by **cloning the repo and running `make setup`**, not by any
-of the above. A green suite is evidence about the functions it calls, and not about
-the path a model actually takes, nor about what the tool prints when it is done —
-see F225-F229.
+model**, and two more by **cloning the repo and following its own README**, not by
+any of the above. A green suite is evidence about the functions it calls, and not
+about the path a model actually takes, nor about what a tool prints when it is
+done — see F225-F230.
 
 Deterministic by default: `AO_MODEL_PROVIDER_DEFAULT=fake` is forced in
 `tests/conftest.py`, so the suite cannot spend money. Real-provider calls are a
@@ -365,7 +383,7 @@ The full list, with the reason for each, is
 | [REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md) | What was surveyed, what it changed |
 | [LEGACY_SYSTEMS_REVIEW.md](docs/LEGACY_SYSTEMS_REVIEW.md) | What was taken and what was rejected, from two sibling systems |
 | [REUSABLE_COMPONENTS.md](docs/REUSABLE_COMPONENTS.md) | Each borrowed idea, its adaptation, and the test that proves it |
-| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 229 things that did not work, and what replaced them |
+| [FAILED_APPROACHES.md](docs/FAILED_APPROACHES.md) | 230 things that did not work, and what replaced them |
 | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) | Every assumption, its status, and what happens if it is wrong |
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Dated status: works, partial, missing |
 

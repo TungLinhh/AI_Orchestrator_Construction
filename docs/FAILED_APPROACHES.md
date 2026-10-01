@@ -6407,3 +6407,44 @@ numbers against the rows in the tenant and asserts the tier shape as well.
 
 The rule generalises: *a count is only evidence if something compares it to the
 rows it claims to describe.*
+
+### F230 — the demonstration script failed on a fresh clone, and blamed the tool
+
+Found by cloning the repository again and running the thing the console is meant
+to be looked at with. `make mock-corpus` on a machine with no API key:
+
+```
+> executed tsk_01m3tt9pyvp59tjakwqrgnrqfe: failed - Tool 'delegate_to_agent'
+  exceeded max retries count of 2. Consider raising the retry limit, or see the
+  docs on tool retries: https://pydantic.dev/... (0 tokens, 1661ms)
+```
+
+Zero tokens, 1.6 seconds, and a message naming a tool, a retry budget and a URL
+about tool retries. The cause was one line at module scope:
+
+```python
+os.environ.setdefault("AO_MODEL_PROVIDER_DEFAULT", "openrouter")
+```
+
+A fresh clone has no `OPENROUTER_API_KEY`. The script therefore selected a real
+provider, authenticated with nothing, and the framework surfaced the refusal as
+retry exhaustion on the tool the model was reaching for. **Every noun in the
+error was wrong and the one thing that mattered — no credential — was absent
+from it.** An operator reading that opens the tool's configuration and finds
+nothing, which is worse than no message because it sends them somewhere plausible.
+
+Fixed to select the real provider only when `get_settings().openrouter_api_key`
+is populated, and to fall back to the deterministic runtime otherwise.
+
+**The first fix was wrong and is worth recording.** It read
+`os.environ.get("OPENROUTER_API_KEY")`, on the assumption that the key is an
+environment variable. It is not: secrets live in `.secrets/runtime.env` and are
+loaded by pydantic-settings, never exported. So that version would have found no
+key on the development machine — which *does* have one — and silently downgraded
+the demonstration to the scripted runtime. A guard that is never exercised by
+the case it was written for is not a guard; the credential had to be read through
+the same settings object that reads everything else.
+
+The rule: *when a default silently selects an expensive or authenticated
+backend, the default must be conditional on the credential existing — and the
+check must go through the same configuration path that supplies it.*

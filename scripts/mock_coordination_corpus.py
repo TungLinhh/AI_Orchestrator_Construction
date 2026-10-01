@@ -69,18 +69,37 @@ warnings.filterwarnings("ignore")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-#: A free real model, and no brokers. The task is driven in-process, so Temporal and NATS
-#: being off is the point rather than a limitation. Same three lines as
-#: `scripts/run_demo_task.py`, and for the same reason.
-os.environ.setdefault("AO_MODEL_PROVIDER_DEFAULT", "openrouter")
+#: No brokers. The task is driven in-process, so Temporal and NATS being off is the
+#: point rather than a limitation. Same three lines as `scripts/run_demo_task.py`.
 os.environ.setdefault("AO_TEMPORAL_ENABLED", "false")
 os.environ.setdefault("AO_NATS_ENABLED", "false")
 
 from sqlalchemy import text  # noqa: E402
 
+from ai_orchestrator.config.settings import get_settings  # noqa: E402
 from ai_orchestrator.domain.ids import new_ulid  # noqa: E402
 from ai_orchestrator.persistence.repositories.task import TaskRepository  # noqa: E402
 from ai_orchestrator.persistence.session import Database  # noqa: E402
+
+#: A free real model, when there is a key to spend. Read through `get_settings()` rather
+#: than `os.environ`, because the key lives in `.secrets/runtime.env` and is *not*
+#: exported — so an `os.environ` check would decide there is no credential on a machine
+#: that has one, and silently downgrade the demonstration to the scripted runtime.
+#:
+#: Defaulting a *provider* unconditionally meant a fresh clone, which has no key, reached
+#: a real provider with nothing to authenticate and the showcase task failed with
+#:
+#:     Tool 'delegate_to_agent' exceeded max retries count of 2
+#:
+#: which names the tool and the retry budget, and neither of the two things that were
+#: actually wrong. An operator reading that opens the tool's configuration. This script
+#: exists to show a delegation tree, and the deterministic runtime produces one, so a
+#: missing key now falls back rather than reporting a failure that looks like a defect in
+#: the platform. F230.
+os.environ.setdefault(
+    "AO_MODEL_PROVIDER_DEFAULT",
+    "openrouter" if get_settings().openrouter_api_key.get_secret_value() else "fake",
+)
 
 #: Written on every row this script creates. One query tells a person which is which, and it
 #: is what `--reset` deletes.
