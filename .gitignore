@@ -1,0 +1,47 @@
+# --- secrets: never commit ---
+.secrets/
+*.env
+!.env.example
+!secrets/*.example
+secrets/production/
+*.pem
+*.key
+*.p12
+service-account*.json
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- native dev stack runtime state (M0-M13 has no docker; see docs/DEPLOYMENT.md) ---
+.devdata/
+.secrets/local/
+*.log
+
+# --- editors / os ---
+.DS_Store
+.idea/
+.vscode/
+
+# Windows alternate-data-stream files, which travel with a .docx copied off Windows
+# and are meaningless everywhere else.
+*:Zone.Identifier
+
+# --- the client's own documents ---
+# These are O-Nexus Holdings' internal SOP dossier, RACI and organisation
+# templates: a named third party's confidential material, and this repository is
+# public. Nothing at runtime reads them -- they were the *source* the playbook
+# translation in `application/playbook.py` was written from, and the result is in
+# the code.
+#
+# To publish them, you must have the client's permission. If you do:
+#     git add -f docs/*.docx && git commit -m "add the O-Nexus dossier"
+docs/*.docx

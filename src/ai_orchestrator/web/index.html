@@ -1,0 +1,3090 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Orchestrator</title>
+<style>
+/* ==================================================================
+   1. Tokens.
+
+   One scale for space, one for type, one for colour, and light and
+   dark derived from the same names — which is what stops them drifting
+   apart, and drift is how a page ends up with six greys that are
+   nearly the same and a red that means two different things.
+   ================================================================== */
+:root {
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px;
+
+  --bg:          #f4f5f7;
+  --surface:     #ffffff;
+  --surface-2:   #fbfbfd;
+  --sunken:      rgba(120,120,128,.10);
+  --fill:        rgba(120,120,128,.07);
+  --fill-hover:  rgba(120,120,128,.13);
+  --line:        rgba(60,60,67,.14);
+  --line-strong: rgba(60,60,67,.26);
+
+  --text:   #14161a;
+  --text-2: rgba(20,22,26,.62);
+  --text-3: rgba(20,22,26,.38);
+
+  --accent:  #2563eb;
+  --accent-2:#1d4ed8;
+  --accent-soft: rgba(37,99,235,.10);
+
+  /* Semantic. Four meanings, four colours, and nothing else uses them:
+     late is behind, measured-on-time is fine, unmeasured is unknown, and
+     attention is a person waiting on you. */
+  --late:  #dc2626;  --late-soft:  rgba(220,38,38,.12);
+  --ok:    #15803d;  --ok-soft:    rgba(21,128,61,.12);
+  --warn:  #b45309;  --warn-soft:  rgba(180,83,9,.14);
+  --idle:  var(--text-3);
+
+  --radius: 10px;
+  --radius-s: 7px;
+  --shadow: 0 1px 2px rgba(16,20,28,.05), 0 8px 24px -12px rgba(16,20,28,.18);
+
+  --nav-w: 232px;
+  --font-mono: var(--mono);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0d10; --surface: #14171c; --surface-2: #171b21; --sunken: rgba(255,255,255,.06);
+    --fill: rgba(255,255,255,.05); --fill-hover: rgba(255,255,255,.10);
+    --line: rgba(255,255,255,.11); --line-strong: rgba(255,255,255,.22);
+    --text: #eef1f5; --text-2: rgba(238,241,245,.66); --text-3: rgba(238,241,245,.40);
+    --accent: #5b93f7; --accent-2: #7aa9f9; --accent-soft: rgba(91,147,247,.16);
+    --late: #f87171; --late-soft: rgba(248,113,113,.16);
+    --ok:   #4ade80; --ok-soft:   rgba(74,222,128,.14);
+    --warn: #fbbf24; --warn-soft: rgba(251,191,36,.15);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; font-family: var(--font); background: var(--bg); color: var(--text);
+  font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { margin: 0; font-weight: 650; letter-spacing: -.011em; }
+h1 { font-size: 17px; }
+h2 { font-size: 15px; }
+h3 { font-size: 13px; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--mono); font-size: .92em; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.view[hidden] { display: none !important; }
+.spacer { flex: 1; }
+
+/* ==================================================================
+   2. Shell.
+
+   A fixed sidebar and a fixed breadcrumb bar. **Both are always
+   present.** The complaint that started this rebuild was that clicking
+   into something left no way out — so the way out is not a control on
+   the page you drilled into, it is furniture that is never removed.
+   ================================================================== */
+.app { display: grid; grid-template-columns: var(--nav-w) 1fr; min-height: 100vh; }
+
+.nav {
+  background: var(--surface); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+}
+.nav .brand {
+  display: flex; align-items: center; gap: var(--s2);
+  padding: var(--s4) var(--s4) var(--s3);
+}
+.nav .brand .mark {
+  width: 26px; height: 26px; border-radius: 7px; background: var(--accent);
+  color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 800;
+  flex: none;
+}
+.nav .brand .name { font-weight: 680; font-size: 14.5px; letter-spacing: -.015em; }
+.nav .brand .sub { font-size: 10.5px; color: var(--text-3); letter-spacing: .04em; text-transform: uppercase; }
+
+.nav .items { padding: 0 var(--s2); display: flex; flex-direction: column; gap: 1px; }
+.nav .label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-3); padding: var(--s4) var(--s2) var(--s1); font-weight: 650;
+}
+.nav a {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: 7px var(--s3); border-radius: var(--radius-s);
+  color: var(--text-2); text-decoration: none; font-weight: 550; font-size: 13.5px;
+}
+.nav a:hover { background: var(--fill); color: var(--text); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.nav a .ic { width: 16px; text-align: center; opacity: .8; flex: none; }
+.nav a .count {
+  margin-left: auto; font-size: 11px; font-variant-numeric: tabular-nums;
+  background: var(--sunken); color: var(--text-2); border-radius: 999px;
+  padding: 1px 7px; font-weight: 650;
+}
+.nav a .count.hot { background: var(--warn-soft); color: var(--warn); }
+.nav .foot { margin-top: auto; padding: var(--s3) var(--s4); border-top: 1px solid var(--line); }
+
+/* Reference sections fold away. A `<details>` rather than a hidden class so it
+   survives a reload with no JavaScript: the state is the browser's, not ours. */
+.nav details.more { margin-top: var(--s3); border-top: 1px solid var(--line); padding-top: var(--s2); }
+.nav details.more > summary {
+  list-style: none; cursor: pointer; padding: 5px var(--s3); border-radius: var(--radius-s);
+  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-3); font-weight: 650; user-select: none;
+}
+.nav details.more > summary::-webkit-details-marker { display: none; }
+.nav details.more > summary::after { content: " ▸"; opacity: .6; }
+.nav details.more[open] > summary::after { content: " ▾"; }
+.nav details.more > summary:hover { color: var(--text-2); background: var(--fill); }
+
+.main { display: flex; flex-direction: column; min-width: 0; }
+
+.crumbs {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: var(--s2);
+  padding: var(--s3) var(--s5); background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); min-height: 52px;
+}
+.crumbs .back {
+  display: none; align-items: center; gap: 6px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--surface);
+  border-radius: var(--radius-s); padding: 5px 11px; font-size: 12.5px; font-weight: 600;
+}
+.crumbs .back:hover { background: var(--fill); }
+/* **The whole point.** A drill-down turns this on, and it is never off
+   again for the rest of the session, so there is no state in which a
+   person can be "somewhere" without a visible way back. */
+.crumbs.deep .back { display: inline-flex; }
+.crumbs .path { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; }
+.crumbs .path a { color: var(--text-2); text-decoration: none; font-weight: 550; }
+.crumbs .path a:hover { color: var(--accent); text-decoration: underline; }
+.crumbs .path .here { color: var(--text); font-weight: 640; }
+.crumbs .path .sep { color: var(--text-3); }
+.crumbs .hint {
+  margin-left: auto; font-size: 11.5px; color: var(--text-3);
+  display: flex; align-items: center; gap: var(--s3);
+}
+.crumbs kbd {
+  font-family: var(--mono); font-size: 10.5px; border: 1px solid var(--line-strong);
+  border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--text-2);
+  background: var(--surface);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex: none; }
+.dot.ok { background: var(--ok); } .dot.bad { background: var(--late); }
+.dot.wait { background: var(--warn); }
+
+.content { padding: var(--s5); display: flex; flex-direction: column; gap: var(--s5); }
+.content > * { min-width: 0; }
+
+/* ==================================================================
+   3. Surfaces.
+
+   A card is a titled panel. `.split` is the two-column shape used
+   everywhere a list and its detail sit side by side — so a person
+   never loses the list by reading the detail, which is the other half
+   of "I cannot get out of here".
+   ================================================================== */
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.card > header {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s4) var(--s4) var(--s3);
+}
+.card > header .sub { font-size: 12px; color: var(--text-2); }
+.card > header .spacer { flex: 1; }
+.card .body { padding: 0 var(--s4) var(--s4); }
+.card .body.flush { padding: 0; }
+
+.split { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: var(--s5); align-items: start; }
+.split.wide { grid-template-columns: minmax(320px, 440px) 1fr; }
+@media (max-width: 1080px) { .split, .split.wide { grid-template-columns: 1fr; } }
+
+/* --- buttons --- */
+.btn {
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--text);
+  border-radius: var(--radius-s); padding: 6px 12px; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: var(--fill); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover:not(:disabled) { background: var(--accent-2); border-color: var(--accent-2); }
+.btn.danger { color: var(--late); border-color: color-mix(in srgb, var(--late) 40%, transparent); }
+.btn.danger:hover:not(:disabled) { background: var(--late-soft); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn.ghost:hover:not(:disabled) { background: var(--fill); color: var(--text); }
+.btn.sm { padding: 3px 9px; font-size: 11.5px; }
+.btn-row { display: flex; gap: var(--s2); flex-wrap: wrap; }
+
+/* --- stat tiles --- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s3); }
+.stat {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: var(--s3) var(--s4);
+}
+.stat .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); font-weight: 650; }
+.stat .v { font-size: 26px; font-weight: 660; letter-spacing: -.025em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.stat .n { font-size: 11.5px; color: var(--text-2); margin-top: 1px; }
+.stat.alarm { border-color: color-mix(in srgb, var(--late) 34%, transparent); background: var(--late-soft); }
+.stat.alarm .v { color: var(--late); }
+.stat.good .v { color: var(--ok); }
+.stat.wait { border-color: color-mix(in srgb, var(--warn) 34%, transparent); background: var(--warn-soft); }
+.stat.wait .v { color: var(--warn); }
+
+/* --- lists: the clickable rows --- */
+.list { display: flex; flex-direction: column; }
+.row {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s3) var(--s4); border-top: 1px solid var(--line);
+  cursor: pointer; text-align: left; width: 100%; background: transparent;
+  border-left: 2px solid transparent; border-right: 0; border-bottom: 0;
+}
+.row:first-child { border-top: 0; }
+.row:hover { background: var(--fill); }
+.row[aria-current="true"] { background: var(--accent-soft); border-left-color: var(--accent); }
+.row .grow { min-width: 0; flex: 1; }
+.row .t { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .s { font-size: 11.5px; color: var(--text-2); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.row.static { cursor: default; }
+.row.static:hover { background: transparent; }
+
+/* --- tags --- */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 680; letter-spacing: .03em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px; background: var(--sunken); color: var(--text-2);
+  white-space: nowrap;
+}
+.tag.late { background: var(--late-soft); color: var(--late); }
+.tag.ok { background: var(--ok-soft); color: var(--ok); }
+.tag.unmeasured { background: transparent; border: 1px dashed var(--line-strong); color: var(--text-3); }
+.tag.wait { background: var(--warn-soft); color: var(--warn); }
+.tag.accent { background: var(--accent-soft); color: var(--accent); }
+
+/* ==================================================================
+   4. Bars. The one chart in the product, and a bar on purpose.
+
+   These are counts and durations, not a time series, and a sparkline
+   over six points is decoration pretending to be information.
+
+   The rule the whole stylesheet exists to hold: **an unmeasured work
+   package does not look like an on-time one.** Hatched, dashed, and
+   **no bar at all** — a bar is a width and a width is a measurement,
+   and the corpus makes "unmeasured" the normal case: 100% of
+   `TĐ BOH.xlsx`'s actual columns are copies of its planned ones.
+   ================================================================== */
+.bars { display: flex; flex-direction: column; gap: 6px; }
+.bar { display: grid; grid-template-columns: minmax(110px,32%) 1fr auto; gap: var(--s3); align-items: center; }
+.bar .lbl { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar .track { height: 16px; background: var(--sunken); border-radius: 4px; overflow: hidden; }
+.bar .fillbar { height: 100%; border-radius: 4px; background: var(--ok); min-width: 2px; transition: width .18s ease; }
+.bar.late .fillbar { background: var(--late); }
+.bar.unmeasured .track { background: transparent; border: 1px dashed var(--line-strong); }
+.bar.unmeasured .fillbar { display:none; }
+.bar .num { font-size: 12px; font-variant-numeric: tabular-nums; min-width: 68px; text-align: right; color: var(--text-2); }
+.bar.late .num { color: var(--late); font-weight: 650; }
+.bar.unmeasured .num { color: var(--text-3); font-style: italic; }
+.legend { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+.legend b { color: var(--text); }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+.swatch.ok { background: var(--ok); } .swatch.late { background: var(--late); }
+.swatch.un { border: 1px dashed var(--line-strong); }
+
+/* --- tables --- */
+.scroller { max-height: 56vh; overflow: auto; border-top: 1px solid var(--line); }
+table.sheet { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.sheet th {
+  position: sticky; top: 0; z-index: 1; text-align: left;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-2); font-weight: 650; padding: var(--s2) var(--s3);
+  background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+table.sheet td { padding: 7px var(--s3); border-bottom: 1px solid var(--line); vertical-align: top; }
+table.sheet td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.sheet tr.unmeasured td { color: var(--text-3); }
+table.sheet tr.unmeasured td.n { font-style: italic; }
+table.sheet tr:hover td { background: var(--fill); }
+
+/* --- detail blocks --- */
+.dl { display: grid; grid-template-columns: auto 1fr; gap: var(--s2) var(--s4); font-size: 13px; }
+.dl dt { color: var(--text-2); font-size: 12px; }
+.dl dd { margin: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5); align-items: start; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+
+.empty { padding: var(--s6) var(--s4); text-align: center; color: var(--text-2); font-size: 13px; }
+.empty .big { font-size: 26px; opacity: .35; margin-bottom: var(--s2); }
+.note {
+  font-size: 12.5px; color: var(--text-2); line-height: 1.6;
+  padding: var(--s3); background: var(--sunken); border-radius: var(--radius-s);
+  border-left: 2px solid var(--line-strong);
+}
+.note.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+.note.late { border-left-color: var(--late); background: var(--late-soft); }
+.note b { color: var(--text); }
+
+.banner {
+  display: flex; gap: var(--s3); align-items: flex-start;
+  padding: var(--s3) var(--s4); border-radius: var(--radius);
+  background: var(--warn-soft); color: var(--warn); font-size: 12.5px;
+  border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent);
+}
+.banner b { color: inherit; }
+
+.toast {
+  position: fixed; left: 50%; bottom: var(--s5); transform: translateX(-50%) translateY(140%);
+  background: var(--text); color: var(--bg); padding: var(--s3) var(--s4);
+  border-radius: var(--radius); font-size: 13px; font-weight: 550;
+  box-shadow: var(--shadow); transition: transform .2s ease; z-index: 200;
+  max-width: min(560px, 90vw); display: flex; gap: var(--s3); align-items: flex-start;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.bad { background: var(--late); color: #fff; }
+
+.bar-track { height: 3px; background: var(--sunken); border-radius: 2px; overflow: hidden; }
+.bar-track i { display: block; height: 100%; background: var(--accent); }
+
+/* --- the console's event feed, unchanged in behaviour --- */
+.pill {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+  padding: 2px 8px; border-radius: 999px; background: var(--sunken); color: var(--text-2);
+}
+.pill.delegated { background: var(--accent-soft); color: var(--accent); }
+.pill.bad { background: var(--late-soft); color: var(--late); }
+.feed { display: flex; flex-direction: column; max-height: 62vh; overflow: auto; }
+.evt { padding: 7px var(--s4); border-top: 1px solid var(--line); font-size: 12px; display: flex; gap: var(--s2); align-items: baseline; }
+.evt:first-child { border-top: 0; }
+.evt .tm { color: var(--text-3); font-family: var(--mono); font-size: 10.5px; flex: none; }
+.evt .msg { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evt.bad .msg { color: var(--late); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-s); overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 3px 9px; font-size: 11.5px; cursor: pointer; color: var(--text-2); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+.tree { list-style: none; margin: 0; padding: 0; }
+.tree ul { list-style: none; margin: 0; padding-left: var(--s5); }
+.tree li { position: relative; }
+.tree .node { display: flex; gap: var(--s2); align-items: baseline; padding: 5px var(--s2); border-radius: 6px; cursor: pointer; }
+.tree .node:hover { background: var(--fill); }
+.tree .node .id { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
+.t-deleg { color: var(--accent); } .t-bad { color: var(--late); }
+.field { display: block; }
+.field span { display: block; font-size: 11px; color: var(--text-2); margin-bottom: 3px; }
+input, select, textarea {
+  font: inherit; font-size: 13px; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-s);
+  padding: 6px 9px; width: 100%;
+}
+dialog {
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 0;
+  background: var(--surface); color: var(--text); box-shadow: var(--shadow);
+  max-width: 620px; width: calc(100vw - 32px);
+}
+dialog::backdrop { background: rgba(0,0,0,.35); backdrop-filter: blur(2px); }
+dialog .dlg-body { padding: var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
+dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--line); display: flex; gap: var(--s2); justify-content: flex-end; }
+
+/* ==================================================================
+   5. Responsive.
+
+   The approval queue is the mobile surface (Tập 1 §Tầng 1 asks for
+   `phê duyệt HITL trên mobile`), so it is the one that has to work at
+   375px and the others are adaptations of it. The sidebar collapses to
+   a bar rather than disappearing, so navigation never leaves the page.
+   ================================================================== */
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .nav { position: static; height: auto; flex-direction: row; align-items: center;
+         gap: var(--s2); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .nav .brand { padding: var(--s3); }
+  .nav .brand .sub, .nav .label, .nav .foot { display: none; }
+  .nav .items { flex-direction: row; padding: 0 var(--s2) var(--s2); }
+  .nav a { white-space: nowrap; }
+  .nav a .label { padding: 0; }
+  .crumbs, .content { padding-left: var(--s3); padding-right: var(--s3); }
+  .crumbs .hint .kbd { display: none; }
+  .stat .v { font-size: 21px; }
+  .bar { grid-template-columns: 96px 1fr auto; gap: var(--s2); }
+  .content { gap: var(--s4); }
+}
+@media (max-width: 420px) {
+  .crumbs .path .crumb-extra { display: none; }
+  .btn { padding: 6px 10px; }
+}
+
+/* ====================== the fleet: boxes that say something ======================
+   A box has to answer five questions without being clicked: is it working, what did it
+   say, what is open, what is finished, what did it refuse. The running light is a conic
+   gradient rotated by an animation on a pseudo-element clipped to a rounded rect, so the
+   light travels *around the edge* rather than filling the box -- a filling box reads as
+   "selected", and selection is not what running means.
+
+   `prefers-reduced-motion` stops the rotation and leaves a solid border, because a person
+   who asked for less motion should still be able to see which box is live. */
+@keyframes edgeLight { to { transform: rotate(360deg); } }
+
+.abox {
+  position: relative; border-radius: 10px; padding: 11px 13px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line);
+  transition: border-color .15s ease, background .15s ease;
+}
+.abox:hover { border-color: var(--accent); }
+.abox.sel { border-color: var(--accent); background: var(--panel-2, var(--panel)); }
+.abox.on { border-color: transparent; }
+/* The travelling light, drawn on top of the border by a rotating gradient. Two layers:
+   the gradient itself, and an inner panel that covers its middle so only the rim shows. */
+.abox.on::before {
+  content: ""; position: absolute; inset: -1px; border-radius: 11px; padding: 1px;
+  background: conic-gradient(from 0deg, transparent 0 55%, var(--accent) 78%, #fff 92%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: edgeLight 1.6s linear infinite; pointer-events: none;
+}
+.abox.stuck { border-style: dashed; border-color: var(--warn, #c8912b); }
+@media (prefers-reduced-motion: reduce) {
+  .abox.on::before { animation: none; background: var(--accent); }
+}
+.abox .n { font-size: 12.5px; font-weight: 650; line-height: 1.25; }
+.abox .r { font-size: 11px; color: var(--text-2); margin-top: 3px; }
+.abox .c { display: flex; gap: 10px; margin-top: 7px; font-size: 10.5px; color: var(--text-2); }
+.abox .c b { color: var(--text-1); font-variant-numeric: tabular-nums; }
+.dept-tree { display: flex; flex-direction: column; gap: 9px; }
+.dept-tier { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-3); font-weight: 700; margin: 6px 0 1px; }
+.dept-edges { margin-left: 18px; padding-left: 12px; border-left: 1px solid var(--line); }
+
+/* The panel a click opens: the run on the left, the work on the right. Two columns
+   because the two questions are asked side by side -- "what did it do" and "what is it
+   doing" -- and answering them in sequence makes one of them look like an afterthought. */
+.agent-split { display: grid; grid-template-columns: 1.15fr .85fr; gap: var(--s5); }
+@media (max-width: 900px) { .agent-split { grid-template-columns: 1fr; } }
+.steps { display: flex; flex-direction: column; gap: 6px; }
+.step { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--panel); }
+.step.live { border-color: var(--accent); }
+.step .h { font-size: 11px; color: var(--text-3); display: flex; gap: 8px; }
+.step .b { font-size: 12px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.tasklist { display: flex; flex-direction: column; gap: 5px; }
+.taskitem { display: flex; gap: 8px; align-items: baseline; font-size: 12px;
+  padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
+.taskitem .st { font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+/* How many rows this one line stands for. It is the number somebody wants, so
+   it is the only thing in the row given emphasis. */
+.taskitem .count {
+  margin-left: auto; font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums;
+  background: var(--sunken); color: var(--text-2); border-radius: 999px; padding: 1px 7px;
+}
+.taskitem.attn .count { background: var(--warn-soft); color: var(--warn); }
+.taskitem.open .st { color: var(--accent); }
+.taskitem.done { opacity: .72; }
+.taskitem.done .st { color: var(--ok); }
+.taskitem.attn { border-color: var(--bad); }
+.taskitem.attn .st { color: var(--bad); }
+
+/* ====================== a process, read top to bottom ======================
+   The eight stages are a **chain**, so they are drawn as a chain: a rail down the left, one row
+   per stage, and the state read from the row rather than from a colour the eye has to decode.
+   A gate is a different shape on purpose -- it is the only thing on this page a person is
+   *asked* to do, so it must not look like another stage. */
+.hire-flow { display: flex; flex-direction: column; gap: 0; }
+.hire-row { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: start;
+  padding: 9px 0; border-bottom: 1px solid var(--line); }
+.hire-row:last-child { border-bottom: 0; }
+.hire-n { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line);
+  display: grid; place-items: center; font-size: 10.5px; color: var(--text-3); font-weight: 700; }
+.hire-row.done .hire-n { background: var(--ok); border-color: var(--ok); color: #08120a; }
+.hire-row.now .hire-n { border-color: var(--accent); color: var(--accent); }
+.hire-row.gate { background: var(--panel-2, transparent); border-radius: 8px; padding: 11px 9px; }
+.hire-row.gate .hire-n { border-color: var(--accent); color: var(--accent); }
+.hire-row.bad .hire-n { border-color: var(--bad); color: var(--bad); }
+.hire-name { font-size: 12.5px; font-weight: 620; }
+.hire-where { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.hire-art { font-size: 11px; color: var(--text-2); margin-top: 4px; }
+.hire-art b { color: var(--ok); font-weight: 600; }
+.hire-state { font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-3); text-align: right; white-space: nowrap; }
+.hire-row.now .hire-state { color: var(--accent); }
+.hire-row.done .hire-state { color: var(--ok); }
+.hire-row.bad .hire-state { color: var(--bad); }
+.hire-q { font-size: 12px; margin-top: 5px; color: var(--text-1); }
+.hire-q::before { content: "Câu hỏi: "; color: var(--text-3); font-size: 11px; }
+.hire-btn { margin-top: 8px; }
+.hire-jd li { margin: 3px 0; font-size: 12px; }
+.hire-rubric { display: flex; gap: 12px; font-size: 12px; margin-top: 8px; }
+.hire-rubric b { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ======================= sidebar: always present ======================= -->
+  <nav class="nav" aria-label="Sections">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">O</div>
+      <div>
+        <div class="name">Orchestrator</div>
+        <div class="sub">O-Nexus</div>
+      </div>
+    </div>
+    <div class="items" id="navItems">
+      <!--
+        The nav answers one question at each level: what is the organisation
+        doing, what needs me, and where do I look. Everything else is reference
+        material and lives under "More" -- not because it is unimportant, but
+        because a sidebar where everything is at the same weight tells a
+        newcomer nothing about where to begin.
+
+        The six departments were seven lines. They are one subject, so they are
+        one line; the page it opens shows all six and any of them is one click.
+        Naming them in the nav was a shortcut for someone who already knew which
+        one they wanted, and an obstacle to everyone else.
+      -->
+      <div class="label">The organisation</div>
+      <a href="#/departments" data-nav="departments">
+        <span class="ic">⬡</span> Departments
+        <span class="count" id="navWorkCount" hidden></span>
+      </a>
+      <a href="#/agents" data-nav="agents"><span class="ic">◇</span> Agents</a>
+
+      <div class="label">The work</div>
+      <a href="#/give" data-nav="give"><span class="ic">▷</span> Give work</a>
+      <a href="#/work"      data-nav="work">
+        <span class="ic">◔</span> Needs you
+        <span class="count" id="navApprovalCount" hidden></span>
+      </a>
+      <a href="#/hiring" data-nav="hiring">
+        <span class="ic">☰</span> Recruitment
+        <span class="count" id="navHireCount" hidden></span>
+      </a>
+
+      <div class="label">Reference</div>
+      <a href="#/documents" data-nav="documents">
+        <span class="ic">▣</span> Documents
+        <span class="count" id="navDocCount" hidden></span>
+      </a>
+      <a href="#/projects"  data-nav="projects"><span class="ic">▤</span> Projects</a>
+
+      <details class="more">
+        <summary>More</summary>
+        <a href="#/dashboard" data-nav="dashboard"><span class="ic">◈</span> Dashboard</a>
+        <a href="#/decisions" data-nav="decisions"><span class="ic">✎</span> Decisions</a>
+        <a href="#/console"   data-nav="console"><span class="ic">▷</span> Console</a>
+      </details>
+    </div>
+    <div class="foot">
+      <div style="font-size:11.5px;color:var(--text-2);display:flex;align-items:center;gap:6px">
+        <span class="dot" id="dot"></span><span id="connText">connecting</span>
+      </div>
+      <div style="font-size:10.5px;color:var(--text-3);margin-top:4px" id="build"></div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <!-- ======================= breadcrumb + way out ======================= -->
+    <div class="crumbs" id="crumbs">
+      <!-- The back control. Shown whenever there is somewhere to go back to, and it
+           calls history.back() so the browser's own history stays correct. -->
+      <button class="back" id="backBtn" title="Back (Esc)">‹ Back</button>
+      <nav class="path" id="path" aria-label="Breadcrumb"></nav>
+      <div class="hint">
+        <span class="kbd"><kbd>Esc</kbd> back</span>
+        <button class="btn ghost sm" id="tokenBtn" title="Re-enter the service token">Token</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="banner" id="authwarn" hidden>
+        <span>⚠</span>
+        <div><b>Authentication is off.</b> Every request is attributed to
+          <code>dev:no-auth</code>. A local demo convenience — it cannot be enabled in
+          production or in tests — and nothing here should be treated as an
+          authenticated session.</div>
+      </div>
+
+      <!-- ============================= dashboard ============================= -->
+      <section class="view" id="view-dashboard">
+        <div class="stats" id="dashStats"></div>
+
+        <!-- The role switcher, and what it does and does not do.
+             It REORDERS the panels below. It never hides the sidebar, never changes
+             the URL, and never makes a section unreachable. The first version of this
+             page had a role switcher that toggled `hidden` on panels, which is why
+             the page never felt usable: a control that makes things disappear is a
+             control people stop trusting. Tập 1 §Tầng 1 asks for "a dashboard per
+             role", and reordering what the page leads with satisfies that without
+             navigation that changes under your feet. -->
+        <div class="legend" style="display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text-2);font-weight:650;letter-spacing:.05em">LEAD WITH</span>
+          <span class="seg" id="roleSwitch">
+            <button class="on" data-r="ceo">CEO</button>
+            <button data-r="pm">PM</button>
+            <button data-r="hitl">Approver</button>
+          </span>
+          <span id="roleHint"></span>
+        </div>
+
+        <div class="grid2">
+          <div class="card" id="cardQueue">
+            <header><h2>Needs a person</h2><span class="spacer"></span>
+              <span class="sub" id="queueSub"></span>
+              <a class="btn sm" href="#/work">Open the queue</a></header>
+            <div class="body" id="dashAttention"></div>
+          </div>
+          <div class="card" id="cardLate">
+            <header><h2>Behind schedule</h2><span class="spacer"></span>
+              <span class="sub" id="dashLateSub"></span></header>
+            <div class="body" id="dashLate"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <header><h2>Portfolio</h2><span class="spacer"></span>
+            <span class="sub" id="dashPortfolioSub"></span></header>
+          <div class="body" id="dashDelegation"></div>
+        </div>
+
+        <div class="card">
+          <header><h2>Projects</h2><span class="spacer"></span>
+            <span class="sub" id="dashProjectSub"></span></header>
+          <div class="list" id="dashProjects"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-projects" hidden>
+        <!-- The list and the detail sit side by side. **Selecting a project never
+             removes the list**, which is the other half of "I cannot get out". -->
+        <div class="split wide">
+          <div class="card">
+            <header><h2>Projects</h2><span class="spacer"></span>
+              <span class="sub" id="projCount"></span></header>
+            <div class="list" id="projList"></div>
+          </div>
+          <div id="projDetail"></div>
+        </div>
+      </section>
+
+      <!-- ============================== work ================================ -->
+      <section class="view" id="view-work" hidden>
+        <div class="card">
+          <header>
+            <h2>Approvals</h2>
+            <span class="sub" id="workSub"></span>
+            <span class="spacer"></span>
+            <span class="seg" id="workFilter">
+              <button class="on" data-f="pending">Waiting</button>
+              <button data-f="all">All</button>
+            </span>
+          </header>
+          <div class="list" id="workList"></div>
+          <div class="empty" id="workEmpty" hidden>
+            <div class="big">✓</div>
+            Nothing is waiting on a person.
+          </div>
+        </div>
+        <div class="note" id="workNote"></div>
+      </section>
+
+      <!-- ============================= agents =============================== -->
+      <section class="view" id="view-agents" hidden>
+        <div class="stats" id="agentStats"></div>
+        <div class="card">
+          <header><h2>Roster</h2><span class="spacer"></span>
+            <span class="sub" id="agentSub"></span></header>
+          <div class="list" id="agentList"></div>
+          <div class="empty" id="agentEmpty" hidden>
+            <div class="big">◇</div>
+            No agent has been named in an event yet.
+          </div>
+        </div>
+        <div class="note">
+          <b>Killing an agent is a decision</b>, and decisions are logged with an actor:
+          the log row says the <i>platform</i> did it, about that agent. A kill needs a
+          reason, because the database refuses one without. Reviving grants L1 rather
+          than restoring the previous level — an agent that was stopped and is running
+          again has not had its old grant re-justified.
+        </div>
+      </section>
+
+      <!-- ============================ decisions ============================= -->
+      <section class="view" id="view-decisions" hidden>
+        <div class="card">
+          <header><h2>Decision log</h2>
+            <span class="sub" id="decisionSub"></span>
+            <span class="spacer"></span>
+            <span class="seg" id="decisionFilter">
+              <button class="on" data-f="">Everything</button>
+              <button data-f="killed">Kills</button>
+              <button data-f="revived">Revives</button>
+              <button data-f="refused">Refusals</button>
+            </span>
+          </header>
+          <div class="list" id="decisionList"></div>
+          <div class="empty" id="decisionEmpty" hidden>Nothing recorded yet.</div>
+        </div>
+        <div class="note">
+          This is the question an auditor asks: <b>what did this agent decide, was it
+          allowed to, and what happened?</b> An audit trail only its writer can see is
+          not an audit trail.
+        </div>
+      </section>
+
+      <!-- ============================== hiring ============================== -->
+      <section class="view" id="view-hiring" hidden>
+        <div class="stats" id="hireStats"></div>
+        <div class="card">
+          <header><h2 id="hireTitle">Quy trình tuyển dụng</h2><span class="spacer"></span>
+            <span class="sub" id="hireSub"></span></header>
+          <div class="body"><div class="hire-flow" id="hireFlow"></div></div>
+          <div class="empty" id="hireEmpty" hidden>
+            Chưa có yêu cầu tuyển dụng nào. Chạy <code>make seed-hiring</code>.
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <header><h2>Đang chờ anh quyết</h2><span class="spacer"></span>
+              <span class="sub" id="hireGateSub"></span></header>
+            <div class="list" id="hireGates"></div>
+            <div class="empty" id="hireGatesEmpty" hidden>Không có cổng nào đang chờ.</div>
+          </div>
+          <div class="card">
+            <header><h2>JD &amp; rubric theo hồ sơ</h2><span class="spacer"></span>
+              <span class="sub" id="hireJdSub"></span></header>
+            <div class="body" id="hireJd"></div>
+          </div>
+        </div>
+        <div class="note" id="hireNote"></div>
+      </section>
+
+      <!-- ============================ departments ============================ -->
+      <section class="view" id="view-departments" hidden>
+        <div class="stats" id="deptStats"></div>
+        <div class="card">
+          <header><h2>The six departments</h2><span class="spacer"></span>
+            <span class="sub" id="deptSub"></span>
+            <span class="legend" style="font-size:11px">
+              <span class="legend-dot"></span> a moving light on the edge means it is
+              working now; a dashed border means a run is stranded
+            </span>
+          </header>
+          <div class="body"><div class="dept-tree" id="deptTree"></div></div>
+          <div class="empty" id="deptEmpty" hidden>No agent is registered for these departments.</div>
+        </div>
+        <div class="note">
+          <b>A light on the edge means a run is in flight</b>, read from the executions
+          rather than from a status somebody has to remember to clear. A <b>dashed</b>
+          border means a run started long ago and never closed — that is a real state and
+          it is drawn differently on purpose, because a fleet whose lights are always on is a
+          fleet nobody watches.
+        </div>
+      </section>
+
+      <section class="view" id="view-dept" hidden>
+        <div class="card">
+          <header><h2 id="deptTitle">Department</h2><span class="spacer"></span>
+            <span class="sub" id="deptSub2"></span>
+            <button class="btn ghost sm" id="deptBack">All six</button>
+          </header>
+          <div class="body"><div class="dept-tree" id="deptOneTree"></div></div>
+        </div>
+        <div class="agent-split">
+          <div class="card">
+            <header><h2>What it did</h2><span class="spacer"></span>
+              <span class="sub" id="runSub"></span></header>
+            <div class="body"><div class="steps" id="runSteps"></div></div>
+            <div class="empty" id="runEmpty" hidden>It has not run yet.</div>
+          </div>
+          <div class="card">
+            <header><h2>Its work</h2><span class="spacer"></span>
+              <span class="sub" id="workSub"></span></header>
+            <div class="body">
+              <div class="dept-tier">Open</div><div class="tasklist" id="workOpen"></div>
+              <div class="dept-tier">Needs attention</div><div class="tasklist" id="workAttn"></div>
+              <div class="dept-tier">Finished</div><div class="tasklist" id="workDone"></div>
+            </div>
+            <div class="empty" id="workEmpty" hidden>Nothing recorded yet.</div>
+          </div>
+        </div>
+        <div class="note" id="deptNote"></div>
+      </section>
+
+      <!-- ============================= give work ============================= -->
+      <section class="view" id="view-give" hidden>
+        <div class="stats" id="workStats"></div>
+        <div class="card">
+          <header><h2>What needs you</h2><span class="spacer"></span>
+            <span class="seg" id="workFilter">
+              <button class="on" data-w="">Everything</button>
+              <button data-w="you">Waiting on me</button>
+              <button data-w="in_flight">With an agent</button>
+              <button data-w="settled">Settled</button>
+            </span>
+          </header>
+          <div class="list" id="workList"></div>
+          <div class="empty" id="workEmpty" hidden>
+            <div class="big">▷</div>Nothing is waiting. Run <code>make mock-corpus</code>
+            for a coordination story to walk.
+          </div>
+        </div>
+        <div class="note">
+          <b>Pick a task, and the log is the point.</b> Every row says who holds it, how
+          many departments it was handed to, and how many decisions are waiting on a
+          person. A coordination task that does the work itself is <b>failed by the
+          platform on purpose</b> — a fleet that answers everything itself is not a fleet —
+          so the delegation tree is the evidence, and it is on the detail view.
+        </div>
+      </section>
+
+      <section class="view" id="view-task" hidden>
+        <div class="stats" id="taskStats"></div>
+        <div class="card">
+          <header><h2>Who did what</h2><span class="spacer"></span>
+            <span class="sub" id="taskGraphSub"></span></header>
+          <div class="body" id="taskGraph"></div>
+          <div class="empty" id="taskGraphEmpty" hidden>
+            Nothing has been delegated yet.
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <header><h2 id="taskTitle">Task</h2><span class="spacer"></span>
+              <span class="sub" id="taskSub"></span>
+              <button class="btn sm" id="retryBtn" hidden
+                title="Tạo một task MỚI cùng việc này. Task đã fail được giữ nguyên làm bằng chứng — không mở lại, vì mở lại sẽ làm sai lịch sử.">Chạy lại</button></header>
+            <div class="list" id="taskTree"></div>
+          </div>
+          <div class="card">
+            <header><h2>Decisions</h2><span class="spacer"></span>
+              <span class="sub" id="taskApprovalsSub"></span></header>
+            <div class="list" id="taskApprovals"></div>
+            <div class="empty" id="taskApprovalsEmpty" hidden>Nothing needs a decision.</div>
+          </div>
+        </div>
+        <div class="card">
+          <header><h2>The log</h2><span class="spacer"></span>
+            <span class="sub" id="taskLogSub"></span></header>
+          <div class="list" id="taskLog"></div>
+        </div>
+        <div class="note" id="taskNote"></div>
+        <div class="card">
+          <header><h2>Run it</h2><span class="spacer"></span>
+            <span class="sub" id="taskRunSub"></span></header>
+          <div class="body">
+            <div class="btn-row">
+              <button class="btn primary" id="runThisTask">Run this task now</button>
+              <span class="legend" id="runThisHint">Runs on the free model. A run that
+                delegates to three agents has taken <b>10 minutes</b> and
+                <b>67,000 tokens</b> — it is started in the background and this page
+                watches it.</span>
+            </div>
+            <div class="sub" id="runThisState" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ documents ============================= -->
+      <section class="view" id="view-documents" hidden>
+        <div class="stats" id="docStats"></div>
+        <div class="card">
+          <header><h2>Controlled documents</h2>
+            <span class="spacer"></span>
+            <span class="seg" id="docFilter">
+              <button class="on" data-b="">All blocks</button>
+              <button data-b="BO">Back Office</button>
+              <button data-b="FO">Front Office</button>
+              <button data-b="MO">Middle Office</button>
+              <button data-b="PMO">PMO</button>
+            </span>
+          </header>
+          <div class="list" id="docList"></div>
+          <div class="empty" id="docEmpty" hidden>
+            <div class="big">▣</div>
+            No document has been published. Run <code>make seed-docs</code>.
+          </div>
+        </div>
+        <div class="note">
+          <b>A document that was sent is not a document that was read.</b> The tile counts
+          acknowledgements, not sends, because emailed-to-everybody and read-by-nobody is
+          the most common state of a controlled document set in construction — and it is
+          invisible without a column somebody is required to fill in. <b>Expiry is not
+          retention:</b> a permit stops being true long before it may be destroyed, and
+          the two dates are separate columns for that reason.
+        </div>
+      </section>
+
+      <section class="view" id="view-document" hidden>
+        <div class="stats" id="docOneStats"></div>
+        <div class="grid2">
+          <div class="card">
+            <header><h2 id="docOneTitle">Document</h2><span class="spacer"></span>
+              <span class="sub" id="docOneCode"></span></header>
+            <div class="list" id="docVersions"></div>
+          </div>
+          <div class="card">
+            <header><h2>Who must hold it</h2><span class="spacer"></span>
+              <span class="sub" id="docMatrixSub"></span></header>
+            <div class="list" id="docMatrix"></div>
+            <div class="empty" id="docMatrixEmpty" hidden>Nobody is required to hold it.</div>
+          </div>
+        </div>
+        <div class="note" id="docOneNote"></div>
+      </section>
+
+      <!-- ============================= console ============================== -->
+      <section class="view" id="view-console" hidden>
+        <div class="grid2">
+          <div class="card">
+            <header><h2>Workflow</h2><span class="spacer"></span>
+              <span class="sub" id="flowCount"></span></header>
+            <div class="body" style="max-height:56vh;overflow:auto"><ul class="tree" id="tree"></ul></div>
+            <div class="empty" id="flowEmpty" hidden>
+              <div class="big">◇</div> Nothing has run yet.
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--s5);min-width:0">
+            <div class="card">
+              <header><h2>Start a task</h2></header>
+              <div class="body" style="display:flex;flex-direction:column;gap:var(--s3)">
+                <label class="field"><span>Pick a piece of work</span>
+                  <select id="scenario"><option value="">loading work…</option></select></label>
+                <label class="field"><span>What should the company work on?</span>
+                  <input id="goal" placeholder="Reconcile the tender documents" autocomplete="off"></label>
+                <div class="legend" id="scenarioHint" hidden></div>
+                <div class="btn-row" style="flex-wrap:nowrap">
+                  <select id="agent" style="flex:1;min-width:120px" title="Who does the work">
+                    <option value="">loading agents…</option></select>
+                  <select id="taskType" style="flex:1;min-width:120px">
+                    <option value="coordination">coordination</option>
+                    <option value="analysis">analysis</option></select>
+                  <button class="btn primary" id="runBtn">Run</button>
+                </div>
+                <div class="legend" id="runHint">Runs on the free model. A coordination task can take minutes.</div>
+              </div>
+            </div>
+            <div class="card">
+              <header><h2>Events</h2><span class="spacer"></span>
+                <span class="sub" id="evCount"></span>
+                <span class="seg" id="evFilter">
+                  <button class="on" data-f="all">All</button>
+                  <button data-f="flow">Flow</button>
+                  <button data-f="bad">Problems</button>
+                </span>
+              </header>
+              <div class="feed" id="feed"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<dialog id="sheet"><div class="dlg-body" id="sheetBody"></div>
+  <div class="dlg-foot" id="sheetFoot"></div></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ==================================================================
+   A small application. Four ideas, and the whole design follows them.
+
+   1. THE URL IS THE STATE. Every view and every drill-down is a hash
+      route, so the browser's own Back button works, a URL can be
+      pasted to a colleague, and a refresh lands where you were. The
+      first version of this page kept its selection in a JavaScript
+      variable, which meant Back went to wherever you had been before
+      the *site*, and there was no way out of a project at all. That
+      was reported as "hard to use" and it was a routing bug.
+
+   2. A LIST IS NEVER REPLACED BY ITS DETAIL. At >=1080px they sit
+      side by side; below that the detail opens as a full panel with a
+      Back control in the breadcrumb. Either way the thing you were
+      reading is still there or one keystroke away.
+
+   3. ABSENT IS NOT ZERO. A work package with a plan and no recorded
+      actuals is hatched and carries no bar, in a different colour AND
+      a different shape, because 100% of the real corpus's actual
+      columns are copies of its planned ones. `actual_updated` is the
+      only thing that knows the difference, so it is read on every row
+      and decides the rendering.
+
+   4. EVERY FIGURE IS SHOWN NEXT TO ITS POPULATION. "2778 readings"
+      with "0 measured" underneath is a different statement from
+      "2778 readings", and the second one is the dangerous one.
+
+   The token is asked for and kept in this tab only. It is never
+   written into the page, never put in a URL, and never sent anywhere
+   but this origin. A token in a query string ends up in browser
+   history, in Referer headers, and in every proxy log on the way.
+   ================================================================== */
+
+const API = "/api/v1";
+const ORG = "__ORG_ID__";
+const AUTH_OFF = __AUTH_OFF__;
+const BUILD = "__BUILD__";
+const $ = (id) => document.getElementById(id);
+const ORG_RE = /^org_[0-9a-z]{20,}$/;
+
+$("build").textContent = BUILD;
+if (AUTH_OFF) {
+  $("authwarn").hidden = false;
+  /* The button goes too. A control that cannot do anything is worse than an absent one:
+     it invites a person to click it, and clicking it when auth is off does nothing at all. */
+  const tokenBtn = $("tokenBtn");
+  if (tokenBtn) tokenBtn.hidden = true;
+}
+
+/* ---------------- auth ---------------- */
+function token() { return sessionStorage.getItem("ao_token") || ""; }
+function setToken(v) { sessionStorage.setItem("ao_token", v.trim()); }
+function forgetToken() { sessionStorage.removeItem("ao_token"); }
+/* Accept what a person actually pastes, in the order they are likely to try it.
+   A whole `INTERNAL_SERVICE_SECRET=…` line out of a .env is the most likely, and the
+   old page unwrapped it. The rewrite dropped that, so a whole line was sent as the
+   credential and refused with no visible cause — which is exactly the confusion this
+   function exists to remove. */
+function normaliseToken(v) {
+  let out = String(v || "").trim().replace(/^Bearer\s+/i, "").replace(/^export\s+/, "");
+  /* A pasted `export INTERNAL_SERVICE_SECRET=…` line is the most likely thing to
+     arrive here, and the `export ` prefix means the left-hand side is not a bare
+     identifier -- so the key test has to come after it is stripped, or the whole line
+     is sent as the credential and refused with no visible cause.
+
+     Three rules, and the last two matter more than the first:
+
+     * Only an **upper-case** identifier counts as an environment variable name. A
+       lower-case `lower_case=s3cr3t` is not one, and unwrapping it would silently
+       change a value nobody asked to change.
+     * The split is on the **last** `=`, so a secret that itself contains `=` survives
+       intact. Splitting on the first one truncates every such secret.
+     * A key with a space in it is prose, not a variable, and is left alone. */
+  const eq = out.lastIndexOf("=");
+  if (eq > 0 && /^[A-Z0-9_]+$/.test(out.slice(0, eq))) out = out.slice(eq + 1).trim();
+  return out.replace(/^["']|["']$/g, "").trim();
+}
+
+function askToken(initial) {
+  /* **Never prompts when authentication is off.** One gate, here, rather than a
+     `if (!AUTH_OFF)` at each of the three call sites -- which is how a third call site gets
+     added without the check. Measured: with `AUTH_OFF = true` the page was still asking
+     for a token, because `apiGet`/`apiPost` treat *any* 401 or 403 as a rejected
+     credential. It is not. `require_human()` answers 403 with "this endpoint requires a
+     human principal", which is a business answer about authorisation, not about identity --
+     and the page turned it into a modal asking for a password.
+
+     So the rule is: with auth off there is nothing to authenticate, a 401 means the
+     deployment is misconfigured, and a 403 is an answer to show. */
+  if (AUTH_OFF) return null;
+  const v = window.prompt("Service token (sent as `Authorization: Bearer …`)", initial || "");
+  if (v === null) return null;
+  /* One call, so there is no window in which an unnormalised token sits in
+     sessionStorage -- and a token pasted with the word "Bearer" still works. */
+  const clean = normaliseToken(v);
+  if (clean) setToken(normaliseToken(v));
+  else forgetToken();
+  return clean;
+}
+function authHeaders(extra) {
+  const headers = Object.assign({}, extra || {});
+  /* With authentication off there is nothing to send, and sending an empty
+     `Authorization` would be worse than sending none: it looks like a credential
+     was presented and rejected, which is the exact confusion this mode removes. */
+  if (!AUTH_OFF) headers["Authorization"] = "Bearer " + token();
+  /* The tenant header is not optional. `authenticate` resolves a service
+     credential's organization from `x-organization-id` and refuses with
+     `missing_org_header` when it is absent — and the token check passes first, so
+     the failure reads as a rejected token and names the wrong thing. The id is an
+     identifier rather than a secret: it appears in every log line, so it travels in
+     the page URL as `?org=` and is baked into this document. */
+  if (ORG) headers["x-organization-id"] = ORG;
+  return headers;
+}
+if (!AUTH_OFF && !token() && !ORG_RE.test(ORG)) askToken("");
+
+/* ---------------- state ---------------- */
+const state = {
+  es: null, paused: false, filter: "all", workFilter: "pending", decisionFilter: "",
+  tasks: new Map(), agents: new Map(), events: [], selected: null, backfill: new Set(),
+  portfolio: null, projects: [], project: null, workspace: null, inbox: [],
+  // The task currently open in `#/task/...`. The retry button needs to know which one,
+  // and there is exactly one task on that screen, so this is the whole of the state it
+  // adds. Keyed by nothing else, and read only by the handler below.
+  taskId: null,
+};
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+/* What a run said, cleaned up for somebody who is not reading logs.
+ *
+ * Three things were reaching this line raw, all visible in a screenshot:
+ *
+ * 1. `**bold**` markers. An agent writes markdown, and the page showed the
+ *    asterisks. It reads as a broken page, not as emphasis.
+ * 2. Raw tool-call JSON -- `{"tool":"read","args":{"path":"..."}}` -- printed
+ *    in the middle of a business page. That is a diagnostic, and a diagnostic
+ *    is what you put in the console, not in front of a hiring manager.
+ * 3. Our own engineering prose. "closed by the stranded-execution sweep rather
+ *    than left to make the platform claim somebody is working on it" was a
+ *    maintainer explaining a design decision to other maintainers, shown to
+ *    everyone else. It is a good comment and the wrong sentence on a page.
+ *
+ * The rule applied: keep what the agent said, drop what we did to the agent.
+ * A person deciding whether work is finished needs the finding, not the
+ * machinery. */
+function readable(raw, limit = 900) {
+  let t = String(raw == null ? "" : raw).trim();
+  if (!t) return "no summary";
+
+  // 2. Tool-call JSON, whole lines of it.
+  t = t
+    .replace(/^\s*[\[{].*[\]}]\s*$/gm, "")
+    .replace(/\{\s*"tool"[^]*?\}\n?/g, "")
+    .trim();
+
+  // 3. Our own engineering prose, reduced to the fact it reports.
+  t = t
+    .replace(/;\s*closed by the stranded-execution sweep rather than left to make the platform claim somebody is working on it\.?/gi, ".")
+    .replace(/\s*\(seeded by the organization[^)]*\)/gi, "")
+    .trim();
+
+  // 1. Markdown, rendered. Emphasis, inline code, bullets -- escaped first,
+  //    because the text came from a model and is not trusted markup.
+  t = esc(t)
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/^#{1,6}\s*(.+)$/gm, "<b>$1</b>")
+    .replace(/^[-*]\s+/gm, "• ")
+    .replace(/\n{2,}/g, "<br><br>")
+    .replace(/\n/g, "<br>");
+
+  return t.length > limit ? t.slice(0, limit).replace(/<[^>]*$/, "") + "…" : t;
+}
+/* Repeated titles, counted.
+ *
+ * A panel that lists eight identical rows tells a reader nothing they can act
+ * on -- they cannot tell which one to open, and the shape of the problem is
+ * invisible behind the repetition. Grouping by title keeps every row reachable
+ * (the click still goes to the newest one) and makes the count the headline,
+ * which is the number somebody actually wants.
+ *
+ * Newest first within a group: a task that failed an hour ago and one that
+ * failed a minute ago are the same title and not the same problem, and the
+ * recent one is the one to look at. */
+function groupByTitle(rows) {
+  const order = [];
+  const groups = new Map();
+  for (const t of rows || []) {
+    const key = t.title || "(untitled)";
+    if (!groups.has(key)) { groups.set(key, { title: key, status: t.status, n: 0 }); order.push(key); }
+    const g = groups.get(key);
+    g.n += 1;
+    g.status = t.status;
+    g.id = t.id;
+  }
+  return order.map((k) => groups.get(k));
+}
+function taskRows(rows, cls) {
+  return groupByTitle(rows).map((g) =>
+    `<div class="taskitem ${cls}"><span class="st">${esc(g.status)}</span>` +
+    `<span class="grow">${esc(g.title)}</span>` +
+    (g.n > 1 ? `<span class="count">×${g.n}</span>` : "") +
+    `</div>`).join("");
+}
+function setHTML(id, html) { const el = $(id); if (el) el.innerHTML = html; }
+function num(v, dp) {
+  if (v === null || v === undefined) return "—";
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: dp ?? 0 }).format(v);
+}
+function ago(iso) {
+  if (!iso) return "—";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "—";
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return mins + "m ago";
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return hrs + "h ago";
+  return Math.round(hrs / 24) + "d ago";
+}
+
+/* ---------------- toasts: honest about failure ---------------- */
+let toastTimer = 0;
+function toast(message, bad) {
+  const el = $("toast");
+  el.textContent = message;
+  el.className = "toast show" + (bad ? " bad" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = "toast"; }, bad ? 7000 : 4000);
+}
+
+/* ---------------- api ---------------- */
+async function apiGet(path, params) {
+  const url = new URL(API + path, location.origin);
+  if (params) for (const [k, v] of Object.entries(params)) {
+    if (v !== null && v !== undefined && v !== "") url.searchParams.set(k, v);
+  }
+  const res = await fetch(url.toString(), { headers: authHeaders() });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    let message = res.status + " " + res.statusText;
+    try { message = JSON.parse(detail).error?.message || message; } catch { /* not json */ }
+    const err = new Error(message);
+    err.status = res.status;
+    /* Forget it, then ask again. Keeping a rejected credential means every
+       subsequent request is made with it, so the page can never recover without a
+       manual storage clear — and the prompt looks like it worked. This is the failure
+       a person hits when their first paste is wrong. */
+    /* A 403 is an authorisation *answer*, not a rejected credential: `require_human()`
+       and `require_admin()` both use it, and with auth off it means the caller is a
+       service principal doing something only a person may do. It is reported as an error
+       and shown. Only a 401 is "your credential was refused". */
+    if (res.status === 401 || (res.status === 403 && !AUTH_OFF)) {
+      forgetToken();
+      err.auth = true;
+      askToken("");
+    }
+    throw err;
+  }
+  return res.json();
+}
+async function apiPost(path, body) {
+  const r = await fetch(API + path, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(body || {}),
+  });
+  if (!r.ok) {
+    const detail = await r.text().catch(() => "");
+    let message = r.status + " " + r.statusText;
+    try {
+      const parsed = JSON.parse(detail);
+      message = parsed.error?.message
+        || (Array.isArray(parsed.detail)
+          ? parsed.detail.map((d) => `${(d.loc || []).slice(-1)[0]}: ${d.msg}`).join("; ")
+          : message);
+    } catch { /* not json */ }
+    const err = new Error(message);
+    err.status = r.status;
+    if (r.status === 401 || (r.status === 403 && !AUTH_OFF)) { forgetToken(); askToken(""); }
+    throw err;
+  }
+  return r.json();
+}
+
+/* ==================================================================
+   6. Routing.
+
+   `#/projects`, `#/projects/:id`, `#/agents`, `#/agents/:id`, …
+
+   The breadcrumb is derived from the route, so it cannot disagree with
+   where you are. And `Esc` is bound on the document, so there is one
+   predictable way out from anywhere in the product.
+   ================================================================== */
+const ROUTES = {
+  dashboard: { label: "Dashboard" },
+  projects: { label: "Projects" },
+  project: { label: "Project" },
+  work: { label: "Approvals" },
+  approval: { label: "Approval" },
+  agents: { label: "Agents" },
+  agent: { label: "Agent" },
+  hiring: { label: "Tuyển dụng" },
+  departments: { label: "Departments" },
+  dept: { label: "Department" },
+  give: { label: "Give work" },
+  task: { label: "Task" },
+  documents: { label: "Documents" },
+  decisions: { label: "Decisions" },
+  console: { label: "Console" },
+};
+
+function parseHash() {
+  const raw = (location.hash || "#/dashboard").replace(/^#\/?/, "");
+  const parts = raw.split("/").filter(Boolean);
+  return { name: parts[0] || "dashboard", arg: parts[1] ? decodeURIComponent(parts[1]) : null };
+}
+
+function go(hash) { location.hash = hash; }
+
+function renderCrumbs(route) {
+  const items = [];
+  const add = (label, href, here) =>
+    items.push(href ? `<a href="${href}">${esc(label)}</a>` : `<span class="here">${esc(label)}</span>`);
+  switch (route.name) {
+    case "project":
+      add("Dashboard", "#/dashboard");
+      items.push('<span class="sep">/</span>');
+      add("Projects", "#/projects");
+      items.push('<span class="sep">/</span>');
+      add(projectName(route.arg), null, true);
+      break;
+    case "approval":
+      add("Approvals", "#/work"); items.push('<span class="sep">/</span>');
+      add("Decide", null, true);
+      break;
+    case "agent":
+      add("Agents", "#/agents"); items.push('<span class="sep">/</span>');
+      add("Detail", null, true);
+      break;
+    case "dept":
+      add("Departments", "#/departments"); items.push('<span class="sep">/</span>');
+      add($("deptTitle").textContent || "Department", null, true);
+      break;
+    case "hiring":
+      add("Tuyển dụng", null, true);
+      break;
+    case "departments":
+      add("Departments", null, true);
+      break;
+    case "task":
+      add("Give work", "#/give"); items.push('<span class="sep">/</span>');
+      add(taskName(route.arg), null, true);
+      break;
+    case "give":
+      if (route.arg) {
+        add("Give work", "#/give"); items.push('<span class="sep">/</span>');
+        add(taskName(route.arg), null, true);
+      } else {
+        add("Give work", null, true);
+      }
+      break;
+    case "documents":
+      // One route with an optional argument, so `#/documents/{id}` is a selection *within*
+      // the register rather than a separate page. The first version declared a
+      // `case "document"`, which `parseHash` can never produce, and the breadcrumb fell
+      // through to its default and said "Documents" while the detail was open.
+      if (route.arg) {
+        add("Documents", "#/documents"); items.push('<span class="sep">/</span>');
+        add(docName(route.arg), null, true);
+      } else {
+        add("Documents", null, true);
+      }
+      break;
+    default: {
+      const meta = ROUTES[route.name] || ROUTES.dashboard;
+      add(meta.label, null, true);
+    }
+  }
+  setHTML("path", items.join(" "));
+  // `.deep` is sticky for the rest of the session: once a person has drilled in
+  // anywhere, the way out is on the page forever. There is no state in which
+  // somebody is "somewhere" with no visible route back.
+  $("crumbs").classList.add("deep");
+}
+
+function projectName(id) {
+  const p = state.projects.find((x) => x.id === id);
+  return p ? p.name : "Project";
+}
+
+$("backBtn").onclick = () => history.back();
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if ($("sheet").open) { $("sheet").close(); return; }
+  if (parseHash().name !== "dashboard") history.back();
+});
+
+/* ---------------- the router ---------------- */
+let renderToken = 0;
+async function route() {
+  const r = parseHash();
+  const mine = ++renderToken;
+  for (const name of Object.keys(ROUTES)) {
+    const el = $("view-" + (name === "project" ? "projects" : name === "approval" ? "work" : name === "agent" ? "agents" : name));
+    if (el) el.hidden = true;
+  }
+  const target = { project: "projects", approval: "work", agent: "agents" }[r.name] || r.name;
+  const view = $("view-" + target);
+  if (view) view.hidden = false;
+  /* Release the previous project's data when leaving the project view.
+
+     Without this a project stays alive in the DOM after you navigate away -- 136 KB
+     of bars and 288 table rows for the real corpus, invisible because the view is
+     hidden but never released. Found by `verify_page.mjs`, which navigated to a
+     project and back and found the detail still populated. It is not a visible bug
+     and it is still a bug: memory that only grows, and a `#/projects` visit that
+     could briefly show the last project's bars before its own render lands. */
+  if (target !== "projects") { state.workspace = null; setHTML("projDetail", ""); }
+  for (const a of document.querySelectorAll("[data-nav]")) {
+    const on = a.dataset.nav === target;
+    if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  }
+  renderCrumbs(r);
+  try {
+    if (mine !== renderToken) return;   // a newer navigation won
+    await render(r, mine);
+  } catch (err) {
+    if (mine !== renderToken) return;
+    showError(err);
+  }
+}
+window.addEventListener("hashchange", route);
+
+function showError(err) {
+  const target = $("view-" + (parseHash().name === "project" ? "projects" : parseHash().name)) || $("view-dashboard");
+  target.hidden = false;
+  setHTML(target.id, `<div class="card"><div class="body">
+    <div class="note late"><b>Could not load this view.</b><br>${esc(err && err.message || String(err))}</div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn" onclick="location.reload()">Reload</button>
+      <button class="btn ghost" onclick="go('#/dashboard')">Back to the dashboard</button>
+    </div></div></div>`);
+}
+
+async function render(r, mine) {
+  switch (r.name) {
+    case "dashboard": await renderDashboard(); break;
+    case "projects":
+    case "project": await renderProjects(r.arg); break;
+    case "work":
+    case "approval": await renderWork(); break;
+    case "agents":
+    case "agent": await renderAgents(r.arg); break;
+    case "hiring": await renderHiring(); break;
+    case "departments":
+    case "dept": await renderDepartments(r.arg); break;
+    // `task` is the readable name for a task, and `view-task` is the section that holds it.
+    // There was no case for it, so `#/task/<id>` was a **dead route**: the view stayed
+    // hidden and nothing rendered. Found because the retry handler linked to it -- the page
+    // linking to a URL of its own that does not work is the same defect as a drill-down with
+    // no way out, pointed the other way.
+    case "task":
+    case "give": await renderGive(r.arg); break;
+    case "documents": await renderDocuments(r.arg); break;
+    case "decisions": await renderDecisions(); break;
+    case "console": renderConsole(); break;
+    default: await renderDashboard();
+  }
+  if (mine !== renderToken) return;
+}
+
+/* ==================================================================
+   7. Views.
+   ================================================================== */
+function statTile(k, v, note, tone) {
+  return `<div class="stat${tone ? " " + tone : ""}"><div class="k">${esc(k)}</div>`
+    + `<div class="v">${esc(v)}</div>`
+    + (note ? `<div class="n">${esc(note)}</div>` : "") + `</div>`;
+}
+
+/* Tập 1 §Tầng 1 names three roles and three questions. This is the whole of the
+   role switcher: same data, different first panel. It does not filter, and it does not
+   hide -- a person can always scroll to the other two. */
+const ROLES = {
+  ceo:  { first: "cardLate",   hint: "Portfolio position, and what is behind." },
+  pm:   { first: "cardLate",   hint: "Which of my zones is late, and by how much." },
+  hitl: { first: "cardQueue",  hint: "What is waiting on me, oldest first." },
+};
+
+function applyRole(role) {
+  const cfg = ROLES[role] || ROLES.ceo;
+  for (const b of $("roleSwitch").children) b.classList.toggle("on", b.dataset.r === role);
+  $("roleHint").textContent = cfg.hint;
+  /* CSS `order`, not `insertBefore` and not `hidden`.
+
+     `order` reorders without moving a node, so nothing is detached and re-attached,
+     no scroll position is disturbed, and both cards are always in the document. The
+     first version used `insertBefore`, which works but mutates the tree on every
+     switch; the second used `hidden`, which is what made the page feel like it was
+     hiding things from you. `order` is the middle of those two and the right one. */
+  $("cardQueue").style.order = cfg.first === "cardQueue" ? "0" : "1";
+  $("cardLate").style.order = cfg.first === "cardQueue" ? "1" : "0";
+}
+$("roleSwitch").onclick = (e) => {
+  const b = e.target.closest("button[data-r]");
+  if (b) applyRole(b.dataset.r);
+};
+
+async function renderDashboard() {
+  const [port, projects, inbox] = await Promise.all([
+    apiGet("/portfolio"), apiGet("/projects"), apiGet("/approvals/inbox"),
+  ]);
+  state.portfolio = port; state.projects = projects.items; state.inbox = inbox.items;
+  const t = port.totals, p = port.posture || {};
+  setHTML("dashStats",
+    statTile("Projects", num(t.projects), num(t.wbs_nodes) + " work packages")
+    + statTile("Waiting on you", num(inbox.count), inbox.count ? "open the queue" : "nothing pending",
+        inbox.count ? "wait" : "")
+    + statTile("Agents", num(p.agents), (p.killed ?? 0) + " killed")
+    /* `above_l1` is a *control*, not a description: the count of agents granted more
+       than their own ceiling. `0016` puts every agent at L1 and nothing raises it
+       without a measured shadow agreement rate, so it is meant to be 0 and to stay
+       there. Alarm tone when it is not, so a widened delegation is visible without
+       anybody reading a number. */
+    + statTile("Above ceiling", num(p.above_l1 ?? 0),
+        (p.above_l1 ?? 0) === 0 ? "every agent at its own limit" : "needs review",
+        (p.above_l1 ?? 0) === 0 ? "good" : "alarm"));
+
+  setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
+  $("navApprovalCount").hidden = !inbox.count;
+  $("navApprovalCount").className = "count hot";
+  $("queueSub").textContent = inbox.count ? `${inbox.count} waiting` : "clear";
+
+  setHTML("dashAttention", inbox.count
+    ? inbox.items.slice(0, 5).map((a) => `
+        <a class="row" href="#/work">
+          <div class="grow"><div class="t">${esc(a.action_type)}</div>
+            <div class="s">${esc(a.requested_by || "unknown")} · waiting ${esc(a.waiting_days)}d</div></div>
+          <span class="tag wait">decide</span></a>`).join("")
+    : '<div class="legend">Nothing is waiting on a person.</div>');
+
+  /* The worst lateness across every project with a breakdown, because the question is
+     never "how is one project" but "which one is in trouble". */
+  const withWbs = projects.items.filter((x) => x.wbs_nodes > 0);
+  const worst = [];
+  for (const proj of withWbs.slice(0, 6)) {
+    const ws = await apiGet(`/projects/${encodeURIComponent(proj.id)}/workspace`);
+    for (const z of ws.late) {
+      worst.push({ code: z.code, name: z.name, slip: z.slip_days, project: proj.name });
+    }
+  }
+  worst.sort((a, b) => b.slip - a.slip);
+  $("dashLateSub").textContent = worst.length ? `worst ${worst[0].slip} days` : "nothing late";
+  setHTML("dashLate", worst.length
+    ? worst.slice(0, 8).map((z) => `
+        <div class="bar late">
+          <div class="lbl" title="${esc(z.project + " · " + z.name)}">${esc(z.code)} ${esc(z.name)}</div>
+          <div class="track"><div class="fillbar" style="width:${Math.min(100, (z.slip / (worst[0].slip || 1)) * 100)}%"></div></div>
+          <div class="num">+${z.slip}d</div></div>`).join("")
+    : '<div class="legend">No measured work is behind schedule.</div>');
+
+  $("dashPortfolioSub").textContent = num(t.gates_open) + " gates open";
+  setHTML("dashDelegation",
+    `<div class="legend">${num(p.agents ?? 0)} agents registered · ${num(p.killed ?? 0)} stopped · `
+    + `tightest ceiling <b>${esc(p.tightest_ceiling || "L1")}</b> in force. `
+    + `Delegation rises only through a measured shadow agreement rate, never by configuration. `
+    + `<a href="#/agents">Open the roster</a> · <a href="#/decisions">the decision log</a>.</div>`);
+
+  $("dashProjectSub").textContent = projects.total + " total";
+  setHTML("dashProjects", projects.items.map((pr) => `
+    <a class="row" href="#/projects/${encodeURIComponent(pr.id)}">
+      <div class="grow"><div class="t">${esc(pr.name)}</div>
+        <div class="s">${esc(pr.code)}${pr.address ? " · " + esc(pr.address) : ""}</div></div>
+      <div class="r">${pr.contract_value === null ? "no value recorded" : num(pr.contract_value)}</div>
+    </a>`).join(""));
+}
+
+async function renderProjects(id) {
+  if (!state.projects.length) {
+    const d = await apiGet("/projects");
+    state.projects = d.items;
+  }
+  $("projCount").textContent = state.projects.length;
+  setHTML("projList", state.projects.map((pr) => `
+    <a class="row" href="#/projects/${encodeURIComponent(pr.id)}"
+       aria-current="${pr.id === id}">
+      <div class="grow"><div class="t">${esc(pr.name)}</div>
+        <div class="s">${esc(pr.code)}${pr.address ? " · " + esc(pr.address) : ""}</div></div>
+      <div class="r">${esc(pr.status || "—")}</div></a>`).join(""));
+
+  if (!id) {
+    setHTML("projDetail", `<div class="card"><div class="empty">
+      <div class="big">▤</div>
+      Pick a project. The list stays here, so you are never trapped in the detail.
+    </div></div>`);
+    return;
+  }
+  state.project = id;
+  const [ws, tree, act] = await Promise.all([
+    apiGet(`/projects/${encodeURIComponent(id)}/workspace`),
+    apiGet(`/projects/${encodeURIComponent(id)}/wbs`),
+    apiGet(`/projects/${encodeURIComponent(id)}/activity`, { limit: 300 }),
+  ]);
+  state.workspace = ws;
+  const c = ws.counts;
+  const byCode = new Map(ws.zones.map((z) => [z.code, z]));
+  const worst = Math.max(1, ...ws.late.map((z) => Math.abs(z.slip_days || 0)));
+
+  setHTML("projDetail", `
+    <div style="display:flex;flex-direction:column;gap:var(--s5);min-width:0">
+      <div class="stats">
+        ${statTile("Work packages", num(c.zones), num(act.count) + " readings")}
+        ${statTile("Behind", num(c.late), c.late ? "days lost" : "nothing late", c.late ? "alarm" : "good")}
+        ${statTile("Not measured", num(c.unmeasured), "no recorded actual", c.unmeasured ? "wait" : "")}
+      </div>
+      <div class="card">
+        <header><h2>Work breakdown</h2><span class="spacer"></span>
+          <span class="sub">${esc(tree.count)} nodes</span></header>
+        <div class="body">
+          <div class="bars">${ws.zones.map((z) => {
+            const late = z.is_late === true, un = z.is_measured === false;
+            const cls = un ? "unmeasured" : (late ? "late" : "");
+            const pct = un ? 0 : Math.min(100, (Math.abs(z.slip_days || 0) / worst) * 100);
+            const label = un ? "not measured" : (late ? "+" + z.slip_days + "d" : "on plan");
+            return `<div class="bar ${cls}">
+              <div class="lbl" title="${esc(z.name)}">${esc(z.code)} ${esc(z.name)}</div>
+              <div class="track"><div class="fillbar" style="width:${pct}%"></div></div>
+              <div class="num">${esc(label)}</div></div>`;
+          }).join("")}</div>
+          <div class="legend" style="margin-top:12px">
+            <span class="swatch ok"></span><b>on plan</b> ·
+            <span class="swatch late"></span><b>behind</b> ·
+            <span class="swatch un"></span><b>not measured</b> — a plan with no recorded actual.
+            Hatched means exactly that. An empty actual column is not a zero variance.
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <header><h2>Breakdown tree</h2><span class="spacer"></span>
+          <span class="sub">${esc(tree.roots)} top level</span></header>
+        <div class="list">${tree.items.map((n) => {
+          const pos = byCode.get(n.code);
+          const tag = !pos ? ""
+            : pos.is_measured === false ? '<span class="tag unmeasured">not measured</span>'
+            : pos.is_late ? `<span class="tag late">+${pos.slip_days}d</span>`
+            : '<span class="tag ok">on plan</span>';
+          return `<div class="row static"><div class="grow" style="padding-left:${depthOf(tree.items, n) * 16}px">
+            <div class="t">${esc(n.code)} ${esc(n.name)}</div></div><div class="r">${tag}</div></div>`;
+        }).join("")}</div>
+      </div>
+      <div class="card">
+        <header><h2>Progress</h2><span class="spacer"></span>
+          <span class="sub">${esc(act.measured)} of ${esc(act.count)} recorded</span></header>
+        <div class="body flush">
+          <div class="scroller"><table class="sheet">
+            <thead><tr><th class="n">Row</th><th>Work</th><th class="n">Planned</th>
+              <th class="n">Actual</th><th class="n">Var.</th><th>State</th></tr></thead>
+            <tbody>${act.items.map((r) => {
+              /* `actual_updated` is the only thing that separates "recorded on the 14th"
+                 from "the planned date was copied into the actual column", and for the
+                 whole real corpus those are the same date. Ignoring it renders 2778
+                 fabricated measurements. */
+              const measured = r.actual_updated === true;
+              const delta = (r.actual_finish_on && r.planned_finish_on)
+                ? Math.round((new Date(r.actual_finish_on) - new Date(r.planned_finish_on)) / 86400000)
+                : null;
+              return `<tr class="${measured ? "" : "unmeasured"}">
+                <td class="n">${esc(r.source_row)}</td>
+                <td>${esc(r.work_description || r.section_label || "—")}</td>
+                <td class="n">${esc(r.planned_finish_on || "—")}</td>
+                <td class="n">${esc(measured ? (r.actual_finish_on || "—") : "not recorded")}</td>
+                <td class="n">${measured ? (delta === null ? "—" : delta + "d") : "—"}</td>
+                <td>${measured
+                  ? (delta > 0 ? '<span class="tag late">late</span>' : '<span class="tag ok">on plan</span>')
+                  : '<span class="tag unmeasured">not measured</span>'}</td></tr>`;
+            }).join("")}</tbody></table></div>
+        </div>
+      </div>
+    </div>`);
+}
+
+function depthOf(items, node) {
+  let d = 0, cur = node, guard = 0;
+  const byId = new Map(items.map((i) => [i.id, i]));
+  while (cur && cur.parent_id && guard++ < 8) { cur = byId.get(cur.parent_id); d++; }
+  return d;
+}
+
+/* ---------------- work: the queue you can actually act on ---------------- */
+async function renderWork() {
+  const d = await apiGet("/approvals/inbox");
+  state.inbox = d.items;
+  const shown = state.workFilter === "all" ? d.items : d.items;
+  $("workSub").textContent = d.count ? `${d.count} waiting` : "clear";
+  $("workEmpty").hidden = shown.length > 0;
+  // An expired request gets **no buttons**.
+  //
+  // It used to get the same three as a live one, and clicking Approve answered
+  // "approval apr_… expired at 2026-09-29T15:46:06" — the only place the deadline
+  // was ever visible. A queue that offers an action the platform will refuse is a
+  // queue that spends a person's click to teach them something the queue already
+  // knew.
+  //
+  // The task title is shown for the same reason: two pending rows for
+  // `hr.open_headcount` on two different tasks rendered as two identical lines,
+  // which reads as the same question asked twice rather than two questions.
+  setHTML("workList", shown.map((a) => {
+    const live = a.actionable !== false && !a.expired;
+    const buttons = live ? `
+      <div class="btn-row" data-actions="${esc(a.approval_id)}">
+        <button class="btn primary sm" data-do="approve" data-id="${esc(a.approval_id)}">Approve</button>
+        <button class="btn sm" data-do="ask" data-id="${esc(a.approval_id)}">Ask</button>
+        <button class="btn danger sm" data-do="reject" data-id="${esc(a.approval_id)}">Reject</button>
+      </div>` : `
+      <div class="btn-row">
+        <span class="tag wait">expired</span>
+        <span class="s">needs re-raising — nobody can answer it now</span>
+      </div>`;
+    return `
+    <div class="row static" data-approval="${esc(a.approval_id)}" style="flex-wrap:wrap">
+      <div class="grow" style="min-width:240px">
+        <div class="t">${esc(a.action_type)}
+          <span class="tag ${a.risk_level === "high" ? "wait" : ""}">${esc(a.effect_class || "—")}</span>
+          ${a.risk_level === "high" ? '<span class="tag wait">high risk</span>' : ""}
+        </div>
+        <div class="s">${a.task_title ? esc(a.task_title) + " · " : ""}asked by ${esc(a.requested_by || "unknown")}
+          ${a.assigned_approver_id ? "· routed to " + esc(a.assigned_approver_id) : "· the queue"}
+          · waiting ${esc(a.waiting_days)}d</div>
+      </div>
+      ${buttons}
+    </div>`;
+  }).join(""));
+  setHTML("workNote",
+    "Oldest first, because an approval queue has no urgency field and a person working "
+    + "it by insertion order is working it by accident. <b>Ask</b> sends the task back to "
+    + "the agent with your question instead of ending it — usually the right answer when "
+    + "you are unsure.");
+  setHTML("navApprovalCount", d.count ? String(d.count) : "");
+  $("navApprovalCount").hidden = !d.count;
+}
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-do]");
+  if (!btn) return;
+  const { do: action, id } = btn.dataset;
+  if (action === "ask") {
+    const question = window.prompt("What should the agent answer before you decide?");
+    if (!question) return;
+    await decide(id, "request-information", { needs_information: true, note: question });
+    return;
+  }
+  const label = action === "approve" ? "approve" : "reject";
+  if (!window.confirm(`${label[0].toUpperCase() + label.slice(1)} this request?`)) return;
+  await decide(id, action, {});
+});
+
+async function decide(approvalId, action, extra) {
+  try {
+    await apiPost(`/approvals/${encodeURIComponent(approvalId)}/${action}`, extra);
+    toast(action === "approve" ? "Approved."
+      : action === "reject" ? "Rejected." : "Sent back with your question.");
+    await refreshAfterAction();
+  } catch (err) {
+    /* Said plainly, in the page. An approval that silently does nothing is worse
+       than one that says it failed. */
+    toast("Could not " + action + ": " + (err.message || err), true);
+  }
+}
+
+/* ---------------- agents: the roster and the switch ---------------- */
+async function renderAgents(id) {
+  const p = (state.portfolio && state.portfolio.posture) || (await apiGet("/portfolio")).posture || {};
+  setHTML("agentStats",
+    statTile("Agents", num(p.agents ?? 0), "in the registry")
+    + statTile("Killed", num(p.killed ?? 0), "switch pulled", p.killed ? "alarm" : "good")
+    + statTile("Above ceiling", num(p.above_l1 ?? 0), "granted past its own limit",
+        (p.above_l1 ?? 0) === 0 ? "good" : "alarm")
+    + statTile("Tightest ceiling", p.tightest_ceiling || "L1", "in force"));
+
+  const seen = [...state.agents.entries()].sort((a, b) => b[1] - a[1]);
+  $("agentSub").textContent = `${seen.length} seen in events · ${p.agents ?? 0} registered`;
+  $("agentEmpty").hidden = seen.length > 0;
+  $("agentList").hidden = seen.length === 0;
+
+  /* The registry is the authoritative list; the event stream is a live view of who
+     has been busy. Both, side by side, and they are labelled as different things —
+     the first version conflated them and read a count as an identity. */
+  let registered = [];
+  try { registered = (await apiGet("/agents", { limit: 100 })).items || []; } catch { /* not fatal */ }
+  const byName = new Map(registered.map((a) => [a.name, a]));
+  const rows = [];
+  for (const a of registered) {
+    const busy = seen.find(([n]) => n === a.name);
+    rows.push({ id: a.id, name: a.name, events: busy ? busy[1] : 0, real: a });
+  }
+  for (const [name, count] of seen) {
+    if (!byName.has(name)) rows.push({ id: null, name, events: count, real: null });
+  }
+  setHTML("agentList", rows.map((r) => `
+    <div class="row${r.id ? "" : " static"}"${r.id ? ` data-agent="${esc(r.id)}"` : ""}>
+      <div class="grow"><div class="t">${esc(r.name)}</div>
+        <div class="s">${esc(r.real ? (r.real.description || r.real.lifecycle_status || "registered") : "seen in events, not in the registry")}</div></div>
+      <div class="r">${r.events ? r.events + " events" : ""}</div>
+      ${r.id ? `<div class="btn-row" data-agent-actions="${esc(r.id)}">
+        <button class="btn sm" data-kill="1" data-id="${esc(r.id)}">Stop</button>
+      </div>` : ""}
+    </div>`).join(""));
+}
+
+/* The kill switch, in the page, as a control. `kill_switch` existed for several
+   tranches with constraints around it and no code path that could set it. */
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-kill]");
+  if (!btn) return;
+  const { id } = btn.dataset;
+  let control;
+  try { control = await apiGet(`/agents/${encodeURIComponent(id)}/control`); } catch (err) {
+    toast("Could not read that agent: " + err.message, true); return;
+  }
+  if (control.kill_switch) { await revive(id); return; }
+  const reason = window.prompt(
+    "Why is this agent being stopped?\n\nThe reason is required — the database refuses a "
+    + "kill without one, and it is written to the decision log.");
+  if (reason === null) return;
+  if (!reason || reason.trim().length < 3) {
+    toast("A reason is required. A kill with no reason is indistinguishable from an accident.",
+          true);
+    return;
+  }
+  try {
+    await apiPost(`/agents/${encodeURIComponent(id)}/kill`, { reason: reason.trim() });
+    toast("Stopped, and the decision logged.");
+    await refreshAfterAction();
+  } catch (err) {
+    toast("Could not stop that agent: " + err.message, true);
+  }
+});
+
+async function revive(id) {
+  if (!window.confirm("Start it again? It comes back at L1 — the old grant is not restored.")) return;
+  try {
+    await apiPost(`/agents/${encodeURIComponent(id)}/revive`, {});
+    toast("Running again, at L1.");
+    await refreshAfterAction();
+  } catch (err) {
+    toast("Could not revive that agent: " + err.message, true);
+  }
+}
+
+/* ---------------- the decision log ---------------- */
+/* ============================== the hiring process ==============================
+   A process, not a task list. An operator's question is "how far along is the hire", and
+   answering that from the task list means counting eight rows and knowing which eight.
+
+   **No percentage, and no "on track".** The stages are not equally weighted -- writing a JD
+   and approving an offer are not the same size of thing -- and the process's shape is the
+   thing an operator is supposed to be able to change. A number implying otherwise would be the
+   one dishonest figure on this page, so what is shown instead is two counts that are facts:
+   stages finished, and stages waiting on a person.
+   ------------------------------------------------------------------
+   A gate is drawn differently from a stage on purpose. It is the only thing here a person is
+   *asked* to do, so it carries the question, the stage, and the two buttons -- and it carries
+   them on the same screen as the stages above and below it, because deciding in isolation from
+   the process is how a decision gets made without knowing where it sits. */
+let hireCache = null;
+
+async function renderHiring() {
+  let d = null;
+  try { d = await apiGet("/hiring"); } catch (err) { showError(err); return; }
+  hireCache = d;
+  const stages = d.stages || [];
+
+  setHTML("hireStats",
+    statTile("Giai đoạn xong", `${d.done_count}/${d.stage_count}`, d.sop_code, "good")
+    + statTile("Chờ anh quyết", num((d.waiting_on_you || []).length),
+        (d.waiting_on_you || []).length ? "có cổng đang mở" : "không có gì chờ",
+        (d.waiting_on_you || []).length ? "warn" : "good")
+    + statTile("Vị trí", d.position, `${d.office} · ${d.department}`)
+    + statTile("Ứng viên trong hồ sơ", num((d.candidates || []).length), "mô phỏng, không gửi cho ai"));
+
+  $("hireTitle").textContent = `Tuyển dụng: ${d.position}`;
+  $("hireSub").textContent = `${d.sop_code} — ${d.sop_title}`;
+  $("hireEmpty").hidden = stages.length > 0;
+  $("hireFlow").hidden = stages.length === 0;
+
+  const cur = d.current || {};
+  setHTML("hireFlow", stages.map((s) => {
+    const isNow = s.n === cur.n;
+    const cls = "hire-row"
+      + (s.task_status === "completed" ? " done" : "")
+      + (isNow && s.task_status !== "completed" ? " now" : "")
+      + (s.gate ? " gate" : "")
+      + (s.task_status === "failed" ? " bad" : "");
+    const made = (s.produced || []);
+    const art = (s.produces || []).map((a) => made.includes(a)
+      ? `<b>${esc(a)}</b>` : esc(a)).join(" · ");
+    return `<div class="${cls}">
+      <div class="hire-n">${s.n}</div>
+      <div>
+        <div class="hire-name">${esc(s.name_vi)}</div>
+        <div class="hire-where">${esc(s.office)} · ${esc(s.department)} · ${esc(s.agent)}</div>
+        <div class="hire-art">Sản phẩm: ${art || "—"}</div>
+        ${s.gate ? `<div class="hire-q">${esc(s.question)}</div>` : ""}
+        ${s.error ? `<div class="hire-art" style="color:var(--bad)">${esc(String(s.error).slice(0, 160))}</div>` : ""}
+        ${s.waiting_on_you
+          ? `<div class="hire-btn"><button class="btn sm" data-hire-approve="${esc(s.task_id)}"
+               data-hire-approval="${esc(s.gate)}"
+               data-hire-question="${esc(s.approval_question || s.question)}">Duyệt cổng này</button></div>`
+          : ""}
+      </div>
+      <div class="hire-state">${esc(s.state)}</div>
+    </div>`;
+  }).join(""));
+
+  const gates = stages.filter((s) => s.gate);
+  const openGates = stages.filter((s) => s.waiting_on_you);
+  $("hireGateSub").textContent = `${openGates.length} đang mở / ${gates.length} cổng trong quy trình`;
+  $("hireGatesEmpty").hidden = openGates.length > 0;
+  setHTML("hireGates", openGates.map((s) => `<div class="list-row">
+      <div class="grow">
+        <div class="t">Giai đoạn ${s.n} · ${esc(s.name_vi)}</div>
+        <div class="s">${esc(s.approval_question || s.question)}</div>
+      </div>
+      <button class="btn sm" data-hire-approve="${esc(s.task_id)}"
+        data-hire-approval="${esc(s.gate)}"
+        data-hire-question="${esc(s.approval_question || s.question)}">Duyệt</button>
+    </div>`).join(""));
+
+  const done = (d.approved_deliverables || []).join(", ") || "chưa có phần nào xong";
+  $("hireJdSub").textContent = `JD tham chiếu: ${d.jd_reference}`;
+  setHTML("hireJd", `
+    <ul class="hire-jd">${(d.jd_sections || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    <div class="hire-rubric">${(d.rubric || []).map((r) =>
+      `<span>${esc(r.level)} <b>${Math.round(r.weight * 100)}%</b></span>`).join("")}</div>
+    <div class="hire-art" style="margin-top:8px">Phần SOP đã xong: ${esc(done)}</div>`);
+
+  $("hireNote").innerHTML =
+    `Quy trình này triển khai <b>${esc(d.sop_code)}</b>. Danh mục SOP trong hồ sơ giữ **tên và
+     mã**, không giữ thân — nên tám giai đoạn ở đây là quy trình anh yêu cầu, đặt lên ba sản phẩm
+     của SOP (JD, hồ sơ ứng viên, onboarding) và cổng duyệt người <code>FRM-AI-001</code>.`;
+
+  const b = $("navHireCount");
+  if (b) {
+    const n = (d.waiting_on_you || []).length;
+    b.textContent = n ? String(n) : "";
+    b.hidden = !n;
+  }
+}
+
+/* Approve a gate from the process view. The note is required, exactly as on the approvals
+   screen: a decision with no reason is a tick in a box, and the note is what the next reader
+   sees. */
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-hire-approve]");
+  if (!btn) return;
+  const note = window.prompt(
+    "Ghi lý do quyết định này, để người đọc sau thấy đã cân nhắc gì. "
+    + "Lý do được lưu cùng quyết định.");
+  if (note === null || !note.trim()) return;
+  btn.disabled = true;
+  try {
+    const out = await apiPost(`/approvals/${encodeURIComponent(btn.dataset.hireApproval)}/approve`,
+      { note: note.trim() });
+    toast(`Đã duyệt (${out.status}).`);
+    hireCache = null;
+    await renderHiring();
+    await refreshBadges();
+  } catch (err) {
+    showError(err);
+    btn.disabled = false;
+  }
+});
+
+/* ====================== the six departments ======================
+   A tree from the CEO down to the six, each box clickable, each box carrying the five
+   answers. Clicking opens a panel with the run on one side and the work on the other,
+   because "what did it do" and "what is it doing" are asked together.
+   ------------------------------------------------------------------
+   **No `chain_of_thought` field exists here, and there is not one to add.** The model does
+   not expose private reasoning and this platform does not store it. What it stores is the
+   run's `summary` -- the same string a workflow branches on -- its `artifacts`, its
+   `decision_record`, and the model it used. So the panel is called "what it did" and shows
+   those. A panel labelled "chain of thought" would be the one dishonest panel in the
+   product. */
+let deptCache = null;
+let deptSel = null;
+let deptPoll = null;
+
+function agentBox(a, sel) {
+  const cls = "abox" + (sel ? " sel" : "") + (a.running ? " on" : "")
+    + (!a.running && a.stuck ? " stuck" : "");
+  const c = a.counts || {};
+  return `<div class="${cls}" data-agent-box="${esc(a.id)}" data-agent-name="${esc(a.name)}"
+      role="button" tabindex="0" aria-label="${esc(a.name)}">
+    <div class="n">${esc(a.label || a.name)}</div>
+    ${
+      // The subtitle only earns its place when it says something the title does
+      // not. The chief has no `label`, so its title falls back to its name -- and
+      // printing the name again underneath made the one box on the page that is
+      // not a department the one box that looked like a mistake.
+      (a.label && a.label !== a.name)
+      ? `<div class="r">${esc(a.name)}${a.killed ? " · stopped" : ""}</div>` : ""}
+    <div class="c">
+      <span>open <b>${c.open ?? 0}</b></span>
+      <span>done <b>${c.done ?? 0}</b></span>
+      ${c.attention ? `<span>stuck <b>${c.attention}</b></span>` : ""}
+      ${a.stuck ? `<span>stranded <b>${a.stuck}</b></span>` : ""}
+      <span>${esc(a.granted || "L1")}/${esc(a.ceiling || "L1")}</span>
+    </div>
+  </div>`;
+}
+
+async function loadDepartments() {
+  if (deptCache) return deptCache;
+  try { deptCache = await apiGet("/departments"); }
+  catch (err) { showError(err); deptCache = null; }
+  return deptCache;
+}
+
+function renderTree(target, offices, chief, selId, secondTier) {
+  const parts = [];
+  if (chief) {
+    parts.push(`<div class="dept-tier">Chief</div>`);
+    parts.push(agentBox({ ...chief, label: "Executive Agent" }, selId === chief.id));
+  }
+  // The office tier, between the chief and the departments.
+  //
+  // It was missing entirely, so the "Departments" heading under the chief had
+  // nothing above it and the panel read as broken. The data has been in the API
+  // for a while -- zero because the query asked for agents this organisation
+  // has never had, seven once it asked the tree instead -- so the fix was never
+  // in the data. It was a tier the page did not draw.
+  const offices2 = secondTier || [];
+  if (offices2.length) {
+    parts.push(`<div class="dept-tier">Offices</div>`);
+    for (const o of offices2) {
+      parts.push(
+        `<div class="dept-edges">${agentBox({ ...o, label: o.unit || o.name }, selId === o.id)}</div>`
+      );
+    }
+  }
+  parts.push(`<div class="dept-tier">Departments</div>`);
+  for (const o of offices) {
+    if (o.missing) {
+      parts.push(`<div class="abox stuck"><div class="n">${esc(o.label)}</div>
+        <div class="r">no agent named ${esc(o.name)}</div></div>`);
+      continue;
+    }
+    parts.push(`<div class="dept-edges">${agentBox({ ...o, label: o.label }, selId === o.id)}</div>`);
+  }
+  return parts.join("");
+}
+
+async function renderDepartments(key) {
+  const d = await loadDepartments();
+  if (!d) return;
+
+  if (key) return renderOneDepartment(d, key);
+
+  const boxes = [d.chief, ...d.offices.filter((o) => !o.missing)].filter(Boolean);
+  const running = boxes.filter((b) => b.running).length;
+  const stranded = boxes.reduce((n, b) => n + (b.stuck || 0), 0);
+  const openTasks = boxes.reduce((n, b) => n + ((b.counts || {}).open || 0), 0);
+  const attention = boxes.reduce((n, b) => n + ((b.counts || {}).attention || 0), 0);
+  setHTML("deptStats",
+    statTile("Working now", num(running), "of " + num(boxes.length) + " agents",
+      running ? "good" : "")
+    + statTile("Open work", num(openTasks), "across the six", openTasks ? "warn" : "good")
+    + statTile("Needs attention", num(attention), "failed or refused", attention ? "alarm" : "good")
+    + statTile("Stranded runs", num(stranded), "started, never closed", stranded ? "warn" : "good"));
+
+  $("deptSub").textContent = `${d.offices.length} departments · ${d.edges.length} delegation(s) on record`;
+  $("deptEmpty").hidden = boxes.length > 0;
+  $("deptTree").hidden = boxes.length === 0;
+  setHTML("deptTree", renderTree("deptTree", d.offices, d.chief, deptSel, d.second_tier));
+
+  watchDepartments();
+}
+
+async function renderOneDepartment(d, key) {
+  // The chief is a real agent with no department of its own, so it has no `key`
+  // in the payload -- and clicking it navigates here with the literal "chief".
+  // It used to fall through to "No such department", which is what a person
+  // sees when they click the one box on the page that is not a department.
+  if (key === "chief") return renderChiefPanel(d.chief);
+  const o = d.offices.find((x) => x.key === key);
+  if (!o) { toast("No such department.", true); go("#/departments"); return; }
+  deptSel = o.id;
+  $("deptTitle").textContent = o.missing ? o.label : o.label + " — " + o.name;
+  $("deptSub2").textContent = o.missing ? "no agent registered" :
+    `${o.granted} granted, ceiling ${o.ceiling} · model ${o.model} · ${o.run_count} run(s)`;
+  setHTML("deptOneTree", renderTree("deptOneTree", [o], null, o.id));
+
+  if (o.missing) { setHTML("runSteps", ""); $("runEmpty").hidden = false;
+    $("workOpen").innerHTML = $("workAttn").innerHTML = $("workDone").innerHTML = "";
+    $("deptNote").textContent = ""; return; }
+
+  $("runSub").textContent = `${(o.runs || []).length} recent run(s)`;
+  $("runEmpty").hidden = (o.runs || []).length > 0;
+  setHTML("runSteps", (o.runs || []).map((r) => `
+    <div class="step${r.running ? " live" : ""}">
+      <div class="h"><span>${esc(r.status)}</span>
+        <span>${esc(r.model_used || "—")}</span>
+        <span>${num(r.tokens)} tok</span>
+        <span>${r.duration_ms != null ? Math.round(r.duration_ms / 1000) + "s" : ""}</span>
+        <span>${r.started_at ? esc(ago(r.started_at)) : ""}${r.stuck ? " · stranded" : ""}</span>
+      </div>
+      <div class="b">${readable(r.summary)}</div>
+      ${r.error_message ? `<div class="b" style="color:var(--bad)">${esc(r.error_message.slice(0, 300))}</div>` : ""}
+    </div>`).join(""));
+
+  const c = o.counts || {};
+  $("workSub").textContent = `${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`;
+  const row = (t, kind) => `<div class="taskitem ${kind}">
+      <span class="st">${esc(t.status)}</span>
+      <span class="grow">${esc(t.title)}</span>
+      ${t.error ? `<span class="s">${esc(String(t.error).slice(0, 90))}</span>` : ""}
+    </div>`;
+  setHTML("workOpen", (o.open_tasks || []).map((t) => row(t, "open")).join(""));
+  setHTML("workAttn", (o.attention || []).map((t) => row(t, "attn")).join(""));
+  setHTML("workDone", (o.done_tasks || []).map((t) => row(t, "done")).join(""));
+  $("workEmpty").hidden = ((o.open_tasks || []).length + (o.done_tasks || []).length
+    + (o.attention || []).length) > 0;
+  $("deptNote").innerHTML = o.last_run
+    ? `<b>Last run:</b> ${esc(o.last_run.status)} on ${esc(o.last_run.model_used || "—")}
+       ${num(o.last_run.tokens)} tokens. The summary above is the same string a workflow
+       branches on, so the panel cannot say one thing and the engine another.`
+    : "It has not run yet, so there is nothing to report.";
+}
+
+$("deptBack").onclick = () => go("#/departments");
+
+/* "Chạy lại" — a failed task, run again.
+   ------------------------------------------------------------------
+   A `failed` task is **terminal**: the state machine says nothing leaves it, because reusing
+   the row would make the audit trail lie about what was attempted. That reasoning is right,
+   and on its own it was a dead end — the platform could explain every failure and let nobody
+   do anything about any of them. Measured: 58 failed tasks, none of them actionable.
+
+   So this creates a **new** task carrying the same work, linked to the failure by
+   `task_dependencies`. The failed row keeps its failure and its `last_error`, because those
+   are facts about an attempt that happened. The new task is created and **not started** — a
+   person who presses this by accident should not immediately spend 67,000 tokens, and Run is
+   right there for when they mean it. */
+$("retryBtn").onclick = async () => {
+  const id = state.taskId;
+  if (!id) return;
+  const btn = $("retryBtn");
+  btn.disabled = true;
+  btn.textContent = "Đang tạo…";
+  try {
+    const out = await apiPost(`/tasks/${id}/retry`, {});
+    toast(`Đã tạo "${out.title}". Bấm Run để chạy.`, false);
+    go(`#/task/${out.task_id}`);
+  } catch (err) {
+    showError(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Chạy lại";
+  }
+};
+
+document.addEventListener("click", async (e) => {
+  const box = e.target.closest("[data-agent-box]");
+  if (box) {
+    const d = await loadDepartments();
+    if (!d) return;
+    const o = d.offices.find((x) => x.id === box.dataset.agentBox);
+    if (o) { go(`#/dept/${encodeURIComponent(o.key)}`); return; }
+    // The chief has no department of its own, so it opens on the same panel.
+    if (d.chief && d.chief.id === box.dataset.agentBox) {
+      renderChiefPanel(d.chief);
+      go("#/dept/chief");
+      return;
+    }
+    return;
+  }
+  const dept = e.target.closest("[data-key]") && e.target.closest("a[data-key]");
+  if (dept) { deptSel = null; }
+});
+
+/* The chief has no department, so its panel is drawn in one place and reached
+   two ways: by clicking the box, and by arriving at #/dept/chief. Duplicating it
+   meant the click rendered correctly and the navigation immediately re-rendered
+   it as "No such department" -- the click appeared to do nothing. */
+function renderChiefPanel(chief) {
+  if (!chief) { toast("No such agent.", true); go("#/departments"); return; }
+  deptSel = chief.id;
+      setHTML("deptTitle", "Executive Agent — the chief");
+      $("deptSub2").textContent = `${chief.granted} granted, ceiling ${chief.ceiling}`;
+      setHTML("deptOneTree", renderTree("deptOneTree", [], chief, chief.id, []));
+      $("runSub").textContent = `${(chief.runs || []).length} recent run(s)`;
+      $("runEmpty").hidden = (chief.runs || []).length > 0;
+      setHTML("runSteps", (chief.runs || []).slice(0, 8).map((r) => `
+        <div class="step${r.running ? " live" : ""}">
+          <div class="h"><span>${esc(r.status)}</span><span>${esc(r.model_used || "—")}</span>
+            <span>${num(r.tokens)} tok</span>
+            <span>${r.started_at ? esc(ago(r.started_at)) : ""}</span></div>
+          <div class="b">${readable(r.summary)}</div>
+        </div>`).join(""));
+      $("workOpen").innerHTML = (chief.open_tasks || []).map((t) =>
+        `<div class="taskitem open"><span class="st">${esc(t.status)}</span><span class="grow">${esc(t.title)}</span></div>`).join("");
+      $("workAttn").innerHTML = taskRows(chief.attention, "attn");
+      $("workDone").innerHTML = taskRows(chief.done_tasks, "done");
+}
+
+
+/* Poll while the page is open, so a light that comes on is noticed without a reload.
+   Ten seconds: a run is measured at 644 seconds, so a faster poll would spend requests
+   to watch nothing happen, and a slower one would make the light feel broken. */
+function watchDepartments() {
+  if (deptPoll) clearInterval(deptPoll);
+  deptPoll = setInterval(async () => {
+    if (parseHash().name !== "departments" && parseHash().name !== "dept") return;
+    const before = JSON.stringify((deptCache?.chief ? [deptCache.chief.running, deptCache.chief.stuck] : [])
+      .concat((deptCache?.offices || []).map((o) => [o.running, o.stuck])));
+    const fresh = await apiGet("/departments").catch(() => null);
+    if (!fresh) return;
+    const after = JSON.stringify([fresh.chief?.running, fresh.chief?.stuck]
+      .concat(fresh.offices.map((o) => [o.running, o.stuck])));
+    if (before === after) return;
+    deptCache = fresh;
+    await renderDepartments(parseHash().arg);
+  }, 10000);
+}
+
+/* ====================== give work ======================
+   The CEO's flow, in the order it happens: pick a task, watch it be handed out, decide,
+   then read the account of it. The tree and the log are on the same screen as the
+   decisions, because a decision taken away from the evidence of what it is deciding about
+   is a decision made blind. */
+let workFilter = "";
+const taskNames = new Map();
+
+function taskName(id) { return taskNames.get(id) || "Task"; }
+
+function waitingTone(w) {
+  return w === "you" ? "warn" : w === "an_agent" ? "" : "good";
+}
+
+/* The delegation graph, drawn from the tree.
+   ------------------------------------------------------------------
+   Laid out by `depth`, which is the only ordering the data actually
+   supports: `delegations.depth` is set by the executor, and guessing
+   the shape from timestamps would put a parent to the left of its
+   child the moment two were delegated in the same second.
+
+   An SVG rather than nested divs, because a delegation graph is a
+   graph: the edges are the evidence, and a list of edges is a table
+   of a tree. `role="img"` with a label, so a screen reader gets the
+   shape rather than eight empty rectangles. */
+function delegationGraph(root, tree, delegations) {
+  if (!root) return "";
+  /* The **structure** comes from `tasks.parent_task_id`, not from
+     `delegations.child_task_id` -- because `child_task_id` is NULL on every
+     delegation the real executor has written. Measured: 7 delegations, 7 nulls.
+     The first version built the graph from the delegation edges and drew a
+     flat list of boxes with no lines between them, which is a table wearing
+     a graph's clothes.
+
+     The delegations are still used, for what they know that the task tree
+     does not: *which* edge, to whom, and whether it was accepted or refused. */
+  const children = new Map();
+  for (const t of tree) {
+    if (!t.parent_task_id) continue;
+    if (!children.has(t.parent_task_id)) children.set(t.parent_task_id, []);
+    children.get(t.parent_task_id).push(t);
+  }
+  const byId = new Map(tree.map((t) => [t.id, t]));
+  // parent -> the delegation that describes the handoff, matched on the parent
+  // and the objective's leading words, because there is no child id to match on.
+  const edgeOf = new Map();
+  for (const dg of delegations) {
+    edgeOf.set(dg.parent_task_id + "|" + String(dg.objective || "").slice(0, 40), dg);
+  }
+  const W = 900, ROW = 58, PAD = 26;
+  const placed = new Map();
+
+  // Depth from the root, walking down `children`. A node the walk does
+  // not reach is still drawn -- at the bottom, unlinked -- because a
+  // delegation whose parent is missing is a fact, not a reason to
+  // draw less.
+  (function place(id, depth) {
+    if (placed.has(id)) return;
+    placed.set(id, { depth, x: PAD + depth * 300 });
+    const y = 40 + (placed.size - 1) * ROW;
+    placed.get(id).y = y;
+    for (const kid of children.get(id) || []) place(kid.id, depth + 1);
+  })(root, 0);
+
+  const edgeMarkup = [...placed.entries()].filter(([id]) => {
+    const t = byId.get(id);
+    return t && t.parent_task_id && placed.has(t.parent_task_id);
+  }).map(([id, at]) => {
+    const child = byId.get(id);
+    const a = placed.get(child.parent_task_id);
+    const dg = edgeOf.get(child.parent_task_id + "|"
+      + String(child.title || "").slice(0, 40)) || null;
+    const x1 = a.x + 236, y1 = a.y + 18, x2 = at.x, y2 = at.y + 18;
+    const mid = (x1 + x2) / 2;
+    const refused = dg && dg.status !== "accepted" && dg.status !== "completed";
+    const who = dg ? (dg.from_agent || "the agent") + " to " + (dg.to_agent || "a department")
+      : "handed off";
+    return `<path d="M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}"
+      fill="none" stroke="${refused ? "var(--bad)" : "var(--accent)"}"
+      stroke-width="1.6" stroke-dasharray="${refused ? "4 3" : "none"}"
+      opacity="0.65" marker-end="url(#arrow)"
+      ><title>${esc(who)}${dg ? ": " + esc(dg.status) : ""}</title></path>`;
+  }).join("");
+
+  const nodeMarkup = [...placed.entries()].map(([id, at]) => {
+    const t = byId.get(id);
+    const done = t && t.status === "completed";
+    const failed = t && t.status === "failed";
+    const title = t ? t.title : id;
+    return `<g transform="translate(${at.x},${at.y})">
+      <rect width="236" height="36" rx="7"
+        fill="${failed ? "var(--bad-soft)" : done ? "var(--ok-soft)" : "var(--panel)"}"
+        stroke="${failed ? "var(--bad)" : done ? "var(--ok)" : "var(--line)"}"/>
+      <text x="10" y="15" class="g-t">${esc(String(title).slice(0, 30))}</text>
+      <text x="10" y="28" class="g-s">${esc(t ? t.status : "no task row")}</text>
+      ${t && t.owner_name ? `<text x="226" y="28" class="g-s" text-anchor="end">${esc(String(t.owner_name).slice(0, 18))}</text>` : ""}
+      <title>${esc(title)}</title>
+    </g>`;
+  }).join("");
+
+  const h = 56 + placed.size * ROW;
+  return `<svg viewBox="0 0 ${W} ${h}" width="100%" height="${h}" role="img"
+      aria-label="Delegation graph: ${placed.size} tasks, ${delegations.length} delegations">
+    <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)" opacity="0.6"/></marker></defs>
+    <text x="${PAD}" y="22" class="g-h">${esc(root)}</text>
+    ${edgeMarkup}${nodeMarkup}
+  </svg>`;
+}
+
+async function renderGive(id) {
+  if (id) return renderOneTask(id);
+
+  // Leaving a task releases its detail -- the same rule the project and document views
+  // hold, and `verify-page` checks it on each. A stale panel under a fresh list is how a
+  // person reads one thing and believes another.
+  setHTML("taskStats", ""); setHTML("taskTree", ""); setHTML("taskLog", "");
+  setHTML("taskApprovals", ""); setHTML("taskNote", ""); setHTML("taskGraph", "");
+  $("taskTitle").textContent = "Task"; $("taskSub").textContent = "";
+  $("runThisState").textContent = "";
+
+  let q = {};
+  try { q = await apiGet("/ceo/work", { limit: 100 }); }
+  catch (err) { showError(err); }
+
+  const needsYou = q.needs_you ?? 0;
+  setHTML("workStats",
+    statTile("Waiting on you", num(needsYou), "need a decision or an owner", needsYou ? "warn" : "good")
+    + statTile("With an agent", num(q.in_flight ?? 0), "running or assigned")
+    + statTile("Settled", num(q.settled ?? 0), "finished and reported")
+    + statTile("Total", num(q.total ?? 0), "tasks on the register"));
+
+  const badge = $("navWorkCount");
+  if (badge) { badge.textContent = needsYou ? String(needsYou) : ""; badge.hidden = !needsYou; }
+
+  const all = q.items || [];
+  for (const t of all) taskNames.set(t.id, t.title);
+  const rows = !workFilter ? all
+    : all.filter((t) => workFilter === "you" ? t.waiting_on === "you"
+      : workFilter === "in_flight" ? t.waiting_on === "an_agent"
+      : t.waiting_on === "nobody");
+
+  $("workEmpty").hidden = rows.length > 0;
+  $("workList").hidden = rows.length === 0;
+  setHTML("workList", rows.map((t) => `
+    <div class="row" data-task="${esc(t.id)}">
+      <div class="grow">
+        <div class="t">${esc(t.title)}</div>
+        <div class="s">${esc(t.task_type)} · ${esc(t.status)}
+          ${t.owner_name ? " · held by " + esc(t.owner_name) : " · nobody holds it"}
+          ${t.delegated ? ` · handed to ${t.delegated}` : ""}
+          ${t.children ? ` · ${t.children} subtask(s)` : ""}</div>
+        ${t.last_error ? `<div class="s">refused: ${esc(String(t.last_error).slice(0, 120))}</div>` : ""}
+      </div>
+      <div class="r">
+        ${t.approvals_waiting ? `<span class="pill del">${t.approvals_waiting} to decide</span>` : ""}
+        <span class="t-${waitingTone(t.waiting_on) || "muted"}">${esc(t.waiting_on === "you" ? "you" : t.waiting_on === "an_agent" ? "an agent" : "settled")}</span>
+      </div>
+    </div>`).join(""));
+}
+
+async function renderOneTask(id) {
+  let d = null;
+  try { d = await apiGet(`/tasks/${encodeURIComponent(id)}/report`); }
+  catch (err) { showError(err); return; }
+  const t = d.task || {};
+  taskNames.set(t.id, t.title);
+  state.taskId = t.id || null;
+
+  /* The retry button appears **only** where it applies: a task that failed, was cancelled or
+     was blocked. A task that has not failed has nothing to repeat — it needs running or
+     deciding, and offering "run it again" there would invite a duplicate of work already in
+     flight. Hidden by default in the markup too, so it cannot flash before the report lands. */
+  const retryable = ["failed", "cancelled", "blocked"].includes(t.status);
+  const rb = $("retryBtn");
+  rb.hidden = !retryable;
+  if (retryable) {
+    rb.title = t.last_error
+      ? `Tạo một task MỚI cùng việc này. Lý do đã fail: ${String(t.last_error).slice(0, 160)}`
+      : "Tạo một task MỚI cùng việc này.";
+  }
+
+  const s = d.summary || {};
+  setHTML("taskStats",
+    statTile("Outcome", t.status || "—", t.task_type || "", t.status === "completed" ? "good" : t.status === "failed" ? "alarm" : "")
+    + statTile("Handed to", num(s.delegated_to ?? 0), "departments or agents")
+    + statTile("Ran", num(s.executed ?? 0),
+        `${s.failed ?? 0} failed`, s.failed ? "alarm" : "good")
+    + statTile("In flight", num(s.in_flight ?? 0),
+        `of ${s.attempts ?? 0} attempt(s)`,
+        (s.in_flight ?? 0) ? "warn" : "good")
+    + statTile("Decisions", num(s.approvals_total ?? 0),
+        `${s.approvals_pending ?? 0} waiting on a person`,
+        s.approvals_pending ? "warn" : "good"));
+
+  $("taskTitle").textContent = t.title || "Task";
+  $("taskSub").textContent = [t.task_type, t.status, t.requester_type]
+    .filter(Boolean).join(" · ");
+
+  /* The tree, parents before children, so the first row is the thing that was asked for
+     and each delegation is visibly underneath it. A tree that lists children first makes
+     a reader reconstruct the shape themselves. */
+  setHTML("taskTree", (d.tree || []).map((n) => `
+    <div class="row static" style="margin-left:${n.parent_task_id ? 18 : 0}px">
+      <div class="grow">
+        <div class="t">${n.parent_task_id ? "↳ " : ""}${esc(n.title)}</div>
+        <div class="s">${esc(n.status)}${n.owner_name ? " · " + esc(n.owner_name) : ""}</div>
+      </div>
+    </div>`).join("") + (d.delegations || []).map((g) => `
+    <div class="row static">
+      <div class="grow">
+        <div class="t">d${g.depth} ${esc(g.from_agent || "?")} → ${esc(g.to_agent || "?")}</div>
+        <div class="s">${esc(g.objective || "")}</div>
+        ${g.denial_reason ? `<div class="s">refused: ${esc(String(g.denial_reason).slice(0, 140))}</div>` : ""}
+      </div>
+      <div class="r"><span class="pill">${esc(g.status)}</span></div>
+    </div>`).join(""));
+
+  /* The graph first, because it is the answer to "who did what" and a
+     list of rows answers it only after you have read every one. */
+  const tree = d.tree || [];
+  $("taskGraphSub").textContent =
+    `${tree.length} task(s), ${(d.delegations || []).length} delegation(s)`;
+  $("taskGraphEmpty").hidden = tree.length > 0;
+  $("taskGraph").hidden = tree.length === 0;
+  if (tree.length) setHTML("taskGraph", delegationGraph(t.id, tree, d.delegations || []));
+
+  const appr = d.approvals || [];
+  $("taskApprovalsSub").textContent = `${appr.length} on this task`;
+  $("taskApprovalsEmpty").hidden = appr.length > 0;
+  $("taskApprovals").hidden = appr.length === 0;
+  setHTML("taskApprovals", appr.map((ap) => `
+    <div class="row${ap.status !== "pending" ? " static" : ""}">
+      <div class="grow">
+        <div class="t">${esc(ap.action_type)} <span class="pill">${esc(ap.risk_level || "")}</span></div>
+        <div class="s">${esc(ap.reason || "")}</div>
+        ${ap.decided_at ? `<div class="s">${esc(ap.decision || ap.status)} by ${esc(ap.decided_by || "someone")} · ${esc(ago(ap.decided_at))}</div>` : ""}
+      </div>
+      <div class="btn-row">
+        ${ap.status === "pending"
+          ? `<button class="btn sm" data-appr="${esc(ap.id)}" data-do="approve">Approve</button>
+             <button class="btn ghost sm" data-appr="${esc(ap.id)}" data-do="reject">Refuse</button>`
+          : `<span class="t-${ap.decision === "approved" ? "ok" : "bad"}">${esc(ap.decision || ap.status)}</span>`}
+      </div>
+    </div>`).join(""));
+
+  $("taskLogSub").textContent = `${(d.events || []).length} event(s)`;
+  setHTML("taskLog", (d.events || []).map((e) => `
+    <div class="row static">
+      <div class="grow"><div class="t">${esc(e.event_type)}</div>
+        <div class="s">${esc(ago(e.occurred_at))}${e.actor_id ? " · " + esc(e.actor_id) : ""}</div></div>
+    </div>`).join(""));
+
+  /* The report, in words, at the end -- because "finish then report to me" is the last
+     step of the flow and it should arrive as a sentence, not as a table to read. */
+  const models = (s.models || []).filter(Boolean);
+  $("taskNote").innerHTML = models.length
+    ? `<b>Reported:</b> this ${esc(t.task_type || "task")} was handed to ${s.delegated_to}
+       agent(s)${s.refused ? `, ${s.refused} refused it and said why` : ""},
+       ${s.executed} ran and ${s.failed} failed, and ${s.approvals_total} decision(s) were
+       required of a person. Model used: <code>${esc(models.join(", "))}</code>.`
+    : `<b>Reported:</b> this ${esc(t.task_type || "task")} was handed to ${s.delegated_to}
+       agent(s)${s.refused ? `, ${s.refused} refused it` : ""}, ${s.executed} ran,
+       ${s.failed} failed, ${s.approvals_total} decision(s) required of a person.
+       <br><b>No model is named</b> because no execution recorded one — an account that
+       cannot say which model acted is an account of a system nobody can audit.`;
+}
+
+$("runThisTask").onclick = async () => {
+  const id = parseHash().arg;
+  if (!id) { toast("Open a task first.", true); return; }
+  const btn = $("runThisTask");
+  btn.disabled = true; btn.textContent = "Starting…";
+  $("runThisState").textContent = "";
+  try {
+    const h = await apiPost(`/tasks/${encodeURIComponent(id)}/run`, {});
+    if (!h.started) {
+      // Refusals are the interesting case and get the whole line, not a generic failure.
+      $("runThisState").innerHTML = `<span class="t-bad">Not started.</span> ${esc(h.reason)}`;
+      toast("Not started: " + h.reason, true);
+      return;
+    }
+    const mins = Math.round(h.estimate_seconds / 60);
+    $("runThisState").innerHTML =
+      `<span class="t-ok">Started</span> in the background. Expect about <b>${mins} minutes</b> `
+      + `and <b>${Number(h.estimate_tokens).toLocaleString("en-US")} tokens</b> on the free model. `
+      + `This page will keep watching.`;
+    toast("Started. This one takes about " + mins + " minutes.");
+    watchRun(id);
+  } catch (err) {
+    $("runThisState").innerHTML = `<span class="t-bad">Could not start.</span> ${esc(err.message)}`;
+    toast("Could not start: " + err.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = "Run this task now";
+  }
+};
+
+/* Watch, do not wait. A run takes ten minutes, so the page polls the
+   report every few seconds and re-renders -- the alternative is a
+   spinner for ten minutes, which reads as a broken product. */
+let watchTimer = null;
+function watchRun(id) {
+  if (watchTimer) clearInterval(watchTimer);
+  let ticks = 0;
+  watchTimer = setInterval(async () => {
+    ticks += 1;
+    try {
+      const d = await apiGet(`/tasks/${encodeURIComponent(id)}/report`);
+      const s = d.summary || {};
+      $("runThisState").innerHTML =
+        `<span class="t-del">running</span> · ${s.executed || 0} ran, ${s.failed || 0} failed, `
+        + `${s.approvals_pending || 0} decision(s) waiting · checked ${ticks} time(s)`;
+      if ((s.executed || 0) + (s.failed || 0) > 0 && ticks > 2) {
+        clearInterval(watchTimer); watchTimer = null;
+        await renderOneTask(id);
+        toast("The run has produced work. The report is updated.");
+      }
+    } catch (err) {
+      if (watchTimer) { clearInterval(watchTimer); watchTimer = null; }
+      $("runThisState").innerHTML = `<span class="t-bad">Lost the run.</span> ${esc(err.message)}`;
+    }
+  }, 4000);
+}
+
+$("workFilter").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-w]");
+  if (!b) return;
+  workFilter = b.dataset.w || "";
+  for (const x of $("workFilter").children) x.classList.toggle("on", x === b);
+  await renderGive();
+});
+
+document.addEventListener("click", async (e) => {
+  const row = e.target.closest("[data-task]");
+  if (row && row.dataset.task) { go(`#/give/${encodeURIComponent(row.dataset.task)}`); return; }
+  const btn = e.target.closest("button[data-appr]");
+  if (!btn) return;
+  const doing = btn.dataset.do;
+  const note = doing === "approve" ? null : window.prompt(
+    "Why is this refused?\n\nThe reason is kept with the decision, so the next reader can "
+    + "see what was considered. An approval with no note is a tick in a box.");
+  if (doing !== "approve" && (note === null || !note.trim())) return;
+  btn.disabled = true;
+  try {
+    await apiPost(`/approvals/${encodeURIComponent(btn.dataset.appr)}/${doing}`,
+      doing === "approve" ? {} : { note: note.trim() });
+    toast(doing === "approve" ? "Decided, and written to the log." : "Refused, with your reason.");
+    await renderOneTask(parseHash().arg);
+    // The queue's count changes the moment a decision is made, so the badge must follow.
+    try { const q = await apiGet("/ceo/work", { limit: 1 });
+      const b = $("navWorkCount");
+      if (b) { b.textContent = q.needs_you ? String(q.needs_you) : ""; b.hidden = !q.needs_you; }
+    } catch { /* the badge is not worth a second error */ }
+  } catch (err) {
+    btn.disabled = false;
+    toast("Could not record that: " + err.message, true);
+  }
+});
+
+/* ====================== documents ======================
+   Two views, one route. `#/documents` lists; `#/documents/{id}` is the detail, and the
+   breadcrumb plus the Back button are how a person leaves it — the complaint that this
+   section answers was "no way out of a drill-down", and a detail view with no crumb is
+   exactly that. */
+let docFilterBlock = "";
+let docOpenId = null;
+const docNames = new Map();
+
+function docName(id) {
+  return docNames.get(id) || "Document";
+}
+
+function docBars(c) {
+  const pct = Math.max(0, Math.min(100, c.percent ?? 0));
+  return `<span class="t-ok">${c.acknowledged ?? 0}/${c.required ?? 0}</span>`
+    + `<div class="bar"><i style="width:${pct}%"></i></div>`;
+}
+
+async function renderDocuments(id) {
+  if (id) return renderOneDocument(id);
+
+  /* Leaving a document releases its detail. The project view does the same and `verify-page`
+     already checks it, because the failure it guards is a *stale* panel: the register is on
+     screen and the previous document's distribution matrix is still underneath it, so a
+     person reads one thing and believes another. Clearing here also covers the filter
+     buttons, which re-render the list without an argument -- filtering the register is
+     not a reason to keep a document open. */
+  docOpenId = null;
+  setHTML("docOneStats", "");
+  setHTML("docVersions", "");
+  setHTML("docMatrix", "");
+  setHTML("docOneNote", "");
+  $("docOneTitle").textContent = "Document";
+  $("docOneCode").textContent = "";
+
+  let sum = {};
+  try { sum = await apiGet("/documents/summary"); } catch (err) { showError(err); }
+  const outstanding = sum.outstanding ?? 0;
+  setHTML("docStats",
+    statTile("Documents", num(sum.documents ?? 0),
+        num(sum.numbered ?? 0) + " numbered on the dossier scheme")
+    + statTile("In force", num(sum.versions_in_force ?? 0), "approved revisions")
+    + statTile("Unread", num(outstanding),
+        "sent to somebody who has not confirmed it", outstanding ? "alarm" : "good")
+    + statTile("Acknowledged", num(sum.acknowledged ?? 0),
+        (sum.required ?? 0) + " required in total", outstanding ? "warn" : "good"));
+
+  // The sidebar count is the *outstanding* figure, not the document total: the number a
+  // person needs on every screen is how much is waiting, and a badge showing 28 when
+  // nothing is outstanding is a badge people learn to ignore.
+  const badge = $("navDocCount");
+  if (badge) {
+    badge.textContent = outstanding ? String(outstanding) : "";
+    badge.hidden = !outstanding;
+  }
+
+  let reg = { items: [], total: 0 };
+  try {
+    reg = await apiGet("/documents", { limit: 100, block: docFilterBlock || undefined });
+  } catch (err) { showError(err); }
+  for (const d of reg.items) docNames.set(d.id, d.code || d.title);
+
+  $("docEmpty").hidden = reg.items.length > 0;
+  $("docList").hidden = reg.items.length === 0;
+  setHTML("docList", reg.items.map((d) => `
+    <div class="row" data-doc="${esc(d.id)}">
+      <div class="grow">
+        <div class="t">${esc(d.title)}</div>
+        <div class="s">${esc(d.code || "no dossier number")} · rev ${d.live_version_no ?? "—"}`
+    + (d.expires_on ? ` · <b>expires ${esc(d.expires_on)}</b>` : "")
+    + (d.retention_until ? ` · kept until ${esc(String(d.retention_until).slice(0, 10))}` : "")
+    + `</div>
+      </div>
+      <div class="r">${docBars(d.compliance || {})}</div>
+    </div>`).join(""));
+}
+
+async function renderOneDocument(id) {
+  let d = null;
+  try { d = await apiGet(`/documents/${encodeURIComponent(id)}`); }
+  catch (err) { showError(err); return; }
+  docNames.set(d.id, d.code || d.title);
+  docOpenId = d.id;
+
+  const c = d.compliance || {};
+  setHTML("docOneStats",
+    statTile("In force", d.live_version_no ?? "—", "approved revision")
+    + statTile("Unread", num(c.outstanding ?? 0), (c.required ?? 0) + " required in total",
+        c.outstanding ? "alarm" : "good")
+    + statTile("Acknowledged", num(c.acknowledged ?? 0),
+        c.percent === 100 ? "everyone has confirmed it" : (c.percent ?? 0) + "% confirmed",
+        c.percent === 100 ? "good" : "warn")
+    + statTile("Expires", d.expires_on || "never",
+        d.retention_until ? "kept until " + String(d.retention_until).slice(0, 10) : "no retention set"));
+
+  $("docOneTitle").textContent = d.title;
+  $("docOneCode").textContent = (d.code || "no dossier number")
+    + (d.department ? ` · ${d.department}` : "");
+
+  /* Newest revision first, because the question is "which one is current, and what came
+     before it". A lineage listed oldest-first makes the reader scroll to find out. */
+  setHTML("docVersions", (d.versions || []).map((v) => `
+    <div class="row static">
+      <div class="grow">
+        <div class="t">Revision ${v.version_no}
+          <span class="pill ${v.status === "approved" ? "del" : ""}">${esc(v.status)}</span></div>
+        <div class="s">${esc(v.change_note || "no change note")}</div>
+        <div class="s">in force ${esc(v.effective_from || "—")} → ${esc(v.effective_to || "open")}</div>
+      </div>
+    </div>`).join(""));
+
+  const live = d.live_version_no;
+  const rows = (d.distributions || []).filter((x) => x.version_no === live);
+  const supersededRows = (d.distributions || []).filter((x) => x.version_no !== live);
+  $("docMatrixSub").textContent = `${rows.length} required for revision ${live ?? "—"}`;
+  $("docMatrixEmpty").hidden = rows.length > 0;
+  $("docMatrix").hidden = rows.length === 0;
+  /* An empty matrix after a new revision is a true and important state -- nobody is
+     holding revision 2 -- so it is stated in those words and paired with the action that
+     changes it. A bare empty list reads as "nothing to do here", which is the exact
+     wrong conclusion at the exact moment somebody needs to do something. */
+  $("docMatrixEmpty").innerHTML = live
+    ? `<div class="big">▣</div>Nobody has been sent revision ${esc(live)} yet.`
+      + `<div><button class="btn sm" data-send="1">Send it to a role</button>`
+      + (supersededRows.length
+        ? `<div class="s" style="margin-top:6px">${supersededRows.length} obligation(s)
+             still sit on the previous revision.</div>` : "")
+      + `</div>`
+    : `<div class="big">▣</div>No revision is in force, so there is nothing to circulate.`;
+  setHTML("docMatrix", rows.map((x) => `
+    <div class="row${x.acknowledged_at ? " static" : ""}">
+      <div class="grow">
+        <div class="t">${esc(x.audience_role_key)}</div>
+        <div class="s">${x.acknowledged_at
+          ? "read by " + esc(x.acknowledged_by) + " · " + esc(ago(x.acknowledged_at))
+          : (x.distributed_at ? "sent " + esc(ago(x.distributed_at)) + " · not confirmed"
+                              : "not sent")}</div>
+      </div>
+      <div class="btn-row">
+        ${x.acknowledged_at ? `<span class="t-ok">read</span>`
+          : `<button class="btn sm" data-ack="${esc(x.id)}" data-who="${esc(x.audience_role_key)}">Confirm read</button>`}
+      </div>
+    </div>`).join(""));
+
+  $("docOneNote").innerHTML = `Hash <code>${esc((d.content_hash || "").slice(0, 16))}…</code>`
+    + ` · classification <b>${esc(d.classification)}</b>`
+    + (d.source_type ? ` · filed as <b>${esc(d.source_type)}</b>` : "")
+    + `<br><b>Confirming a read records your name</b>, because the database refuses an
+       acknowledgement with nobody behind it. A second press keeps the first name and the
+       first time: "when did they read it" is the only reason that column has a timestamp.`;
+}
+
+$("docFilter").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-b]");
+  if (!b) return;
+  docFilterBlock = b.dataset.b || "";
+  for (const x of $("docFilter").children) x.classList.toggle("on", x === b);
+  await renderDocuments();
+});
+
+document.addEventListener("click", async (e) => {
+  const send = e.target.closest("button[data-send]");
+  if (send) {
+    const who = window.prompt(
+      "Which role must hold this revision?\n\nUse the dossier's own role key, so the SOP's "
+      + "owner and its audience are the same word -- `chief_accountant`, `project_manager`, "
+      + "`site_manager`.\n\nSending records that they were told. It does NOT record that they "
+      + "read it; that is a separate press.");
+    if (!who || !who.trim()) return;
+    send.disabled = true;
+    try {
+      await apiPost(`/documents/${encodeURIComponent(docOpenId)}/distributions`,
+        { audience_role_key: who.trim() });
+      toast(`Sent to ${who.trim()}. They still have to confirm they read it.`);
+      await renderDocuments(docOpenId);
+    } catch (err) {
+      send.disabled = false;
+      toast("Could not send that: " + err.message, true);
+    }
+    return;
+  }
+  const row = e.target.closest("[data-doc]");
+  if (row && row.dataset.doc) { go(`#/documents/${encodeURIComponent(row.dataset.doc)}`); return; }
+  const btn = e.target.closest("button[data-ack]");
+  if (!btn) return;
+  const who = window.prompt(
+    "Confirm you have read this document.\n\nYour name is recorded — the database refuses "
+    + "an acknowledgement with nobody behind it, and a tick in a box is what that column "
+    + "exists to prevent.\n\nRole: " + (btn.dataset.who || ""));
+  if (!who || !who.trim()) return;
+  btn.disabled = true;
+  try {
+    // The endpoint is `/documents/{id}/acknowledge` rather than a flatter one, so the
+    // document is named in the path and cannot be confused with another revision's
+    // obligation. `docOpenId` is the id the detail view was rendered from -- a variable
+    // rather than a value scraped back out of the DOM, so a stale button cannot post
+    // against a document the reader is no longer looking at.
+    const r = await apiPost(
+      `/documents/${encodeURIComponent(docOpenId)}/acknowledge`,
+      { distribution_id: btn.dataset.ack, acknowledged_by: who.trim() });
+    toast(r.already_acknowledged
+      ? `Already recorded: ${r.acknowledged_by}, ${ago(r.acknowledged_at)}. The first record stands.`
+      : `Recorded: ${r.acknowledged_by}.`);
+    await renderDocuments(parseHash().arg);
+  } catch (err) {
+    btn.disabled = false;
+    toast("Could not record that: " + err.message, true);
+  }
+});
+
+async function renderDecisions() {
+  const d = await apiGet("/ai-decisions", {
+    decision: state.decisionFilter || undefined, limit: 100,
+  });
+  $("decisionSub").textContent = `${d.total} recorded`;
+  $("decisionEmpty").hidden = d.items.length > 0;
+  setHTML("decisionList", d.items.map((x) => `
+    <div class="row static">
+      <div class="grow">
+        <div class="t">${esc(x.decision)}
+          <span class="tag ${x.decision === "killed" ? "late" : x.decision === "revived" ? "ok" : "accent"}">${esc(x.autonomy_level || "—")}</span>
+        </div>
+        <div class="s">${esc(x.agent_name || x.agent_id || "no subject")} · by ${esc(x.actor_type)}
+          ${x.policy_rule ? "· rule " + esc(x.policy_rule) : ""}</div>
+        <div class="s" style="margin-top:3px">${esc(x.rationale || "—")}</div>
+      </div>
+      <div class="r">${esc(ago(x.occurred_at))}</div>
+    </div>`).join(""));
+}
+
+$("decisionFilter").onclick = (e) => {
+  const b = e.target.closest("button[data-f]");
+  if (!b) return;
+  state.decisionFilter = b.dataset.f;
+  for (const x of $("decisionFilter").children)
+    x.classList.toggle("on", x === b);
+  renderDecisions().catch(showError);
+};
+$("workFilter").onclick = (e) => {
+  const b = e.target.closest("button[data-f]");
+  if (!b) return;
+  state.workFilter = b.dataset.f;
+  for (const x of $("workFilter").children) x.classList.toggle("on", x === b);
+  renderWork().catch(showError);
+};
+
+async function refreshAfterAction() {
+  /* The nav count and whatever view is on screen both change, so both are refreshed
+     rather than guessing which one the person is looking at. */
+  try {
+    const inbox = await apiGet("/approvals/inbox");
+    state.inbox = inbox.items;
+    setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
+    $("navApprovalCount").hidden = !inbox.count;
+  } catch { /* the view refresh below will surface it */ }
+  await route();
+}
+
+/* ==================================================================
+   8. The console. Unchanged in behaviour, kept because it works and
+   because it is the only place the delegation tree is visible.
+   ================================================================== */
+function renderConsole() { renderFlow(); renderAgentsFeed(); }
+
+function renderFlow() {
+  const roots = [...state.tasks.values()].filter((n) => !n.parent_task_id);
+  $("flowCount").textContent = roots.length ? `${state.tasks.size} tasks` : "";
+  $("flowEmpty").hidden = roots.length > 0;
+  $("tree").innerHTML = roots.map((n, i) => nodeEl(n, false, i === roots.length - 1)).join("");
+}
+function nodeEl(n, last, isLast) {
+  const el = document.createElement("li");
+  const div = document.createElement("div");
+  div.className = "node";
+  div.innerHTML = `<span class="id">${esc((n.id || "").slice(0, 8))}</span>`
+    + `<span class="${n.lifecycle_status === "failed" ? "t-bad" : n.lifecycle_status === "delegated" ? "t-deleg" : ""}">`
+    + `${esc(n.lifecycle_status || "pending")}</span>`
+    + `<span style="color:var(--text-2)">${esc(n.goal || n.title || "")}</span>`;
+  el.appendChild(div);
+  const kids = (n.children || []).map((c) => state.tasks.get(c)).filter(Boolean);
+  if (kids.length) {
+    const ul = document.createElement("ul");
+    kids.forEach((k, i) => ul.appendChild(nodeEl(k, false, i === kids.length - 1)));
+    el.appendChild(ul);
+  }
+  return el;
+}
+function renderAgentsFeed() {
+  const names = [...state.agents.entries()].sort((a, b) => b[1] - a[1]);
+  const feed = $("feed");
+  const filter = state.filter;
+  feed.innerHTML = state.events.filter((e) => {
+    const t = String(e.type || "");
+    if (filter === "bad") return /failed|rejected|blocked/.test(t);
+    if (filter === "flow") return t.startsWith("delegation.") || t.startsWith("subagent.");
+    return true;
+  }).slice(-160).map((e) => {
+    /* Names come from `view`, ids from `data`, and the timestamp is `occurred_at`.
+       Reading `detail` here rendered 189 blank lines, which is what an empty console
+       looks like and is indistinguishable from "nothing has happened". */
+    const v = e.view || {};
+    const d = e.data || {};
+    const who = v.from_agent && v.to_agent ? `${v.from_agent} → ${v.to_agent}`
+      : v.from_agent || v.to_agent || e.source || "";
+    const bad = e.type.includes("failed") || e.type.includes("rejected")
+      || e.type.includes("blocked");
+    const when = e.occurred_at ? new Date(e.occurred_at).toLocaleTimeString() : "";
+    return `<div class="evt${bad ? " bad" : ""}">
+      <span class="tm">${esc(when)}</span>
+      <span class="msg"><b>${esc(e.type || "event")}</b> ${esc(who)} ${esc(v.title || d.status || "")}</span></div>`;
+  }).join("");
+  $("evCount").textContent = state.events.length ? String(state.events.length) : "";
+}
+$("evFilter").onclick = (e) => {
+  const b = e.target.closest("button[data-f]");
+  if (!b) return;
+  state.filter = b.dataset.f;
+  for (const x of $("evFilter").children) x.classList.toggle("on", x === b);
+  renderAgentsFeed();
+};
+
+/* ---------------- streaming ---------------- */
+function setConn(name, text) { $("dot").className = "dot " + name; $("connText").textContent = text; }
+
+/* SSE over `fetch` rather than `EventSource`: `EventSource` cannot set an
+   `Authorization` header, and the two ways round that are a token in the query
+   string or a cookie. Both are worse. `fetch` sends the header, `ReadableStream`
+   gives the frames, and the token never leaves the header. */
+async function stream() {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      setConn("wait", "connecting");
+      const r = await fetch(API + "/stream", {
+        headers: authHeaders({ Accept: "text/event-stream" }),
+        signal: (state.es || new AbortController()).signal,
+      });
+      if (!r.ok || !r.body) throw new Error(String(r.status));
+      setConn("ok", "live");
+      const reader = r.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf("\n\n")) >= 0) {
+          const frame = buf.slice(0, i);
+          buf = buf.slice(i + 2);
+          for (const line of frame.split("\n")) {
+            if (line.startsWith("data:")) handleFrame(line.slice(5).trim());
+          }
+        }
+      }
+      throw new Error("stream closed");
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      setConn("bad", "reconnecting");
+      await new Promise((r) => setTimeout(r, Math.min(15000, 1000 * 2 ** Math.min(attempt, 4))));
+    }
+  }
+}
+
+/* The event shape, measured against a live stream rather than remembered:
+
+     { id, type, subject, source, actor_id, data, occurred_at, view }
+
+   `data` carries the **ids** — `parent_task_id`, `source_agent_id`,
+   `target_agent_id`, `depth`, `delegation_id`. `view` carries the **names** —
+   `from_agent`, `to_agent`, `title`, `parent_title`, `task_id` — because the
+   projection resolves the ids so a reader never renders two opaque strings.
+
+   The previous version read `ev.detail` and `ev.at`, neither of which has ever
+   existed on this payload, so the console rendered an empty feed and an empty tree
+   over 189 real events. The tests that guarded it asserted the *names* were present
+   in the file, which they were — in a comment.
+*/
+function handleFrame(payload) {
+  let msg;
+  try { msg = JSON.parse(payload); } catch { return; }
+  for (const ev of msg.events || [msg]) {
+    if (!ev || !ev.id || state.backfill.has(ev.id)) continue;
+    state.backfill.add(ev.id);
+    state.events.push(ev);
+    if (state.events.length > 600) state.events.splice(0, state.events.length - 600);
+    const d = ev.data || {};
+    const v = ev.view || {};
+    for (const name of [v.from_agent, v.to_agent]) {
+      if (name) state.agents.set(name, (state.agents.get(name) || 0) + 1);
+    }
+    const childId = v.task_id || d.child_task_id;
+    const parentId = d.parent_task_id;
+    if (childId && parentId) {
+      const child = state.tasks.get(childId) || { id: childId, children: [] };
+      child.parent_task_id = parentId;
+      child.goal = v.title || child.goal || "";
+      child.lifecycle_status = ev.type.includes("completed") ? "completed"
+        : ev.type.includes("rejected") ? "rejected"
+        : ev.type.includes("failed") ? "failed" : "delegated";
+      state.tasks.set(childId, child);
+      const parent = state.tasks.get(parentId)
+        || { id: parentId, children: [], goal: v.parent_title || "", lifecycle_status: "running" };
+      if (!parent.children.includes(childId)) parent.children.push(childId);
+      state.tasks.set(parentId, parent);
+    } else if (v.task_id) {
+      const node = state.tasks.get(v.task_id) || { id: v.task_id, children: [] };
+      node.goal = v.title || node.goal || "";
+      node.lifecycle_status = ev.type.endsWith("completed") ? "completed"
+        : ev.type.endsWith("failed") ? "failed" : "running";
+      state.tasks.set(v.task_id, node);
+    }
+  }
+  if (!state.paused) {
+    if (parseHash().name === "console") renderConsole();
+    if (parseHash().name === "agents") {
+      const active = $("agentList");
+      if (active) renderAgents().catch(() => {});
+    }
+  }
+}
+
+/* ---------------- start a task ---------------- */
+$("runBtn").onclick = async () => {
+  const goal = $("goal").value.trim();
+  if (!goal) { toast("Say what the company should work on.", true); return; }
+  const btn = $("runBtn");
+  btn.disabled = true; btn.textContent = "Running…";
+  try {
+    // The chosen agent is the task's owner. It was not sent, so the selector on
+    // screen did nothing: the task was created with nobody to do it.
+    const chosen = $("scenario").value;
+    const scenario = (state.scenarios || []).find((sc) => sc.key === chosen);
+    await apiPost("/tasks", {
+      title: (scenario ? scenario.title : goal).slice(0, 60), goal,
+      task_type: $("taskType").value, start_workflow: false,
+      owner_agent_id: $("agent").value || null,
+      // Carried so the office can route the work to the department that owns it,
+      // and so the department is held to what was asked for rather than to
+      // "something". Absent for free text, which declares nothing.
+      ...(scenario ? {
+        input: { owning_department: scenario.agent_name, owning_office: scenario.office },
+        expected_output_schema: { required: Object.keys(scenario.expected_output) },
+      } : {}),
+    });
+    toast("Queued.");
+    go("#/console");
+  } catch (err) {
+    toast("Could not start: " + err.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = "Run";
+  }
+};
+$("tokenBtn").onclick = () => { if (askToken(token()) !== null) { forgetToken(); askToken(""); } };
+
+/* ---------------- the work catalogue ---------------- */
+// Filled from the server rather than written into the page, so the work on offer
+// and the work the code knows about cannot drift apart.
+async function loadScenarios() {
+  const sel = $("scenario");
+  try {
+    const data = await apiGet("/scenarios");
+    state.scenarios = data.scenarios || [];
+    sel.innerHTML = '<option value="">Something else (type it below)</option>'
+      + state.scenarios.map((sc) =>
+          `<option value="${sc.key}">${sc.title}</option>`).join("");
+  } catch (err) {
+    // A catalogue that will not load must not block typing your own work.
+    sel.innerHTML = '<option value="">Something else (type it below)</option>';
+  }
+}
+$("scenario").onchange = () => {
+  const sc = (state.scenarios || []).find((s) => s.key === $("scenario").value);
+  const hint = $("scenarioHint");
+  if (!sc) { $("goal").value = ""; hint.hidden = true; return; }
+  $("goal").value = sc.goal;
+  $("taskType").value = "coordination";
+  // Hand the work to the chief, so the tiers below are the ones who do it.
+  const chief = $("agent");
+  const match = [...chief.options].find((o) => /executive/i.test(o.textContent));
+  if (match) chief.value = match.value;
+  hint.textContent = "Should come back: " + sc.deliverable;
+  hint.hidden = false;
+};
+
+/* ---------------- boot ---------------- */
+(async function boot() {
+  try {
+    await apiGet("/portfolio");
+    setConn("ok", "live");
+  } catch (err) {
+    setConn("bad", "no connection");
+    if (err && err.auth) toast("Not authorised. Click Token to enter the service token.", true);
+  }
+  applyRole('ceo');
+  await loadScenarios();
+  await route();
+  if (state.es) state.es.abort();
+  state.es = new AbortController();
+  stream();
+})();
+</script>
+</body>
+</html>

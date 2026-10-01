@@ -1,0 +1,458 @@
+"""The CEO's two questions: *what can I give to the agents?* and *what happened to it?*
+
+## Why this is a read layer and not a page
+
+`role_views.py` holds the dossier's three views. This holds the two the coordination flow
+adds, and it holds them for the same reason: **the judgements live here and the HTTP layer
+adds transport.** A page that computed "is this task waiting on me" from a different query
+than the inbox is a page that eventually disagrees with the inbox.
+
+## The work queue, and what makes a task *offered*
+
+Not every task is something a CEO should be choosing from. A task is offered when it is
+**open and waiting for a person** — created but never run, or assigned but not finished.
+A task that a worker is running is not something to hand out, and offering it invites a
+second person to start the same work.
+
+`waiting_on` is the column that decides the sort order, and it is a real classification
+rather than a flag:
+
+| `waiting_on` | what it means | what the CEO can do |
+|---|---|---|
+| `you` | nobody owns it, or an approval is waiting on a person | give it to an agent, or decide |
+| `an_agent` | assigned and not finished | watch it |
+| `nobody` | finished, failed, or cancelled | read the report |
+
+**`you` is the point of the whole view.** A queue that mixes all three equally gives a CEO
+no way to know what needs them, which is the one question a CEO opens a page to answer.
+
+## The report, and why it is not the task row
+
+`GET /tasks/{id}` returns the task. This returns **the account of it**: what was asked,
+who it was handed to, what each one did, what was approved and what was refused, what came
+out, and who decided at each point. An audit asks those questions together; answering them
+one HTTP call at a time is how an auditor assembles a picture of a system that has already
+moved on.
+
+The report is assembled from **five tables** and it is explicit about which, because a
+report that silently omits a source is a report that can be wrong in a way nobody notices:
+
+* `tasks` — what was asked, and how it ended
+* `delegations` — the tree, with each edge's status and any refusal reason
+* `executions` — what each agent did, and what it cost
+* `approvals` — every decision, with the actor and the reason
+* `events` — the ordered record, which is what "the log" means here
+
+## What the report will not do
+
+**It will not say the work was good.** It reports what happened: which agent, which model,
+how long, what it produced, and whether a person signed it off. Quality is the approval's
+subject, not the report's, and a report that implied a verdict would be doing an
+approval's job with a SELECT.
+
+**It will not hide a failed delegation.** A refused edge appears with its reason, in place,
+in the tree — because "the agent could not do this and said why" is the most useful line in
+the whole account, and a report that only shows successes is a report about a different
+system.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from sqlalchemy import text
+
+from ai_orchestrator.application.ports import ReadConnection
+from ai_orchestrator.domain.errors import NotFoundError
+
+#: The CEO's queue.
+#:
+#: `waiting_on` is computed rather than stored, because a stored flag is a thing that can be
+#: wrong. The three cases are mutually exclusive and the ordering puts `you` first, which
+#: is the only reason to open this page.
+_WORK_QUEUE = """
+SELECT t.id, t.title, t.goal, t.task_type, t.status, t.priority, t.requester_type,
+       t.created_at, t.deadline_at, t.attempt_count, t.failure_category, t.last_error,
+       t.root_task_id, t.parent_task_id,
+       a.name AS owner_name,
+       (SELECT count(*) FROM delegations d
+         WHERE d.parent_task_id = t.id) AS delegated,
+       (SELECT count(*) FROM tasks c WHERE c.parent_task_id = t.id) AS children,
+       (SELECT count(*) FROM executions x WHERE x.task_id = t.id) AS executions,
+       (SELECT count(*) FROM approvals ap WHERE ap.task_id = t.id
+          AND ap.status = 'pending') AS approvals_waiting
+FROM tasks t
+LEFT JOIN agents a ON a.id = t.owner_agent_id
+WHERE t.organization_id = CAST(:o AS varchar(40))
+  AND (CAST(:state AS text) IS NULL OR t.status = :state)
+ORDER BY
+  -- `you` first: an approval waiting on a person, or a task nobody owns.
+  CASE WHEN (SELECT count(*) FROM approvals ap WHERE ap.task_id = t.id
+              AND ap.status = 'pending') > 0 THEN 0
+       WHEN t.status IN ('created', 'assigned') THEN 1
+       ELSE 2 END,
+  t.created_at DESC
+LIMIT :limit OFFSET :offset
+"""
+
+_WORK_COUNT = """
+SELECT count(*) FROM tasks t
+WHERE t.organization_id = CAST(:o AS varchar(40))
+  AND (CAST(:state AS text) IS NULL OR t.status = :state)
+"""
+
+#: The account of one task. Each of the five is a separate statement because they have
+#: different shapes and forcing them into one row would mean a `json_agg` per source and a
+#: reader unable to tell an empty list from a missing one.
+_REPORT_TASK = """
+SELECT t.id, t.title, t.goal, t.task_type, t.status, t.priority, t.requester_type,
+       t.created_at, t.started_at, t.completed_at, t.deadline_at, t.attempt_count,
+       t.failure_category, t.last_error, t.output, t.constraints,
+       t.spent_tokens, t.budget_limit_tokens, t.root_task_id, t.parent_task_id,
+       a.name AS owner_name
+FROM tasks t
+LEFT JOIN agents a ON a.id = t.owner_agent_id
+WHERE t.organization_id = CAST(:o AS varchar(40)) AND t.id = :id
+"""
+
+_REPORT_DELEGATIONS = """
+SELECT d.id, d.parent_task_id, d.child_task_id, d.status, d.objective, d.result,
+       d.denial_reason, d.depth, d.delegation_path, d.created_at, d.accepted_at,
+       d.completed_at, d.approval_id,
+       src.name AS from_agent, tgt.name AS to_agent
+FROM delegations d
+LEFT JOIN agents src ON src.id = d.source_agent_id
+LEFT JOIN agents tgt ON tgt.id = d.target_agent_id
+WHERE d.organization_id = CAST(:o AS varchar(40))
+  AND (d.parent_task_id = :id OR d.child_task_id = :id)
+ORDER BY d.depth, d.created_at
+"""
+
+_REPORT_EXECUTIONS = """
+SELECT x.id, x.task_id, x.status, x.model_used, x.model_profile, x.summary,
+       x.error_kind, x.error_message, x.input_tokens, x.output_tokens, x.duration_ms,
+       x.cost_usd, x.started_at, x.finished_at, x.artifacts,
+       a.name AS agent_name
+FROM executions x
+LEFT JOIN agents a ON a.id = x.agent_id
+WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.task_id = :id
+ORDER BY x.created_at
+"""
+
+_REPORT_APPROVALS = """
+SELECT ap.id, ap.task_id, ap.action_type, ap.status, ap.decision, ap.decision_note,
+       ap.effect_class, ap.risk_level, ap.reason, ap.requested_by, ap.requested_by_type,
+       ap.decided_by, ap.decided_at, ap.expires_at, ap.created_at
+FROM approvals ap
+WHERE ap.organization_id = CAST(:o AS varchar(40)) AND ap.task_id = :id
+ORDER BY ap.created_at
+"""
+
+#: The ordered record. `events` is the platform's own log and it is the one thing here that
+#: is written by everything rather than by any one part, which is why it is the last source
+#: rather than a join onto the others.
+_REPORT_EVENTS = """
+-- CloudEvents shape, so the columns are `type`, `source` and `data` -- and `subject` is
+-- what an event is *about*, which is the only honest way to find "the events for this
+-- task". The first version filtered on `payload::text LIKE '%<id>%'`, which is a scan of
+-- the whole tenant's log and would match a task id that happened to appear inside
+-- somebody else's payload.
+SELECT id, type, actor_id, source AS actor_type, occurred_at, subject
+FROM events
+WHERE organization_id = CAST(:o AS varchar(40))
+  AND (subject = :id OR subject LIKE :like || '%')
+ORDER BY occurred_at
+LIMIT 200
+"""
+
+#: Everything underneath a task, by walking `root_task_id`. A report that only shows the
+#: task you asked about and not the work it produced is a report about a shell.
+_REPORT_TREE = """
+SELECT t.id, t.title, t.status, t.task_type, t.parent_task_id, t.created_at, t.completed_at,
+       a.name AS owner_name
+FROM tasks t
+LEFT JOIN agents a ON a.id = t.owner_agent_id
+WHERE t.organization_id = CAST(:o AS varchar(40))
+  AND (t.id = :id OR t.root_task_id = :id OR t.parent_task_id = :id)
+ORDER BY t.created_at
+"""
+
+
+def _waiting_on(row: dict[str, Any]) -> str:
+    """Which of the three the CEO is looking at. See the module docstring."""
+    if int(row.get("approvals_waiting") or 0) > 0:
+        return "you"
+    if row.get("status") in ("created", "assigned"):
+        return "you"
+    return "nobody" if row.get("status") == "completed" else "an_agent"
+
+
+async def ceo_work_queue(
+    conn: ReadConnection,
+    *,
+    organization_id: str,
+    state: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """The tasks a CEO can act on, with what is waiting on whom.
+
+    The whole list, not a filtered subset. A CEO opening "what needs me" and finding a page
+    that has already decided they need nothing is the failure this is built to avoid.
+    """
+    total = int(
+        (await conn.execute(text(_WORK_COUNT), {"o": organization_id, "state": state})).scalar_one()
+    )
+    rows = (
+        (
+            await conn.execute(
+                text(_WORK_QUEUE),
+                {
+                    "o": organization_id,
+                    "state": state,
+                    "limit": limit,
+                    "offset": offset,
+                },
+            )
+        )
+        .mappings()
+        .all()
+    )
+
+    counts = {"you": 0, "an_agent": 0, "nobody": 0}
+    for row in rows:
+        counts[_waiting_on(dict(row))] += 1
+
+    return {
+        "items": [
+            {
+                "id": r["id"],
+                "title": r["title"],
+                "goal": r["goal"],
+                "task_type": r["task_type"],
+                "status": r["status"],
+                "priority": r["priority"],
+                "requester_type": r["requester_type"],
+                "owner_name": r["owner_name"],
+                "created_at": r["created_at"],
+                "deadline_at": r["deadline_at"],
+                "delegated": int(r["delegated"] or 0),
+                "children": int(r["children"] or 0),
+                "executions": int(r["executions"] or 0),
+                "approvals_waiting": int(r["approvals_waiting"] or 0),
+                "failure_category": r["failure_category"],
+                "last_error": r["last_error"],
+                "waiting_on": _waiting_on(dict(r)),
+            }
+            for r in rows
+        ],
+        "total": total,
+        "needs_you": counts["you"],
+        "in_flight": counts["an_agent"],
+        "settled": counts["nobody"],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+async def task_report(
+    conn: ReadConnection, *, organization_id: str, task_id: str
+) -> dict[str, Any]:
+    """The account of one task: what was asked, and everything that happened to it.
+
+    A 404 for another tenant's task, not a 403 — saying "forbidden" would confirm the row
+    exists, and the composite keys exist so a reader cannot tell the difference.
+    """
+    head = (
+        (await conn.execute(text(_REPORT_TASK), {"o": organization_id, "id": task_id}))
+        .mappings()
+        .one_or_none()
+    )
+    if head is None:
+        raise NotFoundError(f"no task {task_id}")
+
+    delegations = (
+        (await conn.execute(text(_REPORT_DELEGATIONS), {"o": organization_id, "id": task_id}))
+        .mappings()
+        .all()
+    )
+    executions = (
+        (await conn.execute(text(_REPORT_EXECUTIONS), {"o": organization_id, "id": task_id}))
+        .mappings()
+        .all()
+    )
+    approvals = (
+        (await conn.execute(text(_REPORT_APPROVALS), {"o": organization_id, "id": task_id}))
+        .mappings()
+        .all()
+    )
+    tree = (
+        (await conn.execute(text(_REPORT_TREE), {"o": organization_id, "id": task_id}))
+        .mappings()
+        .all()
+    )
+    events = (
+        (
+            await conn.execute(
+                text(_REPORT_EVENTS),
+                {"o": organization_id, "id": task_id, "like": f"{task_id}."},
+            )
+        )
+        .mappings()
+        .all()
+    )
+
+    tree_ids = {str(r["id"]) for r in tree}
+
+    return {
+        "task": {
+            "id": head["id"],
+            "title": head["title"],
+            "goal": head["goal"],
+            "task_type": head["task_type"],
+            "status": head["status"],
+            "priority": head["priority"],
+            "requester_type": head["requester_type"],
+            "owner_name": head["owner_name"],
+            "created_at": head["created_at"],
+            "started_at": head["started_at"],
+            "completed_at": head["completed_at"],
+            "deadline_at": head["deadline_at"],
+            "attempt_count": head["attempt_count"],
+            "failure_category": head["failure_category"],
+            "last_error": head["last_error"],
+            "output": head["output"],
+            "constraints": head["constraints"],
+            "spent_tokens": head["spent_tokens"],
+            "budget_limit_tokens": head["budget_limit_tokens"],
+            "root_task_id": head["root_task_id"],
+            "parent_task_id": head["parent_task_id"],
+        },
+        "summary": _summarise(head, delegations, executions, approvals),
+        "delegations": [
+            {
+                "id": d["id"],
+                "parent_task_id": d["parent_task_id"],
+                "child_task_id": d["child_task_id"],
+                "from_agent": d["from_agent"],
+                "to_agent": d["to_agent"],
+                "status": d["status"],
+                "objective": d["objective"],
+                "result": d["result"],
+                "denial_reason": d["denial_reason"],
+                "depth": d["depth"],
+                "created_at": d["created_at"],
+                "completed_at": d["completed_at"],
+            }
+            for d in delegations
+        ],
+        "tree": [
+            {
+                "id": t["id"],
+                "title": t["title"],
+                "status": t["status"],
+                "task_type": t["task_type"],
+                "parent_task_id": t["parent_task_id"],
+                "owner_name": t["owner_name"],
+                "completed_at": t["completed_at"],
+            }
+            for t in tree
+        ],
+        "executions": [
+            {
+                "id": x["id"],
+                "agent_name": x["agent_name"],
+                "status": x["status"],
+                "model_used": x["model_used"],
+                "model_profile": x["model_profile"],
+                "summary": x["summary"],
+                "error_message": x["error_message"],
+                "input_tokens": x["input_tokens"],
+                "output_tokens": x["output_tokens"],
+                "duration_ms": x["duration_ms"],
+                "cost_usd": x["cost_usd"],
+                "started_at": x["started_at"],
+                "finished_at": x["finished_at"],
+            }
+            for x in executions
+        ],
+        "approvals": [
+            {
+                "id": a["id"],
+                "action_type": a["action_type"],
+                "status": a["status"],
+                "decision": a["decision"],
+                "decision_note": a["decision_note"],
+                "effect_class": a["effect_class"],
+                "risk_level": a["risk_level"],
+                "reason": a["reason"],
+                "requested_by": a["requested_by"],
+                "requested_by_type": a["requested_by_type"],
+                "decided_by": a["decided_by"],
+                "decided_at": a["decided_at"],
+                "expires_at": a["expires_at"],
+            }
+            for a in approvals
+        ],
+        "events": [
+            {
+                "id": e["id"],
+                "event_type": e["type"],
+                "actor_id": e["actor_id"],
+                "actor_type": e["actor_type"],
+                "subject": e["subject"],
+                "occurred_at": e["occurred_at"],
+            }
+            for e in events
+        ],
+        "tree_size": len(tree_ids),
+    }
+
+
+def _summarise(
+    head: Any,
+    delegations: list[Any],
+    executions: list[Any],
+    approvals: list[Any],
+) -> dict[str, Any]:
+    """The four numbers, and the one sentence a reader starts with.
+
+    Written as a function rather than computed in the page so the dashboard and the report
+    cannot disagree about the same task — which is the shape of every stale-tile defect
+    this repository has recorded.
+    """
+    refused = [d for d in delegations if d["status"] in ("refused", "denied", "rejected")]
+    decided = [a for a in approvals if a["decision"]]
+    agents = {str(d["to_agent"]) for d in delegations if d["to_agent"]}
+
+    # Counted **by status**, never as `total - failed`.
+    #
+    # `len(executions) - len(failed)` counts a `running` execution as a success, and that
+    # is not a hypothetical: the seeded history carries four executions still marked
+    # `running` on tasks that reached `failed` on 27 September. So the report said "1 ran,
+    # 0 failed" for a task that failed -- the exact wrong-in-the-reassuring-direction
+    # figure this repository keeps finding.
+    #
+    # A stuck execution is also *information*, not noise: it means a run was interrupted
+    # and nothing closed it out. So it gets its own key rather than being folded into
+    # either total.
+    by_status: dict[str, int] = {}
+    for x in executions:
+        by_status[str(x["status"])] = by_status.get(str(x["status"]), 0) + 1
+    return {
+        "delegated_to": len(agents),
+        "refused": len(refused),
+        "executed": by_status.get("completed", 0),
+        "failed": by_status.get("failed", 0),
+        "in_flight": by_status.get("running", 0) + by_status.get("pending", 0),
+        "started": by_status.get("started", 0),
+        "attempts": len(executions),
+        "approvals_total": len(approvals),
+        "approvals_pending": len([a for a in approvals if a["status"] == "pending"]),
+        "approvals_decided": len(decided),
+        "models": sorted({str(x["model_used"]) for x in executions if x["model_used"]}),
+        "outcome": str(head["status"]),
+    }
+
+
+__all__ = ["ceo_work_queue", "task_report"]

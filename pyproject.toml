@@ -1,0 +1,161 @@
+[project]
+name = "ai-orchestrator"
+version = "0.1.0"
+description = "Autonomous Company OS — a governed control plane + agent runtime for hierarchical AI organizations"
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.54.0",
+    "pydantic>=2.12.0",
+    "pydantic-settings>=2.7.0",
+    "pydantic-ai-slim>=2.50.0",
+    "temporalio>=1.33.0",
+    "nats-py>=2.16.0",
+    "sqlalchemy[asyncio]>=2.1.0",
+    "asyncpg>=0.31.0",
+    "alembic>=1.20.0",
+    "pgvector>=0.5.0",
+    "structlog>=26.1.0",
+    "httpx>=0.28.1",
+    "typer>=0.27.0",
+    "rich>=14.0.0",
+    "tenacity>=9.1.0",
+    "pyjwt>=2.10.1",
+    "argon2-cffi>=25.1.0",
+    "sse-starlette>=2.2.0",
+    "python-multipart>=0.0.20",
+    # Workbook reading, for the ingest layer. Not optional and not a dev
+    # dependency: 221 of the corpus's documents are `.xlsx`, the material master
+    # and every requisition line come out of them, and `ingest/sheets.py` is
+    # measured against them. The first version of the sheet detector was written
+    # with openpyxl assumed to be importable and every corpus test skipped itself
+    # silently because it was not — the tests "passed" against no files at all,
+    # which is the F87 shape one layer out. See docs/FAILED_APPROACHES.md F90.
+    "openpyxl>=3.1.5",
+]
+
+[project.optional-dependencies]
+# OpenTelemetry: OTLP over HTTP works with a local collector and with any managed vendor.
+telemetry = [
+    "opentelemetry-sdk>=1.44.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.44.0",
+    "opentelemetry-instrumentation-fastapi>=0.51b0",
+    "opentelemetry-instrumentation-asyncpg>=0.62b0",
+]
+# A2A (Google's Agent2Agent protocol). Kept optional: the control plane must be
+# able to start and pass every other test without it.
+a2a = ["a2a-sdk>=0.3.0", "httpx>=0.28.1"]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.0",
+    "mypy>=1.18.0",
+]
+
+[project.scripts]
+ao = "ai_orchestrator.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_orchestrator"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.0",
+    "mypy>=1.18.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "unit: pure domain and contract tests, no I/O",
+    "integration: requires a live PostgreSQL instance",
+    "e2e: full stack acceptance scenario",
+    "failure: intentional failure-injection test",
+    "security: security property test",
+]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "RUF", "S", "ANN", "PTH", "TID"]
+ignore = [
+    "ANN401",  # `Any` is deliberate in a few serialization boundaries
+    "S101",    # asserts are used in tests
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency injection *is* a call in a parameter default. B008 exists
+# to catch a mutable default shared across calls, and `Depends(...)` is
+# constructed per request, so the rule has nothing to catch here. Naming the
+# calls is better than a blanket `B008` ignore, which would also hide a real
+# mutable default written by hand.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Cookie",
+    "fastapi.File",
+    "fastapi.Form",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "ANN", "B011", "SIM117", "RUF012"]
+"scripts/**" = ["S", "ANN"]
+# `RUF001`/`RUF002`/`RUF003` fire on the typographic characters that are part of
+# the Vietnamese source material: en dashes in SOP titles, arrows in the Gate
+# handover table, non-breaking spaces in spreadsheet examples. Those are
+# transcriptions, not prose, and "fixing" them would corrupt a document title.
+# The rule stays on everywhere else, where a stray en dash really is a typo.
+"scripts/seed_process_spine.py" = ["RUF001", "RUF002", "RUF003"]
+"src/ai_orchestrator/ingest/numbers.py" = ["RUF001"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+warn_unused_configs = true
+disallow_any_generics = true
+exclude = ["migrations/"]
+
+[[tool.mypy.overrides]]
+# PydanticAI ships no type information. The bridge module is the only place that
+# touches it, and its return value is asserted immediately, so the loss of static
+# checking there is contained to one file.
+module = ["ai_orchestrator.agent_runtime.pydanticai_agent"]
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+# `openpyxl` is a declared dependency and is used in two places that read real
+# workbooks, but it ships no type information. `ignore_missing_imports` rather than a
+# per-file `# type: ignore`, because the stubs are missing for the whole library and a
+# suppression on one import only pushes the error to the next line.
+module = ["openpyxl.*"]
+ignore_missing_imports = true
