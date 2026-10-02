@@ -82,7 +82,7 @@ Measured on 2026-10-02, tenant `org_01m3wmm6vj25zcf25se6kvk0nv`:
 
 | Criterion | State | Evidence |
 |---|---|---|
-| A. gate green | **met** | `make lint` 319 files formatted · `make typecheck` 144 source files clean · `make test` **3086 passed, 8 skipped, 0 failed** · `make test-e2e` see CURRENT_STATE |
+| A. gate green | **met** | `make lint` 319 files formatted · `make typecheck` 144 source files clean · `make test` **3086 passed, 8 skipped, 0 failed** · `make test-e2e` **34 passed in 1799.82s** |
 | B. three tiers, nested | **met** | 3 office groups, 7 departments, every one inside the group its `parent_unit_slug` names — asserted in `test_departments_reports_the_tree.py` and again structurally in `verify_page.mjs` |
 | B. office + chief have own panels | **met** | every box has `key`/`label`/`unit`; clicking an office opens that office and draws its departments under it |
 | B. no hard-coded counts on screen | **met** | the heading, the subtitle and the tile captions are all counted from the payload; "six" is gone from user-visible text |
