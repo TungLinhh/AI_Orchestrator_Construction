@@ -52,9 +52,30 @@ class DelegationLimits:
 
     @classmethod
     def platform_default(cls) -> DelegationLimits:
+        # `max_fanout` was 8, and **that number was smaller than the organisation it was
+        # supposed to bound**. Measured on a real run of the seeded company: the chief
+        # delegated successfully eight times and then asked for a ninth, was refused with
+        # `fan-out 8 reached the limit of 8`, retried until its 48 requests were spent,
+        # and the run ended
+        #
+        #     task.failed  category=budget_error
+        #       reason='the agent exceeded its turn budget and was stopped'
+        #
+        # which names the symptom. The chief had ten peers to address -- three offices
+        # and seven departments -- and a ceiling of eight meant the *ceiling*, not the
+        # work, was what stopped it.
+        #
+        # 16, for two reasons, and both are about the control rather than generosity. It
+        # matches `max_active_descendants`, so the two ceilings cannot disagree about how
+        # wide one agent's subtree may be. And it is far enough above ten that on a real
+        # run the binding constraint is the work rather than the setting. Lowering it
+        # below the organisation's own width reintroduces this failure with a smaller
+        # number in the message, which is why
+        # `TestTheCeilingIsNotTheBindingConstraint` asserts the *relationship* and not
+        # the literal.
         return cls(
             max_depth=4,
-            max_fanout=8,
+            max_fanout=16,
             max_active_descendants=16,
             max_tokens=200_000,
             max_cost_usd=5.0,

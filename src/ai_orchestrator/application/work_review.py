@@ -46,7 +46,7 @@ from ai_orchestrator.domain.review import (
     assess_output,
     should_rerun,
 )
-from ai_orchestrator.persistence.models import Task
+from ai_orchestrator.persistence.models import Execution, Task
 from ai_orchestrator.persistence.repositories.task import DelegationRepository, TaskRepository
 from ai_orchestrator.persistence.session import Database
 from ai_orchestrator.telemetry.logging import get_logger
@@ -201,6 +201,33 @@ async def self_review_of_a_coordinator(
     return ReviewVerdict(ok=ok, checks=checks, findings=findings)
 
 
+async def _what_the_run_said(session: Any, organization_id: str, task_id: str) -> str:
+    """The newest execution's summary for a task, or `""`.
+
+    **This is the difference between "you produced nothing" and "you produced a
+    report in the wrong shape".** `tasks.output` is `{}` whenever a model wrote prose
+    instead of the contracted object, and the real answer is in `executions.summary` --
+    6.7k tokens of it, on the very run whose output was `{}`.
+
+    Without this the office's finding is factually wrong, and wrong in the expensive
+    direction: a rerun brief built from that finding tells a department that has
+    already done the work that it did nothing, so it re-derives it. Measured: five
+    completed runs of the same work, each one told it had produced nothing.
+
+    Newest-first, because the newest attempt is the one being judged. A task that has
+    never run has no executions, which is `""` -- and that is the honest answer.
+    """
+    row = (
+        await session.execute(
+            select(Execution.summary)
+            .where(Execution.organization_id == organization_id, Execution.task_id == task_id)
+            .order_by(Execution.started_at.desc(), Execution.id.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    return str(row or "")
+
+
 def _brief_of(child: Task) -> str:
     """Everything the department was told, as one block of text.
 
@@ -341,6 +368,7 @@ async def review_office_work(
         # success over a department that never did the work.
         if TaskStatus(child.status) in (TaskStatus.FAILED, TaskStatus.EXPIRED):
             verdict = _failed_child_verdict(child)
+            reported_text = ""
         else:
             # **A child that delegated is a coordinator, and is judged as one.**
             #
@@ -360,13 +388,16 @@ async def review_office_work(
                 verdict = await self_review_of_a_coordinator(
                     session, organization_id, child, attempt=attempt
                 )
+                reported_text = ""
             else:
+                reported_text = await _what_the_run_said(session, organization_id, str(child.id))
                 verdict = assess_output(
                     output=child.output,
                     expected_output_schema=child.expected_output_schema,
                     attempt=attempt,
                     max_attempts=max_attempts,
                     source_text=_brief_of(child),
+                    reported_text=reported_text,
                 )
 
         if verdict.ok:
@@ -458,7 +489,7 @@ async def review_office_work(
         # review attached, not an accident.
         rerun = await tasks_repo.create(
             title=f"{child.title[:90]} (lần {attempt + 1})",
-            goal=_rerun_goal(child, verdict),
+            goal=_rerun_goal(child, verdict, reported_text),
             task_type=child.task_type,
             parent_task_id=office_task_id,
             owner_agent_id=agent_id,
@@ -553,18 +584,34 @@ def _path_for(office: Task, office_agent_id: str) -> Any:
     return DelegationPath.root(AgentId(office_agent_id), TaskId(str(office.id)))
 
 
-def _rerun_goal(child: Task, verdict: ReviewVerdict) -> str:
+def _rerun_goal(child: Task, verdict: ReviewVerdict, reported_text: str = "") -> str:
     """The brief for the second attempt, written by the office.
 
     The findings come first and the original ask second, because the department
     already knows what was asked -- it is what it answered badly -- and the only
     thing it lacks is what was wrong with the answer.
+
+    **When the previous run said something, that something goes in the brief.** The
+    department is told to reformat, not to re-derive. Without it the brief reads
+    "you produced nothing", the department reads it as "start again", and the loop
+    burns a full retry budget redoing work it has already done -- measured five times
+    over on one real scenario. The text is truncated because a brief is not a
+    transcript, but the opening of it is enough to recognise one's own conclusion.
     """
     findings = "\n".join(f"- {finding}" for finding in verdict.findings)
+    carried = ""
+    substance = reported_text.strip()
+    if substance:
+        carried = (
+            "\n\n[Bạn ĐÃ có câu trả lời ở dạng văn xuôi — nó không bị bỏ đi, nhưng nó "
+            "sai hình dạng nên trưởng bộ phận không dùng được. Đừng làm lại từ đầu; "
+            "lấy kết luận bạn đã có và trả về đúng các trường được yêu cầu.]\n"
+            f"--- nội dung lần trước ---\n{substance[:1500]}\n--- hết ---"
+        )
     return (
         f"{child.goal}\n\n"
         f"[PHẢI LÀM LẠI — lần {attempt_of(child) + 1}] Bộ phận trưởng đã kiểm tra và "
-        f"không chấp nhận kết quả trước vì:\n{findings}\n\n"
+        f"không chấp nhận kết quả trước vì:\n{findings}{carried}\n\n"
         f"Phải sửa đúng các điểm trên. Không được trả lại cùng một câu trả lời."
     )
 

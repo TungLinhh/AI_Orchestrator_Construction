@@ -6690,3 +6690,266 @@ else entirely.
 
 The rule, now applied three times over: *a count, a name or a shape that the seed owns
 belongs to the seed. Read it, or take it as a parameter — never write it down twice.*
+
+---
+
+### F239
+
+**The office was told a department had produced nothing, when it had produced 6,713 tokens.**
+
+Measured on a real free model, one run:
+
+```
+in=40270  out=6713  tools=13  models=7
+summary: # KẾT QUẢ CHỐT KHOẢN CHI THỨ BA ...
+tasks.output = {}
+```
+
+The model did the work and wrote a full structured report. `tasks.output` was `{}`
+because it wrote prose where the contract promised an object, and the office's review
+finding was
+
+> the run finished with an empty output. It promised [...] and produced nothing at all,
+> which is not a short answer -- it is no answer.
+
+**The verdict was right. The finding was false**, and the finding is what the next
+attempt reads. A rerun brief built from it tells a department that has already done the
+work that it did nothing, so it re-derives it. Measured: five completed runs of the same
+work, each told it had produced nothing.
+
+This is the same shape as F225, and it survived F225's fix because F225 fixed the
+*verdict* and this is the *message*. An empty mapping is still not an answer — that rule
+stands, and `test_a_genuinely_empty_run_still_says_nothing_was_produced` holds it. What
+changed is that the run's real answer is now read from `executions.summary` and the
+finding distinguishes:
+
+- no answer at all → the old wording, unchanged;
+- an answer in the wrong shape → *"it DID produce an answer — a long report — but not in
+  the shape this task promised"*, plus the text itself in the rerun brief so the retry
+  reformats instead of re-deriving.
+
+**The lesson is the one this file keeps repeating, at a new altitude: a correct
+judgement carried in a false message is still a false report.** The number was right;
+the sentence the agent read was not.
+
+### F240
+
+**The hierarchy was flat in the payload, so it was flat on screen, and 100 checks passed.**
+
+`organizational_units.parent_id` was correct throughout — company at depth 0, three
+offices at depth 1, seven departments at depth 2. `_TREE` never selected it, so
+`parent_unit_slug` was `None` for **7 of 7** departments, and `renderTree` drew three
+flat bands because it had nothing to nest.
+
+Three separate reasons it survived, each one a failure of instrumentation:
+
+1. **No Python test touched `fleet_tree` or `/departments`.** The only instrument was
+   `scripts/verify_page.mjs`, and its hierarchy check was
+   `/Chief/.test(tree) && /Executive/.test(tree)` — two substring matches on rendered
+   HTML. A flat list of eleven boxes passes that.
+2. **`queryAll` in the page harness understood exactly two selectors**, `.cls` and
+   `#id`, and returned `[]` for everything else. So a real nesting check written as
+   `[data-office-group]` would have reported *no departments are nested* over a correctly
+   nested tree. The shim answered confidently instead of refusing.
+3. **The harness's comment claimed `location.hash` fired `hashchange`. It did not.**
+   `hash` was a plain property, so `go()` — the only navigation a click performs —
+   changed the URL and rendered nothing.
+
+(2) and (3) were found only after fixing (1), and each one produced a *wrong* result
+rather than an error: two of the three new hierarchy checks failed against a correct
+tree, one because a regex read the quote group as the attribute name, one because the
+panel under assertion was stale DOM from the previous check.
+
+**An instrument that cannot ask the question must say so.** `queryAll` now raises on a
+selector it cannot parse, `location.hash` is an accessor that fires the event, and the
+hierarchy is asserted structurally: one group per office, every department inside the
+group its `parent_unit_slug` names, one rule per group.
+
+Also removed rather than fixed: `renderChiefPanel`, a private copy of the panel for the
+chief, reached two ways. The click rendered it and the navigation immediately replaced
+it with "No such department" — the click appeared to do nothing. One panel now, reached
+by the same route for every tier.
+
+### F241
+
+**The fan-out ceiling was 8, and the organisation has 11 agents.**
+
+Real run, seeded company:
+
+```
+delegation.refused  reason='fan-out 8 reached the limit of 8'  target=Back Office Agent
+runtime.loop_capped  detail='The next request would exceed the request_limit of 48'
+task.failed          category=budget_error
+                     reason='the agent exceeded its turn budget and was stopped'
+```
+
+The chief delegated eight times, asked for a ninth, was refused, and spent its remaining
+requests retrying. The ceiling stopped the work; `budget_error` reported the stopping.
+
+A ceiling **below the width of the organisation it bounds** is not a safety control, it
+is the binding constraint wearing one. `max_fanout` is now 16, matching
+`max_active_descendants` so the two ceilings cannot disagree about how wide one subtree
+may be.
+
+The test asserts the *relationship* — `max_fanout >= OFFICES + DEPARTMENTS - 1`, read
+from the seed — and not the literal 16. `assert max_fanout == 16` passes happily when
+someone adds a seventh department and lowers it to 12 with nothing else changing.
+
+### F242
+
+**`MissingGreenlet` from reading `task.id` inside a usage callback.**
+
+```
+sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_()
+```
+
+`pydanticai_agent.py` calls `record_usage` after the model returns, and the callback at
+`task_execution.py` read `task.id` and `execution.id` — **lazy ORM attribute loads**. The
+model call takes tens of seconds; if anything expires that row meanwhile, the load
+checks a connection out of a pool that has been idle for the whole call, the checkout
+runs `pre_ping`, and the ping is issued where there is no greenlet to await it in.
+
+The line immediately above already did this correctly for the agent id, with a comment
+saying why. The same discipline was missed for the other two. Invisible in a fast test,
+certain in production.
+
+Three strings, read once before the model call, remove the class.
+
+### F243
+
+**A refusal that was correct still killed the run, and was then reported as the wrong kind of failure.**
+
+Found on `main`, by running `scripts/demo_real_run.py` — not by reading the code, and
+not by a failing test at the time. `test_the_real_demo_script_runs_end_to_end` was
+**already red on the committed baseline** (verified with `git stash`).
+
+```
+asyncpg.UniqueViolationError: duplicate key ... uq_tasks_live_intent
+sqlalchemy.exc.InvalidRequestError: Can't operate on closed transaction inside
+context manager.  The transaction was rolled back due to an exception
+```
+
+Three separate defects, stacked:
+
+**1. The error handler named the wrong index.** `DEDUP_INDEX_NAME` was
+`"uq_tasks_active_dedup_key"` — the index on `dedup_key`. The index the delegation
+path actually hits is on `intent_fingerprint` and is called `uq_tasks_live_intent`
+(migration 0026). So `if DEDUP_INDEX_NAME not in str(exc.orig)` was false for
+*every* refusal the delegation executor produced, and a duplicate was reported as
+
+```
+ValidationError: the task could not be written: a database integrity rule was violated
+```
+
+which is a different kind of failure — it says our request was malformed. The
+executor only catches `ConflictError`, so a refusal it had already logged as correct
+came back as an error, and the run carried on believing the work was delegated.
+
+**2. "Refuse and carry on" was impossible as written.** The refusal came from the
+database inside the *caller's* transaction, and a transaction that has seen an error is
+dead. The cleanup was `await self._session.rollback()`, which took the caller's
+transaction down with it — including work already done that had nothing to do with the
+duplicate.
+
+**3. The savepoint has to contain the `add`, not just the `flush`.** Wrapping the
+insert in `begin_nested()` was not enough on its own. An object added *before* the
+savepoint is still pending when the savepoint rolls back, so the next flush anywhere
+in the session retried the same doomed INSERT — this time outside any savepoint — and
+poisoned the outer transaction after all:
+
+```
+PendingRollbackError: This Session's transaction has been rolled back due to a
+previous exception during flush.
+```
+
+The `add` is inside the savepoint for that reason. It is the one detail that makes the
+fix a fix rather than a mitigation.
+
+**What the tests hold.** `test_a_refused_duplicate_leaves_the_callers_work_intact`
+creates real work, triggers the real index, and then reads the real work back. On the
+old code that read raises `InvalidRequestError`; on the old *handler* it raises
+`ValidationError` instead of `ConflictError`. Both are caught by reverting the change.
+
+The first version of that test created both tasks **without an owner** and raised
+nothing — because the index is on `(organization_id, owner_agent_id,
+intent_fingerprint)` and Postgres treats NULLs as distinct in a unique index. The test
+would have passed while proving nothing. That is F243's own shape, one level down: a
+check that cannot reach the thing it names reports success.
+
+### F244
+
+**Not fixed, and recorded because it was measured: near-identical delegations are accepted as distinct work.**
+
+One real run of `demo_real_run.py`, five delegations from one parent:
+
+```
+-> Back Office Agent    [accepted]  'Draft a one-line status update for item 015118. Produce '
+-> Middle Office Agent  [accepted]  'Draft a one-line status update for item 015118. Produce '
+-> Middle Office Agent  [accepted]  'Draft a one-line status update for item 015118. Produce '
+-> Middle Office Agent  [accepted]  'Draft a one-line status update for item 015118 for run 3'
+-> Middle Office Agent  [accepted]  'Draft a one-line status update for item 015118 (run 3217'
+```
+
+Three share the first 56 characters. `intent_fingerprint` is a hash of the objective
+text, so a trailing marker the model invented — "for run 3", "(run 3217)" — makes each
+one a distinct piece of work, and `assess_duplicate_work` compares exact fingerprints.
+
+**No fix is proposed here, deliberately.** The obvious one — strip digits before
+hashing — is wrong: "approve invoice 1" and "approve invoice 2" are the same words and
+different work, and a Finance department that merges them is worse than one that
+repeats itself. Any heuristic loose enough to catch these five also merges work that
+should stay apart.
+
+What can be said honestly: the platform refuses *exact* duplicates reliably, refuses
+*concurrent* duplicates reliably (F243), and does not detect near-duplicates. Whether
+that matters is a question about how much a repetition costs, and no measurement of
+that exists yet.
+
+### F245
+
+**`--profile` was printed and never used, two lines above the line that reports the truth.**
+
+`scripts/demo_real_run.py` accepted `--profile`, printed
+
+```
+model profile: gate
+model used   : openrouter/qwen/qwen3.8-27b:free
+```
+
+and the first line was false. `TaskExecutionService` reads `model_profile` off the
+agent row, so every run used whatever the seed put there; the flag was passed to
+nothing. The false line sat directly above `model used :`, whose entire purpose is to
+say which model really answered, and which was honest.
+
+**The flag was removed rather than honoured.** Wiring it means an override parameter on
+the central execution path — a product change made to satisfy a demo, and the false line
+would have outlived it either way. `AO_MODEL_PROVIDER_DEFAULT` was checked as the
+alternative and is not one: it is read only by `worker_runtime.py`, the Temporal worker.
+
+### F246
+
+**A gate that reported the platform's health using a third party's response time.**
+
+`test_the_real_demo_script_runs_end_to_end` runs the demo as a subprocess with a
+900-second timeout, and the demo's agents carry the `primary` profile, whose first
+candidate is a real free model. Measured:
+
+```
+322.76s     one delegation, standalone
+>900s       a suite run, timed out — subprocess.TimeoutExpired
+```
+
+Nothing in the platform differed between those two measurements. The model simply
+delegated a different number of times, and each child is another full model loop. The
+test's own comment already said the provider question "belongs in a demo, not in a
+gate"; the profile simply did not match the intent.
+
+The fix is `--depth 0`. The script still creates the goal, runs the Executive through
+the real runtime, and prints both facts the test asserts. Only the children are skipped,
+and the children are what cost 900 seconds. Measured after: **66.90s**. Running the
+children is the demo's job and `make demo` still does it.
+
+An intermediate attempt added a `gate` profile whose only candidate was the
+deterministic provider. It was removed unused rather than left in the catalogue —
+adding a profile nobody selects is a way of making the profile list look more
+considered than it is, and F245 is why it would not have worked anyway.

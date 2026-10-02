@@ -562,6 +562,27 @@ class TaskExecutionService:
         # answer it for the tool path.
         self._active_source_agent_id = str(resolved.agent.id)
         agent_task = self._to_agent_task(task, input_override)
+        # **Read the ids now, not inside the callback.**
+        #
+        # The model call takes tens of seconds. If anything expires this row in the
+        # meantime -- a rollback from a refused duplicate delegation, a refresh, a
+        # commit on another path -- then `task.id` in the callback is not a string
+        # read, it is a **lazy load**, and the lazy load checks a connection out of
+        # the pool. That connection has been idle for the whole model call, so the
+        # checkout runs `pre_ping`, and the ping is issued from a context with no
+        # greenlet to await it in:
+        #
+        #     MissingGreenlet: greenlet_spawn has not been called; can't call await_()
+        #     here. Was IO attempted in an unexpected place?
+        #
+        # The line above already does this for the agent id, for a different reason
+        # and with a comment saying why. The same discipline was missed here for the
+        # other two, and a run only hits it when the model is slow enough for the
+        # connection to go stale -- so it is invisible in a fast test and certain in
+        # production. Three strings, read once, remove the whole class.
+        task_id = str(task.id)
+        execution_id = str(execution.id)
+        agent_id = str(resolved.agent.id)
         try:
             result = await self._runtime.execute(
                 agent_task,
@@ -569,14 +590,17 @@ class TaskExecutionService:
                 execute_tool=self._execute_tool_call,
                 record_usage=lambda response: self._record_model_call(
                     response,
-                    task_id=task.id,
-                    execution_id=execution.id,
-                    agent_id=resolved.agent.id,
+                    task_id=task_id,
+                    execution_id=execution_id,
+                    agent_id=agent_id,
                 ),
             )
         except PlatformError as exc:
+            # `execution_id` is the string read above, for the same reason: a failure
+            # path is exactly when the row may have been expired or rolled back, and
+            # reporting the failure must not depend on reading the row it is about.
             return await self._fail(
-                task, exc.message, exc.category.value, execution_id=execution.id
+                task, exc.message, exc.category.value, execution_id=execution_id
             )
         except Exception as exc:
             # A session that is already poisoned cannot record its own failure.
@@ -589,11 +613,11 @@ class TaskExecutionService:
             return await self._fail_without_a_usable_session(
                 task=task,
                 message=f"{type(exc).__name__}: {exc}",
-                execution_id=execution.id,
+                execution_id=execution_id,
                 cause=exc,
             )
 
-        return await self._finish(task, resolved, context, result, execution.id, budget, started)
+        return await self._finish(task, resolved, context, result, execution_id, budget, started)
 
     async def _apply_delegations(
         self,

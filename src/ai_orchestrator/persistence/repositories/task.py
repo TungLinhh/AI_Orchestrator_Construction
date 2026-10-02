@@ -89,10 +89,38 @@ def _hash_payload(payload: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-#: The partial unique index that enforces "one live copy of a piece of work".
-#: Named because the error handler matches on it — a constraint that decides what the
-#: platform *tells the caller* has to be identified by name, not inferred.
-DEDUP_INDEX_NAME = "uq_tasks_active_dedup_key"
+#: The partial unique indexes that enforce "one live copy of a piece of work".
+#:
+#: **There are two, and this constant named the wrong one.** It read
+#: `"uq_tasks_active_dedup_key"`, which is the index on `dedup_key`. The index the
+#: delegation path actually hits is on `intent_fingerprint` and is called
+#: `uq_tasks_live_intent` (migration 0026). So the error handler's test
+#:
+#:     if DEDUP_INDEX_NAME not in str(exc.orig)
+#:
+#: was false for every refusal the delegation executor made, and a duplicate that had
+#: been detected, refused and logged correctly was reported to the caller as
+#:
+#:     ValidationError: the task could not be written:
+#:       a database integrity rule was violated
+#:
+#: which is a *different kind of failure* from a duplicate — it means our request was
+#: malformed. The executor only catches `ConflictError`, so a refusal it had already
+#: decided was correct came back as an error instead, and the run continued in the
+#: belief that the work had been delegated.
+#:
+#: Measured on `main`, running the demo: `duplicate_refused_by_index` logged, then the
+#: transaction died, then the run failed with the wrong category.
+#:
+#: Both names are listed because both indexes express the same promise, and a refusal
+#: from either one is a refusal -- not a malformed request. A third index added later
+#: will not be here, which is the point: the `else` branch reports it honestly instead
+#: of guessing.
+DEDUP_INDEX_NAMES = ("uq_tasks_live_intent", "uq_tasks_active_dedup_key")
+
+#: Kept as a name because callers and tests refer to it. First entry is the one the
+#: delegation path produces.
+DEDUP_INDEX_NAME = DEDUP_INDEX_NAMES[0]
 
 
 def _constraint_named_in(exc: IntegrityError) -> str:
@@ -223,9 +251,37 @@ class TaskRepository:
             budget_limit_tokens=budget_limit_tokens,
             deadline_at=deadline_at,
         )
-        self._session.add(task)
         try:
-            await self._session.flush()
+            # **A SAVEPOINT, and the `add` goes *inside* it.**
+            #
+            # Found on `main`, by running the demo: a model delegating the same work
+            # twice was refused — correctly, by the partial unique index — and then
+            # the whole run died:
+            #
+            #     asyncpg.UniqueViolationError: duplicate key ... uq_tasks_live_intent
+            #     ...
+            #     InvalidRequestError: Can't operate on closed transaction inside
+            #     context manager. The transaction was rolled back due to an exception
+            #
+            # The refusal was the *correct* outcome and the executor already handles
+            # `ConflictError`. Handling it changed nothing, because the error came from
+            # the database inside the caller's transaction, and a transaction that has
+            # seen an error is dead until it is rolled back. So "refuse the duplicate
+            # and carry on" was impossible as written, and the `await
+            # self._session.rollback()` that used to clean up afterwards took the
+            # *caller's* transaction down with it — including work already done that
+            # had nothing to do with the duplicate.
+            #
+            # The `add` is inside the savepoint as well as the `flush`, and that is not
+            # tidiness. An object added before the savepoint is still pending when the
+            # savepoint rolls back, so the *next* flush anywhere in the session retries
+            # the same doomed INSERT — which fails again, this time outside any
+            # savepoint, and poisons the outer transaction after all. Measured: with the
+            # `add` outside, the very next statement raised
+            # `PendingRollbackError: ... during flush`.
+            async with self._session.begin_nested():
+                self._session.add(task)
+                await self._session.flush()
         except IntegrityError as exc:
             # Read which constraint actually fired before deciding what to report.
             #
@@ -242,8 +298,10 @@ class TaskRepository:
             # So: match the constraint by name, and anything else is reported as what
             # it is. A wrong error message is worse than an ugly one, because it sends
             # the reader to the wrong place to look.
-            if DEDUP_INDEX_NAME not in str(exc.orig):
-                await self._session.rollback()
+            # No `rollback()` here. The savepoint above already undid this insert and
+            # left the caller's transaction usable, which is the entire point of using
+            # one: rolling back again would undo work this method never touched.
+            if not any(name in str(exc.orig) for name in DEDUP_INDEX_NAMES):
                 msg = "the task could not be written: a database integrity rule was violated"
                 raise ValidationError(
                     msg,
@@ -257,7 +315,6 @@ class TaskRepository:
                 ) from exc
             # The partial unique index fired. Two agents asked for the same work
             # in the same transaction window, which the pre-check could not see.
-            await self._session.rollback()
             msg = "an equivalent task was created concurrently"
             raise ConflictError(msg, details={"fingerprint": fingerprint}) from exc
 

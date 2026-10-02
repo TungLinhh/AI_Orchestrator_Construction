@@ -51,6 +51,7 @@ one dishonest panel in the product.
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import text
@@ -106,7 +107,8 @@ CHIEF_AGENT_NAME = "Executive Agent"
 _TREE_BY_TIER = """
 SELECT a.id, a.name, a.lifecycle_status, a.runtime_status, a.health,
        a.autonomy_ceiling, a.granted_level, a.model_profile, a.kill_switch,
-       u.name AS unit_name, u.id AS unit_id,
+       u.name AS unit_name, u.id AS unit_id, u.slug AS unit_slug,
+       p.name AS parent_unit_name, p.slug AS parent_unit_slug,
        (SELECT count(*) FROM executions x
          WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.agent_id = a.id
            AND x.status = 'running'
@@ -119,6 +121,8 @@ SELECT a.id, a.name, a.lifecycle_status, a.runtime_status, a.health,
          WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.agent_id = a.id) AS runs
 FROM agents a
 JOIN organizational_units u ON u.id = a.org_unit_id AND u.organization_id = a.organization_id
+LEFT JOIN organizational_units p
+       ON p.id = u.parent_id AND p.organization_id = u.organization_id
 WHERE a.organization_id = CAST(:o AS varchar(40))
   AND a.name <> CAST(:chief AS varchar(120))
   -- **Offices, and nothing else.** Asked of the unit's `unit_type` rather than by
@@ -145,6 +149,22 @@ _TREE = """
 SELECT a.id, a.name, a.lifecycle_status, a.runtime_status, a.health,
        a.autonomy_ceiling, a.granted_level, a.model_profile, a.kill_switch,
        u.name AS unit_name, u.id AS unit_id, u.slug AS unit_slug,
+       -- **The parent link the whole console was missing.**
+       --
+       -- `organizational_units.parent_id` was correct the whole time -- company at depth
+       -- 0, three offices at depth 1, seven departments at depth 2 -- and this query
+       -- simply never joined it, so `parent_unit_slug` was `None` for all seven
+       -- departments. Measured before the fix: 7 of 7 `None`.
+       --
+       -- The consequence was not cosmetic. `renderTree` draws three bands from three
+       -- flat lists because it has nothing to nest, and no test asserted that a
+       -- department sits under its office, so a hierarchy that was flat in the payload
+       -- was flat on the screen while 100 console checks passed.
+       --
+       -- `LEFT JOIN` rather than `JOIN`: a department with no parent would then vanish
+       -- from the console entirely, which is worse than being shown at the top level
+       -- where its brokenness is visible.
+       p.name AS parent_unit_name, p.slug AS parent_unit_slug,
        (SELECT count(*) FROM executions x
          WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.agent_id = a.id
            AND x.status = 'running'
@@ -157,6 +177,8 @@ SELECT a.id, a.name, a.lifecycle_status, a.runtime_status, a.health,
          WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.agent_id = a.id) AS runs
 FROM agents a
 JOIN organizational_units u ON u.id = a.org_unit_id AND u.organization_id = a.organization_id
+LEFT JOIN organizational_units p
+       ON p.id = u.parent_id AND p.organization_id = u.organization_id
 WHERE a.organization_id = CAST(:o AS varchar(40))
   AND u.unit_type = CAST(:department AS varchar(40))
 ORDER BY u.depth, u.name
@@ -175,9 +197,14 @@ STUCK_AFTER_SECONDS = 3_600
 
 #: The CEO is an agent like any other, so it is read the same way -- named rather than
 #: special-cased, because a special case is a second code path for the same question.
+#:
+#: The unit columns are read here for the same reason they are read for every other
+#: box: the chief is a unit too, and a payload that names the chief's office but not
+#: the chief's own unit is the same omission one tier down.
 _CHIEF = """
 SELECT a.id, a.name, a.lifecycle_status, a.runtime_status, a.health,
        a.autonomy_ceiling, a.granted_level, a.model_profile, a.kill_switch,
+       u.name AS unit_name, u.id AS unit_id, u.slug AS unit_slug,
        (SELECT count(*) FROM executions x
          WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.agent_id = a.id
            AND x.status = 'running'
@@ -189,6 +216,8 @@ SELECT a.id, a.name, a.lifecycle_status, a.runtime_status, a.health,
        (SELECT count(*) FROM executions x
          WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.agent_id = a.id) AS runs
 FROM agents a
+LEFT JOIN organizational_units u
+       ON u.id = a.org_unit_id AND u.organization_id = a.organization_id
 WHERE a.organization_id = CAST(:o AS varchar(40)) AND a.name = :name
 LIMIT 1
 """
@@ -239,6 +268,33 @@ LIMIT 200
 """
 
 
+def _identity(row: Any, *, fallback_key: str) -> dict[str, Any]:
+    """The three fields every box needs to be a *unit a person can open*.
+
+    **Written once because the omission was tier-specific.** Departments arrived with
+    `key` and `label` because a hand-written tuple supplied them; offices got only
+    `unit`; the chief got nothing. The consequence was that an office could not be
+    routed to, because the detail panel is keyed by `key`, so the office tier existed
+    as a band of boxes that could only be watched, never opened. That is a tier that is
+    *drawn* rather than *tracked*, and the request was for units that are tracked as
+    their own units.
+
+    Measured before this function existed: office missing `key` and `label`, chief
+    missing `key`, `label` and `unit`. Now all eleven boxes carry all three, and
+    `test_the_keys_are_unique_across_the_whole_organisation` holds them to it --
+    because `key` is a route segment, and a collision means one box opens the other.
+    """
+    # The chief's query and the office's query both read `unit_slug`; a defensive
+    # `.get` costs nothing and keeps this usable from either shape.
+    slug = row.get("unit_slug") or None
+    name = str(row["unit_name"]) if row.get("unit_name") else None
+    return {
+        "key": str(slug or fallback_key),
+        "label": str(name or row["name"]),
+        "unit": str(name or row["name"]),
+    }
+
+
 def _box(row: Any, *, running: bool) -> dict[str, Any]:
     """One agent, as the tree needs it. `running` drives the light on the edge."""
     return {
@@ -256,6 +312,32 @@ def _box(row: Any, *, running: bool) -> dict[str, Any]:
         "granted": row["granted_level"],
         "model": row["model_profile"],
         "run_count": int(row["runs"] or 0),
+    }
+
+
+def _count_of(box: dict[str, Any], field: str) -> int:
+    """One field of a box's `counts`, defaulting to zero rather than raising."""
+    return int((box.get("counts") or {}).get(field, 0) or 0)
+
+
+def _roll_up(owner: dict[str, Any], children: Sequence[dict[str, Any]]) -> dict[str, int]:
+    """What a unit is responsible for: its own, plus everything under it.
+
+    `running` is taken as "lit or stale", because that is what a person watching the
+    panel is asking -- is anything here moving -- and `runs` is the sum of both since
+    a parent that has never run itself is still responsible for the runs beneath it.
+    """
+    return {
+        "agents": 1 + len(children),
+        "own": 1,
+        "open": _count_of(owner, "open") + sum(_count_of(c, "open") for c in children),
+        "done": _count_of(owner, "done") + sum(_count_of(c, "done") for c in children),
+        "attention": _count_of(owner, "attention")
+        + sum(_count_of(c, "attention") for c in children),
+        "running": int(bool(owner.get("running")) or bool(owner.get("stuck")))
+        + sum(1 for c in children if c.get("running") or c.get("stuck")),
+        "runs": int(owner.get("run_count") or 0)
+        + sum(int(c.get("run_count") or 0) for c in children),
     }
 
 
@@ -325,10 +407,15 @@ async def fleet_tree(
                 limit=per_agent_limit,
             )
         )
+        box.update(_identity(row, fallback_key=f"dept-{len(offices) + 1}"))
         box.update(
             {
-                "key": str(row["unit_slug"]),
-                "label": str(row["unit_name"]),
+                "parent_unit_slug": (
+                    str(row["parent_unit_slug"]) if row["parent_unit_slug"] else None
+                ),
+                "parent_unit_name": (
+                    str(row["parent_unit_name"]) if row["parent_unit_name"] else None
+                ),
                 "missing": False,
             }
         )
@@ -361,7 +448,7 @@ async def fleet_tree(
         .all()
     )
 
-    second_tier_boxes = []
+    second_tier_boxes: list[dict[str, Any]] = []
     for row in tier_two:
         box = _box(row, running=False)
         box.update(
@@ -372,7 +459,8 @@ async def fleet_tree(
                 limit=per_agent_limit,
             )
         )
-        box["unit"] = str(row["unit_name"])
+        box.update(_identity(row, fallback_key=f"office-{len(second_tier_boxes) + 1}"))
+        box["parent_unit_slug"] = str(row["parent_unit_slug"]) if row["parent_unit_slug"] else None
         second_tier_boxes.append(box)
 
     chief = None
@@ -386,6 +474,53 @@ async def fleet_tree(
                 limit=per_agent_limit,
             )
         )
+        # `chief` is the literal the page routes on, and it is fixed on both sides, so
+        # it is passed rather than derived: the chief's unit slug is the company root,
+        # and routing the detail panel to `/agent/company` would be a second name for
+        # the same agent and a route nobody else uses.
+        chief.update(_identity(chief_row, fallback_key="chief"))
+        chief["key"] = "chief"
+
+    # **Roll-up.** An office's own numbers plus its departments', and the chief's own
+    # plus every office's.
+    #
+    # Without this an office reports only its own activity -- usually zero, because an
+    # office delegates rather than executes -- so the tier reads as idle while its
+    # departments are busy. Measured: the three offices together own none of the open
+    # tasks; all of it sits one tier down. The office panel is therefore built from
+    # both, and `test_an_office_rolls_up_exactly_its_own_departments` holds the sum to
+    # the departments rather than trusting the arithmetic.
+    for office in second_tier_boxes:
+        children = [b for b in offices if b.get("parent_unit_slug") == office["key"]]
+        office["rollup"] = _roll_up(office, children)
+
+    if chief is not None:
+        chief["rollup"] = _roll_up(chief, [*second_tier_boxes, *offices])
+
+    # **The nested tree, built server-side.**
+    #
+    # The page used to reassemble the hierarchy from three flat lists, which is how a
+    # payload without parent links became a picture without grouping. Building it here
+    # means the shape is asserted by
+    # `tests/integration/test_departments_reports_the_tree.py` rather than inferred by
+    # a page check that could only string-match.
+    #
+    # A department whose `parent_unit_slug` names no office in the payload is placed in
+    # `unassigned` instead of being dropped. Silently discarding it would make the
+    # console look complete while hiding an agent that exists -- the "confident answer
+    # with a wrong number" shape this project keeps meeting.
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    unassigned: list[dict[str, Any]] = []
+    office_keys = {b["key"] for b in second_tier_boxes}
+    for dept in offices:
+        parent = dept.get("parent_unit_slug")
+        if parent in office_keys:
+            grouped.setdefault(str(parent), []).append(dept)
+        else:
+            unassigned.append(dept)
+    tree_offices = [
+        {**office, "departments": grouped.get(office["key"], [])} for office in second_tier_boxes
+    ]
 
     edges = (await conn.execute(text(_EDGES), {"o": organization_id})).mappings().all()
 
@@ -393,6 +528,14 @@ async def fleet_tree(
         "chief": chief,
         "offices": offices,
         "second_tier": second_tier_boxes,
+        # Flat lists stay: two surfaces still read them and replacing them here would
+        # break a working view to serve a new one.
+        "tree": {
+            "chief": chief,
+            "offices": tree_offices,
+            "unassigned": unassigned,
+            "total_agents": (1 if chief else 0) + len(second_tier_boxes) + len(offices),
+        },
         "edges": [
             {
                 "parent": e["parent_task_id"],

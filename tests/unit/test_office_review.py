@@ -331,3 +331,74 @@ class TestTheThreshold:
         padded = "xxx" * 8
         assert len(padded) >= MIN_TEXT_LENGTH
         assert not assess_output(output={"reason": padded}).ok
+
+
+class TestWorkThatWasDoneInTheWrongShape:
+    """A long report is not "nothing produced", and the office must not say it is.
+
+    Measured on a real free model against a real pipeline: 40.270 input tokens,
+    6.713 output, 13 tool calls, and a full structured report in the execution
+    summary -- while `tasks.output` was `{}`, because the model wrote prose instead
+    of the contracted object.
+
+    The office's finding said *"it produced nothing at all"*. That is false, and it
+    is expensive: a rerun brief built from that finding tells a department which has
+    already done the work that it did nothing, so it re-derives it. Measured five
+    completed runs of the same work, each one told it had produced nothing.
+    """
+
+    REPORT = (
+        "# KẾT QUẢ CHỐT KHOẢN CHI\n\n## 1. Khoản thứ nhất\n3.600.000, dưới hạn mức, "
+        "đề nghị duyệt.\n\n## 2. Khoản thứ hai\n32.000.000, vượt hạn mức, chuyển CEO."
+    )
+
+    def test_prose_with_no_contract_fields_is_still_rejected(self) -> None:
+        """The verdict must not move. A paragraph does not satisfy a key contract."""
+        verdict = assess_output(
+            output={},
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            reported_text=self.REPORT,
+        )
+        assert not verdict.ok
+
+    def test_the_finding_says_the_work_was_done_and_only_the_shape_was_wrong(self) -> None:
+        verdict = assess_output(
+            output={},
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            reported_text=self.REPORT,
+        )
+        finding = " ".join(verdict.findings)
+        assert "produced nothing at all" not in finding, (
+            "the office told a department it did nothing when it wrote a report"
+        )
+        assert "DID produce an answer" in finding
+        assert "not in the shape" in finding
+
+    def test_the_finding_tells_it_to_reformat_rather_than_re_derive(self) -> None:
+        """The instruction is the fix. Reformatting converges; re-deriving does not."""
+        finding = " ".join(
+            assess_output(
+                output={},
+                expected_output_schema={"required": ["verdicts", "reason"]},
+                reported_text=self.REPORT,
+            ).findings
+        )
+        assert "Do the analysis again only as far as you need to" in finding
+
+    def test_a_genuinely_empty_run_still_says_nothing_was_produced(self) -> None:
+        """The original finding is correct when it is true, and must survive."""
+        verdict = assess_output(
+            output={},
+            expected_output_schema={"required": ["verdicts", "reason"]},
+        )
+        finding = " ".join(verdict.findings)
+        assert "produced nothing at all" in finding
+
+    def test_a_trivial_summary_does_not_claim_there_was_work(self) -> None:
+        """A two-character summary is not a report, and must not be credited as one."""
+        verdict = assess_output(
+            output={},
+            expected_output_schema={"required": ["verdicts", "reason"]},
+            reported_text="ok",
+        )
+        assert "produced nothing at all" in " ".join(verdict.findings)

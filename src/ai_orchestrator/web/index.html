@@ -463,6 +463,19 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
   color: var(--text-3); font-weight: 700; margin: 6px 0 1px; }
 .dept-edges { margin-left: 18px; padding-left: 12px; border-left: 1px solid var(--line); }
 
+/* One group per office: the office's own box, then its departments under one rule.
+   **The rule is per-group, not per-box.** `dept-edges` used to sit on every box, so
+   seven departments and three offices each drew a vertical line of their own and the
+   result was eight unrelated columns -- a hierarchy that looked like one only because
+   the lines were all the same colour. One line per office is what makes the reading
+   "these belong to that" instead of "these are arranged in a list". */
+.dept-group { display: flex; flex-direction: column; gap: 7px; margin-left: 4px; }
+.dept-group > .dept-edges { margin-left: 8px; padding-left: 14px; }
+.dept-group > .dept-tier { margin-top: 10px; }
+.abox .roll { font-size: 10.5px; color: var(--text-3); margin-top: 3px;
+  font-variant-numeric: tabular-nums; }
+.abox .roll b { color: var(--text-2); }
+
 /* The panel a click opens: the run on the left, the work on the right. Two columns
    because the two questions are asked side by side -- "what did it do" and "what is it
    doing" -- and answering them in sequence makes one of them look like an afterthought. */
@@ -543,10 +556,12 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
         because a sidebar where everything is at the same weight tells a
         newcomer nothing about where to begin.
 
-        The six departments were seven lines. They are one subject, so they are
-        one line; the page it opens shows all six and any of them is one click.
-        Naming them in the nav was a shortcut for someone who already knew which
-        one they wanted, and an obstacle to everyone else.
+        The departments were once one line each, and the number grew while the
+        list did not. They are one subject, so they are one line; the page it opens
+        shows the whole organisation and any unit is one click. Naming them in the
+        nav was a shortcut for someone who already knew which one they wanted, and
+        an obstacle to everyone else -- and a list written by hand goes stale the
+        first time a department is added.
       -->
       <div class="label">The organisation</div>
       <a href="#/departments" data-nav="departments">
@@ -768,7 +783,7 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
       <section class="view" id="view-departments" hidden>
         <div class="stats" id="deptStats"></div>
         <div class="card">
-          <header><h2>The six departments</h2><span class="spacer"></span>
+          <header><h2 id="deptHeading">The organisation</h2><span class="spacer"></span>
             <span class="sub" id="deptSub"></span>
             <span class="legend" style="font-size:11px">
               <span class="legend-dot"></span> a moving light on the edge means it is
@@ -791,7 +806,7 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
         <div class="card">
           <header><h2 id="deptTitle">Department</h2><span class="spacer"></span>
             <span class="sub" id="deptSub2"></span>
-            <button class="btn ghost sm" id="deptBack">All six</button>
+            <button class="btn ghost sm" id="deptBack">Back to the organisation</button>
           </header>
           <div class="body"><div class="dept-tree" id="deptOneTree"></div></div>
         </div>
@@ -1971,9 +1986,10 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-/* ====================== the six departments ======================
-   A tree from the CEO down to the six, each box clickable, each box carrying the five
-   answers. Clicking opens a panel with the run on one side and the work on the other,
+/* ====================== the organisation ======================
+   A tree from the chief down through the offices to each department, every box
+   clickable, every box carrying the five answers. Clicking opens a panel with the run
+   on one side and the work on the other,
    because "what did it do" and "what is it doing" are asked together.
    ------------------------------------------------------------------
    **No `chain_of_thought` field exists here, and there is not one to add.** The model does
@@ -1990,7 +2006,9 @@ function agentBox(a, sel) {
   const cls = "abox" + (sel ? " sel" : "") + (a.running ? " on" : "")
     + (!a.running && a.stuck ? " stuck" : "");
   const c = a.counts || {};
+  const r = a.rollup || null;
   return `<div class="${cls}" data-agent-box="${esc(a.id)}" data-agent-name="${esc(a.name)}"
+      data-box-key="${esc(a.key || "")}"
       role="button" tabindex="0" aria-label="${esc(a.name)}">
     <div class="n">${esc(a.label || a.name)}</div>
     ${
@@ -2001,12 +2019,29 @@ function agentBox(a, sel) {
       (a.label && a.label !== a.name)
       ? `<div class="r">${esc(a.name)}${a.killed ? " · stopped" : ""}</div>` : ""}
     <div class="c">
-      <span>open <b>${c.open ?? 0}</b></span>
-      <span>done <b>${c.done ?? 0}</b></span>
+      <span>own open <b>${c.open ?? 0}</b></span>
+      <span>own done <b>${c.done ?? 0}</b></span>
       ${c.attention ? `<span>stuck <b>${c.attention}</b></span>` : ""}
       ${a.stuck ? `<span>stranded <b>${a.stuck}</b></span>` : ""}
       <span>${esc(a.granted || "L1")}/${esc(a.ceiling || "L1")}</span>
     </div>
+    ${
+      // **Own and rolled-up, both on the box and both named.**
+      //
+      // An office that only shows its own counts reads as idle: it delegates, so its
+      // own open count is zero while its departments are busy. Showing only the
+      // roll-up would be the opposite error -- a chief that reports 11 agents but
+      // cannot say it did nothing itself. So the two lines stay separate and are
+      // labelled "own" and "below".
+      //
+      // `r.agents - 1` is the number under it, and it is zero for a leaf, so a
+      // department shows no roll-up line at all rather than a line about nothing.
+      r && r.agents > 1
+      ? `<div class="roll">${num(r.agents - 1)} below · open <b>${num(r.open - (c.open ?? 0))}</b>
+          · done <b>${num(r.done - (c.done ?? 0))}</b>
+          ${r.attention > (c.attention ?? 0) ? `· needs attention <b>${num(r.attention - (c.attention ?? 0))}</b>` : ""}
+          · <b>${num(r.agents - 1)}</b> agent(s) in total under here</div>`
+      : ""}
   </div>`;
 }
 
@@ -2017,38 +2052,72 @@ async function loadDepartments() {
   return deptCache;
 }
 
+/* The organisation, as one nest.
+   ------------------------------------------------------------------
+   `tree` comes from the server already nested -- chief, then each office with
+   its own departments. It used to be drawn here from three flat lists, which is
+   exactly why it was flat: the API never selected `parent_id`, so there was
+   nothing here to nest, and a page check could only string-match a name.
+
+   Drawing the hierarchy is left to the server now, so the shape is something a
+   Python test can assert (tests/integration/test_departments_reports_the_tree.py)
+   rather than something a reader of this file has to take on trust.
+
+   The unit at the top -- the chief on the organisation view, an office on its own
+   panel -- **is drawn by its own label.** This function used to hard-code
+   "Executive Agent", so an office's panel titled its own box with the chief's name. */
 function renderTree(target, offices, chief, selId, secondTier) {
   const parts = [];
   if (chief) {
-    parts.push(`<div class="dept-tier">Chief</div>`);
-    parts.push(agentBox({ ...chief, label: "Executive Agent" }, selId === chief.id));
+    parts.push(`<div class="dept-tier">${esc(
+      chief.key === "chief" ? "Chief" : (chief.label || chief.name))}</div>`);
+    parts.push(agentBox({ ...chief, label: chief.label || chief.name }, selId === chief.id));
   }
-  // The office tier, between the chief and the departments.
-  //
-  // It was missing entirely, so the "Departments" heading under the chief had
-  // nothing above it and the panel read as broken. The data has been in the API
-  // for a while -- zero because the query asked for agents this organisation
-  // has never had, seven once it asked the tree instead -- so the fix was never
-  // in the data. It was a tier the page did not draw.
   const offices2 = secondTier || [];
+  const depts = offices || [];
   if (offices2.length) {
-    parts.push(`<div class="dept-tier">Offices</div>`);
+    parts.push(`<div class="dept-tier">Offices &amp; their departments</div>`);
     for (const o of offices2) {
-      parts.push(
-        `<div class="dept-edges">${agentBox({ ...o, label: o.unit || o.name }, selId === o.id)}</div>`
-      );
+      // Only departments this office actually owns. An empty group is still drawn --
+      // an office with nothing under it is a real state, and hiding it would make a
+      // tier disappear whenever its departments happened to be idle.
+      const mine = depts.filter((d) => d.parent_unit_slug === o.key);
+      parts.push(`<div class="dept-group" data-office-group="${esc(o.key)}">`);
+      parts.push(agentBox({ ...o, label: o.label || o.name }, selId === o.id));
+      if (mine.length) {
+        parts.push(`<div class="dept-edges">`);
+        for (const d of mine) parts.push(agentBox(d, selId === d.id));
+        parts.push(`</div>`);
+      }
+      parts.push(`</div>`);
     }
-  }
-  parts.push(`<div class="dept-tier">Departments</div>`);
-  for (const o of offices) {
-    if (o.missing) {
-      parts.push(`<div class="abox stuck"><div class="n">${esc(o.label)}</div>
-        <div class="r">no agent named ${esc(o.name)}</div></div>`);
-      continue;
+  } else if (depts.length) {
+    // No office tier in this payload: the departments still have to be drawn, or the
+    // page loses them. Falling back to a flat list here is worse than the nested view,
+    // but it is better than an empty panel.
+    parts.push(`<div class="dept-tier">Departments</div>`);
+    for (const d of depts) {
+      if (d.missing) {
+        parts.push(`<div class="abox stuck"><div class="n">${esc(d.label)}</div>
+          <div class="r">no agent named ${esc(d.name)}</div></div>`);
+        continue;
+      }
+      parts.push(agentBox(d, selId === d.id));
     }
-    parts.push(`<div class="dept-edges">${agentBox({ ...o, label: o.label }, selId === o.id)}</div>`);
   }
   return parts.join("");
+}
+
+/* Departments the payload could not place under an office. **Drawn, not dropped.**
+   Silently omitting them would make the console look complete over an organisation
+   the server could not fully describe -- a confident picture with agents missing. */
+function unassignedNote(d) {
+  const extra = (d.tree && d.tree.unassigned) || [];
+  if (!extra.length) return "";
+  return `<div class="note" style="margin-top:10px">
+    <b>${num(extra.length)} department(s) name no office</b> and are not in the tree
+    above: ${esc(extra.map((x) => x.label).join(", "))}. They are counted in the totals.
+  </div>`;
 }
 
 async function renderDepartments(key) {
@@ -2057,39 +2126,91 @@ async function renderDepartments(key) {
 
   if (key) return renderOneDepartment(d, key);
 
-  const boxes = [d.chief, ...d.offices.filter((o) => !o.missing)].filter(Boolean);
+  // **Every agent in the payload, all three tiers.** It used to be
+  // `[chief, ...departments]`, which skipped the offices and then said
+  // "of 8 agents" over an organisation of 11 -- a number that was wrong by exactly
+  // the tier that had just been added. The offices are boxes a person can see, so
+  // they are counted like any other box.
+  const boxes = [d.chief, ...(d.second_tier || []), ...d.offices].filter(Boolean);
   const running = boxes.filter((b) => b.running).length;
   const stranded = boxes.reduce((n, b) => n + (b.stuck || 0), 0);
   const openTasks = boxes.reduce((n, b) => n + ((b.counts || {}).open || 0), 0);
   const attention = boxes.reduce((n, b) => n + ((b.counts || {}).attention || 0), 0);
+  // **No number in this sentence is typed.** It used to read "across the six" while
+  // seven departments were drawn underneath it. A count that is correct in the same
+  // sentence as a hard-coded one is a bug waiting for the seventh.
+  const nOffices = (d.second_tier || []).length;
+  // **The heading counts, too.** It read "The six departments" while seven were
+  // drawn underneath it. A heading is the most-read sentence on a screen and it was
+  // the one number on the page no test could reach, because it is not in the payload.
+  $("deptHeading").textContent =
+    `The chief, ${nOffices} office(s) and ${d.offices.length} department(s)`;
   setHTML("deptStats",
     statTile("Working now", num(running), "of " + num(boxes.length) + " agents",
       running ? "good" : "")
-    + statTile("Open work", num(openTasks), "across the six", openTasks ? "warn" : "good")
+    + statTile("Open work", num(openTasks),
+      `across ${num(d.offices.length)} department(s)`, openTasks ? "warn" : "good")
     + statTile("Needs attention", num(attention), "failed or refused", attention ? "alarm" : "good")
     + statTile("Stranded runs", num(stranded), "started, never closed", stranded ? "warn" : "good"));
 
-  $("deptSub").textContent = `${d.offices.length} departments · ${d.edges.length} delegation(s) on record`;
+  $("deptSub").textContent = `${num(nOffices)} offices · ${num(d.offices.length)} departments`
+    + ` · ${num(d.edges.length)} delegation(s) on record`;
   $("deptEmpty").hidden = boxes.length > 0;
   $("deptTree").hidden = boxes.length === 0;
-  setHTML("deptTree", renderTree("deptTree", d.offices, d.chief, deptSel, d.second_tier));
+  setHTML("deptTree", renderTree("deptTree", d.offices, d.chief, deptSel, d.second_tier)
+    + unassignedNote(d));
 
   watchDepartments();
 }
 
+/* One box in the payload, by the key the page routes on.
+
+   **Three tiers, one lookup.** The chief's key is the literal "chief" and offices now
+   carry their own `key`, so `offices.find(...)` alone cannot answer it -- and when it
+   could not, the page said "No such department" for a box the person had just
+   clicked. Every tier is looked up here instead, so adding a tier cannot leave a
+   route that draws but does not open. */
+function findByKey(d, key) {
+  if (d.chief && d.chief.key === key) return d.chief;
+  const inOffices = (d.second_tier || []).find((x) => x.key === key);
+  if (inOffices) return inOffices;
+  return d.offices.find((x) => x.key === key) || null;
+}
+
+function tierOf(d, box) {
+  if (d.chief && d.chief.id === box.id) return "chief";
+  if ((d.second_tier || []).some((x) => x.id === box.id)) return "office";
+  return "department";
+}
+
+/* One unit's own panel -- the chief, an office, or a department.
+   **All three tiers come through here.** The chief had a private copy of this panel
+   and offices had no route at all, which meant the office tier could be seen but
+   never opened.
+
+   `tier` decides one thing: whether the panel shows a group or a single agent, and
+   therefore whose work the lists below belong to. An office that shows only its own
+   tasks shows an empty list, because an office delegates rather than executes --
+   the work is one tier down. */
 async function renderOneDepartment(d, key) {
-  // The chief is a real agent with no department of its own, so it has no `key`
-  // in the payload -- and clicking it navigates here with the literal "chief".
-  // It used to fall through to "No such department", which is what a person
-  // sees when they click the one box on the page that is not a department.
-  if (key === "chief") return renderChiefPanel(d.chief);
-  const o = d.offices.find((x) => x.key === key);
+  const o = findByKey(d, key);
   if (!o) { toast("No such department.", true); go("#/departments"); return; }
+  const tier = tierOf(d, o);
   deptSel = o.id;
   $("deptTitle").textContent = o.missing ? o.label : o.label + " — " + o.name;
   $("deptSub2").textContent = o.missing ? "no agent registered" :
     `${o.granted} granted, ceiling ${o.ceiling} · model ${o.model} · ${o.run_count} run(s)`;
-  setHTML("deptOneTree", renderTree("deptOneTree", [o], null, o.id));
+  // One label for every tier, because it goes to the same place: the whole
+  // organisation. It used to read "All six" on a page that shows seven, and a
+  // tier-specific wording ("All offices") is wrong in a different way -- it suggests
+  // an office-only view exists behind the button, and it does not.
+  $("deptBack").textContent = "Back to the organisation";
+  // Its own departments, drawn under it. An office is a group, so its panel shows
+  // the group; showing a single box on a panel whose subject is a group of five
+  // agents would understate what the office is.
+  const own = tier === "office"
+    ? d.offices.filter((x) => x.parent_unit_slug === o.key) : [];
+  setHTML("deptOneTree", renderTree("deptOneTree", own, o, o.id, []));
 
   if (o.missing) { setHTML("runSteps", ""); $("runEmpty").hidden = false;
     $("workOpen").innerHTML = $("workAttn").innerHTML = $("workDone").innerHTML = "";
@@ -2110,17 +2231,38 @@ async function renderOneDepartment(d, key) {
     </div>`).join(""));
 
   const c = o.counts || {};
-  $("workSub").textContent = `${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`;
-  const row = (t, kind) => `<div class="taskitem ${kind}">
+  const r = o.rollup || null;
+  // **Own and rolled-up, both shown.** A unit above the leaves delegates rather than
+  // executes, so its own open count is normally zero while its departments hold the
+  // work. Showing only `own` makes an office look idle; showing only `rollup` would
+  // hide that the chief itself did nothing this hour. Both, labelled.
+  $("workSub").textContent = r && r.agents > 1
+    ? `own: ${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`
+      + ` — with ${num(r.agents - 1)} below: ${num(r.open)} open · ${num(r.attention)} need attention · ${num(r.done)} done`
+    : `${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`;
+  const row = (t, kind, who) => `<div class="taskitem ${kind}">
       <span class="st">${esc(t.status)}</span>
-      <span class="grow">${esc(t.title)}</span>
+      <span class="grow">${who ? `${esc(who)} — ${esc(t.title)}` : esc(t.title)}</span>
       ${t.error ? `<span class="s">${esc(String(t.error).slice(0, 90))}</span>` : ""}
     </div>`;
-  setHTML("workOpen", (o.open_tasks || []).map((t) => row(t, "open")).join(""));
-  setHTML("workAttn", (o.attention || []).map((t) => row(t, "attn")).join(""));
-  setHTML("workDone", (o.done_tasks || []).map((t) => row(t, "done")).join(""));
+  // For a unit with departments, the work lists include its departments' work too, or
+  // the panel answers "what is this unit doing" with a list that is empty by design --
+  // an office delegates, so its own open tasks are usually zero while all the work is
+  // one tier down. The owning department is named in each row, because "its own" and
+  // "its departments'" are different claims and merging them silently would make the
+  // number above mean something it does not.
+  const take = (field, kind) => own.flatMap(
+    (x) => (x[field] || []).map((t) => row(t, kind, x.label)));
+  setHTML("workOpen", (o.open_tasks || []).map((t) => row(t, "open")).join("")
+    + take("open_tasks", "open").join(""));
+  setHTML("workAttn", (o.attention || []).map((t) => row(t, "attn")).join("")
+    + take("attention", "attn").join(""));
+  setHTML("workDone", (o.done_tasks || []).map((t) => row(t, "done")).join("")
+    + take("done_tasks", "done").join(""));
   $("workEmpty").hidden = ((o.open_tasks || []).length + (o.done_tasks || []).length
-    + (o.attention || []).length) > 0;
+    + (o.attention || []).length
+    + own.reduce((n, x) => n + (x.open_tasks || []).length + (x.attention || []).length
+      + (x.done_tasks || []).length, 0)) > 0;
   $("deptNote").innerHTML = o.last_run
     ? `<b>Last run:</b> ${esc(o.last_run.status)} on ${esc(o.last_run.model_used || "—")}
        ${num(o.last_run.tokens)} tokens. The summary above is the same string a workflow
@@ -2165,44 +2307,32 @@ document.addEventListener("click", async (e) => {
   if (box) {
     const d = await loadDepartments();
     if (!d) return;
-    const o = d.offices.find((x) => x.id === box.dataset.agentBox);
-    if (o) { go(`#/dept/${encodeURIComponent(o.key)}`); return; }
-    // The chief has no department of its own, so it opens on the same panel.
-    if (d.chief && d.chief.id === box.dataset.agentBox) {
-      renderChiefPanel(d.chief);
-      go("#/dept/chief");
-      return;
-    }
+    // **Every tier routes by the key the box carries.** This used to search
+    // `d.offices` for departments and then special-case the chief, so an office box
+    // matched neither and the click did nothing at all -- an office could be seen
+    // and not opened. `findByKey` is the same lookup the route uses, so a box and
+    // the address it opens can no longer disagree.
+    const all = [d.chief, ...(d.second_tier || []), ...d.offices].filter(Boolean);
+    const o = all.find((x) => x.id === box.dataset.agentBox);
+    if (!o || !o.key) { toast("That agent has no panel.", true); return; }
+    go(`#/dept/${encodeURIComponent(o.key)}`);
     return;
   }
   const dept = e.target.closest("[data-key]") && e.target.closest("a[data-key]");
   if (dept) { deptSel = null; }
 });
 
-/* The chief has no department, so its panel is drawn in one place and reached
-   two ways: by clicking the box, and by arriving at #/dept/chief. Duplicating it
-   meant the click rendered correctly and the navigation immediately re-rendered
-   it as "No such department" -- the click appeared to do nothing. */
-function renderChiefPanel(chief) {
-  if (!chief) { toast("No such agent.", true); go("#/departments"); return; }
-  deptSel = chief.id;
-      setHTML("deptTitle", "Executive Agent — the chief");
-      $("deptSub2").textContent = `${chief.granted} granted, ceiling ${chief.ceiling}`;
-      setHTML("deptOneTree", renderTree("deptOneTree", [], chief, chief.id, []));
-      $("runSub").textContent = `${(chief.runs || []).length} recent run(s)`;
-      $("runEmpty").hidden = (chief.runs || []).length > 0;
-      setHTML("runSteps", (chief.runs || []).slice(0, 8).map((r) => `
-        <div class="step${r.running ? " live" : ""}">
-          <div class="h"><span>${esc(r.status)}</span><span>${esc(r.model_used || "—")}</span>
-            <span>${num(r.tokens)} tok</span>
-            <span>${r.started_at ? esc(ago(r.started_at)) : ""}</span></div>
-          <div class="b">${readable(r.summary)}</div>
-        </div>`).join(""));
-      $("workOpen").innerHTML = (chief.open_tasks || []).map((t) =>
-        `<div class="taskitem open"><span class="st">${esc(t.status)}</span><span class="grow">${esc(t.title)}</span></div>`).join("");
-      $("workAttn").innerHTML = taskRows(chief.attention, "attn");
-      $("workDone").innerHTML = taskRows(chief.done_tasks, "done");
-}
+/* `renderChiefPanel` is gone.
+   ------------------------------------------------------------------
+   It was a private copy of the panel for the chief, reached two ways: by clicking
+   the box, and by arriving at `#/dept/chief`. The click rendered it and the
+   navigation immediately replaced it with "No such department" -- the click appeared
+   to do nothing. It was also the only place that styled the chief's title, so a fix
+   to the shared panel would have left the chief showing the old one.
+
+   There is one panel now, reached by the same route for every tier, and the chief is
+   found by `findByKey`. A fourth tier is a row in that function, not a copy of this
+   function. */
 
 
 /* Poll while the page is open, so a light that comes on is noticed without a reload.
@@ -2212,12 +2342,17 @@ function watchDepartments() {
   if (deptPoll) clearInterval(deptPoll);
   deptPoll = setInterval(async () => {
     if (parseHash().name !== "departments" && parseHash().name !== "dept") return;
-    const before = JSON.stringify((deptCache?.chief ? [deptCache.chief.running, deptCache.chief.stuck] : [])
-      .concat((deptCache?.offices || []).map((o) => [o.running, o.stuck])));
+    // **All three tiers, or the office tier never refreshes.** It compared the chief
+    // and the departments only, so an office whose light came on kept polling and
+    // never redrew -- the poller reporting nothing changed about a tier it was not
+    // watching.
+    const lights = (p) => JSON.stringify([p.chief?.running, p.chief?.stuck]
+      .concat((p.second_tier || []).map((o) => [o.running, o.stuck]))
+      .concat((p.offices || []).map((o) => [o.running, o.stuck])));
+    const before = lights(deptCache || {});
     const fresh = await apiGet("/departments").catch(() => null);
     if (!fresh) return;
-    const after = JSON.stringify([fresh.chief?.running, fresh.chief?.stuck]
-      .concat(fresh.offices.map((o) => [o.running, o.stuck])));
+    const after = lights(fresh);
     if (before === after) return;
     deptCache = fresh;
     await renderDepartments(parseHash().arg);

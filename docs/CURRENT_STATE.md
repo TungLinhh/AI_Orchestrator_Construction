@@ -23,11 +23,16 @@ secrets — simulated personas and a role switcher) and every external integrati
   work**, each producing the keys its `expected_output_schema` declared.
   `scripts/run_real_scenarios.py` is the harness and its exit code is the number
   of scenarios that did not finish.
-* **The six departments the owner named**, two per office: Front (Sales,
-  Procurement), Middle (QA/QC-HSE, Design), Back (Finance, HR). The Design
-  department's agent is the Design Agent; an earlier `Program Agent` named
-  nothing a reader could place, and it broke routing as well as reading (F212,
-  F213).
+* **Seven departments under three offices**, two per office except Back, which has
+  three: Front (Sales, Procurement), Middle (QA/QC-HSE, Design), Back (Finance, HR,
+  IT). IT is the seventh, added so `BO-IT-SOP-007` and `PMO-KNW-SOP-006` stopped
+  having no owner (F237).
+* **The console draws the hierarchy it is told, and a test asserts the nesting.**
+  `GET /departments` returns a server-built `tree` where every department sits inside
+  the office its `parent_unit_slug` names, and every box carries `key`, `label` and
+  `unit` so all three tiers can be opened. It was flat — `parent_id` was never
+  selected — while 100 console checks passed, because the only hierarchy check was a
+  substring match (F240).
 * **A run that needs a person gets one.** `NEEDS_APPROVAL` writes an approval row
   naming the agent that asked; `AO_APPROVAL_AUTO_APPROVE=true` answers it
   through the same service a person uses. The switch is off by default.
@@ -38,13 +43,33 @@ secrets — simulated personas and a role switcher) and every external integrati
 * **A real free-tier model works.** `qwen3.8-27b:free`, 6 model calls, 8 tool
   calls, 7 of them successful. Before the tool's description carried the schema
   it made 46 tool calls with 13 successes and stopped at the ceiling.
+* **A real model delegates.** `liquid/lfm-2.5-2.6b:free` through OpenRouter, on
+  2026-10-02, produced `delegation.applied` five times unprompted by the tool schema.
+  The prompt fix naming `delegate_to_agent` and listing colleagues (F234) is verified
+  against a model rather than assumed.
+* **A refused duplicate no longer takes the run down with it.** A duplicate task is
+  refused inside a SAVEPOINT, so the caller's transaction — and the work already done
+  in it — survives, and the refusal is reported as a duplicate rather than as a
+  malformed request. Both were wrong on `main`: the handler matched the wrong unique
+  index, so a correct refusal came back as a `ValidationError` the executor does not
+  catch, and the `rollback()` used to clean up killed the whole run (F243).
+* **A department's work is not lost when it comes back in the wrong shape.** A real
+  run produced a 6,713-token report while `tasks.output` was `{}`. The office now
+  reads `executions.summary`, distinguishes "no answer" from "an answer in the wrong
+  shape", and hands the previous attempt's text to the retry so it reformats instead of
+  re-deriving (F239). Measured: five runs had each been told they had produced nothing.
+* **The fan-out ceiling is wider than the organisation.** It was 8 against 11 agents,
+  so a real run's chief was refused its ninth delegation and the task ended
+  `budget_error` — the symptom, reported in place of the cause. Now 16, matching
+  `max_active_descendants`, and asserted as a relationship against the seed rather than
+  as a literal (F241).
 
 ## What is not ready, stated plainly
 
 * **No deployment.** No Dockerfile, no compose file, no Kubernetes. `make setup`
   and `make dev` run it natively.
 * **The organisation is a demonstration.** `seed.py` plants the three tiers and
-  the six departments. There is no provisioning path for an operator's own org.
+  the seven departments. There is no provisioning path for an operator's own org.
 * **The scenario harness is told where the work goes.** It routes from
   `Scenario.office` and `DEPARTMENT_AGENT` rather than discovering the route, so
   it proves a chain reaches the owning department and that the department
@@ -261,6 +286,15 @@ The Executive received a goal, named a real agent from its own organisation, the
 platform created a child task in the same transaction, and a repeat request for
 the same work was refused rather than duplicated. That is the whole chain, end to
 end, on the real model.
+
+**One caveat on "rather than duplicated", measured and not fixed.** Exact and
+*concurrent* duplicates are refused reliably (F243). Near-duplicates are not: one
+measured run accepted five delegations from one parent, three of which share their
+first 56 characters and differ only in a marker the model appended — "for run 3",
+"(run 3217)". `intent_fingerprint` hashes the objective text, so the marker makes each
+one distinct. No fix is proposed, because the heuristic that catches those five — strip
+digits before hashing — also merges "approve invoice 1" with "approve invoice 2", and a
+Finance department that merges those is worse than one that repeats itself. F244.
 
 It took eleven defects to get here, and the reason is in `FAILED_APPROACHES.md`:
 one dropped keyword argument, one optimistic `getattr` default, one gate reading an
@@ -691,7 +725,7 @@ Two things about that were nearly wrong in a way that would have cost money:
   by the caller rather than guessed.
 
 **Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
-the suite is 3037 unit and integration tests, 3 skipped, 0 failed, and
+the suite is 3086 unit and integration tests, 8 skipped, 0 failed, and
 `make lint` and `make typecheck` are clean.
 
 **Two existing tests caught a wrong fix in this pass, which is worth recording.** The

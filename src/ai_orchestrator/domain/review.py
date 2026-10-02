@@ -218,6 +218,7 @@ def assess_output(
     attempt: int = 1,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     source_text: str = "",
+    reported_text: str = "",
 ) -> ReviewVerdict:
     """Decide whether this output can be sent to the executive.
 
@@ -230,16 +231,27 @@ def assess_output(
     delegation carried). It is optional, and omitting it costs one check rather than
     correctness -- but it is the only way to catch the answer that is the question
     again, which every other check here passes.
+
+    `reported_text` is what the run actually **said** -- its summary, which holds the
+    whole answer when the model wrote prose instead of the contracted object. It
+    changes no verdict: a paragraph does not satisfy a contract that promised keys.
+    What it changes is the **finding**, and that turned out to matter more than the
+    verdict.
     """
     checks: list[Check] = []
     findings: list[str] = []
 
     wanted = required_keys(expected_output_schema)
     source_words = _words(source_text) if len(source_text.strip()) >= ECHO_MIN_SOURCE else set()
+    said_something = len(reported_text.strip()) >= MIN_TEXT_LENGTH
 
     if output is None:
         checks.append(Check("produced", False, "the run wrote no output at all"))
-        return ReviewVerdict(ok=False, checks=tuple(checks), findings=("no output was produced",))
+        return ReviewVerdict(
+            ok=False,
+            checks=tuple(checks),
+            findings=("no output was produced",),
+        )
 
     if isinstance(output, dict) and not output:
         # **An empty mapping is not an answer**, whatever the contract says.
@@ -253,7 +265,34 @@ def assess_output(
         #
         # `{}` and `None` are the same answer. The check below treats them alike;
         # this is the one that stops it being the *accepted* one.
+        #
+        # **But "no answer" and "no answer *in the contracted shape*" are different
+        # faults, and this used to report the first about the second.** Measured on a
+        # real free model: 40.270 tokens in, 6.713 out, 13 tool calls, and a full
+        # structured Vietnamese report in the summary -- and `tasks.output` was `{}`,
+        # so the office was told
+        #
+        #     it promised a result and produced nothing at all
+        #
+        # which was false. The department had written a report; it was in the wrong
+        # shape. And a rerun brief that says "you produced nothing" sends a
+        # department back to re-derive work it has already done, which is why the
+        # loop re-derived it five times and never converged.
         checks.append(Check("produced", False, "the run wrote an empty output: {}"))
+        if said_something:
+            return ReviewVerdict(
+                ok=False,
+                checks=tuple(checks),
+                findings=(
+                    "the run DID produce an answer -- a long report -- but not in the "
+                    f"shape this task promised. It owes {list(wanted) or 'a result'} and "
+                    "returned no such fields, so the office cannot act on it. Do the "
+                    "analysis again only as far as you need to: take what you already "
+                    "concluded and return it as the required fields. Your previous "
+                    "answer is not lost, and re-deriving it from scratch is what has "
+                    "been happening.",
+                ),
+            )
         return ReviewVerdict(
             ok=False,
             checks=tuple(checks),

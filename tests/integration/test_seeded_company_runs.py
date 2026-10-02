@@ -242,7 +242,27 @@ def test_the_real_demo_script_runs_end_to_end() -> None:
             # question about a provider — it belongs in a demo, not in a gate that
             # has to pass on a machine with no network.
             "--depth",
-            "1",
+            # **Zero, not one — and that is the fix for a gate that timed out.**
+            #
+            # This test runs the real script against a real company, and the agent's
+            # `model_profile` comes from the seed, so every model call is a live free
+            # model. At `--depth 1` the script also executes every child the model
+            # chose to delegate, and *how many* it chose is not ours to bound:
+            #
+            #     322.76s   one delegation, measured standalone
+            #     >900s     a suite run, timed out
+            #
+            # Nothing in the platform differed between those two. A gate whose
+            # pass/fail is a third party's response time is not a gate, and the test's
+            # own comment already says the provider question "belongs in a demo, not in
+            # a gate".
+            #
+            # At depth 0 the script still does everything this test asserts: it creates
+            # the goal, runs the Executive through the real runtime, and prints the two
+            # facts that make the output readable. Only the children are skipped, and
+            # the children are what cost 900 seconds. Running them is the demo's job —
+            # `make demo` — and `scripts/demo_real_run.py --depth 2` still does.
+            "0",
         ],
         capture_output=True,
         text=True,

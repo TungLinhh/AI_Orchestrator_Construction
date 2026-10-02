@@ -91,6 +91,31 @@ building it and are recorded as F218–F222.
 - **Shadow-mode** (D6) is the precondition the dossier sets for go-live and this
   build has not met it.
 - 26 of the 28 SOPs (D3) are catalogue rows.
-- The free model tier is currently **exhausted for the day**
-  (`free-models-per-day-high-balance`), so no real-model run is possible until the
-  daily reset. Measured directly against the API, on every free model.
+- The free model tier was **exhausted for the day** (`free-models-per-day-high-balance`)
+  until 00:03 UTC on 2026-10-02, when it reset. It has since been used for real runs,
+  and the quota is consumed again within hours — a free model is a development
+  convenience, not a deployment. Measured directly against the API, on every free model.
+
+## 5. The organisation is drawn by the server, not reassembled by the page
+
+The console's hierarchy used to be assembled in JavaScript from three flat lists. That
+is wrong for a reason that only shows up when the organisation changes shape: a page
+that reassembles a structure cannot be *told* the structure is wrong, because the
+reassembly is where the wrongness enters.
+
+`fleet_tree` now returns a nested `tree` — chief, then each office with its own
+departments — and the flat `offices` / `second_tier` lists are kept only because two
+other surfaces still read them. The nesting is asserted in Python, so adding an eighth
+department under a new office is a change to the seed and nothing else.
+
+A department whose `parent_unit_slug` names no office is placed in `tree.unassigned`
+and **named on the screen**, not dropped. Silently discarding it would produce a
+console that looks complete over an organisation the server could not fully describe.
+
+The related decision about measurement follows from the same place. Two of the three new
+hierarchy checks initially failed against a *correct* tree — one because a regex in the
+page harness read a regex group as an attribute name, one because the harness's
+`location.hash` did not fire `hashchange`, so a click changed the URL and rendered
+nothing. An instrument that cannot ask the question must refuse rather than answer, so
+`queryAll` now raises on a selector it cannot parse. That is a smaller change than the
+hierarchy and worth more than the hierarchy.

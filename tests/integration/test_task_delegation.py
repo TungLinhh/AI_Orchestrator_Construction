@@ -13,6 +13,7 @@ application uses, so the RLS tenant binding under test is the production one.
 from __future__ import annotations
 
 import pytest
+from sqlalchemy import select
 
 from ai_orchestrator.domain.delegation import DelegationLimits, DelegationPath
 from ai_orchestrator.domain.enums import EventType, TaskStatus
@@ -24,6 +25,7 @@ from ai_orchestrator.domain.errors import (
     ValidationError,
 )
 from ai_orchestrator.domain.state_machines import Transition
+from ai_orchestrator.persistence.models import Agent, Organization
 from ai_orchestrator.persistence.repositories.organization import (
     AgentRepository,
     RoleRepository,
@@ -33,6 +35,7 @@ from ai_orchestrator.persistence.repositories.task import (
     ExecutionRepository,
     TaskRepository,
 )
+from ai_orchestrator.seed import seed
 
 pytestmark = pytest.mark.integration
 
@@ -134,7 +137,6 @@ class TestTaskLifecycle:
 
     async def test_creation_writes_an_outbox_event_in_the_same_transaction(self, tenant) -> None:
         """A committed task is always announced; an uncommitted one never is."""
-        from sqlalchemy import select
 
         from ai_orchestrator.persistence.models import OutboxEvent
 
@@ -236,6 +238,28 @@ class TestTaskLifecycle:
             await repo_other.get(task.id)
 
 
+async def _any_agent_id(session, organization_id: str) -> str:
+    """The id of some agent in this tenant, seeding the roster if it is empty."""
+    found = (
+        await session.execute(
+            select(Agent.id).where(Agent.organization_id == organization_id).limit(1)
+        )
+    ).scalar_one_or_none()
+    if found:
+        return str(found)
+    org = (
+        await session.execute(select(Organization).where(Organization.id == organization_id))
+    ).scalar_one()
+    await seed(session, into=org)
+    return str(
+        (
+            await session.execute(
+                select(Agent.id).where(Agent.organization_id == organization_id).limit(1)
+            )
+        ).scalar_one()
+    )
+
+
 class TestDuplicateWork:
     async def test_equivalent_goal_is_rejected(self, tenant) -> None:
         """Two agents describing the same job differently must collide."""
@@ -244,6 +268,83 @@ class TestDuplicateWork:
         with pytest.raises(ConflictError) as exc:
             await repo.create(title="Again", goal="prepare the MARKET analysis")
         assert str(first.id) in str(exc.value.message)
+
+    async def test_a_refused_duplicate_leaves_the_callers_work_intact(self, tenant) -> None:
+        """**The refusal has to leave the caller able to keep working.**
+
+        This is the assertion that was missing, and its absence is why the demo script
+        died on `main`. The duplicate was refused correctly and the caller caught
+        `ConflictError` — and the run still ended:
+
+            asyncpg.UniqueViolationError: duplicate key ... uq_tasks_live_intent
+            InvalidRequestError: Can't operate on closed transaction inside context
+            manager. The transaction was rolled back due to an exception
+
+        Because the error came from the database inside the *caller's* transaction, and
+        a transaction that has seen an error is dead, "refuse it and carry on" was
+        impossible. The repository used to roll the whole outer transaction back to
+        clean up, which undid work that had nothing to do with the duplicate.
+
+        So: work done before the refused duplicate must still be readable afterwards.
+        That is what the savepoint buys, and it is the difference between a refusal and
+        an outage.
+        """
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        keeper = await repo.create(title="The real work", goal="do the thing that matters")
+
+        # **An owner is required, and that is a detail worth knowing.** The index is on
+        # `(organization_id, owner_agent_id, intent_fingerprint)`, and Postgres treats
+        # NULLs as distinct in a unique index -- so two ownerless tasks with the same
+        # intent do *not* collide. A first version of this test created both tasks
+        # without an owner, raised nothing, and would have passed while proving
+        # nothing: the index was never consulted.
+        #
+        # `intent_fingerprint` with `allow_parallel=True` is the shape the delegation
+        # executor sends, and it is what reaches the *index*: the ordinary duplicate
+        # check refuses earlier, in Python, on the goal text.
+        owner = str(await _any_agent_id(tenant.session, str(tenant.organization_id)))
+        intent = "a" * 64
+        await repo.create(
+            title="Same thing again",
+            goal="do the thing that matters",
+            owner_agent_id=owner,
+            allow_parallel=True,
+            intent_fingerprint=intent,
+        )
+
+        with pytest.raises(ConflictError):
+            await repo.create(
+                title="And again",
+                goal="do the thing that matters",
+                owner_agent_id=owner,
+                allow_parallel=True,
+                intent_fingerprint=intent,
+            )
+
+        # The session is still usable, and the work done before the refused insert is
+        # still there. Reading it back is the whole assertion: on the old code this
+        # line raises `InvalidRequestError` rather than returning a row.
+        reloaded = await repo.get(keeper.id)
+        assert reloaded.title == "The real work"
+
+    async def test_a_refused_duplicate_does_not_undo_an_earlier_duplicate_check(
+        self, tenant
+    ) -> None:
+        """Two refusals in a row, then real work — the shape a model actually produces.
+
+        A model that delegates the same thing three times must see three refusals and
+        then carry on, not one refusal and a dead session. Each refusal has to leave
+        the transaction exactly as usable as the first one did.
+        """
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        await repo.create(title="A", goal="identical work")
+
+        for _ in range(2):
+            with pytest.raises(ConflictError):
+                await repo.create(title="B", goal="identical work")
+
+        after = await repo.create(title="C", goal="different work entirely")
+        assert after.id != ""
 
     async def test_parallel_work_must_be_requested_explicitly(self, tenant) -> None:
         repo = TaskRepository(tenant.session, tenant.organization_id)

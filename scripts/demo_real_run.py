@@ -73,7 +73,7 @@ def _gateway() -> ModelGateway:
     return gw
 
 
-async def run(goal: str, *, profile: str, depth: int) -> int:
+async def run(goal: str, *, depth: int) -> int:
     settings = get_settings()
     configure_logging(settings)
     db = Database.from_settings()
@@ -91,7 +91,21 @@ async def run(goal: str, *, profile: str, depth: int) -> int:
         org_name = str(org.name)
 
     print(f"organisation : {org_name}")
-    print(f"model profile: {profile}")
+    # **No "model profile" line, because this script cannot choose one.**
+    #
+    # It used to accept `--profile` and print it. The flag was passed to nothing:
+    # `TaskExecutionService` reads `model_profile` off the agent row, so every run
+    # used whatever the seed put there. The output said
+    #
+    #     model profile: gate
+    #     model used   : openrouter/qwen/qwen3.8-27b:free
+    #
+    # two lines apart, one of them false, directly above the line whose whole purpose
+    # is to say which model really answered. `--profile` is gone rather than honoured:
+    # wiring it means an override parameter on the central execution path, which is
+    # a change to the product made to satisfy a demo, and the false line would
+    # outlive it either way. `model used :` below is the truth, read from
+    # `model_usage`.
     print(f"goal         : {goal}\n")
 
     # The runtime under test is the real one: PydanticAI's agent loop with our
@@ -260,10 +274,9 @@ async def all_child_tasks(session, org_id: str, parent_id: str) -> list:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--goal", default=DEFAULT_GOAL)
-    parser.add_argument("--profile", default="primary")
     parser.add_argument("--depth", type=int, default=2)
     args = parser.parse_args()
-    return asyncio.run(run(args.goal, profile=args.profile, depth=args.depth))
+    return asyncio.run(run(args.goal, depth=args.depth))
 
 
 if __name__ == "__main__":

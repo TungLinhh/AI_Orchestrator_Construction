@@ -82,61 +82,84 @@ SELECT count(*) FILTER (WHERE unit_type = 'office')      AS offices,
 
 async def main() -> int:
     db = Database.from_settings()
+    entered = False
     try:
-        async with db.engine.connect() as conn:
-            # Newest first: of the tenants shaped like the product, the most recent
-            # is the one the current seed wrote and the one a person is looking at.
-            candidates = [
-                str(row[0])
-                for row in (await conn.execute(text(_CANDIDATES), {"n": CANDIDATES})).all()
-            ]
-            if not candidates:
-                print(
-                    "no organisation exists. Run `make seed-process` first.",
-                    file=sys.stderr,
-                )
-                return 1
-            org = None
-            for candidate in candidates:
+        try:
+            async with db.engine.connect() as conn:
+                entered = True
+                # Newest first: of the tenants shaped like the product, the most recent
+                # is the one the current seed wrote and the one a person is looking at.
+                candidates = [
+                    str(row[0])
+                    for row in (await conn.execute(text(_CANDIDATES), {"n": CANDIDATES})).all()
+                ]
+                if not candidates:
+                    print(
+                        "no organisation exists. Run `make seed-process` first.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                org = None
+                for candidate in candidates:
+                    await conn.execute(
+                        text("SELECT set_config('app.current_tenant', :org, true)"),
+                        {"org": candidate},
+                    )
+                    row = (await conn.execute(text(_SHAPE_OF_ONE), {"org": candidate})).one()
+                    if (
+                        int(row.offices) == WANTED_OFFICES
+                        and int(row.departments) == WANTED_DEPARTMENTS
+                    ):
+                        org = candidate
+                        break
+                if org is None:
+                    print(
+                        f"none of the {len(candidates)} most recent organisations has the "
+                        f"current three-tier shape ({WANTED_OFFICES} offices, "
+                        f"{WANTED_DEPARTMENTS} departments). Seed a fresh tenant with "
+                        "`make seed-process`, or pass ORG=<org_...> explicitly.",
+                        file=sys.stderr,
+                    )
+                    return 1
+                # Still bound from the loop above, and the count below is the one
+                # worth showing an operator: a tenant with the right shape and no
+                # projects renders an empty portfolio, which reads as a broken page.
+                #
+                # This is F102's shape and it is worth naming, because the failure it causes
+                # here is a *lie in the helpful direction*: the first version of this script
+                # counted unbound, RLS hid all six projects, and it printed "this tenant has
+                # no projects -- run make seed-construction". The data was already there. A
                 await conn.execute(
-                    text("SELECT set_config('app.current_tenant', :org, true)"),
-                    {"org": candidate},
+                    text("SELECT set_config('app.organization_id', :org, true)"),
+                    {"org": org},
                 )
-                row = (await conn.execute(text(_SHAPE_OF_ONE), {"org": candidate})).one()
-                if (
-                    int(row.offices) == WANTED_OFFICES
-                    and int(row.departments) == WANTED_DEPARTMENTS
-                ):
-                    org = candidate
-                    break
-            if org is None:
-                print(
-                    f"none of the {len(candidates)} most recent organisations has the "
-                    f"current three-tier shape ({WANTED_OFFICES} offices, "
-                    f"{WANTED_DEPARTMENTS} departments). Seed a fresh tenant with "
-                    "`make seed-process`, or pass ORG=<org_...> explicitly.",
-                    file=sys.stderr,
-                )
-                return 1
-            # Still bound from the loop above, and the count below is the one
-            # worth showing an operator: a tenant with the right shape and no
-            # projects renders an empty portfolio, which reads as a broken page.
-            #
-            # This is F102's shape and it is worth naming, because the failure it causes
-            # here is a *lie in the helpful direction*: the first version of this script
-            # counted unbound, RLS hid all six projects, and it printed "this tenant has
-            # no projects -- run make seed-construction". The data was already there. A
-            await conn.execute(
-                text("SELECT set_config('app.organization_id', :org, true)"),
-                {"org": org},
+                projects = (await conn.execute(text("SELECT count(*) FROM projects"))).scalar()
+                print(org)
+                if not projects:
+                    print(
+                        "note: this tenant has no projects -- run `make seed-construction`",
+                        file=sys.stderr,
+                    )
+        except Exception as exc:
+            # Only *reaching* the database is translated. Anything raised once the
+            # connection is live is a real failure and keeps its traceback -- a script
+            # that turns every error into "is PostgreSQL running?" would hide the one
+            # that matters.
+            if entered:
+                raise
+            # **A person who has not started PostgreSQL should be told that, not shown a
+            # traceback.** `make page` calls this script and reads only stdout, so on a
+            # stopped cluster what reached the terminal was nothing, followed by a
+            # thirty-line asyncpg trace naming a port. It read as a broken product
+            # rather than a missing service.
+            print(
+                f"cannot reach PostgreSQL: {type(exc).__name__}: {exc}\n"
+                "  start it and create the schema:\n"
+                "    uv run python scripts/pgctl.py bootstrap\n"
+                "  (this project uses port 55432; 5433 belongs to another project)",
+                file=sys.stderr,
             )
-            projects = (await conn.execute(text("SELECT count(*) FROM projects"))).scalar()
-            print(org)
-            if not projects:
-                print(
-                    "note: this tenant has no projects -- run `make seed-construction`",
-                    file=sys.stderr,
-                )
+            return 1
     finally:
         await db.dispose()
     return 0

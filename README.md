@@ -77,6 +77,13 @@ owner: `BO-IT-SOP-007` (IT administration, access control, backup) and
 than assigned — an access-provisioning run inside Finance or QA produces a plausible
 answer to a question nobody asked — and refusing is not a resolution.
 
+The console draws this shape, and clicking any box — chief, office or department —
+opens that unit's own panel with its own work and its departments' work shown
+separately. The hierarchy is asserted structurally, in
+`tests/integration/test_departments_reports_the_tree.py` and again in
+`scripts/verify_page.mjs`; it was flat for months while the checks passed, because the
+only check was a substring match (F240).
+
 Open **http://127.0.0.1:8099/api/v1/ui**.
 
 That is the whole onboarding. `make setup` creates the cluster, runs 29 migrations
@@ -276,7 +283,7 @@ and what the boundary is.
 **Tests.**
 
 ```console
-$ make test              # 3037 passed, 3 skipped, 0 failed
+$ make test              # 3086 passed, 8 skipped, 0 failed
 $ make test-e2e          # 34 passed (needs NATS + Temporal)
 $ make lint typecheck    # clean
 ```
@@ -377,7 +384,7 @@ something harmful are the hardest to test, they will be the least tested.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| `tests/unit` + `tests/integration` | 3037 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
+| `tests/unit` + `tests/integration` | 3086 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
 | `tests/e2e` | 34 | The 8 acceptance scenarios, the event pipeline through real NATS JetStream, and A2A against a spawned remote agent. Gated by `preflight-e2e`, so a missing broker is a failure rather than five skips |
 | `make lint` | clean | 669 findings fixed, including a typo in a target name that made a documented command fail on a clean machine |
 | `make typecheck` | clean | 144 source files, no `Any` escapes and no unused ignores |
@@ -445,9 +452,12 @@ finished is worse than none. The gaps that matter:
 - `ENCRYPTION_KEY` is generated and validated and currently protects nothing.
 - Agents are `retired`, never deleted — chain of custody is the product — so no
   right-to-erasure path exists.
-- Four console checks want *content*: a document register, some failed work to
-  retry, a Gate session with a person on it. A tenant with the organisation and
-  none of the paperwork.
+- **Five console checks fail** and are reported as failing. All five want *content*
+  from `AO_CORPUS_ROOT`, the client spreadsheet corpus, which is deliberately not in
+  a public repository: the project list, project names, project links, a project row
+  to click, and the list to pick from. Without it the Projects surface is empty. The
+  other 119 console checks pass, including the three that assert every department is
+  nested inside its own office's group.
 
 **What was actually measured about model quality, and what was not.** One free
 model was run on one procedure, and it got all three expense verdicts right. That is

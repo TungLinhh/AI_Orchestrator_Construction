@@ -100,8 +100,8 @@ function makeNode(id, tag) {
     insertBefore(c) { c.parentElement = this; this.children.unshift(c); return c; },
     removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
     get firstChild() { return this.children[0] || null; },
-    querySelectorAll(sel) { return queryAll(sel); },
-    querySelector(sel) { return queryAll(sel)[0] ?? null; },
+    querySelectorAll(sel) { return queryWithin(this, sel); },
+    querySelector(sel) { return queryWithin(this, sel)[0] ?? null; },
     closest() { return null; },
     focus() {}, blur() {}, scrollIntoView() {},
     showModal() { this.open = true; }, close() { this.open = false; },
@@ -114,19 +114,198 @@ function makeNode(id, tag) {
   if (id === "sheet") node.open = false;
   return node;
 }
-function queryAll(sel) {
-  // Only the two shapes the construction script uses.
-  const cls = sel.match(/^\.([\w-]+)$/);
-  if (cls) {
-    const out = [];
-    for (const n of nodes.values()) {
-      if (n.innerHTML.includes(`class="${cls[1]}"`) || n._cls?.has(cls[1])) out.push(n);
+/* --- an element tree parsed out of rendered HTML ---------------------------
+   **Built because the structural hierarchy could not be checked without it, and the
+   tempting alternative was worse than not checking.**
+
+   `queryAll` answered two selectors -- `.cls` and `#id` -- and returned `[]` for
+   everything else. Every hierarchy selector is an attribute selector, so
+   `[data-office-group]`, `.dept-edges .abox` and `.abox[data-box-key="finance"]`
+   would all have returned nothing, and the checks written against them would have
+   reported "no department is nested inside any office" over a correctly nested tree.
+   A selector the harness silently does not understand is a check that always fails,
+   and a check that always fails gets deleted rather than trusted -- which is how the
+   original string-match stayed in place for months.
+
+   So the rule is the one this project keeps relearning: **an instrument that cannot
+   ask the question must say so.** `queryAll` below raises on a selector it does not
+   understand instead of answering `[]`. */
+
+const VOID = new Set(["br", "hr", "img", "input", "meta", "link", "source", "path"]);
+
+function parseHTML(html, parent = null) {
+  const root = { tag: "#root", attrs: {}, children: [], text: "", parent: null };
+  const stack = [root];
+  const re = /<\/?([a-zA-Z][\w-]*)((?:\s+[^\s=>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>|([^<]+)/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const [whole, tag, attrText, selfClose, text] = m;
+    if (text !== undefined) {
+      stack[stack.length - 1].text += text;
+      continue;
     }
-    return out;
+    if (whole.startsWith("</")) {
+      if (stack.length > 1) stack.pop();
+      continue;
+    }
+    const attrs = {};
+    const ar = /([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+    let a;
+    while ((a = ar.exec(attrText || ""))) {
+      attrs[a[1]] = a[2] ?? a[3] ?? a[4] ?? "";
+    }
+    const el = { tag: tag.toLowerCase(), attrs, children: [], text: "", parent: stack[stack.length - 1] };
+    stack[stack.length - 1].children.push(el);
+    if (!selfClose && !VOID.has(el.tag)) stack.push(el);
   }
-  const byId = sel.match(/^#([\w-]+)$/);
-  if (byId && nodes.has(byId[1])) return [nodes.get(byId[1])];
+  const wire = (el) => {
+    for (const c of el.children) { c.parent = el; wire(c); }
+  };
+  wire(root);
+  return root;
+}
+
+/** Does one parsed element satisfy one *simple* selector such as `.a`, `#b`, `[c]`,
+ *  `[c="v"]`, `.a[c="v"]`, `tag`, or `tag.cls`? */
+function matchesSimple(el, sel) {
+  const parts = sel.match(/(^[a-zA-Z][\w-]*)|(\.[\w-]+)|(#[\w-]+)|(\[([^\]=]+)(?:=("?)([^\]"]*)\6)?\])/g) || [];
+  if (!parts.length) throw new Error(`queryAll does not understand "${sel}"`);
+  for (const p of parts) {
+    if (p.startsWith(".")) {
+      if (!(el.attrs.class || "").split(/\s+/).includes(p.slice(1))) return false;
+    } else if (p.startsWith("#")) {
+      if (el.attrs.id !== p.slice(1)) return false;
+    } else if (p.startsWith("[")) {
+      // **The group indices here were wrong once and every attribute selector
+      // matched nothing.** `[([^\]=]+)(?:=("?)([^\]"]*)\2)?]` has three capture
+      // groups -- name, quote, value -- and the destructuring read `name` from index
+      // 2, which is the quote. `""` is therefore not a key in `attrs`, every
+      // attribute selector returned false, and the hierarchy checks reported "0
+      // groups" over a tree that had 3. A silent wrong answer from a shim is worse
+      // than a shim that refuses to answer, which is why `queryAll` raises on a
+      // selector it cannot parse.
+      const hit = p.match(/^\[([^\]=]+)(?:=("?)([^\]"]*)\2)?\]$/);
+      if (!hit) throw new Error(`queryAll does not understand "${sel}"`);
+      const [, name, , value] = hit;
+      const have = el.attrs[name];
+      if (have === undefined) return false;
+      if (value !== undefined && have !== value) return false;
+    } else if (el.tag !== p.toLowerCase()) return false;
+  }
+  return true;
+}
+
+/** Descendant match: `A B` means "a `B` somewhere inside an `A`". */
+function matchesWithin(el, parts) {
+  const last = parts[parts.length - 1];
+  if (!matchesSimple(el, last)) return false;
+  if (parts.length === 1) return true;
+  let p = el.parent;
+  while (p) {
+    if (matchesWithin(p, parts.slice(0, -1))) return true;
+    p = p.parent;
+  }
+  return false;
+}
+
+function queryTree(root, sel) {
+  const parts = sel.trim().split(/\s+(?![^\[]*\])/).filter(Boolean);
+  const out = [];
+  const walk = (el) => {
+    for (const c of el.children) {
+      if (matchesWithin(c, parts)) out.push(c);
+      walk(c);
+    }
+  };
+  walk(root);
+  return out;
+}
+
+/** Wrap a parsed element so it answers the handful of DOM calls the checks make. */
+function asDomNode(el, source) {
+  if (el.__dom) return el.__dom;
+  const classes = new Set((el.attrs.class || "").split(/\s+/).filter(Boolean));
+  const node = {
+    tagName: el.tag.toUpperCase(),
+    dataset: Object.fromEntries(
+      Object.entries(el.attrs).map(([k, v]) => [k.replace(/^data-/, "").replace(/-(\w)/g, (_, c) => c.toUpperCase()), v])),
+    classes,
+    getAttribute(k) { return el.attrs[k] ?? null; },
+    hasAttribute(k) { return el.attrs[k] !== undefined; },
+    classList: { contains: (c) => classes.has(c) },
+    get textContent() {
+      const walk = (n) => n.text + n.children.map(walk).join("");
+      return walk(el);
+    },
+    get innerHTML() { return source || ""; },
+    querySelectorAll(s) { return queryTree(el, s).map((c) => asDomNode(c, "")); },
+    querySelector(s) { return queryTree(el, s).map((c) => asDomNode(c, ""))[0] ?? null; },
+    closest(s) {
+      let p = el;
+      while (p) {
+        if (matchesSimple(p, s)) return asDomNode(p, "");
+        p = p.parent;
+      }
+      return null;
+    },
+    dispatchEvent() {},
+    click() {},
+  };
+  el.__dom = node;
+  return node;
+}
+
+/** Every rendered node, as a DOM tree. Parsed on demand -- the page writes a lot of
+ *  HTML and nothing here needs a live tree between polls. */
+function rendered(id) {
+  const node = nodes.get(id);
+  return node ? treeOf(node) : null;
+}
+
+function treeOf(node) {
+  if (node.__treeSource !== node.innerHTML) {
+    node.__tree = parseHTML(node.innerHTML || "");
+    node.__treeSource = node.innerHTML;
+  }
+  return node.__tree;
+}
+
+/** A node's own descendants -- and *only* its own.
+ *
+ *  It used to delegate to the global `queryAll`, so `deptOneTree.querySelectorAll`
+ *  answered with whatever box happened to be in the first node of the map. The check
+ *  written against it read **11 boxes from the organisation view while asserting
+ *  about a panel holding three**, and the one assertion that named the panel's own
+ *  contents got an empty string. A query that is not scoped to what it was asked
+ *  about is worse than no query: the numbers it returns are real, and they are about
+ *  something else.
+ */
+function queryWithin(node, sel) {
+  const found = queryTree(treeOf(node), sel);
+  if (found.length) return found.map((el) => asDomNode(el, node.innerHTML));
+  // Nodes the page built rather than rendered -- a `<dialog>`, a fresh element. For
+  // those the node map is the only thing there is to search.
+  return [node].filter((n) => matchesNode(n, sel));
+}
+
+function queryAll(sel) {
+  if (typeof sel !== "string") throw new Error("queryAll needs a selector");
+  // `.cls` and `#id` used to search the top-level node map, which could only ever see
+  // whole rendered blobs. The tree is the honest answer for anything structural.
+  for (const node of nodes.values()) {
+    const found = queryWithin(node, sel);
+    if (found.length) return found;
+  }
   return [];
+}
+
+function matchesNode(node, sel) {
+  const parts = sel.trim().split(/\s+/);
+  if (parts.length !== 1) return false;
+  const p = parts[0];
+  if (p.startsWith(".") && (node._cls?.has(p.slice(1)) || node.className?.split(/\s+/).includes(p.slice(1)))) return true;
+  if (p.startsWith("#")) return nodes.get(p.slice(1)) === node;
+  return false;
 }
 
 /* The window/sandbox. `window.addEventListener` and a settable `location.hash` are
@@ -148,9 +327,19 @@ const document_ = {
     return nodes.get(id);
   },
   querySelectorAll(sel) { return queryAll(sel); },
+  querySelector(sel) { return queryAll(sel)[0] ?? null; },
   createElement(tag) { return makeNode("", tag); },
   body: makeNode("body", "body"),
-  addEventListener() {},
+  // **Wired, not a no-op.** The page routes its whole box-click flow through one
+  // `document` click listener, so an inert stub meant "clicking an office" could not
+  // be tested at all -- only its consequence, a URL, which some other check could
+  // fake. It is registered here so the click can be fired at a real element and the
+  // handler's own `closest` lookup does the work.
+  addEventListener(type, fn) { addEventListener(type, fn); },
+  removeEventListener(type, fn) {
+    const list = listeners.get(type);
+    if (list) listeners.set(type, list.filter((x) => x !== fn));
+  },
 };
 
 let fetched = 0;
@@ -200,11 +389,45 @@ sandbox.dispatchEvent = (type, event) => fire(type, event);
 sandbox.location = { origin: BASE, href: BASE + "/api/v1/ui", hash: "#/dashboard" };
 sandbox.globalThis = sandbox;
 sandbox.window = sandbox;
+
 /* Setting `location.hash` must fire `hashchange`, because that is how a browser behaves
    and it is the mechanism the whole page navigates through. A shim where assigning the
-   hash does nothing would let a page with no working router pass. */
+   hash does nothing would let a page with no working router pass.
+
+   **The comment above claimed this and the code did not do it.** `hash` was a plain
+   property, so `go("#/dept/front-office")` -- the only navigation a *click* performs --
+   changed the URL and rendered nothing. Every check that moved the page had to assign
+   the hash and then fire `hashchange` by hand, which is why the click path was never
+   tested: it looked broken for a reason that was in the harness.
+
+   It is implemented now, and one check reads it directly: after clicking an office the
+   panel must show *that office*. Before this, the click appeared to work (the hash was
+   right) while the panel still showed whatever the previous check had left there. */
+let hashQuiet = 0;
+let pendingHash = null;
+const locationShim = {
+  get origin() { return BASE; },
+  get href() { return BASE + "/api/v1/ui" + locationShim.hash; },
+  get hash() { return sandbox.__hash ?? "#/dashboard"; },
+  set hash(v) {
+    if (v === sandbox.__hash) return;
+    sandbox.__hash = v;
+    // Fire after the assignment settles, and only once, so a `go()` that writes the
+    // hash twice renders once.
+    if (hashQuiet) return;
+    if (pendingHash) clearTimeout(pendingHash);
+    pendingHash = setTimeout(async () => {
+      pendingHash = null;
+      hashQuiet++;
+      try { await fire("hashchange", { type: "hashchange" }); }
+      catch (e) { uncaught = uncaught || e; }
+      finally { hashQuiet--; }
+    }, 0);
+  },
+};
+sandbox.__hash = "#/dashboard";
 Object.defineProperty(sandbox, "location", {
-  value: sandbox.location,
+  value: locationShim,
   writable: true,
   configurable: true,
 });
@@ -299,7 +522,6 @@ try {
     check("a project row exists to click", false, "no href in the project list");
   } else {
     sandbox.location.hash = "#/projects/" + first[1];
-    await fire("hashchange", { type: "hashchange" });
     await new Promise((r) => setTimeout(r, 2500));
     const list = $("projList").innerHTML;
     const detail = $("projDetail").innerHTML;
@@ -384,7 +606,6 @@ try {
 console.log("\ngoing back:");
 try {
   sandbox.location.hash = "#/dashboard";
-  await fire("hashchange", { type: "hashchange" });
   await new Promise((r) => setTimeout(r, 2000));
   check("the dashboard is back", $("dashStats").innerHTML.length > 40,
     `${$("dashStats").innerHTML.length} chars`);
@@ -396,7 +617,6 @@ try {
     `${$("projDetail").innerHTML.length} chars still alive`);
 
   sandbox.location.hash = "#/projects";
-  await fire("hashchange", { type: "hashchange" });
   await new Promise((r) => setTimeout(r, 1200));
   check("the project view with nothing selected explains itself",
     /Pick a project/.test($("projDetail").innerHTML));
@@ -418,7 +638,6 @@ try {
   })).json();
 
   sandbox.location.hash = "#/documents";
-  await fire("hashchange", { type: "hashchange" });
   await new Promise((r) => setTimeout(r, 2000));
 
   const docStats = $("docStats").innerHTML;
@@ -439,7 +658,6 @@ try {
   check("a document row exists to open", !!first, first ? first[1] : "no data-doc in the list");
   if (first) {
     sandbox.location.hash = "#/documents/" + first[1];
-    await fire("hashchange", { type: "hashchange" });
     await new Promise((r) => setTimeout(r, 2000));
 
     const matrix = $("docMatrix").innerHTML;
@@ -481,7 +699,6 @@ try {
       "a name and a time, not a tick");
 
     sandbox.location.hash = "#/documents";
-    await fire("hashchange", { type: "hashchange" });
     await new Promise((r) => setTimeout(r, 1200));
     check("leaving a document releases its detail", $("docMatrix").innerHTML.length === 0,
       `${$("docMatrix").innerHTML.length} chars still alive`);
@@ -504,7 +721,6 @@ try {
   })).json();
 
   sandbox.location.hash = "#/give";
-  await fire("hashchange", { type: "hashchange" });
   await new Promise((r) => setTimeout(r, 2000));
 
   const workStats = $("workStats").innerHTML;
@@ -524,7 +740,6 @@ try {
   check("a task row exists to open", !!first, first ? first[1] : "no data-task in the list");
   if (first) {
     sandbox.location.hash = "#/give/" + first[1];
-    await fire("hashchange", { type: "hashchange" });
     await new Promise((r) => setTimeout(r, 2500));
 
     check("the task detail rendered", $("taskTitle").textContent.length > 0,
@@ -624,7 +839,6 @@ try {
       "tree and decisions together");
 
     sandbox.location.hash = "#/give";
-    await fire("hashchange", { type: "hashchange" });
     await new Promise((r) => setTimeout(r, 1500));
     check("leaving a task releases its detail", $("taskTree").innerHTML.length === 0,
       `${$("taskTree").innerHTML.length} chars still alive`);
@@ -647,8 +861,10 @@ try {
     headers: { "x-organization-id": ORG },
   })).json();
 
+  // **Assign only.** The hash setter now fires `hashchange` on its own, which is what
+  // a click does; firing it again by hand here would render the view twice and make
+  // every later assertion read a panel two navigations old.
   sandbox.location.hash = "#/departments";
-  await fire("hashchange", { type: "hashchange" });
   await new Promise((r) => setTimeout(r, 2000));
 
   const tree = $("deptTree").innerHTML;
@@ -662,6 +878,57 @@ try {
   check("every department is present", depts.offices.length === EXPECTED_DEPARTMENTS,
     `${depts.offices.length} of ${EXPECTED_DEPARTMENTS}`);
   check("the chief is the root of the tree", /Chief/.test(tree) && /Executive/.test(tree));
+
+  /* --- the hierarchy, asserted structurally -------------------------------
+     **This block replaces a check that could not fail.** It was:
+
+         check("the chief is the root of the tree", /Chief/.test(tree) && /Executive/.test(tree));
+
+     Two substring matches on rendered HTML. A flat list of eleven boxes passes it,
+     which is exactly what it did: 100 checks green while no department sat inside
+     any office. A name appearing somewhere is not a nesting relation, so the
+     relation is what is read now.
+
+     Read from the DOM, not from the payload: the payload is what
+     `tests/integration/test_departments_reports_the_tree.py` asserts, and asserting
+     it twice would prove the server twice and the page never. */
+  const groups = [...$("deptTree").querySelectorAll("[data-office-group]")];
+  check("the tree groups departments under offices",
+    groups.length === (depts.second_tier || []).length,
+    `${groups.length} group(s) for ${(depts.second_tier || []).length} office(s)`);
+  check("every office has a group of its own",
+    groups.every((g) => g.getAttribute("data-office-group"))
+    && new Set(groups.map((g) => g.getAttribute("data-office-group"))).size === groups.length,
+    groups.map((g) => g.getAttribute("data-office-group")).join(", "));
+
+  const nestedOK = [];
+  const flat = [];
+  for (const g of groups) {
+    const key = g.getAttribute("data-office-group");
+    const inner = [...g.querySelectorAll(".dept-edges .abox")];
+    const expected = depts.offices.filter((o) => o.parent_unit_slug === key).map((o) => o.key);
+    const got = inner.map((b) => b.getAttribute("data-box-key"));
+    if (expected.length && JSON.stringify(expected.slice().sort()) === JSON.stringify(got.slice().sort()))
+      nestedOK.push(key);
+    else flat.push(`${key}: expected [${expected}] got [${got}]`);
+  }
+  check("every department is inside its own office's group",
+    nestedOK.length === groups.length && groups.length > 0,
+    flat.length ? flat.join("; ") : `${nestedOK.length}/${groups.length} group(s) correct`);
+  check("no department is drawn outside every group",
+    [...$("deptTree").querySelectorAll(".abox[data-box-key]")]
+      .every((b) => !!b.closest("[data-office-group]") || !depts.offices
+        .some((o) => o.key === b.getAttribute("data-box-key"))),
+    "the chief is the only box with no office above it");
+  check("one vertical rule per office, not one per box",
+    groups.every((g) => g.querySelectorAll(".dept-edges").length <= 1)
+    && groups.filter((g) => g.querySelector(".dept-edges")).length === groups.length,
+    `${groups.filter((g) => g.querySelector(".dept-edges")).length} rule(s) for ${groups.length} office(s)`);
+
+  check("every box in the payload is a box on the screen",
+    (tree.match(/class="abox/g) || []).length ===
+      [depts.chief, ...(depts.second_tier || []), ...depts.offices].filter(Boolean).length,
+    `${(tree.match(/class="abox/g) || []).length} box(es)`);
   check("every box carries its open and done counts", /open <b>\d+<\/b>/.test(tree)
     && /done <b>\d+<\/b>/.test(tree));
   check("every box shows its grant against its ceiling", tree.match(/L\d\/L\d/g || []).length >= EXPECTED_DEPARTMENTS - 1,
@@ -670,7 +937,10 @@ try {
   /* A light on a box that is not running would be the whole class of bug this view
      exists to avoid, so the classes are compared against the API rather than trusted. */
   const lit = (tree.match(/abox on/g) || []).length;
-  const liveApi = [depts.chief, ...depts.offices].filter((a) => a && a.running).length;
+  // **All three tiers.** It compared against chief + departments, so the offices' own
+  // lights were never counted and a lit office could be drawn without failing here.
+  const liveApi = [depts.chief, ...(depts.second_tier || []), ...depts.offices]
+    .filter((a) => a && a.running).length;
   check("a lit box means a run in flight, nothing else", lit === liveApi,
     `lit=${lit} api=${liveApi}`);
   check("a stranded run is drawn differently from a live one",
@@ -680,11 +950,22 @@ try {
   const stats = $("deptStats").innerHTML;
   check("the tiles rendered", /class="stat/.test(stats), `${stats.length} chars`);
   check("it counts stranded runs separately", /Stranded runs/.test(stats));
+  /* **The headcount must include the offices.** It read "of 8 agents" over an
+     organisation of 11, because the tile summed the chief and the departments and
+     left out the tier that had just been added. A headcount that is wrong by exactly
+     the boxes a person can newly see is the worst kind: it looks like a rounding. */
+  const allBoxes = [depts.chief, ...(depts.second_tier || []), ...depts.offices].filter(Boolean);
+  check("the headcount covers every agent in the organisation",
+    new RegExp(`of ${allBoxes.length} agents`).test(stats),
+    stats.match(/of \d+ agents/)?.[0] || "no headcount on the screen");
+  check("an office shows its own work and its departments' separately",
+    (depts.second_tier || []).every((o) => !o.rollup || o.rollup.agents > 1)
+    && (tree.match(/class="roll"/g) || []).length >= (depts.second_tier || []).length,
+    `${(tree.match(/class="roll"/g) || []).length} roll-up line(s)`);
 
   const office = depts.offices.find((o) => !o.missing);
   if (office) {
     sandbox.location.hash = "#/dept/" + office.key;
-    await fire("hashchange", { type: "hashchange" });
     await new Promise((r) => setTimeout(r, 2000));
     const steps = $("runSteps").innerHTML;
     const work = $("workOpen").innerHTML + $("workDone").innerHTML + $("workAttn").innerHTML;
@@ -696,9 +977,69 @@ try {
       "open, attention and done");
     check("open and finished are separated", /Open/.test($("deptOneTree").innerHTML)
       || $("workSub").textContent.length > 0, $("workSub").textContent);
-    check("there is a way back to all six", !!$("deptBack").onclick);
+    check("there is a way back to the whole organisation", !!$("deptBack").onclick);
     check("the breadcrumb offers the way out", /#\/departments/.test($("path").innerHTML),
       $("path").innerHTML.slice(0, 140));
+    check("the page names no department count it cannot back up",
+      !/\bsix\b|\bthe 6\b/i.test($("deptTree").innerHTML + $("deptStats").innerHTML
+        + $("deptSub").textContent + $("deptHeading").textContent),
+      "no hard-coded roster number on the screen");
+  }
+
+  /* --- clicking an office filters to its departments ------------------------
+     **The request was "click an office, see its departments", and nothing checked
+     it.** The click handler looked the id up in `d.offices`, which holds
+     departments only, so an office box matched nothing and the click returned
+     silently -- the tier was visible and unreachable. */
+  const officeBox = (depts.second_tier || [])[0];
+  if (officeBox) {
+    const before = sandbox.location.hash;
+    const box = $("deptTree").querySelector(`.abox[data-box-key="${officeBox.key}"]`);
+    check("an office box is clickable", !!box, officeBox.key);
+    if (box) {
+      // `fire` reaches the page's own `document` click listener, and the handler's
+      // `e.target.closest("[data-agent-box]")` walks the parsed tree -- so this is the
+      // real click path, not a call into a function the check likes.
+      await fire("click", { type: "click", target: box });
+      await new Promise((r) => setTimeout(r, 2000));
+      check("clicking an office opens that office's own panel",
+        sandbox.location.hash === `#/dept/${officeBox.key}`
+        && $("deptTitle").textContent.includes(officeBox.label),
+        `${sandbox.location.hash} — ${$("deptTitle").textContent}`);
+      const mine = depts.offices.filter((o) => o.parent_unit_slug === officeBox.key);
+      const shown = [...$("deptOneTree").querySelectorAll(".abox[data-box-key]")]
+        .map((b) => b.getAttribute("data-box-key"));
+      check("the office's panel shows its own departments",
+        mine.length > 0 && mine.every((m) => shown.includes(m.key)),
+        `${shown.length} box(es) for ${mine.length} department(s)`);
+      check("the office's panel shows the office itself too",
+        shown.includes(officeBox.key), "the unit and its departments on one panel");
+      // **Labels, not just keys.** `renderTree` hard-coded "Executive Agent" for the
+      // box at the top, so an office's own panel titled itself with the chief's name
+      // and still passed a key-only check. The name on the panel is what a person
+      // reads to know which office they are looking at.
+      const officeBoxes = [...$("deptOneTree").querySelectorAll(".abox")]
+        .map((b) => b.textContent || "").join(" | ");
+      check("the office's panel names the office, not the chief",
+        !/Executive Agent/.test(officeBoxes) && officeBoxes.includes(officeBox.label),
+        officeBoxes.slice(0, 110));
+      check("the office's panel separates its own work from its departments'",
+        /own:/.test($("workSub").textContent)
+        && /below/.test($("workSub").textContent),
+        $("workSub").textContent);
+      check("the back button goes back to the organisation",
+        $("deptBack").onclick && /office|organisation|department/i.test($("deptBack").textContent),
+        $("deptBack").textContent);
+      // The button carries `onclick`, which the stub stores; calling it is what the
+      // browser does on a real click and needs no event plumbing.
+      $("deptBack").onclick && await $("deptBack").onclick();
+      await new Promise((r) => setTimeout(r, 2000));
+      check("and it arrives back at the tree", sandbox.location.hash !== before
+        && !!$("deptTree").querySelector("[data-office-group]"),
+        sandbox.location.hash);
+    }
+  } else {
+    check("an office box is clickable", false, "this tenant has no office tier");
   }
 } catch (e) {
   check("the departments view did not throw", false, e.message);
@@ -734,7 +1075,6 @@ try {
   const status = report.task.status;
 
   sandbox.location.hash = "#/task/" + taskId;
-  await fire("hashchange", { type: "hashchange" });
   await new Promise((r) => setTimeout(r, 1500));
 
   const retryable = ["failed", "cancelled", "blocked"].includes(status);
@@ -798,7 +1138,6 @@ try {
   })).json();
 
   sandbox.location.hash = "#/hiring";
-  await fire("hashchange", { type: "hashchange" });
   await new Promise((r) => setTimeout(r, 1500));
 
   const flow = $("hireFlow").innerHTML;

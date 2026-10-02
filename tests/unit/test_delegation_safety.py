@@ -19,6 +19,7 @@ from ai_orchestrator.domain.delegation import (
 )
 from ai_orchestrator.domain.errors import CycleDetected, PreconditionError
 from ai_orchestrator.domain.ids import AgentId, TaskId
+from ai_orchestrator.seed import DEPARTMENTS, OFFICES
 
 
 def _limits(**overrides: int | float) -> DelegationLimits:
@@ -273,3 +274,50 @@ def test_rejected_delegation_raises_a_precondition_error() -> None:
             parent_limits=_limits(),
             platform_limits=_limits(),
         )
+
+
+class TestTheCeilingIsNotTheBindingConstraint:
+    """The fan-out ceiling must be wider than the organisation it bounds.
+
+    **Found by running the pipeline, not by reading the number.** `platform_default`
+    carried `max_fanout=8` while the seeded organisation is 11 agents: 1 chief,
+    3 offices, 7 departments. A real run delegated successfully eight times, asked for
+    a ninth, was refused `fan-out 8 reached the limit of 8`, spent its remaining 48
+    requests retrying, and the task ended
+
+        task.failed  category=budget_error
+          reason='the agent exceeded its turn budget and was stopped'
+
+    The ceiling stopped the work and the budget reported the stopping. The assertion is
+    on the *relationship*, not on 16, because a test written as
+    `assert limits.max_fanout == 16` passes happily when someone lowers it to 12 with
+    a seventh department added and nothing else changed.
+    """
+
+    #: Read from the seed, so adding a department moves this number with it. The shape
+    #: of the rule is what is being asserted; the literal is not.
+    WIDEST_AGENT = len(OFFICES) + len(DEPARTMENTS) - 1
+
+    def test_the_chief_can_address_every_office_and_department_in_one_round(self) -> None:
+        limits = DelegationLimits.platform_default()
+        assert limits.max_fanout >= self.WIDEST_AGENT, (
+            f"the chief has {self.WIDEST_AGENT} peers to address and the ceiling is "
+            f"{limits.max_fanout}, so the ceiling decides the run rather than the work"
+        )
+
+    def test_fanout_and_active_descendants_cannot_disagree(self) -> None:
+        """Two ceilings describing the width of one subtree must be the same number.
+
+        They are different questions -- issued versus currently active -- so they may
+        diverge in principle. In the platform default they do not, and a divergence
+        added by accident would make the smaller one silently binding.
+        """
+        limits = DelegationLimits.platform_default()
+        assert limits.max_fanout == limits.max_active_descendants
+
+    def test_a_clamped_child_never_gets_a_wider_envelope(self) -> None:
+        """The fix must not become a way to widen a child's limits."""
+        parent = DelegationLimits.platform_default()
+        child = parent.clamp_to(parent)
+        assert child.max_fanout == parent.max_fanout
+        assert _limits(max_fanout=4).clamp_to(parent).max_fanout == 4
