@@ -95,6 +95,7 @@ class PipelineOutcome:
 
     root_task_id: str
     root_status: str = ""
+    root_retries: int = 0
     steps: list[StepLog] = field(default_factory=list)
     reviews_accepted: int = 0
     reviews_rerun: int = 0
@@ -115,6 +116,7 @@ class PipelineOutcome:
             f"  review accepted: {self.reviews_accepted}",
             f"  review rerun   : {self.reviews_rerun}",
             f"  escalated      : {self.reviews_escalated}",
+            f"  root retried   : {self.root_retries} (answered instead of delegating)",
             f"  settled upward : {len(self.settled)}",
         ]
         if self.settled_failed:
@@ -287,6 +289,45 @@ async def run_pipeline(
 
             ready = await _next_ready(session, organization_id, root_task_id)
             if ready is None:
+                # **A chief that answered instead of delegating is told so, and gets
+                # another turn.**
+                #
+                # This is the same finding an office gives its department, and the
+                # office's finding is what makes its rerun converge -- the office
+                # hands the previous attempt's text back and the retry reformats it.
+                # The root had no such path: it failed `no_delegation` and the run
+                # stopped there, so a competent model that simply answered the
+                # department's question produced a *failed task* with a perfectly good
+                # answer inside it. Measured:
+                #
+                #     supplier-tender, real free model:
+                #       in=54128 out=9223 tools=15 models=16
+                #       summary: "**Nhà thầu đề xuất trúng thầu: Công ty Toàn Cầu
+                #                 (Báo giá C)** ... lý do theo tiêu chí ..."
+                #       task.failed  category=no_delegation
+                #
+                # The control was right -- a fleet that answers everything itself is
+                # not a fleet -- and the outcome was wrong, because nothing told the
+                # chief what it had done wrong while something could.
+                #
+                # So the root is retried with the finding in its goal, exactly as an
+                # office's rerun is. Bounded by `max_attempts` for the same reason:
+                # a model that will not delegate must stop costing requests, not loop.
+                retried = await _retry_a_root_that_answered_itself(
+                    session, organization_id, root, max_attempts=max_attempts
+                )
+                if retried is not None:
+                    # **Point the loop at the retry.** Without this the new task is
+                    # created and never dispatched: the loop re-reads `root_task_id`
+                    # each turn, so it would keep looking at the failed root, see
+                    # nothing runnable, and try to retry again until the budget ran
+                    # out -- reporting "root retried 3" and having run nothing.
+                    outcome.root_retries += 1
+                    outcome.root_status = str(root.status)
+                    root_task_id = retried
+                    await session.commit()
+                    await database.bind_tenant(session, organization_id)
+                    continue
                 blocked = await _clear_gates(session, organization_id, root_task_id, approver)
                 if not blocked:
                     outcome.stopped_because = "nothing is runnable and no gate can be cleared"
@@ -378,6 +419,72 @@ class Settled:
 
     completed: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
+
+
+async def _retry_a_root_that_answered_itself(
+    session: Any, organization_id: str, root: Any, *, max_attempts: int
+) -> str | None:
+    """Give a chief that answered its own coordination task another turn, once spent.
+
+    Returns the new root's id, or `None` when there is nothing to retry.
+
+    **The same shape as an office's rerun, and for the same reason.** The office hands
+    its department the finding plus the previous attempt's text, and the retry
+    reformats instead of re-deriving -- that is what makes the loop converge. The root
+    had no such path at all: it failed `no_delegation` and the run stopped there, so a
+    model that produced a *perfect* answer to a department's question produced a
+    *failed task*. The control was right and the outcome was wrong, because nothing
+    told the chief what it had done wrong while something could.
+
+    Two boundaries, both deliberate:
+
+    * **The attempt budget is shared with the office's.** `attempt_count` on the root
+      counts against `max_attempts`, so a chief that will not delegate spends the
+      budget and stops rather than looping. A model that ignores a correction twice
+      will ignore it forty times, and each attempt is tens of thousands of tokens.
+    * **Only `no_delegation` is retried.** Every other failure category is the answer
+      to a different question, and re-running a root that failed for one of those
+      would be retrying on faith.
+    """
+    from ai_orchestrator.application.work_review import attempt_of
+
+    if TaskStatus(root.status) != TaskStatus.FAILED:
+        return None
+    if (root.failure_category or "") != "no_delegation":
+        return None
+    attempt = attempt_of(root)
+    if attempt >= max_attempts:
+        return None
+
+    tasks_repo = TaskRepository(session, organization_id)
+    chief = (
+        await session.execute(
+            select(Agent).where(
+                Agent.organization_id == organization_id, Agent.name == "Executive Agent"
+            )
+        )
+    ).scalar_one_or_none()
+    if chief is None:
+        return None
+
+    retry = await tasks_repo.create(
+        title=root.title,
+        goal=(
+            f"{root.goal}\n\n"
+            f"[PHẢI LÀM LẠI — lần {attempt + 1}] Lần trước bạn tự làm công việc này thay "
+            f"vì chuyển giao. Đây là một nhiệm vụ phối hợp: bạn không có dữ liệu để trả lời, "
+            f"và nhiệm vụ sẽ chỉ xong khi bộ phận sở hữu nó đã làm xong. Hãy gọi "
+            f"`delegate_to_agent` và chọn đúng văn phòng/phòng ban phụ trách."
+        ),
+        task_type=root.task_type,
+        requester_type="human",
+        owner_agent_id=chief.id,
+        expected_output_schema=root.expected_output_schema,
+        # The material travels with the retry, or the department has nothing either.
+        input=dict(root.input or {}),
+    )
+    await tasks_repo.assign(str(retry.id), chief.id)
+    return str(retry.id)
 
 
 async def settle_finished(

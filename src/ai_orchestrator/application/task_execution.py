@@ -2207,6 +2207,49 @@ class TaskExecutionService:
         )
 
     # ------------------------------------------------------------- helpers --
+    def _input_the_agent_sees(
+        self, task: Task, input_override: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """What goes into the agent's own prompt -- and, for a root coordinator, less.
+
+        **The chief is not given the material, and this is the change that makes the
+        organisation autonomous.**
+
+        The scenario puts the work's material in the root task's `input` under `brief`,
+        and it travels down the delegation chain -- `brief` is in
+        `ROUTING_INPUT_KEYS` precisely so it does. But the root task *also* reads its
+        own `input`, so the chief was handed the three supplier bids and the three
+        candidate salaries, and it answered. Measured, twice, on a real free model:
+
+            supplier-tender: in=54128 out=9223 tools=15 models=16
+              summary: "**Nhà thầu đề xuất trúng thầu: Công ty Toàn Cầu (Báo giá C)**
+                        ... lý do theo tiêu chí ..."
+              task.failed  category=no_delegation
+
+            offer-approval:  task.failed  category=budget_error
+              reason='the agent exceeded its turn budget and was stopped'
+
+        Two categories, one cause: the chief did a department's job. The
+        `no_delegation` control caught the first correctly -- "a fleet that answers
+        everything itself is not a fleet" -- and the second was caught only because
+        the answering ran past its own turn budget.
+
+        So a **root** coordinator is shown the routing keys -- which office and which
+        department own this -- and **not** the `brief`. It knows *who* should do the
+        work and not *what* the work is, which is the only arrangement in which
+        delegating is cheaper than answering. Every task below the root, and the root
+        itself when it is re-dispatched, sees the brief as before: the material must
+        arrive at the department, or nothing downstream can answer either.
+
+        The routing keys stay, and on purpose: they remove the need to infer the
+        organisation's own reporting lines from prose. What they must not do is answer
+        the question.
+        """
+        payload = input_override if input_override is not None else (task.input or {})
+        if task.task_type == "coordination" and not task.parent_task_id:
+            return {k: v for k, v in payload.items() if k != "brief"}
+        return dict(payload)
+
     def _to_agent_task(self, task: Task, input_override: dict[str, Any] | None = None) -> Any:
         from ai_orchestrator.domain.contracts import AgentTask
 
@@ -2217,7 +2260,7 @@ class TaskExecutionService:
             task_type=TaskType(task.task_type),
             execution_id=ExecutionId.create(),
             deadline=task.deadline_at,
-            input=input_override if input_override is not None else task.input,
+            input=self._input_the_agent_sees(task, input_override),
             constraints=task.constraints,
             expected_output_schema=task.expected_output_schema,
             parent_task_id=TaskId(task.parent_task_id) if task.parent_task_id else None,

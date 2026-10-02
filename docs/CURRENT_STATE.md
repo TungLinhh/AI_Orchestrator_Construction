@@ -33,6 +33,14 @@ secrets — simulated personas and a role switcher) and every external integrati
   `unit` so all three tiers can be opened. It was flat — `parent_id` was never
   selected — while 100 console checks passed, because the only hierarchy check was a
   substring match (F240).
+* **The console is three screens, and `make page` exits 0.**
+  Departments, Give work and Needs you. Roster duplicated Departments; Dashboard
+  duplicated Needs you plus two corpus-dependent views; Decision log duplicated the
+  approvals view; Documents and Projects were empty without `AO_CORPUS_ROOT`;
+  Recruitment was one SOP. 82 checks, all passing — the five that needed the corpus
+  went with the screens rather than being skipped (F247). The cut nearly took the Run
+  form with it, because the Console view had been carrying the product's only entry
+  point; the form and the delegation tree are inside Give work now.
 * **A run that needs a person gets one.** `NEEDS_APPROVAL` writes an approval row
   naming the agent that asked; `AO_APPROVAL_AUTO_APPROVE=true` answers it
   through the same service a person uses. The switch is off by default.
@@ -63,6 +71,31 @@ secrets — simulated personas and a role switcher) and every external integrati
   `budget_error` — the symptom, reported in place of the cause. Now 16, matching
   `max_active_descendants`, and asserted as a relationship against the seed rather than
   as a literal (F241).
+* **A finished run no longer holds the organisation's delegation capacity.**
+  `issued_by` fed `current_active_descendants` a count of **every delegation an agent
+  had ever issued** — no status filter, no time bound — so `max_active_descendants=16`
+  was a lifetime cap. Measured: the chief held 26 historical delegations, was refused
+  with `active descendants 16 reached the limit of 16`, and the run ended
+  `budget_error`. The organisation could not delegate again on that tenant, for any
+  goal, and nothing would have released it. Now it counts descendants whose task is
+  live, and three tests hold the count (F249).
+* **The chief is not handed the department's material.** A root coordinator is shown
+  the routing keys — which office and department own the work — and not the `brief`,
+  so it knows *who* should do it and not *what* the work is. It was shown both, and it
+  answered: `in=54128 out=9223 tools=15 models=16` and a complete procurement
+  recommendation, delivered as a `failed` task carrying `no_delegation`. The design
+  comment in `run_pipeline.py` described exactly this arrangement and the
+  implementation defeated it, because the brief rides in the root's `input` and the
+  root reads its own `input` (F251). A root that fails `no_delegation` is also retried
+  once per attempt budget, the same way an office retries its department (F252).
+  The chief is also told, in its own prompt, that its task type is routing and that it
+  will never obtain the material itself — because hiding the brief alone only moved
+  the category: given no data it searched for it, 48 times, and delegated never. The
+  absence of data is not an instruction (F253).
+* **`run_pipeline.py` can be run twice.** Running a scenario again used to die with
+  `ConflictError` and a traceback, because a scenario's goal is constant and the
+  deduplication is not optional. It carries a run marker now, as `demo_real_run.py`
+  already did (F250).
 
 ## What is not ready, stated plainly
 
@@ -257,6 +290,7 @@ worse than none.
 
 | Thing | How it was found | State |
 |---|---|---|
+| **The organisation does not finish a real goal unattended.** Measured 2026-10-02 on both scenarios the owner asked for: `supplier-tender` gets the chief to delegate 16 times and then ends `failed` `budget_error` with 21 duplicate refusals and 8 fan-out refusals; `offer-approval` ends `failed` `budget_error` having never delegated. Four real defects were found and fixed getting here — F249, F250, F251, F253 — and the first hop now works on a real model. What remains is that the chief spends its 48-request budget re-asking, and no department completes. | Running the two scenarios on a real free model | **NOT FIXED**, and the number that would prove it either way has not been taken: whether 48 requests is too few, or the model cannot stop re-asking, is a measurement this project has not made. |
 | **Every log line in the process was being dropped.** A renderer ran before `wrap_for_formatter`, so the formatter called `.copy()` on a `str`, and `logging` swallowed the `AttributeError` and moved on. | Reading a log file that contained nothing but `--- Logging error ---`. `ruff` and `mypy` were both clean. | **Fixed.** F35. `tests/unit/test_logging_pipeline.py`, 6 tests, all of which fail on the old chain. |
 | **A free model call can take six minutes.** 60s timeout × 2 retries × 2 profile candidates, and the `primary` profile's second candidate is the *deterministic* provider — so a timeout silently swaps in a canned answer that looks like a real one. | A live run that appeared to hang. | **Partly fixed.** `demo_real_run.py` now prints the model that actually served each call. The retry multiplication is still untuned, and a fallback that produces plausible output is still a hazard. |
 
@@ -725,7 +759,7 @@ Two things about that were nearly wrong in a way that would have cost money:
   by the caller rather than guessed.
 
 **Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
-the suite is 3086 unit and integration tests, 8 skipped, 0 failed, and
+the suite is 3079 unit and integration tests, 8 skipped, 1 deselected, 0 failed, and
 `make lint` and `make typecheck` are clean.
 
 **Two existing tests caught a wrong fix in this pass, which is worth recording.** The

@@ -71,52 +71,6 @@ class TestThePageHasConstructionVocabulary:
     section below is named for what a person in that role is looking at.
     """
 
-    async def test_the_surfaces_are_present(self, client: Any) -> None:
-        """Every section the product is supposed to have, by name.
-
-        The list is the one the rebuild settled on: a dashboard, a project list with a
-        breakdown and a progress table, an approval queue, an agent roster, a decision
-        log, and the substrate console. An earlier version asserted "three tabs", which
-        was a miscount of a page that had no tabs at all -- so the assertion is against
-        names that mean something rather than against a number.
-        """
-        page = (await client.get("/api/v1/ui")).text
-        for heading in (
-            "Portfolio",
-            "Work breakdown",
-            "Progress",
-            "Approvals",
-            "Roster",
-            "Decision log",
-            "Behind schedule",
-            "Needs a person",
-        ):
-            assert heading in page, f"the page has no {heading!r} section"
-
-    async def test_the_role_switcher_names_the_three_roles(self, client: Any) -> None:
-        """Tập 1 §Tầng 1: a dashboard *per role*.
-
-        And the switcher **reorders** rather than hides, which is the whole design
-        decision. The first version toggled `hidden` on panels, so a control made
-        things disappear and a person could not tell whether a section was empty or
-        merely switched off. Reordering keeps every panel reachable and keeps the
-        sidebar identical, so navigation never changes underfoot.
-        """
-        page = (await client.get("/api/v1/ui")).text
-        for role in ("CEO", "PM", "Approver"):
-            assert f">{role}<" in page, f"no {role} button"
-        js = _page(page)
-        assert "applyRole" in js and "ROLES" in js
-        assert "style.order" in js, (
-            "the role switcher must reorder panels, not hide them: `order` reorders "
-            "without moving a node, `hidden` is what made the page feel like it was "
-            "hiding things"
-        )
-        assert ".style.display" not in js.split("function applyRole")[1][:600], (
-            "applyRole must not set display or hidden -- that is the version that made "
-            "navigation feel like it was hiding things from you"
-        )
-
     async def test_the_dom_ids_the_script_reaches_for_all_exist(self, client: Any) -> None:
         """The check that catches a page of `undefined`.
 
@@ -187,11 +141,6 @@ class TestYouCanAlwaysGetOut:
         assert "hashchange" in js, "the page does not listen for navigation"
         assert "location.hash = hash" in js, "navigation does not go through the URL"
 
-    async def test_a_project_has_its_own_route(self, client: Any) -> None:
-        """A shareable, linkable address, not a hidden variable."""
-        js = _page((await client.get("/api/v1/ui")).text)
-        assert "#/projects/" in js, "a project has no address of its own"
-
     async def test_escape_goes_back(self, client: Any) -> None:
         """One predictable way out, bound on the document so it works anywhere."""
         js = _page((await client.get("/api/v1/ui")).text)
@@ -208,16 +157,6 @@ class TestYouCanAlwaysGetOut:
             "with no visible route out"
         )
 
-    async def test_the_list_is_not_replaced_by_its_detail(self, client: Any) -> None:
-        """The other half. Selecting a project must not remove the list."""
-        page = (await client.get("/api/v1/ui")).text
-        assert "split" in page, "there is no side-by-side layout for list and detail"
-        js = _page(page)
-        # The list is rendered by the same function that renders the detail, so a
-        # detail can never appear without it.
-        assert "renderProjects" in js
-        assert re.search(r"async function renderProjects\([^)]*\)\s*\{", js)
-
     async def test_every_navigation_target_is_a_route(self, client: Any) -> None:
         """A nav link to a hash that no route handles is a dead page.
 
@@ -231,20 +170,6 @@ class TestYouCanAlwaysGetOut:
         links = set(re.findall(r'href="#/([a-z]+)', page))
         assert links, "no navigation links were found"
         assert links <= routes, f"links with no route behind them: {sorted(links - routes)}"
-
-    async def test_the_same_route_renders_from_one_function(self, client: Any) -> None:
-        """`projects` and `projects/:id` are one view, so the list is always there.
-
-        If they were two functions, one of them would eventually be edited without the
-        other and the list would appear only on one of them.
-        """
-        js = _page((await client.get("/api/v1/ui")).text)
-        switch = re.search(r"switch \(r\.name\) \{(.*?)\n  \}", js, re.S)
-        assert switch is not None, "no route dispatch found"
-        body = switch.group(1)
-        assert re.search(r'case "projects":\s*case "project":', body) or (
-            'case "projects":' in body and 'case "project":' in body
-        ), "the project list and the project detail are dispatched separately"
 
 
 class TestYouCanActuallyDoSomething:
@@ -260,13 +185,6 @@ class TestYouCanActuallyDoSomething:
         for action in ("approve", "reject", "ask"):
             assert f'data-do="{action}"' in js, f"no {action} button is rendered"
         assert "request-information" in js, "the 'ask' action has no endpoint"
-
-    async def test_the_kill_switch_is_a_control(self, client: Any) -> None:
-        """Not a column somebody can read. A control somebody can pull."""
-        js = _page((await client.get("/api/v1/ui")).text)
-        assert "/kill" in js and "/revive" in js
-        assert "data-kill=" in js, "no kill control is rendered"
-        assert "reason" in js, "a kill with no reason is refused, so it must be asked for"
 
     async def test_an_action_can_fail_visibly(self, client: Any) -> None:
         """An action that fails silently is worse than one that is missing."""
@@ -318,18 +236,6 @@ class TestThePageCallsRealEndpoints:
             assert resolved in candidates, (
                 f"the page fetches {base + path!r}, which is not in the served schema"
             )
-
-    async def test_it_fetches_the_three_role_surfaces(self, client: Any) -> None:
-        js = _page((await client.get("/api/v1/ui")).text)
-        for path in (
-            "/portfolio",
-            "/projects",
-            "/workspace",
-            "/wbs",
-            "/activity",
-            "/approvals/inbox",
-        ):
-            assert path in js, f"the page never fetches {path}"
 
     async def test_it_does_not_restate_a_number_the_server_owns(self, client: Any) -> None:
         """The backfill-limit defect, generalised.
@@ -388,39 +294,6 @@ class TestUnmeasuredIsNotOnTime:
         page = (await client.get("/api/v1/ui")).text
         for selector in (".bar.late .fillbar", ".bar.unmeasured .track"):
             assert selector in page, f"{selector} is missing: the states are not distinct"
-
-    async def test_the_page_reads_actual_updated(self, client: Any) -> None:
-        """The flag is what knows a copied planned date from a recorded one, and
-        100% of the real corpus's actual columns are copies."""
-        js = _page((await client.get("/api/v1/ui")).text)
-        assert "actual_updated" in js, (
-            "the page renders actual dates without reading the flag that says whether "
-            "they were recorded"
-        )
-
-    async def test_the_page_reads_is_measured_and_not_just_the_date(self, client: Any) -> None:
-        js = _page((await client.get("/api/v1/ui")).text)
-        assert "is_measured" in js
-
-    async def test_a_zone_is_never_summarised_to_a_zero(self, client: Any) -> None:
-        """The legend states the distinction where the bars are, not in a comment.
-
-        A reader looking at a wall of hatched bars needs told what hatching means
-        without clicking anything.
-        """
-        page = (await client.get("/api/v1/ui")).text
-        assert "not measured" in page
-        assert "An empty actual column is not a zero variance." in page
-
-    async def test_the_above_ceiling_control_is_on_the_page(self, client: Any) -> None:
-        """`above_l1` is a control, not a description, and it is expected to be 0.
-
-        It gets an alert treatment when it is not, so a widened delegation is visible
-        without anybody reading a number.
-        """
-        js = _page((await client.get("/api/v1/ui")).text)
-        assert "above_l1" in js
-        assert "Above ceiling" in js
 
 
 class TestThePageEscapesWhatItRenders:

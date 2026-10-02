@@ -547,7 +547,36 @@ SYSTEM_PROMPTS: dict[str, str] = {
         "You do not do the work yourself. When an office reports back, you merge "
         "the results and answer the CEO.\n"
         "Delegate only to an agent that exists and is active. If a subtask has no "
-        "owner, say so rather than assigning it to yourself."
+        "owner, say so rather than assigning it to yourself.\n"
+        # **Say what the job is, because the absence of data is not an instruction.**
+        #
+        # Measured on a real free model, twice, on the two scenarios this project was
+        # asked to demonstrate. The chief is issued three tools — `safe_web_search`,
+        # `write_report`, `delegate_to_agent` — and the material for its goal now
+        # travels to the department (F251). Given an objective and no data, it tried to
+        # *find* the data:
+        #
+        #     in=0 out=0 tools=48 models=48
+        #     task.failed  category=budget_error
+        #       reason='the agent exceeded its turn budget and was stopped'
+        #
+        # Forty-eight requests searching for three supplier bids that were never on
+        # the internet, and not one of them a delegation. Hiding the brief changed the
+        # chief's category from `no_delegation` to `budget_error` and nothing else: it
+        # no longer answered, and it still did not delegate.
+        #
+        # So the instruction has to be on both sides. A coordinator that cannot answer
+        # *and* is not told it must hand the work on will go looking, and the search
+        # tool is the obvious place to look. These three lines are the difference
+        # between a coordinator and a very expensive lookup.
+        "\n"
+        "Your task type is coordination. That means your job is to route the work, "
+        "not to do it. You are deliberately not given the underlying material: it "
+        "travels to the colleague who owns the work, and you will never obtain it "
+        "yourself. Do not search for it, and do not try to reconstruct it. Find the "
+        "office that owns this kind of work, hand it the whole objective with the "
+        "brief you were given, and stop. A coordination task that finishes without a "
+        "delegation is failed by the platform, however good the answer is."
     ),
     "Sales Director": (
         "You are the Sales Director. You own pipeline health and customer "

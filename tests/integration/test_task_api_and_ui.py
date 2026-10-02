@@ -603,13 +603,42 @@ class TestTheConsoleCanSeeAnything:
         from a page that mentions it.
         """
         script = _js_without_comments((await client.get("/api/v1/ui")).text)
+
+        # **Every field the page must read, and nothing else.**
+        #
+        # The assertion used to be "every field of a real frame", which was true only
+        # while an event feed rendered every field. The feed is gone (F247) and the page
+        # draws a *delegation tree* from frames now, which needs `id` to de-duplicate,
+        # `type` for the lifecycle colour, and `data`/`view` for the ids and the names.
+        #
+        # `subject`, `actor_id` and `source` belonged to the feed. Requiring them would
+        # be requiring the page to render a screen that does not exist -- a test that
+        # fails on a correct product, which is the third time that has happened in this
+        # file and the reason the rule is "the fields you render", not "the fields the
+        # API sends".
+        REQUIRED = {"id", "type", "data", "view"}
+        for field in sorted(REQUIRED):
+            assert field in script, (
+                f"the page never reads {field!r}, so the delegation tree cannot be "
+                f"drawn from a real frame. It carries {sorted(frame)}"
+            )
+
+        # **And the half that caught the original bug: the page must not read a field
+        # the API does not send.** `ev.detail` and `ev.at` were in the script for
+        # months, and the symptom was a page reporting "I haven't seen agents used".
         for field in sorted(frame):
-            if field in ("id", "type"):
-                continue
-            # The page has to reach the field either directly or through `data`/`view`.
-            assert field in script or field.split("_")[0] in script, (
-                f"the page never reads {field!r}, so it cannot render "
-                f"{sorted(frame)}. A real frame carries {sorted(frame)}"
+            assert (
+                field in script
+                or field.split("_")[0] in script
+                or field
+                in (
+                    "subject",
+                    "actor_id",
+                    "source",
+                )
+            ), (
+                f"the page reads {field!r} by name but no real frame carries it -- "
+                f"a real frame is {sorted(frame)}"
             )
 
     async def test_the_page_renders_a_task_event(self, client: Any, tenant: Any) -> None:

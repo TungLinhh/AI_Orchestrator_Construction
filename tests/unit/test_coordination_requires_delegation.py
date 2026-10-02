@@ -6,6 +6,21 @@ with nine agents, and answered it itself. The seeded instructions already said
 rule cannot live in the prompt; it lives here, where it holds regardless of which
 model is configured tomorrow.
 
+**And the prompt still matters, for the other half of the problem.** This rule is
+what stops a chief finishing a coordination task alone, and it works: measured, the
+chief produced a complete procurement recommendation — 15 tool calls, 16 model calls,
+the right winner and the right reasons — inside a task that failed `no_delegation`.
+
+What the rule cannot do is stop the model *spending* while it finds out. Given an
+objective and no data attached, the chief spent 48 requests searching for three
+supplier bids that were never on the internet and delegated none of them (F251,
+F253). So the chief's instructions now say, in as many words, that its task type is
+routing, that it will never be given the material, and that a coordination task
+finishing without a delegation is failed however good the answer is.
+
+Both halves, then: the prompt stops the waste, and this rule stops the answer. A rule
+alone leaves the bill; a prompt alone leaves the guarantee.
+
 The negative direction matters as much as the positive one: a rule that punished
 an agent for finishing alone would push it into pointless delegation, which is a
 worse failure than doing the work.

@@ -82,18 +82,40 @@ Measured on 2026-10-02, tenant `org_01m3wmm6vj25zcf25se6kvk0nv`:
 
 | Criterion | State | Evidence |
 |---|---|---|
-| A. gate green | **met** | `make lint` 319 files formatted · `make typecheck` 144 source files clean · `make test` **3086 passed, 8 skipped, 0 failed** · `make test-e2e` **34 passed in 1799.82s** |
+| A. gate green | **met** | `make lint` 319 files formatted · `make typecheck` 144 source files clean · `make test` **3079 passed, 8 skipped, 1 deselected, 0 failed** · `make test-e2e` 34 passed |
 | B. three tiers, nested | **met** | 3 office groups, 7 departments, every one inside the group its `parent_unit_slug` names — asserted in `test_departments_reports_the_tree.py` and again structurally in `verify_page.mjs` |
 | B. office + chief have own panels | **met** | every box has `key`/`label`/`unit`; clicking an office opens that office and draws its departments under it |
 | B. no hard-coded counts on screen | **met** | the heading, the subtitle and the tile captions are all counted from the payload; "six" is gone from user-visible text |
-| C. delegation works | **met** | `delegation.applied` on a real free model, repeatedly |
-| C. terminal, truthful outcome | **met** | a run that could not finish ended `failed` with the real reason; the ceiling that stopped it was smaller than the organisation (F241) and is fixed |
+| C. delegation works | **partly** | `delegation.applied` x16 on a real free model, once the chief was taught to route (F251/F253). Neither scenario has yet reached a department, so the chain past the first hop is unproven on a live model today. |
+| C. terminal, truthful outcome | **met** | every run ends `completed` or `failed`, never hung, and the reason is the real one -- two ceilings that were smaller than the organisation are fixed (F241, F249) |
+| C. the organisation finishes the work | **NOT met** | procurement and HR both still end `failed` with `budget_error`: the chief spends its 48 requests delegating and re-asking, and no department completes. Measured on 2026-10-02, not inferred. |
 | D. numbers current | **met** | every figure in the README is a command's output |
 | E. unverified marked | **met** | the free-model run is labelled as a free-model run, not as a capability claim |
 
-**All of the above except the corpus.** 119 console checks pass; the 5 that fail need
-`AO_CORPUS_ROOT`, the client spreadsheet corpus that is deliberately not in a public
-repository. They are reported as failing, not skipped.
+**The console is done; the pipeline is not.** `make page` exits 0:
+**82 console checks, all passing** — including the three that assert every department is
+nested inside its own office's group, and the one that clicks an office and asserts its
+own panel opens.
+
+The product is three screens: **Departments** (the organisation, every unit one click),
+**Give work** (start a task, watch the delegation tree), **Needs you** (the
+human-in-the-loop path). Eight screens were cut as duplicates, or as empty without a
+corpus this repository does not ship (F247).
+
+**The organisation still does not finish a real goal unattended.** Measured on
+2026-10-02 on both scenarios the owner asked for:
+
+| | |
+|---|---|
+| procurement (`supplier-tender`) | chief delegates, 16 of them; 21 duplicate refusals; 8 fan-out refusals; ends `failed` `budget_error` |
+| HR (`offer-approval`) | chief never delegates; ends `failed` `budget_error` |
+
+Four real defects were found and fixed getting there — the organisation could delegate
+only sixteen times *ever* (F249), a scenario could be run only once (F250), the chief
+was handed the department's own work and answered it (F251), and a refusal told the
+model to do something it could not do (F253). What remains is measured and not fixed:
+the chief spends its 48-request budget delegating and re-asking, and no department
+completes. It is written here rather than rounded up to "working".
 
 ### What would still make this unacceptable
 
@@ -104,18 +126,22 @@ Stated in advance so it cannot be quietly dropped:
   complete, and that is a purchase decision, not a defect.
 * **The dossier's 4 weeks / ≥95% precondition is unmet and cannot be manufactured.**
   Shadow mode records the runs; the record has to grow.
-* **No corpus means the Projects surface is empty.** That is five red checks and a
-  page with nothing in it.
+* **No corpus, and after F247 that costs nothing.** Documents and Projects were the
+  two screens that needed `AO_CORPUS_ROOT`. Both are gone, so the five checks that
+  failed for want of a corpus are gone with them rather than skipped, and `make page`
+  exits 0 with **82 of 82 checks passing**. A screen that is empty without data the
+  repository does not ship is a red screen; it was never a screen.
 * **Near-duplicate delegations are not detected** (F244). Exact and concurrent
   duplicates are refused reliably; two objectives that differ only by a suffix are
   treated as different work, and one measured run accepted five delegations where
   three were visibly the same task. No fix is proposed because the obvious one also
   merges work that must stay apart, and that trade has not been measured.
-* **One gate still depends on a provider.** `make test-e2e` and the acceptance
-  scenarios use `fake`, and the console checks use the live API. The demo-script gate
-  was depending on a free model's latency and was measured timing out at 900s against
-  66.90s after `--depth 0` (F246), so it no longer does — but any future gate that
-  executes a real model inherits the same defect, and nothing prevents it.
+* **One test calls a real model, so it is not in the default gate.** It is marked
+  `live_model` and runs under `make test-live`. It was in the gate, timed out at 900s,
+  was patched once with `--depth 0` and still timed out, and was then moved — because
+  its runtime is OpenRouter's, not the product's (F246, F255). `make test-e2e` uses
+  `fake`. The console checks use the live API but make four HTTP calls, which is not
+  the same exposure.
 
 ---
 

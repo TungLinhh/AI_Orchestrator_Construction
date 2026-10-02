@@ -9,6 +9,8 @@ long before that, and it did not exist.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
@@ -425,3 +427,97 @@ async def test_the_parent_is_not_completed_while_children_are_open(seeded) -> No
     )
     if children and all(c.status in {"created", "running"} for c in children):
         assert fresh.status != "completed", "the parent reported completed with unfinished children"
+
+
+class TestTheChiefIsNotHandedTheWork:
+    """A root coordinator must not be given the material its own answer needs.
+
+    **This is the change that makes the organisation autonomous**, and it was found by
+    running the first real procurement goal of the day. Measured:
+
+        supplier-tender, real free model:
+          in=54128 out=9223 tools=15 models=16
+          summary: "**Nhà thầu đề xuất trúng thầu: Công ty Toàn Cầu (Báo giá C)**
+                    ... lý do theo tiêu chí ..."
+          task.failed  category=no_delegation
+
+        offer-approval:  task.failed  category=budget_error
+          reason='the agent exceeded its turn budget and was stopped'
+
+    Two categories, one cause: the chief was handed the three bids and the three
+    salaries, and it answered. `no_delegation` caught the first — correctly, because a
+    fleet that answers everything itself is not a fleet — and the second was caught
+    only because answering ran past its own turn budget.
+    """
+
+    async def test_a_root_coordinator_does_not_see_the_brief(self, seeded: Any) -> None:
+        service = TaskExecutionService(
+            session=seeded.session,
+            organization_id=seeded.organization_id,
+            runtime=ScriptedRuntime(),
+        )
+        repo = TaskRepository(seeded.session, seeded.organization_id)
+        chief = (
+            await seeded.session.execute(
+                select(Agent).where(
+                    Agent.organization_id == seeded.organization_id,
+                    Agent.name == "Executive Agent",
+                )
+            )
+        ).scalar_one()
+        root = await repo.create(
+            title="Choose a supplier",
+            goal="Recommend the winning bid for the HVAC package.",
+            task_type="coordination",
+            owner_agent_id=chief.id,
+            input={
+                "owning_office": "front-office",
+                "owning_department": "procurement",
+                "brief": "Bid A 1.24bn, Bid B 1.18bn, Bid C 1.09bn",
+            },
+        )
+        seen = service._input_the_agent_sees(root, None)
+        assert "brief" not in seen, (
+            "the chief can read the bids, so it answers instead of delegating — which "
+            "is a failed task containing a perfectly good answer"
+        )
+        assert seen.get("owning_department") == "procurement", (
+            "the routing keys must survive: the chief still has to know who owns this"
+        )
+        assert root.input.get("brief"), (
+            "the brief must stay on the row, or the department has nothing either"
+        )
+
+    async def test_a_department_still_sees_the_brief(self, seeded: Any) -> None:
+        """Otherwise the fix would have moved the problem rather than solving it."""
+        service = TaskExecutionService(
+            session=seeded.session,
+            organization_id=seeded.organization_id,
+            runtime=ScriptedRuntime(),
+        )
+        repo = TaskRepository(seeded.session, seeded.organization_id)
+        chief = (
+            await seeded.session.execute(
+                select(Agent).where(
+                    Agent.organization_id == seeded.organization_id,
+                    Agent.name == "Executive Agent",
+                )
+            )
+        ).scalar_one()
+        root = await repo.create(
+            title="Choose a supplier",
+            goal="Recommend the winning bid.",
+            task_type="coordination",
+            owner_agent_id=chief.id,
+            input={"brief": "Bid A 1.24bn"},
+        )
+        child = await repo.create(
+            title="Compare the bids",
+            goal="Compare the three bids.",
+            task_type="execution",
+            parent_task_id=root.id,
+            input={"brief": "Bid A 1.24bn"},
+        )
+        assert service._input_the_agent_sees(child, None).get("brief"), (
+            "a department with no material cannot answer, and the brief must arrive with the work"
+        )

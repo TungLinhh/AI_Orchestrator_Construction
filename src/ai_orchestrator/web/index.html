@@ -568,7 +568,6 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
         <span class="ic">⬡</span> Departments
         <span class="count" id="navWorkCount" hidden></span>
       </a>
-      <a href="#/agents" data-nav="agents"><span class="ic">◇</span> Agents</a>
 
       <div class="label">The work</div>
       <a href="#/give" data-nav="give"><span class="ic">▷</span> Give work</a>
@@ -576,23 +575,11 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
         <span class="ic">◔</span> Needs you
         <span class="count" id="navApprovalCount" hidden></span>
       </a>
-      <a href="#/hiring" data-nav="hiring">
-        <span class="ic">☰</span> Recruitment
-        <span class="count" id="navHireCount" hidden></span>
-      </a>
 
       <div class="label">Reference</div>
-      <a href="#/documents" data-nav="documents">
-        <span class="ic">▣</span> Documents
-        <span class="count" id="navDocCount" hidden></span>
-      </a>
-      <a href="#/projects"  data-nav="projects"><span class="ic">▤</span> Projects</a>
 
       <details class="more">
         <summary>More</summary>
-        <a href="#/dashboard" data-nav="dashboard"><span class="ic">◈</span> Dashboard</a>
-        <a href="#/decisions" data-nav="decisions"><span class="ic">✎</span> Decisions</a>
-        <a href="#/console"   data-nav="console"><span class="ic">▷</span> Console</a>
       </details>
     </div>
     <div class="foot">
@@ -626,66 +613,6 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
       </div>
 
       <!-- ============================= dashboard ============================= -->
-      <section class="view" id="view-dashboard">
-        <div class="stats" id="dashStats"></div>
-
-        <!-- The role switcher, and what it does and does not do.
-             It REORDERS the panels below. It never hides the sidebar, never changes
-             the URL, and never makes a section unreachable. The first version of this
-             page had a role switcher that toggled `hidden` on panels, which is why
-             the page never felt usable: a control that makes things disappear is a
-             control people stop trusting. Tập 1 §Tầng 1 asks for "a dashboard per
-             role", and reordering what the page leads with satisfies that without
-             navigation that changes under your feet. -->
-        <div class="legend" style="display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap">
-          <span style="font-size:11px;color:var(--text-2);font-weight:650;letter-spacing:.05em">LEAD WITH</span>
-          <span class="seg" id="roleSwitch">
-            <button class="on" data-r="ceo">CEO</button>
-            <button data-r="pm">PM</button>
-            <button data-r="hitl">Approver</button>
-          </span>
-          <span id="roleHint"></span>
-        </div>
-
-        <div class="grid2">
-          <div class="card" id="cardQueue">
-            <header><h2>Needs a person</h2><span class="spacer"></span>
-              <span class="sub" id="queueSub"></span>
-              <a class="btn sm" href="#/work">Open the queue</a></header>
-            <div class="body" id="dashAttention"></div>
-          </div>
-          <div class="card" id="cardLate">
-            <header><h2>Behind schedule</h2><span class="spacer"></span>
-              <span class="sub" id="dashLateSub"></span></header>
-            <div class="body" id="dashLate"></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <header><h2>Portfolio</h2><span class="spacer"></span>
-            <span class="sub" id="dashPortfolioSub"></span></header>
-          <div class="body" id="dashDelegation"></div>
-        </div>
-
-        <div class="card">
-          <header><h2>Projects</h2><span class="spacer"></span>
-            <span class="sub" id="dashProjectSub"></span></header>
-          <div class="list" id="dashProjects"></div>
-        </div>
-      </section>
-
-      <section class="view" id="view-projects" hidden>
-        <!-- The list and the detail sit side by side. **Selecting a project never
-             removes the list**, which is the other half of "I cannot get out". -->
-        <div class="split wide">
-          <div class="card">
-            <header><h2>Projects</h2><span class="spacer"></span>
-              <span class="sub" id="projCount"></span></header>
-            <div class="list" id="projList"></div>
-          </div>
-          <div id="projDetail"></div>
-        </div>
-      </section>
 
       <!-- ============================== work ================================ -->
       <section class="view" id="view-work" hidden>
@@ -709,75 +636,10 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
       </section>
 
       <!-- ============================= agents =============================== -->
-      <section class="view" id="view-agents" hidden>
-        <div class="stats" id="agentStats"></div>
-        <div class="card">
-          <header><h2>Roster</h2><span class="spacer"></span>
-            <span class="sub" id="agentSub"></span></header>
-          <div class="list" id="agentList"></div>
-          <div class="empty" id="agentEmpty" hidden>
-            <div class="big">◇</div>
-            No agent has been named in an event yet.
-          </div>
-        </div>
-        <div class="note">
-          <b>Killing an agent is a decision</b>, and decisions are logged with an actor:
-          the log row says the <i>platform</i> did it, about that agent. A kill needs a
-          reason, because the database refuses one without. Reviving grants L1 rather
-          than restoring the previous level — an agent that was stopped and is running
-          again has not had its old grant re-justified.
-        </div>
-      </section>
 
       <!-- ============================ decisions ============================= -->
-      <section class="view" id="view-decisions" hidden>
-        <div class="card">
-          <header><h2>Decision log</h2>
-            <span class="sub" id="decisionSub"></span>
-            <span class="spacer"></span>
-            <span class="seg" id="decisionFilter">
-              <button class="on" data-f="">Everything</button>
-              <button data-f="killed">Kills</button>
-              <button data-f="revived">Revives</button>
-              <button data-f="refused">Refusals</button>
-            </span>
-          </header>
-          <div class="list" id="decisionList"></div>
-          <div class="empty" id="decisionEmpty" hidden>Nothing recorded yet.</div>
-        </div>
-        <div class="note">
-          This is the question an auditor asks: <b>what did this agent decide, was it
-          allowed to, and what happened?</b> An audit trail only its writer can see is
-          not an audit trail.
-        </div>
-      </section>
 
       <!-- ============================== hiring ============================== -->
-      <section class="view" id="view-hiring" hidden>
-        <div class="stats" id="hireStats"></div>
-        <div class="card">
-          <header><h2 id="hireTitle">Quy trình tuyển dụng</h2><span class="spacer"></span>
-            <span class="sub" id="hireSub"></span></header>
-          <div class="body"><div class="hire-flow" id="hireFlow"></div></div>
-          <div class="empty" id="hireEmpty" hidden>
-            Chưa có yêu cầu tuyển dụng nào. Chạy <code>make seed-hiring</code>.
-          </div>
-        </div>
-        <div class="grid2">
-          <div class="card">
-            <header><h2>Đang chờ anh quyết</h2><span class="spacer"></span>
-              <span class="sub" id="hireGateSub"></span></header>
-            <div class="list" id="hireGates"></div>
-            <div class="empty" id="hireGatesEmpty" hidden>Không có cổng nào đang chờ.</div>
-          </div>
-          <div class="card">
-            <header><h2>JD &amp; rubric theo hồ sơ</h2><span class="spacer"></span>
-              <span class="sub" id="hireJdSub"></span></header>
-            <div class="body" id="hireJd"></div>
-          </div>
-        </div>
-        <div class="note" id="hireNote"></div>
-      </section>
 
       <!-- ============================ departments ============================ -->
       <section class="view" id="view-departments" hidden>
@@ -833,6 +695,38 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
 
       <!-- ============================= give work ============================= -->
       <section class="view" id="view-give" hidden>
+
+<!-- **The form that starts work, and the tree that shows what it did.**
+     Both used to live in the `console` view, which meant the product had no
+     entry point of its own: giving the company work was a side panel of a log.
+     They are here because this is the view a person opens to make the company
+     do something, and then to see that it did. -->
+    <div class="card">
+      <header><h2>Workflow</h2><span class="spacer"></span>
+        <span class="sub" id="flowCount"></span></header>
+      <div class="body" style="max-height:56vh;overflow:auto"><ul class="tree" id="tree"></ul></div>
+      <div class="empty" id="flowEmpty" hidden>
+        <div class="big">◇</div> Nothing has run yet.
+      </div>
+
+      <div class="card">
+        <header><h2>Start a task</h2></header>
+        <div class="body" style="display:flex;flex-direction:column;gap:var(--s3)">
+          <label class="field"><span>Pick a piece of work</span>
+            <select id="scenario"><option value="">loading work…</option></select></label>
+          <label class="field"><span>What should the company work on?</span>
+            <input id="goal" placeholder="Reconcile the tender documents" autocomplete="off"></label>
+          <div class="legend" id="scenarioHint" hidden></div>
+          <div class="btn-row" style="flex-wrap:nowrap">
+            <select id="agent" style="flex:1;min-width:120px" title="Who does the work">
+              <option value="">loading agents…</option></select>
+            <select id="taskType" style="flex:1;min-width:120px">
+              <option value="coordination">coordination</option>
+              <option value="analysis">analysis</option></select>
+            <button class="btn primary" id="runBtn">Run</button>
+          </div>
+          <div class="legend" id="runHint">Runs on the free model. A coordination task can take minutes.</div>
+        </div>
         <div class="stats" id="workStats"></div>
         <div class="card">
           <header><h2>What needs you</h2><span class="spacer"></span>
@@ -906,98 +800,8 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
       </section>
 
       <!-- ============================ documents ============================= -->
-      <section class="view" id="view-documents" hidden>
-        <div class="stats" id="docStats"></div>
-        <div class="card">
-          <header><h2>Controlled documents</h2>
-            <span class="spacer"></span>
-            <span class="seg" id="docFilter">
-              <button class="on" data-b="">All blocks</button>
-              <button data-b="BO">Back Office</button>
-              <button data-b="FO">Front Office</button>
-              <button data-b="MO">Middle Office</button>
-              <button data-b="PMO">PMO</button>
-            </span>
-          </header>
-          <div class="list" id="docList"></div>
-          <div class="empty" id="docEmpty" hidden>
-            <div class="big">▣</div>
-            No document has been published. Run <code>make seed-docs</code>.
-          </div>
-        </div>
-        <div class="note">
-          <b>A document that was sent is not a document that was read.</b> The tile counts
-          acknowledgements, not sends, because emailed-to-everybody and read-by-nobody is
-          the most common state of a controlled document set in construction — and it is
-          invisible without a column somebody is required to fill in. <b>Expiry is not
-          retention:</b> a permit stops being true long before it may be destroyed, and
-          the two dates are separate columns for that reason.
-        </div>
-      </section>
-
-      <section class="view" id="view-document" hidden>
-        <div class="stats" id="docOneStats"></div>
-        <div class="grid2">
-          <div class="card">
-            <header><h2 id="docOneTitle">Document</h2><span class="spacer"></span>
-              <span class="sub" id="docOneCode"></span></header>
-            <div class="list" id="docVersions"></div>
-          </div>
-          <div class="card">
-            <header><h2>Who must hold it</h2><span class="spacer"></span>
-              <span class="sub" id="docMatrixSub"></span></header>
-            <div class="list" id="docMatrix"></div>
-            <div class="empty" id="docMatrixEmpty" hidden>Nobody is required to hold it.</div>
-          </div>
-        </div>
-        <div class="note" id="docOneNote"></div>
-      </section>
 
       <!-- ============================= console ============================== -->
-      <section class="view" id="view-console" hidden>
-        <div class="grid2">
-          <div class="card">
-            <header><h2>Workflow</h2><span class="spacer"></span>
-              <span class="sub" id="flowCount"></span></header>
-            <div class="body" style="max-height:56vh;overflow:auto"><ul class="tree" id="tree"></ul></div>
-            <div class="empty" id="flowEmpty" hidden>
-              <div class="big">◇</div> Nothing has run yet.
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:var(--s5);min-width:0">
-            <div class="card">
-              <header><h2>Start a task</h2></header>
-              <div class="body" style="display:flex;flex-direction:column;gap:var(--s3)">
-                <label class="field"><span>Pick a piece of work</span>
-                  <select id="scenario"><option value="">loading work…</option></select></label>
-                <label class="field"><span>What should the company work on?</span>
-                  <input id="goal" placeholder="Reconcile the tender documents" autocomplete="off"></label>
-                <div class="legend" id="scenarioHint" hidden></div>
-                <div class="btn-row" style="flex-wrap:nowrap">
-                  <select id="agent" style="flex:1;min-width:120px" title="Who does the work">
-                    <option value="">loading agents…</option></select>
-                  <select id="taskType" style="flex:1;min-width:120px">
-                    <option value="coordination">coordination</option>
-                    <option value="analysis">analysis</option></select>
-                  <button class="btn primary" id="runBtn">Run</button>
-                </div>
-                <div class="legend" id="runHint">Runs on the free model. A coordination task can take minutes.</div>
-              </div>
-            </div>
-            <div class="card">
-              <header><h2>Events</h2><span class="spacer"></span>
-                <span class="sub" id="evCount"></span>
-                <span class="seg" id="evFilter">
-                  <button class="on" data-f="all">All</button>
-                  <button data-f="flow">Flow</button>
-                  <button data-f="bad">Problems</button>
-                </span>
-              </header>
-              <div class="feed" id="feed"></div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   </div>
 </div>
@@ -1325,9 +1129,9 @@ const ROUTES = {
 };
 
 function parseHash() {
-  const raw = (location.hash || "#/dashboard").replace(/^#\/?/, "");
+  const raw = (location.hash || "#/departments").replace(/^#\/?/, "");
   const parts = raw.split("/").filter(Boolean);
-  return { name: parts[0] || "dashboard", arg: parts[1] ? decodeURIComponent(parts[1]) : null };
+  return { name: parts[0] || "departments", arg: parts[1] ? decodeURIComponent(parts[1]) : null };
 }
 
 function go(hash) { location.hash = hash; }
@@ -1337,27 +1141,13 @@ function renderCrumbs(route) {
   const add = (label, href, here) =>
     items.push(href ? `<a href="${href}">${esc(label)}</a>` : `<span class="here">${esc(label)}</span>`);
   switch (route.name) {
-    case "project":
-      add("Dashboard", "#/dashboard");
-      items.push('<span class="sep">/</span>');
-      add("Projects", "#/projects");
-      items.push('<span class="sep">/</span>');
-      add(projectName(route.arg), null, true);
-      break;
     case "approval":
       add("Approvals", "#/work"); items.push('<span class="sep">/</span>');
       add("Decide", null, true);
       break;
-    case "agent":
-      add("Agents", "#/agents"); items.push('<span class="sep">/</span>');
-      add("Detail", null, true);
-      break;
     case "dept":
       add("Departments", "#/departments"); items.push('<span class="sep">/</span>');
       add($("deptTitle").textContent || "Department", null, true);
-      break;
-    case "hiring":
-      add("Tuyển dụng", null, true);
       break;
     case "departments":
       add("Departments", null, true);
@@ -1374,18 +1164,6 @@ function renderCrumbs(route) {
         add("Give work", null, true);
       }
       break;
-    case "documents":
-      // One route with an optional argument, so `#/documents/{id}` is a selection *within*
-      // the register rather than a separate page. The first version declared a
-      // `case "document"`, which `parseHash` can never produce, and the breadcrumb fell
-      // through to its default and said "Documents" while the detail was open.
-      if (route.arg) {
-        add("Documents", "#/documents"); items.push('<span class="sep">/</span>');
-        add(docName(route.arg), null, true);
-      } else {
-        add("Documents", null, true);
-      }
-      break;
     default: {
       const meta = ROUTES[route.name] || ROUTES.dashboard;
       add(meta.label, null, true);
@@ -1396,11 +1174,6 @@ function renderCrumbs(route) {
   // anywhere, the way out is on the page forever. There is no state in which
   // somebody is "somewhere" with no visible route back.
   $("crumbs").classList.add("deep");
-}
-
-function projectName(id) {
-  const p = state.projects.find((x) => x.id === id);
-  return p ? p.name : "Project";
 }
 
 $("backBtn").onclick = () => history.back();
@@ -1447,7 +1220,7 @@ async function route() {
 window.addEventListener("hashchange", route);
 
 function showError(err) {
-  const target = $("view-" + (parseHash().name === "project" ? "projects" : parseHash().name)) || $("view-dashboard");
+  const target = $("view-" + (parseHash().name === "project" ? "projects" : parseHash().name)) || $("view-give");
   target.hidden = false;
   setHTML(target.id, `<div class="card"><div class="body">
     <div class="note late"><b>Could not load this view.</b><br>${esc(err && err.message || String(err))}</div>
@@ -1459,14 +1232,8 @@ function showError(err) {
 
 async function render(r, mine) {
   switch (r.name) {
-    case "dashboard": await renderDashboard(); break;
-    case "projects":
-    case "project": await renderProjects(r.arg); break;
     case "work":
     case "approval": await renderWork(); break;
-    case "agents":
-    case "agent": await renderAgents(r.arg); break;
-    case "hiring": await renderHiring(); break;
     case "departments":
     case "dept": await renderDepartments(r.arg); break;
     // `task` is the readable name for a task, and `view-task` is the section that holds it.
@@ -1475,11 +1242,9 @@ async function render(r, mine) {
     // linking to a URL of its own that does not work is the same defect as a drill-down with
     // no way out, pointed the other way.
     case "task":
-    case "give": await renderGive(r.arg); break;
-    case "documents": await renderDocuments(r.arg); break;
-    case "decisions": await renderDecisions(); break;
-    case "console": renderConsole(); break;
-    default: await renderDashboard();
+    case "give":
+    case "console": await renderGive(r.arg); break;
+    default: await renderGive();
   }
   if (mine !== renderToken) return;
 }
@@ -1491,207 +1256,6 @@ function statTile(k, v, note, tone) {
   return `<div class="stat${tone ? " " + tone : ""}"><div class="k">${esc(k)}</div>`
     + `<div class="v">${esc(v)}</div>`
     + (note ? `<div class="n">${esc(note)}</div>` : "") + `</div>`;
-}
-
-/* Tập 1 §Tầng 1 names three roles and three questions. This is the whole of the
-   role switcher: same data, different first panel. It does not filter, and it does not
-   hide -- a person can always scroll to the other two. */
-const ROLES = {
-  ceo:  { first: "cardLate",   hint: "Portfolio position, and what is behind." },
-  pm:   { first: "cardLate",   hint: "Which of my zones is late, and by how much." },
-  hitl: { first: "cardQueue",  hint: "What is waiting on me, oldest first." },
-};
-
-function applyRole(role) {
-  const cfg = ROLES[role] || ROLES.ceo;
-  for (const b of $("roleSwitch").children) b.classList.toggle("on", b.dataset.r === role);
-  $("roleHint").textContent = cfg.hint;
-  /* CSS `order`, not `insertBefore` and not `hidden`.
-
-     `order` reorders without moving a node, so nothing is detached and re-attached,
-     no scroll position is disturbed, and both cards are always in the document. The
-     first version used `insertBefore`, which works but mutates the tree on every
-     switch; the second used `hidden`, which is what made the page feel like it was
-     hiding things from you. `order` is the middle of those two and the right one. */
-  $("cardQueue").style.order = cfg.first === "cardQueue" ? "0" : "1";
-  $("cardLate").style.order = cfg.first === "cardQueue" ? "1" : "0";
-}
-$("roleSwitch").onclick = (e) => {
-  const b = e.target.closest("button[data-r]");
-  if (b) applyRole(b.dataset.r);
-};
-
-async function renderDashboard() {
-  const [port, projects, inbox] = await Promise.all([
-    apiGet("/portfolio"), apiGet("/projects"), apiGet("/approvals/inbox"),
-  ]);
-  state.portfolio = port; state.projects = projects.items; state.inbox = inbox.items;
-  const t = port.totals, p = port.posture || {};
-  setHTML("dashStats",
-    statTile("Projects", num(t.projects), num(t.wbs_nodes) + " work packages")
-    + statTile("Waiting on you", num(inbox.count), inbox.count ? "open the queue" : "nothing pending",
-        inbox.count ? "wait" : "")
-    + statTile("Agents", num(p.agents), (p.killed ?? 0) + " killed")
-    /* `above_l1` is a *control*, not a description: the count of agents granted more
-       than their own ceiling. `0016` puts every agent at L1 and nothing raises it
-       without a measured shadow agreement rate, so it is meant to be 0 and to stay
-       there. Alarm tone when it is not, so a widened delegation is visible without
-       anybody reading a number. */
-    + statTile("Above ceiling", num(p.above_l1 ?? 0),
-        (p.above_l1 ?? 0) === 0 ? "every agent at its own limit" : "needs review",
-        (p.above_l1 ?? 0) === 0 ? "good" : "alarm"));
-
-  setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
-  $("navApprovalCount").hidden = !inbox.count;
-  $("navApprovalCount").className = "count hot";
-  $("queueSub").textContent = inbox.count ? `${inbox.count} waiting` : "clear";
-
-  setHTML("dashAttention", inbox.count
-    ? inbox.items.slice(0, 5).map((a) => `
-        <a class="row" href="#/work">
-          <div class="grow"><div class="t">${esc(a.action_type)}</div>
-            <div class="s">${esc(a.requested_by || "unknown")} · waiting ${esc(a.waiting_days)}d</div></div>
-          <span class="tag wait">decide</span></a>`).join("")
-    : '<div class="legend">Nothing is waiting on a person.</div>');
-
-  /* The worst lateness across every project with a breakdown, because the question is
-     never "how is one project" but "which one is in trouble". */
-  const withWbs = projects.items.filter((x) => x.wbs_nodes > 0);
-  const worst = [];
-  for (const proj of withWbs.slice(0, 6)) {
-    const ws = await apiGet(`/projects/${encodeURIComponent(proj.id)}/workspace`);
-    for (const z of ws.late) {
-      worst.push({ code: z.code, name: z.name, slip: z.slip_days, project: proj.name });
-    }
-  }
-  worst.sort((a, b) => b.slip - a.slip);
-  $("dashLateSub").textContent = worst.length ? `worst ${worst[0].slip} days` : "nothing late";
-  setHTML("dashLate", worst.length
-    ? worst.slice(0, 8).map((z) => `
-        <div class="bar late">
-          <div class="lbl" title="${esc(z.project + " · " + z.name)}">${esc(z.code)} ${esc(z.name)}</div>
-          <div class="track"><div class="fillbar" style="width:${Math.min(100, (z.slip / (worst[0].slip || 1)) * 100)}%"></div></div>
-          <div class="num">+${z.slip}d</div></div>`).join("")
-    : '<div class="legend">No measured work is behind schedule.</div>');
-
-  $("dashPortfolioSub").textContent = num(t.gates_open) + " gates open";
-  setHTML("dashDelegation",
-    `<div class="legend">${num(p.agents ?? 0)} agents registered · ${num(p.killed ?? 0)} stopped · `
-    + `tightest ceiling <b>${esc(p.tightest_ceiling || "L1")}</b> in force. `
-    + `Delegation rises only through a measured shadow agreement rate, never by configuration. `
-    + `<a href="#/agents">Open the roster</a> · <a href="#/decisions">the decision log</a>.</div>`);
-
-  $("dashProjectSub").textContent = projects.total + " total";
-  setHTML("dashProjects", projects.items.map((pr) => `
-    <a class="row" href="#/projects/${encodeURIComponent(pr.id)}">
-      <div class="grow"><div class="t">${esc(pr.name)}</div>
-        <div class="s">${esc(pr.code)}${pr.address ? " · " + esc(pr.address) : ""}</div></div>
-      <div class="r">${pr.contract_value === null ? "no value recorded" : num(pr.contract_value)}</div>
-    </a>`).join(""));
-}
-
-async function renderProjects(id) {
-  if (!state.projects.length) {
-    const d = await apiGet("/projects");
-    state.projects = d.items;
-  }
-  $("projCount").textContent = state.projects.length;
-  setHTML("projList", state.projects.map((pr) => `
-    <a class="row" href="#/projects/${encodeURIComponent(pr.id)}"
-       aria-current="${pr.id === id}">
-      <div class="grow"><div class="t">${esc(pr.name)}</div>
-        <div class="s">${esc(pr.code)}${pr.address ? " · " + esc(pr.address) : ""}</div></div>
-      <div class="r">${esc(pr.status || "—")}</div></a>`).join(""));
-
-  if (!id) {
-    setHTML("projDetail", `<div class="card"><div class="empty">
-      <div class="big">▤</div>
-      Pick a project. The list stays here, so you are never trapped in the detail.
-    </div></div>`);
-    return;
-  }
-  state.project = id;
-  const [ws, tree, act] = await Promise.all([
-    apiGet(`/projects/${encodeURIComponent(id)}/workspace`),
-    apiGet(`/projects/${encodeURIComponent(id)}/wbs`),
-    apiGet(`/projects/${encodeURIComponent(id)}/activity`, { limit: 300 }),
-  ]);
-  state.workspace = ws;
-  const c = ws.counts;
-  const byCode = new Map(ws.zones.map((z) => [z.code, z]));
-  const worst = Math.max(1, ...ws.late.map((z) => Math.abs(z.slip_days || 0)));
-
-  setHTML("projDetail", `
-    <div style="display:flex;flex-direction:column;gap:var(--s5);min-width:0">
-      <div class="stats">
-        ${statTile("Work packages", num(c.zones), num(act.count) + " readings")}
-        ${statTile("Behind", num(c.late), c.late ? "days lost" : "nothing late", c.late ? "alarm" : "good")}
-        ${statTile("Not measured", num(c.unmeasured), "no recorded actual", c.unmeasured ? "wait" : "")}
-      </div>
-      <div class="card">
-        <header><h2>Work breakdown</h2><span class="spacer"></span>
-          <span class="sub">${esc(tree.count)} nodes</span></header>
-        <div class="body">
-          <div class="bars">${ws.zones.map((z) => {
-            const late = z.is_late === true, un = z.is_measured === false;
-            const cls = un ? "unmeasured" : (late ? "late" : "");
-            const pct = un ? 0 : Math.min(100, (Math.abs(z.slip_days || 0) / worst) * 100);
-            const label = un ? "not measured" : (late ? "+" + z.slip_days + "d" : "on plan");
-            return `<div class="bar ${cls}">
-              <div class="lbl" title="${esc(z.name)}">${esc(z.code)} ${esc(z.name)}</div>
-              <div class="track"><div class="fillbar" style="width:${pct}%"></div></div>
-              <div class="num">${esc(label)}</div></div>`;
-          }).join("")}</div>
-          <div class="legend" style="margin-top:12px">
-            <span class="swatch ok"></span><b>on plan</b> ·
-            <span class="swatch late"></span><b>behind</b> ·
-            <span class="swatch un"></span><b>not measured</b> — a plan with no recorded actual.
-            Hatched means exactly that. An empty actual column is not a zero variance.
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <header><h2>Breakdown tree</h2><span class="spacer"></span>
-          <span class="sub">${esc(tree.roots)} top level</span></header>
-        <div class="list">${tree.items.map((n) => {
-          const pos = byCode.get(n.code);
-          const tag = !pos ? ""
-            : pos.is_measured === false ? '<span class="tag unmeasured">not measured</span>'
-            : pos.is_late ? `<span class="tag late">+${pos.slip_days}d</span>`
-            : '<span class="tag ok">on plan</span>';
-          return `<div class="row static"><div class="grow" style="padding-left:${depthOf(tree.items, n) * 16}px">
-            <div class="t">${esc(n.code)} ${esc(n.name)}</div></div><div class="r">${tag}</div></div>`;
-        }).join("")}</div>
-      </div>
-      <div class="card">
-        <header><h2>Progress</h2><span class="spacer"></span>
-          <span class="sub">${esc(act.measured)} of ${esc(act.count)} recorded</span></header>
-        <div class="body flush">
-          <div class="scroller"><table class="sheet">
-            <thead><tr><th class="n">Row</th><th>Work</th><th class="n">Planned</th>
-              <th class="n">Actual</th><th class="n">Var.</th><th>State</th></tr></thead>
-            <tbody>${act.items.map((r) => {
-              /* `actual_updated` is the only thing that separates "recorded on the 14th"
-                 from "the planned date was copied into the actual column", and for the
-                 whole real corpus those are the same date. Ignoring it renders 2778
-                 fabricated measurements. */
-              const measured = r.actual_updated === true;
-              const delta = (r.actual_finish_on && r.planned_finish_on)
-                ? Math.round((new Date(r.actual_finish_on) - new Date(r.planned_finish_on)) / 86400000)
-                : null;
-              return `<tr class="${measured ? "" : "unmeasured"}">
-                <td class="n">${esc(r.source_row)}</td>
-                <td>${esc(r.work_description || r.section_label || "—")}</td>
-                <td class="n">${esc(r.planned_finish_on || "—")}</td>
-                <td class="n">${esc(measured ? (r.actual_finish_on || "—") : "not recorded")}</td>
-                <td class="n">${measured ? (delta === null ? "—" : delta + "d") : "—"}</td>
-                <td>${measured
-                  ? (delta > 0 ? '<span class="tag late">late</span>' : '<span class="tag ok">on plan</span>')
-                  : '<span class="tag unmeasured">not measured</span>'}</td></tr>`;
-            }).join("")}</tbody></table></div>
-        </div>
-      </div>
-    </div>`);
 }
 
 function depthOf(items, node) {
@@ -1783,45 +1347,6 @@ async function decide(approvalId, action, extra) {
 }
 
 /* ---------------- agents: the roster and the switch ---------------- */
-async function renderAgents(id) {
-  const p = (state.portfolio && state.portfolio.posture) || (await apiGet("/portfolio")).posture || {};
-  setHTML("agentStats",
-    statTile("Agents", num(p.agents ?? 0), "in the registry")
-    + statTile("Killed", num(p.killed ?? 0), "switch pulled", p.killed ? "alarm" : "good")
-    + statTile("Above ceiling", num(p.above_l1 ?? 0), "granted past its own limit",
-        (p.above_l1 ?? 0) === 0 ? "good" : "alarm")
-    + statTile("Tightest ceiling", p.tightest_ceiling || "L1", "in force"));
-
-  const seen = [...state.agents.entries()].sort((a, b) => b[1] - a[1]);
-  $("agentSub").textContent = `${seen.length} seen in events · ${p.agents ?? 0} registered`;
-  $("agentEmpty").hidden = seen.length > 0;
-  $("agentList").hidden = seen.length === 0;
-
-  /* The registry is the authoritative list; the event stream is a live view of who
-     has been busy. Both, side by side, and they are labelled as different things —
-     the first version conflated them and read a count as an identity. */
-  let registered = [];
-  try { registered = (await apiGet("/agents", { limit: 100 })).items || []; } catch { /* not fatal */ }
-  const byName = new Map(registered.map((a) => [a.name, a]));
-  const rows = [];
-  for (const a of registered) {
-    const busy = seen.find(([n]) => n === a.name);
-    rows.push({ id: a.id, name: a.name, events: busy ? busy[1] : 0, real: a });
-  }
-  for (const [name, count] of seen) {
-    if (!byName.has(name)) rows.push({ id: null, name, events: count, real: null });
-  }
-  setHTML("agentList", rows.map((r) => `
-    <div class="row${r.id ? "" : " static"}"${r.id ? ` data-agent="${esc(r.id)}"` : ""}>
-      <div class="grow"><div class="t">${esc(r.name)}</div>
-        <div class="s">${esc(r.real ? (r.real.description || r.real.lifecycle_status || "registered") : "seen in events, not in the registry")}</div></div>
-      <div class="r">${r.events ? r.events + " events" : ""}</div>
-      ${r.id ? `<div class="btn-row" data-agent-actions="${esc(r.id)}">
-        <button class="btn sm" data-kill="1" data-id="${esc(r.id)}">Stop</button>
-      </div>` : ""}
-    </div>`).join(""));
-}
-
 /* The kill switch, in the page, as a control. `kill_switch` existed for several
    tranches with constraints around it and no code path that could set it. */
 document.addEventListener("click", async (e) => {
@@ -1862,188 +1387,47 @@ async function revive(id) {
   }
 }
 
-/* ---------------- the decision log ---------------- */
-/* ============================== the hiring process ==============================
-   A process, not a task list. An operator's question is "how far along is the hire", and
-   answering that from the task list means counting eight rows and knowing which eight.
-
-   **No percentage, and no "on track".** The stages are not equally weighted -- writing a JD
-   and approving an offer are not the same size of thing -- and the process's shape is the
-   thing an operator is supposed to be able to change. A number implying otherwise would be the
-   one dishonest figure on this page, so what is shown instead is two counts that are facts:
-   stages finished, and stages waiting on a person.
-   ------------------------------------------------------------------
-   A gate is drawn differently from a stage on purpose. It is the only thing here a person is
-   *asked* to do, so it carries the question, the stage, and the two buttons -- and it carries
-   them on the same screen as the stages above and below it, because deciding in isolation from
-   the process is how a decision gets made without knowing where it sits. */
-let hireCache = null;
-
-async function renderHiring() {
-  let d = null;
-  try { d = await apiGet("/hiring"); } catch (err) { showError(err); return; }
-  hireCache = d;
-  const stages = d.stages || [];
-
-  setHTML("hireStats",
-    statTile("Giai đoạn xong", `${d.done_count}/${d.stage_count}`, d.sop_code, "good")
-    + statTile("Chờ anh quyết", num((d.waiting_on_you || []).length),
-        (d.waiting_on_you || []).length ? "có cổng đang mở" : "không có gì chờ",
-        (d.waiting_on_you || []).length ? "warn" : "good")
-    + statTile("Vị trí", d.position, `${d.office} · ${d.department}`)
-    + statTile("Ứng viên trong hồ sơ", num((d.candidates || []).length), "mô phỏng, không gửi cho ai"));
-
-  $("hireTitle").textContent = `Tuyển dụng: ${d.position}`;
-  $("hireSub").textContent = `${d.sop_code} — ${d.sop_title}`;
-  $("hireEmpty").hidden = stages.length > 0;
-  $("hireFlow").hidden = stages.length === 0;
-
-  const cur = d.current || {};
-  setHTML("hireFlow", stages.map((s) => {
-    const isNow = s.n === cur.n;
-    const cls = "hire-row"
-      + (s.task_status === "completed" ? " done" : "")
-      + (isNow && s.task_status !== "completed" ? " now" : "")
-      + (s.gate ? " gate" : "")
-      + (s.task_status === "failed" ? " bad" : "");
-    const made = (s.produced || []);
-    const art = (s.produces || []).map((a) => made.includes(a)
-      ? `<b>${esc(a)}</b>` : esc(a)).join(" · ");
-    return `<div class="${cls}">
-      <div class="hire-n">${s.n}</div>
-      <div>
-        <div class="hire-name">${esc(s.name_vi)}</div>
-        <div class="hire-where">${esc(s.office)} · ${esc(s.department)} · ${esc(s.agent)}</div>
-        <div class="hire-art">Sản phẩm: ${art || "—"}</div>
-        ${s.gate ? `<div class="hire-q">${esc(s.question)}</div>` : ""}
-        ${s.error ? `<div class="hire-art" style="color:var(--bad)">${esc(String(s.error).slice(0, 160))}</div>` : ""}
-        ${s.waiting_on_you
-          ? `<div class="hire-btn"><button class="btn sm" data-hire-approve="${esc(s.task_id)}"
-               data-hire-approval="${esc(s.gate)}"
-               data-hire-question="${esc(s.approval_question || s.question)}">Duyệt cổng này</button></div>`
-          : ""}
-      </div>
-      <div class="hire-state">${esc(s.state)}</div>
-    </div>`;
-  }).join(""));
-
-  const gates = stages.filter((s) => s.gate);
-  const openGates = stages.filter((s) => s.waiting_on_you);
-  $("hireGateSub").textContent = `${openGates.length} đang mở / ${gates.length} cổng trong quy trình`;
-  $("hireGatesEmpty").hidden = openGates.length > 0;
-  setHTML("hireGates", openGates.map((s) => `<div class="list-row">
-      <div class="grow">
-        <div class="t">Giai đoạn ${s.n} · ${esc(s.name_vi)}</div>
-        <div class="s">${esc(s.approval_question || s.question)}</div>
-      </div>
-      <button class="btn sm" data-hire-approve="${esc(s.task_id)}"
-        data-hire-approval="${esc(s.gate)}"
-        data-hire-question="${esc(s.approval_question || s.question)}">Duyệt</button>
-    </div>`).join(""));
-
-  const done = (d.approved_deliverables || []).join(", ") || "chưa có phần nào xong";
-  $("hireJdSub").textContent = `JD tham chiếu: ${d.jd_reference}`;
-  setHTML("hireJd", `
-    <ul class="hire-jd">${(d.jd_sections || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-    <div class="hire-rubric">${(d.rubric || []).map((r) =>
-      `<span>${esc(r.level)} <b>${Math.round(r.weight * 100)}%</b></span>`).join("")}</div>
-    <div class="hire-art" style="margin-top:8px">Phần SOP đã xong: ${esc(done)}</div>`);
-
-  $("hireNote").innerHTML =
-    `Quy trình này triển khai <b>${esc(d.sop_code)}</b>. Danh mục SOP trong hồ sơ giữ **tên và
-     mã**, không giữ thân — nên tám giai đoạn ở đây là quy trình anh yêu cầu, đặt lên ba sản phẩm
-     của SOP (JD, hồ sơ ứng viên, onboarding) và cổng duyệt người <code>FRM-AI-001</code>.`;
-
-  const b = $("navHireCount");
-  if (b) {
-    const n = (d.waiting_on_you || []).length;
-    b.textContent = n ? String(n) : "";
-    b.hidden = !n;
-  }
-}
-
-/* Approve a gate from the process view. The note is required, exactly as on the approvals
-   screen: a decision with no reason is a tick in a box, and the note is what the next reader
-   sees. */
 document.addEventListener("click", async (e) => {
-  const btn = e.target.closest("[data-hire-approve]");
-  if (!btn) return;
-  const note = window.prompt(
-    "Ghi lý do quyết định này, để người đọc sau thấy đã cân nhắc gì. "
-    + "Lý do được lưu cùng quyết định.");
-  if (note === null || !note.trim()) return;
-  btn.disabled = true;
-  try {
-    const out = await apiPost(`/approvals/${encodeURIComponent(btn.dataset.hireApproval)}/approve`,
-      { note: note.trim() });
-    toast(`Đã duyệt (${out.status}).`);
-    hireCache = null;
-    await renderHiring();
-    await refreshBadges();
-  } catch (err) {
-    showError(err);
-    btn.disabled = false;
+  const box = e.target.closest("[data-agent-box]");
+  if (box) {
+    const d = await loadDepartments();
+    if (!d) return;
+    // **Every tier routes by the key the box carries.** This used to search
+    // `d.offices` for departments and then special-case the chief, so an office box
+    // matched neither and the click did nothing at all -- an office could be seen
+    // and not opened. `findByKey` is the same lookup the route uses, so a box and
+    // the address it opens can no longer disagree.
+    const all = [d.chief, ...(d.second_tier || []), ...d.offices].filter(Boolean);
+    const o = all.find((x) => x.id === box.dataset.agentBox);
+    if (!o || !o.key) { toast("That agent has no panel.", true); return; }
+    go(`#/dept/${encodeURIComponent(o.key)}`);
+    return;
   }
+  const dept = e.target.closest("[data-key]") && e.target.closest("a[data-key]");
+  if (dept) { deptSel = null; }
 });
 
-/* ====================== the organisation ======================
-   A tree from the chief down through the offices to each department, every box
-   clickable, every box carrying the five answers. Clicking opens a panel with the run
-   on one side and the work on the other,
-   because "what did it do" and "what is it doing" are asked together.
+/* `renderChiefPanel` is gone.
    ------------------------------------------------------------------
-   **No `chain_of_thought` field exists here, and there is not one to add.** The model does
-   not expose private reasoning and this platform does not store it. What it stores is the
-   run's `summary` -- the same string a workflow branches on -- its `artifacts`, its
-   `decision_record`, and the model it used. So the panel is called "what it did" and shows
-   those. A panel labelled "chain of thought" would be the one dishonest panel in the
-   product. */
+   It was a private copy of the panel for the chief, reached two ways: by clicking
+   the box, and by arriving at `#/dept/chief`. The click rendered it and the
+   navigation immediately replaced it with "No such department" -- the click appeared
+   to do nothing. It was also the only place that styled the chief's title, so a fix
+   to the shared panel would have left the chief showing the old one.
+
+   There is one panel now, reached by the same route for every tier, and the chief is
+   found by `findByKey`. A fourth tier is a row in that function, not a copy of this
+   function. */
+
+
+/* The departments view's own state.
+   **Kept beside the functions that use it, on purpose.** These three lived above the
+   whole departments section, and cutting the sections around them removed the
+   declarations while leaving the uses -- so the view failed with `deptCache is not
+   defined`, which names a cache and not the thing that was actually wrong. */
 let deptCache = null;
 let deptSel = null;
 let deptPoll = null;
-
-function agentBox(a, sel) {
-  const cls = "abox" + (sel ? " sel" : "") + (a.running ? " on" : "")
-    + (!a.running && a.stuck ? " stuck" : "");
-  const c = a.counts || {};
-  const r = a.rollup || null;
-  return `<div class="${cls}" data-agent-box="${esc(a.id)}" data-agent-name="${esc(a.name)}"
-      data-box-key="${esc(a.key || "")}"
-      role="button" tabindex="0" aria-label="${esc(a.name)}">
-    <div class="n">${esc(a.label || a.name)}</div>
-    ${
-      // The subtitle only earns its place when it says something the title does
-      // not. The chief has no `label`, so its title falls back to its name -- and
-      // printing the name again underneath made the one box on the page that is
-      // not a department the one box that looked like a mistake.
-      (a.label && a.label !== a.name)
-      ? `<div class="r">${esc(a.name)}${a.killed ? " · stopped" : ""}</div>` : ""}
-    <div class="c">
-      <span>own open <b>${c.open ?? 0}</b></span>
-      <span>own done <b>${c.done ?? 0}</b></span>
-      ${c.attention ? `<span>stuck <b>${c.attention}</b></span>` : ""}
-      ${a.stuck ? `<span>stranded <b>${a.stuck}</b></span>` : ""}
-      <span>${esc(a.granted || "L1")}/${esc(a.ceiling || "L1")}</span>
-    </div>
-    ${
-      // **Own and rolled-up, both on the box and both named.**
-      //
-      // An office that only shows its own counts reads as idle: it delegates, so its
-      // own open count is zero while its departments are busy. Showing only the
-      // roll-up would be the opposite error -- a chief that reports 11 agents but
-      // cannot say it did nothing itself. So the two lines stay separate and are
-      // labelled "own" and "below".
-      //
-      // `r.agents - 1` is the number under it, and it is zero for a leaf, so a
-      // department shows no roll-up line at all rather than a line about nothing.
-      r && r.agents > 1
-      ? `<div class="roll">${num(r.agents - 1)} below · open <b>${num(r.open - (c.open ?? 0))}</b>
-          · done <b>${num(r.done - (c.done ?? 0))}</b>
-          ${r.attention > (c.attention ?? 0) ? `· needs attention <b>${num(r.attention - (c.attention ?? 0))}</b>` : ""}
-          · <b>${num(r.agents - 1)}</b> agent(s) in total under here</div>`
-      : ""}
-  </div>`;
-}
 
 async function loadDepartments() {
   if (deptCache) return deptCache;
@@ -2052,73 +1436,6 @@ async function loadDepartments() {
   return deptCache;
 }
 
-/* The organisation, as one nest.
-   ------------------------------------------------------------------
-   `tree` comes from the server already nested -- chief, then each office with
-   its own departments. It used to be drawn here from three flat lists, which is
-   exactly why it was flat: the API never selected `parent_id`, so there was
-   nothing here to nest, and a page check could only string-match a name.
-
-   Drawing the hierarchy is left to the server now, so the shape is something a
-   Python test can assert (tests/integration/test_departments_reports_the_tree.py)
-   rather than something a reader of this file has to take on trust.
-
-   The unit at the top -- the chief on the organisation view, an office on its own
-   panel -- **is drawn by its own label.** This function used to hard-code
-   "Executive Agent", so an office's panel titled its own box with the chief's name. */
-function renderTree(target, offices, chief, selId, secondTier) {
-  const parts = [];
-  if (chief) {
-    parts.push(`<div class="dept-tier">${esc(
-      chief.key === "chief" ? "Chief" : (chief.label || chief.name))}</div>`);
-    parts.push(agentBox({ ...chief, label: chief.label || chief.name }, selId === chief.id));
-  }
-  const offices2 = secondTier || [];
-  const depts = offices || [];
-  if (offices2.length) {
-    parts.push(`<div class="dept-tier">Offices &amp; their departments</div>`);
-    for (const o of offices2) {
-      // Only departments this office actually owns. An empty group is still drawn --
-      // an office with nothing under it is a real state, and hiding it would make a
-      // tier disappear whenever its departments happened to be idle.
-      const mine = depts.filter((d) => d.parent_unit_slug === o.key);
-      parts.push(`<div class="dept-group" data-office-group="${esc(o.key)}">`);
-      parts.push(agentBox({ ...o, label: o.label || o.name }, selId === o.id));
-      if (mine.length) {
-        parts.push(`<div class="dept-edges">`);
-        for (const d of mine) parts.push(agentBox(d, selId === d.id));
-        parts.push(`</div>`);
-      }
-      parts.push(`</div>`);
-    }
-  } else if (depts.length) {
-    // No office tier in this payload: the departments still have to be drawn, or the
-    // page loses them. Falling back to a flat list here is worse than the nested view,
-    // but it is better than an empty panel.
-    parts.push(`<div class="dept-tier">Departments</div>`);
-    for (const d of depts) {
-      if (d.missing) {
-        parts.push(`<div class="abox stuck"><div class="n">${esc(d.label)}</div>
-          <div class="r">no agent named ${esc(d.name)}</div></div>`);
-        continue;
-      }
-      parts.push(agentBox(d, selId === d.id));
-    }
-  }
-  return parts.join("");
-}
-
-/* Departments the payload could not place under an office. **Drawn, not dropped.**
-   Silently omitting them would make the console look complete over an organisation
-   the server could not fully describe -- a confident picture with agents missing. */
-function unassignedNote(d) {
-  const extra = (d.tree && d.tree.unassigned) || [];
-  if (!extra.length) return "";
-  return `<div class="note" style="margin-top:10px">
-    <b>${num(extra.length)} department(s) name no office</b> and are not in the tree
-    above: ${esc(extra.map((x) => x.label).join(", "))}. They are counted in the totals.
-  </div>`;
-}
 
 async function renderDepartments(key) {
   const d = await loadDepartments();
@@ -2163,13 +1480,117 @@ async function renderDepartments(key) {
   watchDepartments();
 }
 
-/* One box in the payload, by the key the page routes on.
 
-   **Three tiers, one lookup.** The chief's key is the literal "chief" and offices now
-   carry their own `key`, so `offices.find(...)` alone cannot answer it -- and when it
-   could not, the page said "No such department" for a box the person had just
-   clicked. Every tier is looked up here instead, so adding a tier cannot leave a
-   route that draws but does not open. */
+async function refreshAfterAction() {
+  /* The nav count and whatever view is on screen both change, so both are refreshed
+     rather than guessing which one the person is looking at. */
+  try {
+    const inbox = await apiGet("/approvals/inbox");
+    state.inbox = inbox.items;
+    setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
+    $("navApprovalCount").hidden = !inbox.count;
+  } catch { /* the view refresh below will surface it */ }
+  await route();
+}
+
+
+function agentBox(a, sel) {
+  const cls = "abox" + (sel ? " sel" : "") + (a.running ? " on" : "")
+    + (!a.running && a.stuck ? " stuck" : "");
+  const c = a.counts || {};
+  const r = a.rollup || null;
+  return `<div class="${cls}" data-agent-box="${esc(a.id)}" data-agent-name="${esc(a.name)}"
+      data-box-key="${esc(a.key || "")}"
+      role="button" tabindex="0" aria-label="${esc(a.name)}">
+    <div class="n">${esc(a.label || a.name)}</div>
+    ${
+      // The subtitle only earns its place when it says something the title does
+      // not. The chief has no `label`, so its title falls back to its name -- and
+      // printing the name again underneath made the one box on the page that is
+      // not a department the one box that looked like a mistake.
+      (a.label && a.label !== a.name)
+      ? `<div class="r">${esc(a.name)}${a.killed ? " · stopped" : ""}</div>` : ""}
+    <div class="c">
+      <span>own open <b>${c.open ?? 0}</b></span>
+      <span>own done <b>${c.done ?? 0}</b></span>
+      ${c.attention ? `<span>stuck <b>${c.attention}</b></span>` : ""}
+      ${a.stuck ? `<span>stranded <b>${a.stuck}</b></span>` : ""}
+      <span>${esc(a.granted || "L1")}/${esc(a.ceiling || "L1")}</span>
+    </div>
+    ${
+      // **Own and rolled-up, both on the box and both named.**
+      //
+      // An office that only shows its own counts reads as idle: it delegates, so its
+      // own open count is zero while its departments are busy. Showing only the
+      // roll-up would be the opposite error -- a chief that reports 11 agents but
+      // cannot say it did nothing itself. So the two lines stay separate and are
+      // labelled "own" and "below".
+      //
+      // `r.agents - 1` is the number under it, and it is zero for a leaf, so a
+      // department shows no roll-up line at all rather than a line about nothing.
+      r && r.agents > 1
+      ? `<div class="roll">${num(r.agents - 1)} below · open <b>${num(r.open - (c.open ?? 0))}</b>
+          · done <b>${num(r.done - (c.done ?? 0))}</b>
+          ${r.attention > (c.attention ?? 0) ? `· needs attention <b>${num(r.attention - (c.attention ?? 0))}</b>` : ""}
+          · <b>${num(r.agents - 1)}</b> agent(s) in total under here</div>`
+      : ""}
+  </div>`;
+}
+
+
+function renderTree(target, offices, chief, selId, secondTier) {
+  const parts = [];
+  if (chief) {
+    parts.push(`<div class="dept-tier">${esc(
+      chief.key === "chief" ? "Chief" : (chief.label || chief.name))}</div>`);
+    parts.push(agentBox({ ...chief, label: chief.label || chief.name }, selId === chief.id));
+  }
+  const offices2 = secondTier || [];
+  const depts = offices || [];
+  if (offices2.length) {
+    parts.push(`<div class="dept-tier">Offices &amp; their departments</div>`);
+    for (const o of offices2) {
+      // Only departments this office actually owns. An empty group is still drawn --
+      // an office with nothing under it is a real state, and hiding it would make a
+      // tier disappear whenever its departments happened to be idle.
+      const mine = depts.filter((d) => d.parent_unit_slug === o.key);
+      parts.push(`<div class="dept-group" data-office-group="${esc(o.key)}">`);
+      parts.push(agentBox({ ...o, label: o.label || o.name }, selId === o.id));
+      if (mine.length) {
+        parts.push(`<div class="dept-edges">`);
+        for (const d of mine) parts.push(agentBox(d, selId === d.id));
+        parts.push(`</div>`);
+      }
+      parts.push(`</div>`);
+    }
+  } else if (depts.length) {
+    // No office tier in this payload: the departments still have to be drawn, or the
+    // page loses them. Falling back to a flat list here is worse than the nested view,
+    // but it is better than an empty panel.
+    parts.push(`<div class="dept-tier">Departments</div>`);
+    for (const d of depts) {
+      if (d.missing) {
+        parts.push(`<div class="abox stuck"><div class="n">${esc(d.label)}</div>
+          <div class="r">no agent named ${esc(d.name)}</div></div>`);
+        continue;
+      }
+      parts.push(agentBox(d, selId === d.id));
+    }
+  }
+  return parts.join("");
+}
+
+
+function unassignedNote(d) {
+  const extra = (d.tree && d.tree.unassigned) || [];
+  if (!extra.length) return "";
+  return `<div class="note" style="margin-top:10px">
+    <b>${num(extra.length)} department(s) name no office</b> and are not in the tree
+    above: ${esc(extra.map((x) => x.label).join(", "))}. They are counted in the totals.
+  </div>`;
+}
+
+
 function findByKey(d, key) {
   if (d.chief && d.chief.key === key) return d.chief;
   const inOffices = (d.second_tier || []).find((x) => x.key === key);
@@ -2177,21 +1598,14 @@ function findByKey(d, key) {
   return d.offices.find((x) => x.key === key) || null;
 }
 
+
 function tierOf(d, box) {
   if (d.chief && d.chief.id === box.id) return "chief";
   if ((d.second_tier || []).some((x) => x.id === box.id)) return "office";
   return "department";
 }
 
-/* One unit's own panel -- the chief, an office, or a department.
-   **All three tiers come through here.** The chief had a private copy of this panel
-   and offices had no route at all, which meant the office tier could be seen but
-   never opened.
 
-   `tier` decides one thing: whether the panel shows a group or a single agent, and
-   therefore whose work the lists below belong to. An office that shows only its own
-   tasks shows an empty list, because an office delegates rather than executes --
-   the work is one tier down. */
 async function renderOneDepartment(d, key) {
   const o = findByKey(d, key);
   if (!o) { toast("No such department.", true); go("#/departments"); return; }
@@ -2205,6 +1619,7 @@ async function renderOneDepartment(d, key) {
   // tier-specific wording ("All offices") is wrong in a different way -- it suggests
   // an office-only view exists behind the button, and it does not.
   $("deptBack").textContent = "Back to the organisation";
+$("deptBack").onclick = () => go("#/departments");
   // Its own departments, drawn under it. An office is a group, so its panel shows
   // the group; showing a single box on a panel whose subject is a group of five
   // agents would understate what the office is.
@@ -2269,70 +1684,6 @@ async function renderOneDepartment(d, key) {
        branches on, so the panel cannot say one thing and the engine another.`
     : "It has not run yet, so there is nothing to report.";
 }
-
-$("deptBack").onclick = () => go("#/departments");
-
-/* "Chạy lại" — a failed task, run again.
-   ------------------------------------------------------------------
-   A `failed` task is **terminal**: the state machine says nothing leaves it, because reusing
-   the row would make the audit trail lie about what was attempted. That reasoning is right,
-   and on its own it was a dead end — the platform could explain every failure and let nobody
-   do anything about any of them. Measured: 58 failed tasks, none of them actionable.
-
-   So this creates a **new** task carrying the same work, linked to the failure by
-   `task_dependencies`. The failed row keeps its failure and its `last_error`, because those
-   are facts about an attempt that happened. The new task is created and **not started** — a
-   person who presses this by accident should not immediately spend 67,000 tokens, and Run is
-   right there for when they mean it. */
-$("retryBtn").onclick = async () => {
-  const id = state.taskId;
-  if (!id) return;
-  const btn = $("retryBtn");
-  btn.disabled = true;
-  btn.textContent = "Đang tạo…";
-  try {
-    const out = await apiPost(`/tasks/${id}/retry`, {});
-    toast(`Đã tạo "${out.title}". Bấm Run để chạy.`, false);
-    go(`#/task/${out.task_id}`);
-  } catch (err) {
-    showError(err);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Chạy lại";
-  }
-};
-
-document.addEventListener("click", async (e) => {
-  const box = e.target.closest("[data-agent-box]");
-  if (box) {
-    const d = await loadDepartments();
-    if (!d) return;
-    // **Every tier routes by the key the box carries.** This used to search
-    // `d.offices` for departments and then special-case the chief, so an office box
-    // matched neither and the click did nothing at all -- an office could be seen
-    // and not opened. `findByKey` is the same lookup the route uses, so a box and
-    // the address it opens can no longer disagree.
-    const all = [d.chief, ...(d.second_tier || []), ...d.offices].filter(Boolean);
-    const o = all.find((x) => x.id === box.dataset.agentBox);
-    if (!o || !o.key) { toast("That agent has no panel.", true); return; }
-    go(`#/dept/${encodeURIComponent(o.key)}`);
-    return;
-  }
-  const dept = e.target.closest("[data-key]") && e.target.closest("a[data-key]");
-  if (dept) { deptSel = null; }
-});
-
-/* `renderChiefPanel` is gone.
-   ------------------------------------------------------------------
-   It was a private copy of the panel for the chief, reached two ways: by clicking
-   the box, and by arriving at `#/dept/chief`. The click rendered it and the
-   navigation immediately replaced it with "No such department" -- the click appeared
-   to do nothing. It was also the only place that styled the chief's title, so a fix
-   to the shared panel would have left the chief showing the old one.
-
-   There is one panel now, reached by the same route for every tier, and the chief is
-   found by `findByKey`. A fourth tier is a row in that function, not a copy of this
-   function. */
 
 
 /* Poll while the page is open, so a light that comes on is noticed without a reload.
@@ -2724,266 +2075,17 @@ document.addEventListener("click", async (e) => {
    breadcrumb plus the Back button are how a person leaves it — the complaint that this
    section answers was "no way out of a drill-down", and a detail view with no crumb is
    exactly that. */
-let docFilterBlock = "";
-let docOpenId = null;
-const docNames = new Map();
-
-function docName(id) {
-  return docNames.get(id) || "Document";
-}
-
-function docBars(c) {
-  const pct = Math.max(0, Math.min(100, c.percent ?? 0));
-  return `<span class="t-ok">${c.acknowledged ?? 0}/${c.required ?? 0}</span>`
-    + `<div class="bar"><i style="width:${pct}%"></i></div>`;
-}
-
-async function renderDocuments(id) {
-  if (id) return renderOneDocument(id);
-
-  /* Leaving a document releases its detail. The project view does the same and `verify-page`
-     already checks it, because the failure it guards is a *stale* panel: the register is on
-     screen and the previous document's distribution matrix is still underneath it, so a
-     person reads one thing and believes another. Clearing here also covers the filter
-     buttons, which re-render the list without an argument -- filtering the register is
-     not a reason to keep a document open. */
-  docOpenId = null;
-  setHTML("docOneStats", "");
-  setHTML("docVersions", "");
-  setHTML("docMatrix", "");
-  setHTML("docOneNote", "");
-  $("docOneTitle").textContent = "Document";
-  $("docOneCode").textContent = "";
-
-  let sum = {};
-  try { sum = await apiGet("/documents/summary"); } catch (err) { showError(err); }
-  const outstanding = sum.outstanding ?? 0;
-  setHTML("docStats",
-    statTile("Documents", num(sum.documents ?? 0),
-        num(sum.numbered ?? 0) + " numbered on the dossier scheme")
-    + statTile("In force", num(sum.versions_in_force ?? 0), "approved revisions")
-    + statTile("Unread", num(outstanding),
-        "sent to somebody who has not confirmed it", outstanding ? "alarm" : "good")
-    + statTile("Acknowledged", num(sum.acknowledged ?? 0),
-        (sum.required ?? 0) + " required in total", outstanding ? "warn" : "good"));
-
-  // The sidebar count is the *outstanding* figure, not the document total: the number a
-  // person needs on every screen is how much is waiting, and a badge showing 28 when
-  // nothing is outstanding is a badge people learn to ignore.
-  const badge = $("navDocCount");
-  if (badge) {
-    badge.textContent = outstanding ? String(outstanding) : "";
-    badge.hidden = !outstanding;
-  }
-
-  let reg = { items: [], total: 0 };
-  try {
-    reg = await apiGet("/documents", { limit: 100, block: docFilterBlock || undefined });
-  } catch (err) { showError(err); }
-  for (const d of reg.items) docNames.set(d.id, d.code || d.title);
-
-  $("docEmpty").hidden = reg.items.length > 0;
-  $("docList").hidden = reg.items.length === 0;
-  setHTML("docList", reg.items.map((d) => `
-    <div class="row" data-doc="${esc(d.id)}">
-      <div class="grow">
-        <div class="t">${esc(d.title)}</div>
-        <div class="s">${esc(d.code || "no dossier number")} · rev ${d.live_version_no ?? "—"}`
-    + (d.expires_on ? ` · <b>expires ${esc(d.expires_on)}</b>` : "")
-    + (d.retention_until ? ` · kept until ${esc(String(d.retention_until).slice(0, 10))}` : "")
-    + `</div>
-      </div>
-      <div class="r">${docBars(d.compliance || {})}</div>
-    </div>`).join(""));
-}
-
-async function renderOneDocument(id) {
-  let d = null;
-  try { d = await apiGet(`/documents/${encodeURIComponent(id)}`); }
-  catch (err) { showError(err); return; }
-  docNames.set(d.id, d.code || d.title);
-  docOpenId = d.id;
-
-  const c = d.compliance || {};
-  setHTML("docOneStats",
-    statTile("In force", d.live_version_no ?? "—", "approved revision")
-    + statTile("Unread", num(c.outstanding ?? 0), (c.required ?? 0) + " required in total",
-        c.outstanding ? "alarm" : "good")
-    + statTile("Acknowledged", num(c.acknowledged ?? 0),
-        c.percent === 100 ? "everyone has confirmed it" : (c.percent ?? 0) + "% confirmed",
-        c.percent === 100 ? "good" : "warn")
-    + statTile("Expires", d.expires_on || "never",
-        d.retention_until ? "kept until " + String(d.retention_until).slice(0, 10) : "no retention set"));
-
-  $("docOneTitle").textContent = d.title;
-  $("docOneCode").textContent = (d.code || "no dossier number")
-    + (d.department ? ` · ${d.department}` : "");
-
-  /* Newest revision first, because the question is "which one is current, and what came
-     before it". A lineage listed oldest-first makes the reader scroll to find out. */
-  setHTML("docVersions", (d.versions || []).map((v) => `
-    <div class="row static">
-      <div class="grow">
-        <div class="t">Revision ${v.version_no}
-          <span class="pill ${v.status === "approved" ? "del" : ""}">${esc(v.status)}</span></div>
-        <div class="s">${esc(v.change_note || "no change note")}</div>
-        <div class="s">in force ${esc(v.effective_from || "—")} → ${esc(v.effective_to || "open")}</div>
-      </div>
-    </div>`).join(""));
-
-  const live = d.live_version_no;
-  const rows = (d.distributions || []).filter((x) => x.version_no === live);
-  const supersededRows = (d.distributions || []).filter((x) => x.version_no !== live);
-  $("docMatrixSub").textContent = `${rows.length} required for revision ${live ?? "—"}`;
-  $("docMatrixEmpty").hidden = rows.length > 0;
-  $("docMatrix").hidden = rows.length === 0;
-  /* An empty matrix after a new revision is a true and important state -- nobody is
-     holding revision 2 -- so it is stated in those words and paired with the action that
-     changes it. A bare empty list reads as "nothing to do here", which is the exact
-     wrong conclusion at the exact moment somebody needs to do something. */
-  $("docMatrixEmpty").innerHTML = live
-    ? `<div class="big">▣</div>Nobody has been sent revision ${esc(live)} yet.`
-      + `<div><button class="btn sm" data-send="1">Send it to a role</button>`
-      + (supersededRows.length
-        ? `<div class="s" style="margin-top:6px">${supersededRows.length} obligation(s)
-             still sit on the previous revision.</div>` : "")
-      + `</div>`
-    : `<div class="big">▣</div>No revision is in force, so there is nothing to circulate.`;
-  setHTML("docMatrix", rows.map((x) => `
-    <div class="row${x.acknowledged_at ? " static" : ""}">
-      <div class="grow">
-        <div class="t">${esc(x.audience_role_key)}</div>
-        <div class="s">${x.acknowledged_at
-          ? "read by " + esc(x.acknowledged_by) + " · " + esc(ago(x.acknowledged_at))
-          : (x.distributed_at ? "sent " + esc(ago(x.distributed_at)) + " · not confirmed"
-                              : "not sent")}</div>
-      </div>
-      <div class="btn-row">
-        ${x.acknowledged_at ? `<span class="t-ok">read</span>`
-          : `<button class="btn sm" data-ack="${esc(x.id)}" data-who="${esc(x.audience_role_key)}">Confirm read</button>`}
-      </div>
-    </div>`).join(""));
-
-  $("docOneNote").innerHTML = `Hash <code>${esc((d.content_hash || "").slice(0, 16))}…</code>`
-    + ` · classification <b>${esc(d.classification)}</b>`
-    + (d.source_type ? ` · filed as <b>${esc(d.source_type)}</b>` : "")
-    + `<br><b>Confirming a read records your name</b>, because the database refuses an
-       acknowledgement with nobody behind it. A second press keeps the first name and the
-       first time: "when did they read it" is the only reason that column has a timestamp.`;
-}
-
-$("docFilter").addEventListener("click", async (e) => {
-  const b = e.target.closest("button[data-b]");
-  if (!b) return;
-  docFilterBlock = b.dataset.b || "";
-  for (const x of $("docFilter").children) x.classList.toggle("on", x === b);
-  await renderDocuments();
-});
-
-document.addEventListener("click", async (e) => {
-  const send = e.target.closest("button[data-send]");
-  if (send) {
-    const who = window.prompt(
-      "Which role must hold this revision?\n\nUse the dossier's own role key, so the SOP's "
-      + "owner and its audience are the same word -- `chief_accountant`, `project_manager`, "
-      + "`site_manager`.\n\nSending records that they were told. It does NOT record that they "
-      + "read it; that is a separate press.");
-    if (!who || !who.trim()) return;
-    send.disabled = true;
-    try {
-      await apiPost(`/documents/${encodeURIComponent(docOpenId)}/distributions`,
-        { audience_role_key: who.trim() });
-      toast(`Sent to ${who.trim()}. They still have to confirm they read it.`);
-      await renderDocuments(docOpenId);
-    } catch (err) {
-      send.disabled = false;
-      toast("Could not send that: " + err.message, true);
-    }
-    return;
-  }
-  const row = e.target.closest("[data-doc]");
-  if (row && row.dataset.doc) { go(`#/documents/${encodeURIComponent(row.dataset.doc)}`); return; }
-  const btn = e.target.closest("button[data-ack]");
-  if (!btn) return;
-  const who = window.prompt(
-    "Confirm you have read this document.\n\nYour name is recorded — the database refuses "
-    + "an acknowledgement with nobody behind it, and a tick in a box is what that column "
-    + "exists to prevent.\n\nRole: " + (btn.dataset.who || ""));
-  if (!who || !who.trim()) return;
-  btn.disabled = true;
-  try {
-    // The endpoint is `/documents/{id}/acknowledge` rather than a flatter one, so the
-    // document is named in the path and cannot be confused with another revision's
-    // obligation. `docOpenId` is the id the detail view was rendered from -- a variable
-    // rather than a value scraped back out of the DOM, so a stale button cannot post
-    // against a document the reader is no longer looking at.
-    const r = await apiPost(
-      `/documents/${encodeURIComponent(docOpenId)}/acknowledge`,
-      { distribution_id: btn.dataset.ack, acknowledged_by: who.trim() });
-    toast(r.already_acknowledged
-      ? `Already recorded: ${r.acknowledged_by}, ${ago(r.acknowledged_at)}. The first record stands.`
-      : `Recorded: ${r.acknowledged_by}.`);
-    await renderDocuments(parseHash().arg);
-  } catch (err) {
-    btn.disabled = false;
-    toast("Could not record that: " + err.message, true);
-  }
-});
-
-async function renderDecisions() {
-  const d = await apiGet("/ai-decisions", {
-    decision: state.decisionFilter || undefined, limit: 100,
-  });
-  $("decisionSub").textContent = `${d.total} recorded`;
-  $("decisionEmpty").hidden = d.items.length > 0;
-  setHTML("decisionList", d.items.map((x) => `
-    <div class="row static">
-      <div class="grow">
-        <div class="t">${esc(x.decision)}
-          <span class="tag ${x.decision === "killed" ? "late" : x.decision === "revived" ? "ok" : "accent"}">${esc(x.autonomy_level || "—")}</span>
-        </div>
-        <div class="s">${esc(x.agent_name || x.agent_id || "no subject")} · by ${esc(x.actor_type)}
-          ${x.policy_rule ? "· rule " + esc(x.policy_rule) : ""}</div>
-        <div class="s" style="margin-top:3px">${esc(x.rationale || "—")}</div>
-      </div>
-      <div class="r">${esc(ago(x.occurred_at))}</div>
-    </div>`).join(""));
-}
-
-$("decisionFilter").onclick = (e) => {
-  const b = e.target.closest("button[data-f]");
-  if (!b) return;
-  state.decisionFilter = b.dataset.f;
-  for (const x of $("decisionFilter").children)
-    x.classList.toggle("on", x === b);
-  renderDecisions().catch(showError);
-};
-$("workFilter").onclick = (e) => {
-  const b = e.target.closest("button[data-f]");
-  if (!b) return;
-  state.workFilter = b.dataset.f;
-  for (const x of $("workFilter").children) x.classList.toggle("on", x === b);
-  renderWork().catch(showError);
-};
-
-async function refreshAfterAction() {
-  /* The nav count and whatever view is on screen both change, so both are refreshed
-     rather than guessing which one the person is looking at. */
-  try {
-    const inbox = await apiGet("/approvals/inbox");
-    state.inbox = inbox.items;
-    setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
-    $("navApprovalCount").hidden = !inbox.count;
-  } catch { /* the view refresh below will surface it */ }
-  await route();
-}
-
 /* ==================================================================
+   8. The delegation tree.
+   ------------------------------------------------------------------
+   It used to live in a `console` view whose main content was a log, so the
+   only place the tree could be seen was a side panel of something else.
+   It is beside the form that starts the work now: a person hands over a task
+   and watches what it became.
+   ================================================================== *//* ==================================================================
    8. The console. Unchanged in behaviour, kept because it works and
    because it is the only place the delegation tree is visible.
    ================================================================== */
-function renderConsole() { renderFlow(); renderAgentsFeed(); }
-
 function renderFlow() {
   const roots = [...state.tasks.values()].filter((n) => !n.parent_task_id);
   $("flowCount").textContent = roots.length ? `${state.tasks.size} tasks` : "";
@@ -3007,39 +2109,6 @@ function nodeEl(n, last, isLast) {
   }
   return el;
 }
-function renderAgentsFeed() {
-  const names = [...state.agents.entries()].sort((a, b) => b[1] - a[1]);
-  const feed = $("feed");
-  const filter = state.filter;
-  feed.innerHTML = state.events.filter((e) => {
-    const t = String(e.type || "");
-    if (filter === "bad") return /failed|rejected|blocked/.test(t);
-    if (filter === "flow") return t.startsWith("delegation.") || t.startsWith("subagent.");
-    return true;
-  }).slice(-160).map((e) => {
-    /* Names come from `view`, ids from `data`, and the timestamp is `occurred_at`.
-       Reading `detail` here rendered 189 blank lines, which is what an empty console
-       looks like and is indistinguishable from "nothing has happened". */
-    const v = e.view || {};
-    const d = e.data || {};
-    const who = v.from_agent && v.to_agent ? `${v.from_agent} → ${v.to_agent}`
-      : v.from_agent || v.to_agent || e.source || "";
-    const bad = e.type.includes("failed") || e.type.includes("rejected")
-      || e.type.includes("blocked");
-    const when = e.occurred_at ? new Date(e.occurred_at).toLocaleTimeString() : "";
-    return `<div class="evt${bad ? " bad" : ""}">
-      <span class="tm">${esc(when)}</span>
-      <span class="msg"><b>${esc(e.type || "event")}</b> ${esc(who)} ${esc(v.title || d.status || "")}</span></div>`;
-  }).join("");
-  $("evCount").textContent = state.events.length ? String(state.events.length) : "";
-}
-$("evFilter").onclick = (e) => {
-  const b = e.target.closest("button[data-f]");
-  if (!b) return;
-  state.filter = b.dataset.f;
-  for (const x of $("evFilter").children) x.classList.toggle("on", x === b);
-  renderAgentsFeed();
-};
 
 /* ---------------- streaming ---------------- */
 function setConn(name, text) { $("dot").className = "dot " + name; $("connText").textContent = text; }
@@ -3132,13 +2201,7 @@ function handleFrame(payload) {
       state.tasks.set(v.task_id, node);
     }
   }
-  if (!state.paused) {
-    if (parseHash().name === "console") renderConsole();
-    if (parseHash().name === "agents") {
-      const active = $("agentList");
-      if (active) renderAgents().catch(() => {});
-    }
-  }
+  if (!state.paused) renderFlow();
 }
 
 /* ---------------- start a task ---------------- */
@@ -3213,7 +2276,6 @@ $("scenario").onchange = () => {
     setConn("bad", "no connection");
     if (err && err.auth) toast("Not authorised. Click Token to enter the service token.", true);
   }
-  applyRole('ceo');
   await loadScenarios();
   await route();
   if (state.es) state.es.abort();

@@ -283,7 +283,8 @@ and what the boundary is.
 **Tests.**
 
 ```console
-$ make test              # 3086 passed, 8 skipped, 0 failed
+$ make test              # everything that does not call a real provider
+$ make test-live         # the one test that does: OpenRouter's latency, not ours
 $ make test-e2e          # 34 passed (needs NATS + Temporal)
 $ make lint typecheck    # clean
 ```
@@ -384,7 +385,7 @@ something harmful are the hardest to test, they will be the least tested.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| `tests/unit` + `tests/integration` | 3086 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
+| `tests/unit` + `tests/integration` | 3079 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
 | `tests/e2e` | 34 | The 8 acceptance scenarios, the event pipeline through real NATS JetStream, and A2A against a spawned remote agent. Gated by `preflight-e2e`, so a missing broker is a failure rather than five skips |
 | `make lint` | clean | 669 findings fixed, including a typo in a target name that made a documented command fail on a clean machine |
 | `make typecheck` | clean | 144 source files, no `Any` escapes and no unused ignores |
@@ -440,6 +441,14 @@ finished is worse than none. The gaps that matter:
   report says "not ready, 9 days of 28" until they exist rather than passing a rate.
 - **No deployment.** No Dockerfile, no compose, no Kubernetes — deliberately, per
   the note above. `make setup && make page` is the whole story.
+- **Eight of the console's eleven screens are gone.** Departments, Give work and
+  Needs you remain. Roster duplicated Departments; Dashboard duplicated Needs you and
+  the corpus-dependent views; Decision log duplicated the approvals view and every agent
+  panel; Documents and Projects were empty without `AO_CORPUS_ROOT`, which this
+  repository does not ship; Recruitment was one SOP. **82 console checks, all passing.**
+  F247 records the mistake worth reading: the Console view also carried the **Run
+  form**, so the first cut deleted the product's only entry point. The form and the
+  delegation tree are inside Give work now.
 
 **Partial**
 
@@ -452,12 +461,6 @@ finished is worse than none. The gaps that matter:
 - `ENCRYPTION_KEY` is generated and validated and currently protects nothing.
 - Agents are `retired`, never deleted — chain of custody is the product — so no
   right-to-erasure path exists.
-- **Five console checks fail** and are reported as failing. All five want *content*
-  from `AO_CORPUS_ROOT`, the client spreadsheet corpus, which is deliberately not in
-  a public repository: the project list, project names, project links, a project row
-  to click, and the list to pick from. Without it the Projects surface is empty. The
-  other 119 console checks pass, including the three that assert every department is
-  nested inside its own office's group.
 
 **What was actually measured about model quality, and what was not.** One free
 model was run on one procedure, and it got all three expense verdicts right. That is

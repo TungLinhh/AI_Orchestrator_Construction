@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -115,11 +116,34 @@ async def main(org_id: str, goal: str | None, key: str | None, max_exec: int) ->
         # The chief cannot answer without delegating, because the data is not in its
         # question, and the department can answer, because the brief travelled down.
         brief = goal or ""
+        # **A second run of the same scenario is a new piece of work, not a duplicate.**
+        #
+        # Measured: `run_pipeline.py --key supplier-tender` a second time died with
+        #
+        #     ConflictError: an equivalent task is already active: tsk_01m3xe8qt...
+        #
+        # and a nineteen-line traceback. The deduplication is working exactly as
+        # designed -- the same intent must not be live twice -- but the scenario goal is
+        # a constant, so running a scenario twice is *always* a duplicate and the
+        # script can therefore never be run twice.
+        #
+        # The fix is what `demo_real_run.py` already does: a run marker in the brief,
+        # so the second run is genuinely different work rather than the same work asked
+        # for twice. It rides in the brief and not in the objective, because the
+        # objective is what the chief is judged on and a hex string in it is noise the
+        # model would have to reason about.
+        run_marker = f"[lần chạy {uuid.uuid4().hex[:8]}]"
         objective = (
             scenario.objective
             if scenario is not None
             else f"Hoàn thành yêu cầu sau bằng cách giao cho đúng phòng ban:\n\n{brief}"
         )
+        # **On the goal, not on the brief.** The root task's fingerprint is a hash of
+        # its goal, so a marker on the brief leaves the conflict exactly where it was --
+        # measured, on the first attempt at this fix. A fix aimed at the wrong string
+        # is a fix that measures nothing.
+        brief = f"{brief}\n\n{run_marker}"
+        objective = f"{objective}\n\n{run_marker}"
         root_id = await _create_root(db, org_id, objective, contract, routing, brief)
         print(f"root: {root_id}\n")
         outcome = await run_pipeline(

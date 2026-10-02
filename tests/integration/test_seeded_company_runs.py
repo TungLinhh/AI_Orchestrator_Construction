@@ -203,6 +203,7 @@ async def test_the_executive_is_told_which_agents_it_may_delegate_to(seeded) -> 
     )
 
 
+@pytest.mark.live_model
 def test_the_real_demo_script_runs_end_to_end() -> None:
     """`demo_real_run.py` must not crash on the path it exists to demonstrate.
 

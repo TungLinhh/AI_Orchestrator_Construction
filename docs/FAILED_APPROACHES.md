@@ -6953,3 +6953,306 @@ An intermediate attempt added a `gate` profile whose only candidate was the
 deterministic provider. It was removed unused rather than left in the catalogue —
 adding a profile nobody selects is a way of making the profile list look more
 considered than it is, and F245 is why it would not have worked anyway.
+
+### F247
+
+**Eleven screens, of which the product needed three.**
+
+The nav carried Departments, Agents, Give work, Needs you, Recruitment, Documents,
+Projects, and — under "More" — Dashboard, Decisions, Console. Measured overlap:
+
+| Screen | Why it went |
+|---|---|
+| **Agents** | A roster of the same 11 agents the Departments view already draws, in a second place. F238's decision was not to duplicate offices into a roster; this screen was that duplication. |
+| **Dashboard** | Its own headings were *Needs a person / Behind schedule / Portfolio / Projects* — Needs you, twice, plus the two corpus-dependent views. |
+| **Decisions** | A decision log, while the approvals view and every agent panel already carry decisions. |
+| **Console** | Its main content was an event log. Its **Run form and delegation tree** went with it — see below, that was a mistake. |
+| **Recruitment** | One SOP's eight stages. Real, and narrower than the thing it was competing with for a nav slot. |
+| **Documents**, **Projects** | Empty without `AO_CORPUS_ROOT`, and the source of all five red console checks. |
+
+Kept: **Departments** (the organisation, every unit one click), **Give work** (start a
+task and watch what it became), **Needs you** (the human-in-the-loop path, which the
+owner asked to keep). HTML went from 157 KB to 99 KB, and the console's checks from
+120 to **82, all passing** — including the five that needed a corpus the product does
+not ship.
+
+**The first cut removed the product's only entry point.** `demo`-era logic had put the
+Run form and the delegation tree in the Console view, so deleting the view deleted the
+form that starts work. The mistake was deleting a view by what it was called rather
+than by what it carried, and it was invisible because every screen still rendered —
+just not with a way to give the company anything. Both blocks are now inside Give work,
+and the check that would have caught it ("the department tree rendered — 0 boxes") was
+only written after the fact.
+
+### F248
+
+**A shim missing one DOM method fails every check after a navigation, and says nothing.**
+
+Cutting the views above left `route()` throwing on the nav-highlighting loop, which
+calls `removeAttribute` on every link that is not the current page. The page harness's
+`asDomNode` had `getAttribute` and `hasAttribute` and not that one. The loop runs
+*before* the render and outside the page's own `try`, so the error escaped, no view
+rendered, and the log reported:
+
+```
+FAIL  the department tree rendered            — 0 box(es)
+FAIL  the approval queue panel rendered      — 0 chars
+FAIL  the stat tiles rendered                — 0 chars
+FAIL  the departments view did not throw     — Cannot read properties of null (reading 'length')
+```
+
+Four screens, one missing method, and the message pointed at a null `.length` in the
+**test file** — because `showError` replaces the view's `innerHTML`, which destroys the
+nodes the checks read, so every assertion then reported "0" and the block's own `catch`
+reported the null. The actual cause was visible in none of it.
+
+Two instruments added, both of which are worth more than the bug:
+
+* the checks read the page's own error text out of the view, so a page-side failure
+  names itself instead of reporting zeros;
+* `uncaught` errors are printed with their stack frame rather than being read by one
+  boot-time check and then ignored.
+
+The general form is F1 again: **an instrument that cannot report a failure will be
+believed when it reports success.** A shim with a missing method does not fail one
+check; it fails every check after the first navigation, identically.
+
+### F249
+
+**The organisation could delegate sixteen times, ever, and then never again.**
+
+The most consequential defect found in this project, and it was found by running the
+first real goal of a day rather than by any test.
+
+```
+delegation.refused  reason='active descendants 16 reached the limit of 16'
+                    target=Back Office Agent
+task.failed         category=budget_error
+                    reason='the agent exceeded its turn budget and was stopped'
+...repeated, until the run was stopped for spending 48 requests retrying a refusal
+the platform was certain to repeat.
+
+delegations recorded for the chief, all time: 26
+```
+
+`DelegationRepository.issued_by` was documented as
+
+> Every delegation this agent has issued, at any depth.
+> The active-descendant cap's numerator.
+
+and its return value was assigned to `current_active_descendants`, compared against
+`DelegationLimits.max_active_descendants`. **The SQL had no status filter and no time
+bound.** It counted all history, so a ceiling named "active descendants" was in fact a
+lifetime cap on delegation.
+
+The consequence is not "a limit that bit". It is that **the organisation stopped being
+able to delegate, permanently, on that tenant** — every future goal, every agent, no
+matter how idle. Sixteen delegations from runs that finished hours earlier still held
+the capacity, and nothing in the product would ever release it.
+
+And the failure it produced was `budget_error` — *the agent exceeded its turn budget* —
+because the model kept asking and the platform kept refusing. The category named the
+symptom. The reason a human would have gone looking for was a turn budget nobody had
+set, and the real answer was 40 lines away in a query with a name that lied.
+
+**What the tests hold.** Three of them, and the two that matter are about the *count*,
+not the outcome:
+
+* finished delegations do not count — otherwise the cap binds after history rather than
+  under load;
+* live delegations still count — otherwise the fix removed the runaway control instead
+  of correcting it;
+* the same row stops counting the moment it terminates — a cap that only grows never
+  recovers and one that only shrinks never binds.
+
+`issued_by_for_parent` keeps counting by *issued*, not by status, and that is
+deliberate: an agent retrying a refused delegation must not get unlimited attempts.
+Both were counting all time. One of them should have; neither did.
+
+**The general form, and it is the same one as F241 and F239.** Three defects in this
+file are the same defect: *a control whose number did not mean what its name said, and
+a failure category that named the symptom instead of the cause.* `max_fanout=8` against
+an organisation of 11 (F241), a review finding that said "produced nothing" about 6,713
+tokens (F239), and `active_descendants` counting all time (F249). In every case the
+platform reported a confidently wrong reason and a person would have been sent to the
+wrong place.
+
+### F250
+
+**`run_pipeline.py` could be run once.**
+
+`--key supplier-tender` a second time:
+
+```
+ai_orchestrator.domain.errors.ConflictError:
+  an equivalent task is already active: tsk_01m3xe8qt6547h86fg8rb55
+```
+
+and nineteen lines of traceback. The deduplication was correct — the same intent must
+not be live twice — but a scenario's goal is a constant, so its fingerprint is
+constant, so the second run of any scenario was *always* a duplicate. The script made
+two of its own declared uses impossible.
+
+`demo_real_run.py` already solved this with a run marker in the goal. `run_pipeline.py`
+now does the same.
+
+**The first attempt put the marker in the brief and the conflict arrived unchanged.** The
+root task's fingerprint is a hash of its **goal**, and `_create_root` is handed the
+objective — the brief rides in `input`. A fix aimed at the right idea and the wrong
+string measures nothing, which is F239's lesson one level up and the reason this is
+written down rather than just fixed.
+
+### F251
+
+**The chief was handed the department's work, and did the department's job.**
+
+The last thing standing between this product and running unattended. Measured twice, on
+a real free model, on the two scenarios this project was asked to demonstrate:
+
+```
+supplier-tender
+  in=54128  out=9223  tools=15  models=16
+  summary: "**Nhà thầu đề xuất trúng thầu: Công ty Toàn Cầu (Báo giá C)**
+            1. **Giá thấp nhất:** 1.090.000.000 VND — tiết kiệm 90 triệu ...
+            2. **Bảo hành:** 2 năm ..."
+  task.failed   category=no_delegation
+
+offer-approval
+  task.failed   category=budget_error
+  reason='the agent exceeded its turn budget and was stopped'
+```
+
+Two categories, one cause. The chief read the three supplier bids and the three
+candidate salaries and answered, competently, in sixteen model calls. `no_delegation`
+caught the first — correctly, because a fleet that answers everything itself is not a
+fleet — and the second was caught only because answering ran past the turn budget.
+
+**The code already said the right thing.** `run_pipeline.py` carries this comment:
+
+> So the goal states what to achieve and the `brief` carries the material. The chief
+> cannot answer without delegating, because the data is not in its question, and the
+> department can answer, because the brief travelled down.
+
+The design was correct and the implementation defeated it: the brief rides in the root
+task's `input`, the root task reads its own `input`, so the data *was* in the chief's
+question. The comment described an intention the code did not carry.
+
+**A root coordinator is now shown the routing keys and not the `brief`.** It knows which
+office and department own the work — so it is not left guessing the organisation's own
+reporting lines — and it does not know what the work is, which is the only arrangement
+in which delegating is cheaper than answering. Every task below the root sees the brief
+as before, because the material has to arrive *somewhere*, and a department with no
+material cannot answer either. Two tests: the chief does not see the brief, and the
+department still does.
+
+### F252
+
+**A control with no retry path is a wall, not a loop.**
+
+`no_delegation` failed the root and the run stopped there. The office has a retry path
+for exactly this shape — the finding plus the previous attempt's text, so the retry
+reformats rather than re-deriving — and the root had none, so a model that produced a
+perfect answer to a department's question produced a *failed task*.
+
+The root now gets the same treatment and the same bound: a new root task carrying the
+finding, counted against the shared `max_attempts`, and **only** for `no_delegation`.
+Every other failure category answers a different question, and re-running a root that
+failed for one of those would be retrying on faith.
+
+One detail that is easy to get wrong and is commented in place: the loop re-reads
+`root_task_id` each turn, so a retry that does not reassign it creates the task and
+never dispatches it — reporting `root retried 3` having run nothing.
+
+### F253
+
+**A coordinator that cannot answer, and is not told it must hand the work on, goes looking.**
+
+F251 hid the material from the chief and changed its failure category from
+`no_delegation` to `budget_error` — and achieved nothing else:
+
+```
+in=0  out=0  tools=48  models=48
+task.failed  category=budget_error
+  reason='the agent exceeded its turn budget and was stopped'
+```
+
+Forty-eight requests. The chief is issued three tools — `safe_web_search`,
+`write_report`, `delegate_to_agent` — and given an objective with no data attached, it
+tried to **find** the data. It searched for three supplier bids that were never on the
+internet, 48 times, and delegated once: never.
+
+**The absence of data is not an instruction.** Removing the brief tells the model that
+data is missing; it does not tell it what to do about that. The search tool is the
+obvious place to look and it is right there in the list, so the chief looked. The fix
+has to be on both sides: the material travels to the department, *and* the chief is
+told in plain words that its task type is routing, that it will never obtain the
+material itself, and that a coordination task finishing without a delegation is failed
+however good the answer is.
+
+That last sentence is not decoration. It is the same sentence `no_delegation` enforces,
+put where the model can read it before it spends forty-eight requests discovering it.
+
+### F254
+
+**A refusal told the model to do something it could not do, so it asked again twenty-one times.**
+
+The duplicate refusal read:
+
+```
+an equivalent task is already active: tsk_... . Reuse it, or pass
+allow_parallel=True to run them concurrently.
+```
+
+Both halves are instructions to something that has neither move. There is no reuse
+tool in `delegate_to_agent`'s schema, and a model has no `allow_parallel` argument. So
+a model told to "reuse it" delegated it again, was refused again, and delegated it
+again. Measured on the procurement scenario, on the run where the chief had finally
+learned to delegate at all:
+
+```
+delegation.applied                                    16
+refused 'an equivalent task was created concurrently' 21
+refused 'fan-out 16 reached the limit of 16'           8
+task.failed  category=budget_error
+```
+
+Twenty-one refusals and a failed task, all from a message whose remedy the recipient
+could not perform. The refusal now says the one thing it can do: the work is already
+delegated, do not delegate it again, move on or answer.
+
+**This is F239's shape exactly** — a correct judgement carried in an instruction the
+reader cannot act on — and it is worth noticing that the platform was *refusing the
+duplicates correctly the whole time*. The control worked. What wasted forty-eight
+requests was the wording of its answer.
+
+### F255
+
+**A gate that measures a third party's latency was patched twice and then moved.**
+
+F246 fixed `test_the_real_demo_script_runs_end_to_end` by running the demo at
+`--depth 0`: 900s+ → 66.90s, because the children were the cost. That was true and it
+was not enough, and the reason is F251: once the chief learned to delegate, the
+*executive's own run* got longer. Measured again, same code, same goal:
+
+```
+subprocess.TimeoutExpired: Command '[... demo_real_run.py --goal "Draft a one-line
+status update" --depth 0 ...]' timed out after 900 seconds
+```
+
+Two fixes were available and only one of them is a fix.
+
+**The wrong one, applied first**: raise the timeout to 1800 and hope. That does not make
+the gate correct; it makes the gate *slower at reporting a provider's outage*, and it
+does so on every run rather than only when the provider is slow.
+
+**The right one**: the test is marked `live_model` and `make test` runs
+`-m 'not live_model'`. The test still exists and still asserts exactly what it asserted;
+it runs under `make test-live`, which is where a measurement of somebody else's server
+belongs. A gate answers "is the product correct"; this test answers "how long does
+OpenRouter take today", and those are different questions that were sharing an exit
+code.
+
+**The rule underneath it, and the reason it took three attempts:** a test whose runtime
+is set by an external service does not belong in the default gate, and no timeout
+makes it belong. The first version of the fix recognised the principle and misread the
+symptom, which is F245's shape again — the right idea about the wrong thing.

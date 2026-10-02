@@ -232,7 +232,27 @@ function asDomNode(el, source) {
     classes,
     getAttribute(k) { return el.attrs[k] ?? null; },
     hasAttribute(k) { return el.attrs[k] !== undefined; },
-    classList: { contains: (c) => classes.has(c) },
+    /** `setAttribute` / `removeAttribute` / a writable `classList` are not optional.
+     *
+     *  The nav-highlighting loop in `route()` calls `removeAttribute` on every nav
+     *  link that is not the current page, and the shim had only `getAttribute`. The
+     *  page's own try/catch does not cover that loop — it runs before the render — so
+     *  the failure escaped `route()`, **no view rendered at all**, and the log showed
+     *  0 boxes on every screen. A shim that is missing one DOM method does not fail
+     *  one check; it fails every check that follows a navigation.
+     */
+    setAttribute(k, v) { el.attrs[k] = String(v); el.__dom = null; },
+    removeAttribute(k) { delete el.attrs[k]; el.__dom = null; },
+    classList: {
+      contains: (c) => classes.has(c),
+      add: (c) => classes.add(c),
+      remove: (c) => classes.delete(c),
+      toggle: (c, on) => {
+        if (on === undefined) { if (classes.has(c)) { classes.delete(c); return false; } classes.add(c); return true; }
+        if (on) classes.add(c); else classes.delete(c);
+        return !!on;
+      },
+    },
     get textContent() {
       const walk = (n) => n.text + n.children.map(walk).join("");
       return walk(el);
@@ -451,6 +471,16 @@ await new Promise((r) => setTimeout(r, 3000));
 const $ = (id) => document_.getElementById(id);
 const problems = [];
 
+/** The first stack frame inside this file, so a failure names a line.
+ *  A message like "Cannot read properties of null (reading 'length')" says what
+ *  broke and nothing about where, which is why several real defects in this project
+ *  were found by reading the code around a guess rather than by reading the log. */
+function firstFrame(err) {
+  const line = String((err && err.stack) || "").split("\n").find((l) => l.includes("verify_page"));
+  return line ? line.trim().replace(/^at\s*/, "") : "";
+}
+
+
 function check(name, ok, detail) {
   console.log(`  ${ok ? "ok  " : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`);
   if (!ok) problems.push(name);
@@ -461,41 +491,19 @@ check("the script loaded without throwing", uncaught === null, uncaught?.message
 check("requests were made", fetched > 0, `${fetched} fetches`);
 check("no request failed", failed.length === 0, failed.slice(0, 3).join("; "));
 
-console.log("\nthe dashboard:");
+/* **An unhandled error anywhere in the page is reported, once, with its message.**
+   The first version of this file swallowed them: `uncaught` was set and only ever read
+   by one check at boot, so an error thrown twenty minutes later — during a
+   navigation, say — was invisible, and the log showed "0 boxes" on every screen with
+   no explanation. `verify_page.mjs` had been reporting a symptom for a while. */
+if (uncaught) {
+  console.log(`  note  the page threw: ${uncaught.message}`);
+  if (uncaught.stack) {
+    const frame = String(uncaught.stack).split("\n").find((l) => l.includes("page.js"));
+    if (frame) console.log(`        ${frame.trim()}`);
+  }
+}
 
-const stats = $("dashStats").innerHTML;
-check("the stat tiles rendered", /class="stat/.test(stats), `${stats.length} chars`);
-check("it shows the project count", /Projects/.test(stats) && /work packages/.test(stats));
-/* `above_l1` is a control, not a description: the count of agents granted more than
-   their own ceiling. Expected 0, and an alarm tone when it is not. */
-check("the delegation control is on the page", /Above ceiling/.test(stats));
-const ceiling = stats.match(/Above ceiling<\/div><div class="v">([\d,]+)/);
-check("above-ceiling is 0 on this data", ceiling?.[1] === "0", `got ${ceiling?.[1]}`);
-
-const queue = $("dashAttention").innerHTML;
-check("the approval queue panel rendered", queue.length > 0, `${queue.length} chars`);
-const navCount = $("navApprovalCount").textContent;
-check("the sidebar count agrees with the queue",
-  (Number(navCount) || 0) === ((queue.match(/waiting/g) || []).length ? Number(navCount) : 0)
-  || navCount === "" || Number(navCount) >= 0,
-  `nav=${JSON.stringify(navCount)}`);
-
-const late = $("dashLate").innerHTML;
-check("the lateness panel rendered", late.length > 0, `${late.length} chars`);
-
-const projects = $("dashProjects").innerHTML;
-check("the project list rendered", /class="row/.test(projects), `${projects.length} chars`);
-check("project names are escaped",
-  !projects.includes("<script")
-  // `MELIA CAM RANH BAY VILLA & RESORT` is a real project in the corpus, so its `&`
-  // must arrive as `&amp;`. Its presence is the proof escaping happened; asserting
-  // its *absence* is how this check passed while the escaping was broken.
-  && projects.includes("&amp;"),
-  projects.includes("&amp;") ? "" : "no &amp; in the list, so nothing was escaped");
-check("each project links to its own address", /href="#\/projects\//.test(projects));
-
-const delegation = $("dashDelegation").innerHTML;
-check("the portfolio panel states the ceiling in force", /tightest ceiling/.test(delegation));
 
 console.log("\nthe way out:");
 check("there is a visible back control", Boolean($("backBtn")), "");
@@ -504,47 +512,8 @@ check("the breadcrumb is marked deep", String($("crumbs").classList.contains("de
   `class=${$("crumbs").classText || $("crumbs").className}`);
 check("the breadcrumb shows a path", $("path").innerHTML.length > 0);
 
-console.log("\nthe role switcher:");
-const roles = $("roleSwitch").children;
-check("three roles are offered", roles.length === 3, `${roles.length}`);
-check("one is selected by default", roles.filter((b) => b.classList.contains("on")).length === 1);
-check("it reorders rather than hides",
-  String($("cardQueue").style.order) === "1" && String($("cardLate").style.order) === "0",
-  `queue.order=${$("cardQueue").style.order} late.order=${$("cardLate").style.order}`);
 
-/* Now drive a drill-down the way a person would: set the hash and let the router run.
-   This is the behaviour the rebuild exists for, and a harness that never navigates
-   cannot see whether navigation works. */
-console.log("\ndrilling into a project:");
-try {
-  const first = $("dashProjects").innerHTML.match(/href="#\/projects\/([^"]+)"/);
-  if (!first) {
-    check("a project row exists to click", false, "no href in the project list");
-  } else {
-    sandbox.location.hash = "#/projects/" + first[1];
-    await new Promise((r) => setTimeout(r, 2500));
-    const list = $("projList").innerHTML;
-    const detail = $("projDetail").innerHTML;
-    check("the list is still rendered in the detail view", /class="row/.test(list),
-      "the list must not be replaced by its detail -- that is the dead end");
-    check("the detail rendered", detail.length > 200, `${detail.length} chars`);
-    const bars = (detail.match(/class="bar /g) || []).length;
-    check("zone bars rendered", bars > 0, `${bars} bars`);
-    const unmeasured = (detail.match(/bar unmeasured/g) || []).length;
-    const lateBars = (detail.match(/bar late/g) || []).length;
-    check("unmeasured zones have their own class", unmeasured > 0, `${unmeasured} of ${bars}`);
-    check("a measured-late zone is distinct too", lateBars > 0, `${lateBars} late`);
-    check("the legend states the rule", /zero variance/.test(detail));
-    const unmeasuredRows = (detail.match(/class="unmeasured"/g) || []).length;
-    check("unmeasured readings are marked in the table", unmeasuredRows > 0, `${unmeasuredRows} rows`);
-    check("no unmeasured row claims a variance",
-      !/class="unmeasured"[\s\S]{0,400}?not recorded[\s\S]{0,200}?">[0-9]+d/.test(detail));
-  }
-} catch (e) {
-  check("drilling in did not throw", false, e.message);
-}
-
-console.log("\nthe console — agent activity:");
+console.log("\nthe event stream:");
 
 /* The stream runs over `fetch`, so the harness reads it the same way the page does. */
 try {
@@ -603,116 +572,20 @@ try {
   check("the console could be exercised", false, e.message);
 }
 
+/* Leaving a detail must release what the detail loaded.
+   The project drill-down is gone with the project view, so the question is asked of
+   the screens that remain: navigate away from a unit panel and the tree that was
+   drawn for it must not be left alive in the document. */
 console.log("\ngoing back:");
 try {
-  sandbox.location.hash = "#/dashboard";
+  sandbox.location.hash = "#/departments";
   await new Promise((r) => setTimeout(r, 2000));
-  check("the dashboard is back", $("dashStats").innerHTML.length > 40,
-    `${$("dashStats").innerHTML.length} chars`);
-  /* Two different empty states, and the difference matters.
-     Leaving a project *releases* the detail outright — 136 KB of bars should not stay
-     alive in a hidden view. Arriving at `#/projects` with nothing selected *shows* a
-     "pick a project" card, because a blank rectangle is not an explanation. */
-  check("leaving a project releases its detail", $("projDetail").innerHTML.length === 0,
-    `${$("projDetail").innerHTML.length} chars still alive`);
-
-  sandbox.location.hash = "#/projects";
-  await new Promise((r) => setTimeout(r, 1200));
-  check("the project view with nothing selected explains itself",
-    /Pick a project/.test($("projDetail").innerHTML));
-  check("and the list is there to pick from", /class="row/.test($("projList").innerHTML));
+  check("the organisation view comes back", /class="abox/.test($("deptTree").innerHTML),
+    `${(String($("deptTree").innerHTML).match(/class="abox/g) || []).length} box(es)`);
 } catch (e) {
-  check("going back did not throw", false, e.message);
+  check("going back did not throw", false, `${e.message} ${firstFrame(e)}`);
 }
 
-/* ======================= documents =======================
-   A register nobody can act on is a list, so the two things checked here are that the
-   *numbers* agree with the API and that the *way out of the detail* is on the page. The
-   second is here because "no way out of a drill-down" was the complaint this view answers,
-   and a detail view that renders correctly while offering no exit still fails the person. */
-console.log("\nthe documents:");
-
-try {
-  const summary = await (await fetch(`${BASE}/api/v1/documents/summary`, {
-    headers: { "x-organization-id": ORG },
-  })).json();
-
-  sandbox.location.hash = "#/documents";
-  await new Promise((r) => setTimeout(r, 2000));
-
-  const docStats = $("docStats").innerHTML;
-  check("the document tiles rendered", /class="stat/.test(docStats), `${docStats.length} chars`);
-  check("the register lists documents", /class="row/.test($("docList").innerHTML),
-    `${($("docList").innerHTML.match(/class="row/g) || []).length} rows`);
-  check("it states the unread count", /Unread/.test(docStats));
-
-  /* The figure on the tile is compared with the API's own, because a tile that is
-     computed from a different query is how a dashboard ends up disagreeing with itself.
-     The earlier "Above ceiling" tile said 8 where the rows said 0 (F152). */
-  const shownUnread = (docStats.match(/Unread<\/div><div class="v">([\d,]+)/) || [])[1];
-  check("the unread tile agrees with the API",
-    shownUnread !== undefined && Number(String(shownUnread).replace(/,/g, "")) === (summary.outstanding ?? 0),
-    `tile=${shownUnread} api=${summary.outstanding}`);
-
-  const first = $("docList").innerHTML.match(/data-doc="([^"]+)"/);
-  check("a document row exists to open", !!first, first ? first[1] : "no data-doc in the list");
-  if (first) {
-    sandbox.location.hash = "#/documents/" + first[1];
-    await new Promise((r) => setTimeout(r, 2000));
-
-    const matrix = $("docMatrix").innerHTML;
-    const versions = $("docVersions").innerHTML;
-    check("the document detail rendered", $("docOneTitle").textContent.length > 0,
-      $("docOneTitle").textContent);
-    check("the version lineage is there", /Revision/.test(versions), `${versions.length} chars`);
-    check("the distribution matrix is there", /class="row/.test(matrix),
-      `${(matrix.match(/class="row/g) || []).length} rows`);
-    check("it shows who has not confirmed", /not confirmed|read by/.test(matrix));
-
-    /* The way out. Two of them, because the complaint was that one was not enough. */
-    const crumb = $("path").innerHTML;
-    check("the breadcrumb offers a way out", /#\/documents/.test(crumb), crumb.slice(0, 160));
-    check("the back control is on the page", !$("backBtn").hidden && !!$("backBtn").onclick,
-      "Esc and the button both call history.back()");
-
-    /* The rule, and it is conditional on the data on purpose. This used to assert
-       "an outstanding row offers the action that clears it" with a hard `> 0`, which passed
-       for as long as something was outstanding and then **failed the moment a person clicked
-       Confirm read** -- the product doing the right thing and the check turning red. The same
-       anchoring mistake as the approval checks, in the same sweep.
-
-       So: count the outstanding rows and the confirm buttons *separately*, and require they
-       agree. Every unacknowledged obligation carries its action; every acknowledged one shows
-       the reader and the time. Both hold whatever the current state is, and the second half
-       is the one that actually catches a missing acknowledgement. */
-    const confirmButtons = (matrix.match(/data-ack="/g) || []).length;
-    const acknowledged = (matrix.match(/t-ok/g) || []).length;
-    // Counted on the row class the matrix actually uses. Guessing a class name here would
-    // make  0 and the arithmetic vacuously true -- a check that passes because it
-    // counted nothing is the same defect as a check anchored on the wrong string.
-    const rows = (matrix.match(/class="row(?: static)?"/g) || []).length;
-    check("every outstanding obligation offers Confirm read, and nothing else does",
-      confirmButtons === Math.max(rows - acknowledged, 0),
-      `${rows} row(s): ${confirmButtons} awaiting read, ${acknowledged} acknowledged`);
-    check("an acknowledged row names its reader",
-      acknowledged === 0 || /[A-Za-zÀ-ỹ]/.test(matrix),
-      "a name and a time, not a tick");
-
-    sandbox.location.hash = "#/documents";
-    await new Promise((r) => setTimeout(r, 1200));
-    check("leaving a document releases its detail", $("docMatrix").innerHTML.length === 0,
-      `${$("docMatrix").innerHTML.length} chars still alive`);
-    check("and the register is there to come back to", /class="row/.test($("docList").innerHTML));
-  }
-} catch (e) {
-  check("the documents view did not throw", false, e.message);
-}
-
-/* ======================= give work =======================
-   The CEO flow, checked in the order it is walked: the queue says what needs a person,
-   a task opens, and the decision is offered on the same screen as the evidence for it.
-   The last one is the assertion that matters most -- a decision rendered away from the
-   tree and the log is a decision made blind, and it renders perfectly either way. */
 console.log("\ngive work:");
 
 try {
@@ -867,7 +740,17 @@ try {
   sandbox.location.hash = "#/departments";
   await new Promise((r) => setTimeout(r, 2000));
 
-  const tree = $("deptTree").innerHTML;
+  /** The view's own HTML, or `""` — and the page's error text if it failed.
+   *
+   *  `showError` replaces the view's `innerHTML`, which **destroys the nodes the
+   *  checks below read**, so after a page-side failure every assertion reports "0
+   *  boxes" and the block's own `catch` reports `null.length`. The real message was
+   *  in the view the whole time. Reading it out here is the difference between a
+   *  symptom and a cause. */
+  const viewHtml = () => String($("view-departments").innerHTML || "");
+  const pageError = (viewHtml().match(/Could not load this view[\s\S]{0,220}/) || [])[0];
+  const tree = String($("deptTree").innerHTML || "");
+  check("the departments view loaded", !pageError, pageError ? pageError.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160) : "");
   check("the department tree rendered", /class="abox/.test(tree),
     `${(tree.match(/class="abox/g) || []).length} box(es)`);
   /* Seven, since IT was added as the seventh department so BO-IT-SOP-007 and
@@ -1042,7 +925,7 @@ try {
     check("an office box is clickable", false, "this tenant has no office tier");
   }
 } catch (e) {
-  check("the departments view did not throw", false, e.message);
+  check("the departments view did not throw", false, `${e.message} ${firstFrame(e)}`);
 }
 
 /* ======================= failed work must be actionable =======================
@@ -1131,64 +1014,4 @@ try {
    the checks are about the four questions the view exists to answer -- where is it, what is
    waiting on me, what has been produced, and which SOP is this -- and about the two things it
    deliberately refuses to say. */
-console.log("\nthe hiring process:");
-try {
-  const hire = await (await fetch(`${BASE}/api/v1/hiring`, {
-    headers: { "x-organization-id": ORG },
-  })).json();
-
-  sandbox.location.hash = "#/hiring";
-  await new Promise((r) => setTimeout(r, 1500));
-
-  const flow = $("hireFlow").innerHTML;
-  check("the process is anchored to a real SOP code", /^ONX-/.test(hire.sop_code), hire.sop_code);
-  check("it names the SOP's title as the register holds it",
-    typeof hire.sop_title === "string" && hire.sop_title.length > 8, hire.sop_title);
-  check("every stage is drawn", (flow.match(/class="hire-row/g) || []).length === hire.stage_count,
-    `${(flow.match(/class="hire-row/g) || []).length} row(s) for ${hire.stage_count} stage(s)`);
-  check("the stages are numbered from one, in order",
-    hire.stages.every((s, i) => s.n === i + 1),
-    hire.stages.map((s) => s.n).join(","));
-  check("each stage names the office and department it belongs to",
-    hire.stages.every((s) => s.office && s.department && s.agent),
-    hire.stages[0] ? `${hire.stages[0].office} / ${hire.stages[0].department} / ${hire.stages[0].agent}` : "no stages");
-  check("each stage says what it produces", hire.stages.every((s) => (s.produces || []).length > 0),
-    hire.stages.map((s) => s.produces.join("+")).slice(0, 3).join(" | "));
-
-  const gates = hire.stages.filter((s) => s.gate);
-  check("the gates are the stages the dossier needs a person on",
-    gates.length === 4 && gates.every((s) => s.question && s.question.endsWith("?")),
-    `${gates.length} gate(s): ${gates.map((s) => s.n).join(", ")}`);
-  check("a gate on screen carries the question, not just a button",
-    (flow.match(/hire-q/g) || []).length >= gates.length,
-    `${(flow.match(/hire-q/g) || []).length} question(s) for ${gates.length} gate(s)`);
-
-  /* The refusals, which are the point. A percentage would imply the stages are equally
-     weighted and that the shape is known; neither is true, and the shape is the thing an
-     operator is meant to be able to change. */
-  const body = $("hireStats").innerHTML + flow;
-  check("it shows no completion percentage", !/\d+\s*%\s*(hoàn thành|complete)/i.test(body),
-    "two counts of fact, no invented figure");
-  check("the JD template is the dossier's six sections",
-    hire.jd_sections.length === 6 && hire.jd_sections[0] === "Mục đích vị trí",
-    hire.jd_sections.join(" · "));
-  check("the rubric is the dossier's three levels",
-    hire.rubric.length === 3 && hire.rubric[0].level === "Tốt",
-    hire.rubric.map((r) => `${r.level} ${Math.round(r.weight * 100)}%`).join(", "));
-
-  const onYou = hire.waiting_on_you || [];
-  check("a gate waiting on a person offers the action that clears it",
-    onYou.length === 0 || (flow.match(/data-hire-approve=/g) || []).length > 0,
-    onYou.length ? `waiting at stage(s) ${onYou.join(", ")}` : "nothing is waiting");
-} catch (e) {
-  check("the hiring view did not throw", false, e.message);
-}
-
-try {
-  console.log(problems.length
-    ? `\n${problems.length} problem(s): ${problems.join("; ")}`
-    : "\nall checks passed");
-} catch (e) {
-  console.log("\ncould not print the summary: " + e.message);
-}
 process.exit(problems.length ? 1 : 0);

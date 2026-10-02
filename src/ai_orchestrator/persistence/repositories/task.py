@@ -210,9 +210,30 @@ class TaskRepository:
                     allow_parallel=False,
                 )
                 if assessment.is_duplicate:
+                    # **Do not tell the caller to do something it cannot do.**
+                    #
+                    # This used to end "Reuse it, or pass allow_parallel=True to run
+                    # them concurrently", and both halves are instructions to an agent
+                    # that has neither move: there is no reuse tool, and a model has no
+                    # `allow_parallel` argument. So a model told to "reuse it" asked
+                    # again, was refused again, and asked again. Measured on the
+                    # procurement scenario, after the chief learned to delegate at all:
+                    #
+                    #     delegation.applied                    16
+                    #     refused 'an equivalent task was
+                    #       created concurrently'              21
+                    #     refused 'fan-out 16 reached
+                    #       the limit of 16'                     8
+                    #     task.failed  category=budget_error
+                    #
+                    # Twenty-one refusals and a failed task, all from a message whose
+                    # remedy the recipient could not perform. The instruction now is the
+                    # one thing it *can* do: stop asking, and carry on with the rest.
                     msg = (
                         f"an equivalent task is already active: {assessment.existing_task_id}. "
-                        f"Reuse it, or pass allow_parallel=True to run them concurrently."
+                        "It was created concurrently, and the colleague that owns it has "
+                        "it. Do not delegate this work again — move on to the next piece "
+                        "of work, or answer."
                     )
                     raise ConflictError(
                         msg,
@@ -997,17 +1018,50 @@ class DelegationRepository:
         return int(result.scalar() or 0)
 
     async def issued_by(self, source_agent_id: str) -> int:
-        """Every delegation this agent has issued, at any depth.
+        """The delegations of this agent whose child task is **still live**.
 
-        The active-descendant cap's numerator.
+        **This counted every delegation the agent had ever issued.** The parameter it
+        feeds is called `current_active_descendants`, the field it caps is
+        `max_active_descendants`, and the docstring said "active" -- and the query had
+        no status filter and no time bound, so it was an **all-time cap on how many
+        times an agent may ever delegate**.
+
+        Measured, on the first real goal after a morning of experiments:
+
+            delegation.refused  reason='active descendants 16 reached the limit of 16'
+                                target=Back Office Agent
+            task.failed         category=budget_error
+                                reason='the agent exceeded its turn budget and was stopped'
+
+            ...repeated, until the run was stopped for spending requests on a refusal
+            the platform was certain to repeat.
+
+            delegations recorded for the chief, all time: 26
+
+        So on this tenant the organisation could not delegate **again, ever**, for any
+        goal -- and the failure it produced was `budget_error`, naming the turn budget
+        rather than the ceiling that had actually stopped it. Sixteen delegations
+        earlier, from runs long since finished, still consumed the capacity.
+
+        A live descendant is a task that is not terminal. That is what the cap is for:
+        it bounds *concurrent* fan-out, which is the runaway it exists to prevent, and a
+        run that finished does not consume capacity forever.
+
+        `issued_by_for_parent` -- the fan-out numerator -- deliberately counts by
+        *issued* rather than by status, so an agent retrying a refused delegation does
+        not get unlimited attempts. That is a different question and it keeps its
+        different answer; both were previously counting all time, which satisfied
+        neither.
         """
         result = await self._session.execute(
             select(func.count())
             .select_from(Delegation)
+            .join(Task, Task.id == Delegation.child_task_id)
             .where(
                 and_(
                     Delegation.organization_id == self._org,
                     Delegation.source_agent_id == source_agent_id,
+                    Task.status.in_((TaskStatus.CREATED, TaskStatus.ASSIGNED, TaskStatus.RUNNING)),
                 )
             )
         )

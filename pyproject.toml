@@ -88,6 +88,7 @@ markers = [
     "e2e: full stack acceptance scenario",
     "failure: intentional failure-injection test",
     "security: security property test",
+    "live_model: exercises a real provider, so its runtime is a third party's latency",
 ]
 filterwarnings = ["ignore::DeprecationWarning"]
 

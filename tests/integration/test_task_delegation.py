@@ -238,6 +238,36 @@ class TestTaskLifecycle:
             await repo_other.get(task.id)
 
 
+async def _agent_ids(session, organization_id: str, count: int) -> list[str]:
+    """`count` distinct agent ids in this tenant, seeding the roster if needed.
+
+    Distinct, because `DelegationRepository.record` refuses an agent delegating to
+    itself -- a constraint that is correct and is not what the caller is testing.
+    """
+    found = [
+        str(row)
+        for row in (
+            await session.execute(
+                select(Agent.id).where(Agent.organization_id == organization_id).limit(count)
+            )
+        ).scalars()
+    ]
+    if len(found) < count:
+        org = (
+            await session.execute(select(Organization).where(Organization.id == organization_id))
+        ).scalar_one()
+        await seed(session, into=org)
+        found = [
+            str(row)
+            for row in (
+                await session.execute(
+                    select(Agent.id).where(Agent.organization_id == organization_id).limit(count)
+                )
+            ).scalars()
+        ]
+    return found[:count]
+
+
 async def _any_agent_id(session, organization_id: str) -> str:
     """The id of some agent in this tenant, seeding the roster if it is empty."""
     found = (
@@ -614,3 +644,98 @@ class TestExecutions:
         found = await executions.list_for_task(task.id)
         assert len(found) == 3
         assert [e.attempt for e in found] == [1, 2, 3]
+
+
+class TestTheActiveDescendantCapCountsLiveWork:
+    """A finished run must not consume the organisation's delegation capacity.
+
+    **Found by running the first real goal of the day.** The chief was refused with
+
+        active descendants 16 reached the limit of 16
+
+    having recorded 26 delegations across earlier runs, every one of them finished.
+    The parameter was named `current_active_descendants`, the field was
+    `max_active_descendants`, and the query counted all time -- so it was an all-time
+    cap on how many times the chief could ever delegate, and the organisation was
+    permanently unable to delegate on that tenant.
+
+    The failure it produced was `budget_error` -- "the agent exceeded its turn
+    budget" -- because the agent kept retrying a refusal the platform was certain to
+    repeat. So the symptom named the wrong mechanism, which is why these tests assert
+    the *count* and not the outcome.
+    """
+
+    async def _two_agents(self, tenant) -> tuple[str, str]:
+        """A delegator and a distinct target: `record` refuses self-delegation, and
+        rightly so -- the constraint is not what is under test here."""
+        ids = await _agent_ids(tenant.session, str(tenant.organization_id), 2)
+        return ids[0], ids[1]
+
+    async def _delegate_once(self, tenant, source: str, target: str, goal: str) -> str:
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        delegations = DelegationRepository(tenant.session, tenant.organization_id)
+        # A real parent: `delegations.parent_task_id` has a foreign key, and a made-up
+        # id is the kind of shortcut that passes until the constraint notices.
+        parent = await repo.create(
+            title="the goal", goal="hand this on", owner_agent_id=source, allow_parallel=True
+        )
+        child = await repo.create(
+            title=goal[:60],
+            goal=goal,
+            owner_agent_id=target,
+            parent_task_id=parent.id,
+            allow_parallel=True,
+        )
+        await delegations.record(
+            parent_task_id=parent.id,
+            child_task_id=child.id,
+            source_agent_id=source,
+            target_agent_id=target,
+            objective=goal,
+            platform_limits=DelegationLimits.platform_default(),
+            path=DelegationPath(),
+            parent_limits=DelegationLimits.platform_default(),
+        )
+        return child.id
+
+    async def _finish(self, tenant, task_id: str) -> None:
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        await repo.transition(task_id, Transition.ASSIGN)
+        await repo.transition(task_id, Transition.BEGIN_WORK)
+        await repo.transition(task_id, Transition.COMPLETE)
+
+    async def test_finished_delegations_do_not_count(self, tenant) -> None:
+        source, target = await self._two_agents(tenant)
+        for n in range(3):
+            child = await self._delegate_once(tenant, source, target, f"piece of work {n}")
+            await self._finish(tenant, child)
+
+        counted = await DelegationRepository(tenant.session, tenant.organization_id).issued_by(
+            source
+        )
+        assert counted == 0, (
+            f"{counted} finished delegation(s) still consume the budget, so the "
+            "organisation runs out of capacity permanently rather than under load"
+        )
+
+    async def test_live_delegations_still_count(self, tenant) -> None:
+        """Otherwise the fix removed the control rather than correcting it."""
+        source, target = await self._two_agents(tenant)
+        await self._delegate_once(tenant, source, target, "still in flight")
+        counted = await DelegationRepository(tenant.session, tenant.organization_id).issued_by(
+            source
+        )
+        assert counted == 1, (
+            "the cap has stopped bounding concurrent fan-out, which is the runaway it "
+            "exists to prevent"
+        )
+
+    async def test_the_same_row_stops_counting_when_it_terminates(self, tenant) -> None:
+        """A cap that only grows never recovers; one that only shrinks never binds."""
+        source, target = await self._two_agents(tenant)
+        delegations = DelegationRepository(tenant.session, tenant.organization_id)
+        child = await self._delegate_once(tenant, source, target, "one piece of work")
+
+        assert await delegations.issued_by(source) == 1
+        await self._finish(tenant, child)
+        assert await delegations.issued_by(source) == 0
