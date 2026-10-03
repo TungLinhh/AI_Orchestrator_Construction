@@ -65,7 +65,7 @@ const nodes = new Map();
    about them fails for the harness's reason rather than the page's. Seeded from the
    *served* markup, so a button removed from the page is a check that fails here. */
 function seedControls(html) {
-  for (const id of ["roleSwitch", "workFilter", "decisionFilter", "evFilter", "navItems"]) {
+  for (const id of ["roleSwitch", "giveFilter", "workFilter", "decisionFilter", "evFilter", "navItems"]) {
     const m = html.match(new RegExp(`id="${id}"([\\s\\S]*?)</span>`));
     if (!m) continue;
     const buttons = [...m[1].matchAll(/<button([^>]*)>([^<]*)<\/button>/g)];
@@ -100,6 +100,30 @@ function makeNode(id, tag) {
     insertBefore(c) { c.parentElement = this; this.children.unshift(c); return c; },
     removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
     get firstChild() { return this.children[0] || null; },
+    /** `options` for a `<select>`, read out of whatever `innerHTML` it currently holds.
+     *
+     *  `$()` answers from this flat map, not from `asDomNode`, so the copy of `options`
+     *  written there would never be reached by the page. Two copies of one idea is the
+     *  thing to avoid, so this reads the same way: the markup is the source, and the
+     *  markup in a browser is whatever was assigned last. */
+    get options() {
+      /* **Not gated on `tagName`.** Every node in this map is built as
+       * `makeNode(id, "div")` -- the map is keyed by id and knows nothing about the tag
+       * it stands for -- so a `tagName === "SELECT"` guard made `options` empty for the
+       * one selector the page has, and the harness reported a correctly-filled picker as
+       * empty. The markup is the reliable signal: a `div` never holds `<option>`s, so
+       * reading them is harmless on any node.
+       *
+       * **Cost of being wrong here: low.** A false positive means a check about the agent
+       * picker passes because some unrelated node mentions an option; a false negative is
+       * a failing check someone investigates. It failed first, and that was right. */
+      return [...String(this.innerHTML || "").matchAll(/<option([^>]*)>([\s\S]*?)<\/option>/g)]
+        .map(([, attrs, text]) => ({
+          value: (attrs.match(/value="([^"]*)"/) || [, text.trim()])[1],
+          textContent: text.trim(),
+          get selected() { return /\bselected\b/.test(attrs); },
+        }));
+    },
     querySelectorAll(sel) { return queryWithin(this, sel); },
     querySelector(sel) { return queryWithin(this, sel)[0] ?? null; },
     closest() { return null; },
@@ -257,6 +281,61 @@ function asDomNode(el, source) {
       const walk = (n) => n.text + n.children.map(walk).join("");
       return walk(el);
     },
+    /** `children`: **elements only**, as a browser defines it.
+     *
+     *  `childNodes` includes text, `children` does not. The page never reads
+     *  `childNodes`, and the harness reads `children.length` to answer "did anything
+     *  render here" — so this is the collection that has to mean something. Reading an
+     *  absent `children` throws inside the *check*, which is how a shim gap gets
+     *  reported as a page defect and takes every check after it with it.
+     */
+    get children() {
+      const out = [];
+      const walk = (n) => {
+        for (const c of n.children) { out.push(asDomNode(c, "")); walk(c); }
+      };
+      walk(el);
+      return out;
+    },
+    get childElementCount() { return node.children.length; },
+    /** `options`, `value` and `selectedIndex` for a `<select>`.
+     *
+     *  A browser gives every `<select>` an `options` collection whether or not the
+     *  markup has options, and the page reads it during boot to fill the agent picker.
+     *  Without it here, any assertion about that picker threw `cannot read properties
+     *  of undefined` — which is how the harness reported the *page's* bug (a selector
+     *  stuck on "loading agents...") as the *harness's* bug, and took every check after
+     *  it down with it.
+     *
+     *  The options are built from the markup each time, and `value` is the `value`
+     *  attribute of whichever option the page last assigned, so a round trip through
+     *  `sel.innerHTML = ...` followed by `sel.value` behaves as a browser does.
+     */
+    get options() {
+      if (node.tagName !== "SELECT") return [];
+      const fromTree = queryTree(el, "option").map((o) => ({
+        value: o.attrs.value ?? o.text.trim(),
+        textContent: o.text.trim(),
+        get selected() { return o.attrs.selected !== undefined; },
+      }));
+      if (fromTree.length) return fromTree;
+      /* **The markup the page assigned**, not only the markup it shipped with.
+       *
+       *  A browser re-parses `sel.innerHTML = "..."`, so `<option>`s written at runtime
+       *  are in `sel.options`. This shim's `innerHTML` is a plain property, so a
+       *  runtime-written option list was invisible and the harness reported "0 options"
+       *  for a selector that was correctly full -- the same failure in the other
+       *  direction from the missing-`options` bug it was added to catch, and worth
+       *  guarding in both directions. */
+      const html = String(node.innerHTML || "");
+      return [...html.matchAll(/<option([^>]*)>([\s\S]*?)<\/option>/g)].map(([, attrs, text]) => ({
+        value: (attrs.match(/value="([^"]*)"/) || [, text.trim()])[1],
+        textContent: text.trim(),
+        get selected() { return /\bselected\b/.test(attrs); },
+      }));
+    },
+    value: el.attrs.value ?? "",
+    selectedIndex: -1,
     get innerHTML() { return source || ""; },
     querySelectorAll(s) { return queryTree(el, s).map((c) => asDomNode(c, "")); },
     querySelector(s) { return queryTree(el, s).map((c) => asDomNode(c, ""))[0] ?? null; },
@@ -476,8 +555,10 @@ const problems = [];
  *  broke and nothing about where, which is why several real defects in this project
  *  were found by reading the code around a guess rather than by reading the log. */
 function firstFrame(err) {
-  const line = String((err && err.stack) || "").split("\n").find((l) => l.includes("verify_page"));
-  return line ? line.trim().replace(/^at\s*/, "") : "";
+  const frames = String((err && err.stack) || "").split("\n")
+    .map((l) => l.trim()).filter((l) => l.startsWith("at "));
+  const own = frames.find((l) => l.includes("verify_page") || l.includes("index.html"));
+  return own ? own.replace(/^at\s*/, "") : (frames[1] || "").replace(/^at\s*/, "");
 }
 
 
@@ -486,6 +567,34 @@ function check(name, ok, detail) {
   if (!ok) problems.push(name);
 }
 
+/* ---- the defects that were visible on the page, as standing checks ----
+   Each of these was a real defect a person hit, and none of them raised: the page
+   loaded, every request succeeded, and every number on it was a lie. So the harness
+   now asserts the *structure* rather than the absence of an exception.
+
+   The four, in the order they were reported:
+
+   * a wall of `[object HTMLLIElement]` in the Workflow panel -- an `innerHTML =` fed an
+     array of DOM nodes;
+   * "Waiting on me" and "Everything" showing the same list -- the filter was
+     `state.x === "all" ? items : items`;
+   * a filter that could not be clicked at all -- two elements shared `id="workFilter"`
+     and `$()` returns the first;
+   * the agent selector stuck on "loading agents..." because the screen that filled it
+     was cut and nothing was left to fill it. */
+console.log("structure:");
+const idsInMarkup = [...html.matchAll(/\sid="([A-Za-z][\w-]*)"/g)].map((m) => m[1]);
+const dupes = [...new Set(idsInMarkup.filter((id, i) => idsInMarkup.indexOf(id) !== i))];
+check("no element id is declared twice", dupes.length === 0,
+  dupes.length ? dupes.join(", ") : `${idsInMarkup.length} ids, all unique`);
+check("nothing is coerced into markup by joining nodes",
+  !/\.map\([^)]*=>[^{]*nodeEl\([^)]*\)\)\.join\("/.test(html),
+  "no `innerHTML = nodes.join()` remains");
+check("every element the page writes to exists",
+  ["giveList", "giveFilter", "giveEmpty", "activity", "unitWorkSub", "unitWorkEmpty",
+   "workList", "workFilter", "workSub", "workEmpty"]
+    .every((id) => idsInMarkup.includes(id)),
+  "give/work/unit ids all present");
 console.log("runtime:");
 check("the script loaded without throwing", uncaught === null, uncaught?.message);
 check("requests were made", fetched > 0, `${fetched} fetches`);
@@ -599,8 +708,8 @@ try {
   const workStats = $("workStats").innerHTML;
   check("the queue rendered", /class="stat/.test(workStats), `${workStats.length} chars`);
   check("it says how many need a person", /Waiting on you/.test(workStats));
-  check("the list has tasks to pick from", /class="row/.test($("workList").innerHTML),
-    `${($("workList").innerHTML.match(/class="row/g) || []).length} rows`);
+  check("the list has tasks to pick from", /class="row/.test($("giveList").innerHTML),
+    `${($("giveList").innerHTML.match(/class="row/g) || []).length} rows`);
 
   /* The badge and the API, compared. A stale "3" on the sidebar after a decision is the
      small version of the stale-tile defect, and it is the number a CEO trusts. */
@@ -609,7 +718,7 @@ try {
   check("the sidebar badge agrees with the API", shownBadge === (queue.needs_you ?? 0),
     `badge=${shownBadge} api=${queue.needs_you}`);
 
-  const first = $("workList").innerHTML.match(/data-task="([^"]+)"/);
+  const first = $("giveList").innerHTML.match(/data-task="([^"]+)"/);
   check("a task row exists to open", !!first, first ? first[1] : "no data-task in the list");
   if (first) {
     sandbox.location.hash = "#/give/" + first[1];
@@ -715,7 +824,23 @@ try {
     await new Promise((r) => setTimeout(r, 1500));
     check("leaving a task releases its detail", $("taskTree").innerHTML.length === 0,
       `${$("taskTree").innerHTML.length} chars still alive`);
-    check("and the queue is there to come back to", /class="row/.test($("workList").innerHTML));
+    check("and the queue is there to come back to", /class="row/.test($("giveList").innerHTML));
+    /* The live feed, asserted **here** rather than in the structure block: it is drawn
+       by `renderGive`, so on the Departments screen it is legitimately still empty and a
+       check placed there would be asserting the wrong screen's state. */
+    const feed = $("activity");
+    const feedLines = feed && Array.isArray(feed.children) ? feed.children.length : -1;
+    const feedEmpty = $("activityEmpty");
+    /* 0 lines => the empty state is **visible**; lines > 0 => it is hidden. The first
+       version asserted the opposite and failed a correctly-behaving feed: `hidden` is
+       false when the message is showing, so the relation is `hidden === (lines > 0)`.
+       A polarity mistake in a check about a missing message is worth writing down. */
+    check("the live feed renders, and says so when there is nothing to say",
+      feedLines >= 0 && Boolean(feedEmpty && feedEmpty.hidden) === feedLines > 0,
+      feedLines < 0 ? "no #activity in the markup"
+        : feedLines
+          ? `${feedLines} line(s): ${String(feed.textContent).slice(0, 100)}`
+          : "empty, and it says so");
   }
 } catch (e) {
   check("the give-work view did not throw", false, e.message);
@@ -831,7 +956,23 @@ try {
     "dashed border, not a moving light");
 
   const stats = $("deptStats").innerHTML;
-  check("the tiles rendered", /class="stat/.test(stats), `${stats.length} chars`);
+  /* Two of the four reported defects only exist once the page has run: the agent
+   selector is filled by the boot sequence, and the feed is created by it. Asserted here
+   rather than in the structure block above, where `$("agent").options` is still the
+   shipped "loading agents..." placeholder and reading it proves nothing. */
+/* **`check(name, ok, detail)` evaluates `detail` whether or not `ok` is true.** So a
+   detail expression cannot assume the thing it describes exists -- doing so threw out
+   of the *check*, which is how three shim gaps in a row were reported as page defects
+   and each took every check after it down. Everything below is written to survive
+   being wrong. */
+const agentSel = $("agent");
+const agentOpts = agentSel && Array.isArray(agentSel.options) ? agentSel.options : [];
+check("the agent selector is filled, not left on its loading text",
+  agentOpts.length > 1 && !/loading/i.test(String(agentOpts[0].textContent)),
+  `${agentOpts.length} option(s): `
+  + agentOpts.slice(0, 3).map((o) => String(o.textContent)).join(" | "));
+
+check("the tiles rendered", /class="stat/.test(stats), `${stats.length} chars`);
   check("it counts stranded runs separately", /Stranded runs/.test(stats));
   /* **The headcount must include the offices.** It read "of 8 agents" over an
      organisation of 11, because the tile summed the chief and the departments and
@@ -856,10 +997,10 @@ try {
       $("deptTitle").textContent);
     check("it shows what the agent did", steps.length > 0 || !$("runEmpty").hidden,
       steps.length ? `${(steps.match(/class="step/g) || []).length} run(s)` : "and says it never ran");
-    check("it shows the work beside it", work.length > 0 || !$("workEmpty").hidden,
+    check("it shows the work beside it", work.length > 0 || !$("unitWorkEmpty").hidden,
       "open, attention and done");
     check("open and finished are separated", /Open/.test($("deptOneTree").innerHTML)
-      || $("workSub").textContent.length > 0, $("workSub").textContent);
+      || $("unitWorkSub").textContent.length > 0, $("unitWorkSub").textContent);
     check("there is a way back to the whole organisation", !!$("deptBack").onclick);
     check("the breadcrumb offers the way out", /#\/departments/.test($("path").innerHTML),
       $("path").innerHTML.slice(0, 140));
@@ -907,9 +1048,9 @@ try {
         !/Executive Agent/.test(officeBoxes) && officeBoxes.includes(officeBox.label),
         officeBoxes.slice(0, 110));
       check("the office's panel separates its own work from its departments'",
-        /own:/.test($("workSub").textContent)
-        && /below/.test($("workSub").textContent),
-        $("workSub").textContent);
+        /own:/.test($("unitWorkSub").textContent)
+        && /below/.test($("unitWorkSub").textContent),
+        $("unitWorkSub").textContent);
       check("the back button goes back to the organisation",
         $("deptBack").onclick && /office|organisation|department/i.test($("deptBack").textContent),
         $("deptBack").textContent);
@@ -945,7 +1086,7 @@ try {
   })).json();
   const failed = (all.items || []).find((t) =>
     ["failed", "cancelled", "blocked"].includes(t.status));
-  const workList = $("workList").innerHTML;
+  const workList = $("giveList").innerHTML;
   const row = workList.match(/data-task="([^"]+)"/);
   check("a task row exists to open", !!row, row ? row[1] : "no data-task in the list");
   const taskId = failed ? failed.id : (row ? row[1] : "");

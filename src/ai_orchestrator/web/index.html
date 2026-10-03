@@ -459,6 +459,19 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
   font-variant-numeric: tabular-nums; }
 .abox .roll b { color: var(--text-2); }
 
+/* The live feed: one line per event, newest first. Dense on purpose — this is a
+   ticker, not a table, and a person reads it by scrolling once and looking for the
+   line with their department's name in it. The dot marks recency, not a verdict: the
+   question on this screen is "is anything happening", not "is it going well". */
+.feed-row { padding: 5px 2px; align-items: baseline; }
+.feed-row + .feed-row { border-top: 1px solid var(--line); }
+.feed-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  flex: 0 0 auto; margin-top: 5px;
+}
+.feed-row .grow { min-width: 0; }
+.feed-row .s { white-space: normal; line-height: 1.45; }
+
 /* **The node that turns an indent into a tree.** One pseudo-element per department,
    sitting on the group's own rule: a 5px dot plus a 10px stub reaching back to the
    line. A list with a vertical rule and a list with branches are told apart by exactly
@@ -610,8 +623,8 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
             <span class="sub" id="workSub"></span>
             <span class="spacer"></span>
             <span class="seg" id="workFilter">
-              <button class="on" data-f="pending">Waiting</button>
-              <button data-f="all">All</button>
+              <button class="on" data-f="pending">Needs a decision</button>
+              <button data-f="all">Everything pending</button>
             </span>
           </header>
           <div class="list" id="workList"></div>
@@ -669,13 +682,13 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
           </div>
           <div class="card">
             <header><h2>Its work</h2><span class="spacer"></span>
-              <span class="sub" id="workSub"></span></header>
+              <span class="sub" id="unitWorkSub"></span></header>
             <div class="body">
               <div class="dept-tier">Open</div><div class="tasklist" id="workOpen"></div>
               <div class="dept-tier">Needs attention</div><div class="tasklist" id="workAttn"></div>
               <div class="dept-tier">Finished</div><div class="tasklist" id="workDone"></div>
             </div>
-            <div class="empty" id="workEmpty" hidden>Nothing recorded yet.</div>
+            <div class="empty" id="unitWorkEmpty" hidden>Nothing recorded yet.</div>
           </div>
         </div>
         <div class="note" id="deptNote"></div>
@@ -695,6 +708,15 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
       <div class="body" style="max-height:56vh;overflow:auto"><ul class="tree" id="tree"></ul></div>
       <div class="empty" id="flowEmpty" hidden>
         <div class="big">◇</div> Nothing has run yet.
+      </div>
+      <div class="body" style="border-top:1px solid var(--line);max-height:32vh;overflow:auto"
+           id="activityBody">
+        <div class="dept-tier" style="margin-bottom:6px">Right now</div>
+        <div class="feed" id="activity"></div>
+        <div class="empty" id="activityEmpty">
+          <div class="big">·</div> Nothing is happening. Press <b>Run</b> and this fills
+          in as the agents report — who asked whom for what, and what came back.
+        </div>
       </div>
 
       <div class="card">
@@ -717,18 +739,18 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
         </div>
         <div class="stats" id="workStats"></div>
         <div class="card">
-          <header><h2>What needs you</h2><span class="spacer"></span>
-            <span class="seg" id="workFilter">
+          <header><h2>The register</h2><span class="spacer"></span>
+            <span class="seg" id="giveFilter">
               <button class="on" data-w="">Everything</button>
               <button data-w="you">Waiting on me</button>
               <button data-w="in_flight">With an agent</button>
               <button data-w="settled">Settled</button>
             </span>
           </header>
-          <div class="list" id="workList"></div>
-          <div class="empty" id="workEmpty" hidden>
-            <div class="big">▷</div>Nothing is waiting. Run <code>make mock-corpus</code>
-            for a coordination story to walk.
+          <div class="list" id="giveList"></div>
+          <div class="empty" id="giveEmpty" hidden>
+            <div class="big">▷</div>Nothing on the register yet. Give the company
+            something above and it will appear here within seconds.
           </div>
         </div>
         <div class="note">
@@ -918,7 +940,7 @@ if (!AUTH_OFF && !token() && !ORG_RE.test(ORG)) askToken("");
 
 /* ---------------- state ---------------- */
 const state = {
-  es: null, paused: false, filter: "all", workFilter: "pending", decisionFilter: "",
+  es: null, paused: false, filter: "all", approvalFilter: "pending", giveFilter: "", decisionFilter: "",
   tasks: new Map(), agents: new Map(), events: [], selected: null, backfill: new Set(),
   portfolio: null, projects: [], project: null, workspace: null, inbox: [],
   // The task currently open in `#/task/...`. The retry button needs to know which one,
@@ -1255,10 +1277,31 @@ function depthOf(items, node) {
 
 /* ---------------- work: the queue you can actually act on ---------------- */
 async function renderWork() {
+  // **The filter does something, which it did not.**
+  //
+  // It used to read `const shown = state.workFilter === "all" ? d.items : d.items;` --
+  // both branches the same array, so "All" showed exactly what "Waiting" showed. And
+  // `state.workFilter` defaulted to `"pending"` while the buttons carried
+  // `data-f="pending"` / `data-f="all"` and **nothing was bound to them at all**, so the
+  // filter could not be changed from the page under any circumstances. Both defects are
+  // silent: the list is always a plausible list of approvals, just never the other one.
+  //
+  // `/approvals/inbox` returns every *pending* approval and nothing else, so there is no
+  // status to send and the split is made here. The two sets are genuinely different:
+  // **actionable** -- a person can still answer -- against **expired**, which the inbox
+  // lists deliberately ("nothing is filtered out... a queue that silently omits rows
+  // cannot be reconciled") and which renders with no buttons at all. A person who wants
+  // to see the backlog needs both; a person deciding needs the first.
   const d = await apiGet("/approvals/inbox");
   state.inbox = d.items;
-  const shown = state.workFilter === "all" ? d.items : d.items;
-  $("workSub").textContent = d.count ? `${d.count} waiting` : "clear";
+  const live = d.items.filter((a) => a.actionable !== false && !a.expired);
+  const all = state.approvalFilter === "all";
+  const shown = all ? d.items : live;
+  $("workSub").textContent = d.count
+    ? (all
+      ? `${d.count} pending · ${live.length} still answerable`
+      : `${live.length} waiting on you of ${d.count} pending`)
+    : "clear";
   $("workEmpty").hidden = shown.length > 0;
   // An expired request gets **no buttons**.
   //
@@ -1639,7 +1682,7 @@ $("deptBack").onclick = () => go("#/departments");
   // executes, so its own open count is normally zero while its departments hold the
   // work. Showing only `own` makes an office look idle; showing only `rollup` would
   // hide that the chief itself did nothing this hour. Both, labelled.
-  $("workSub").textContent = r && r.agents > 1
+  $("unitWorkSub").textContent = r && r.agents > 1
     ? `own: ${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`
       + ` — with ${num(r.agents - 1)} below: ${num(r.open)} open · ${num(r.attention)} need attention · ${num(r.done)} done`
     : `${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`;
@@ -1662,7 +1705,7 @@ $("deptBack").onclick = () => go("#/departments");
     + take("attention", "attn").join(""));
   setHTML("workDone", (o.done_tasks || []).map((t) => row(t, "done")).join("")
     + take("done_tasks", "done").join(""));
-  $("workEmpty").hidden = ((o.open_tasks || []).length + (o.done_tasks || []).length
+  $("unitWorkEmpty").hidden = ((o.open_tasks || []).length + (o.done_tasks || []).length
     + (o.attention || []).length
     + own.reduce((n, x) => n + (x.open_tasks || []).length + (x.attention || []).length
       + (x.done_tasks || []).length, 0)) > 0;
@@ -1703,7 +1746,7 @@ function watchDepartments() {
    then read the account of it. The tree and the log are on the same screen as the
    decisions, because a decision taken away from the evidence of what it is deciding about
    is a decision made blind. */
-let workFilter = "";
+let giveFilter = "";
 const taskNames = new Map();
 
 function taskName(id) { return taskNames.get(id) || "Task"; }
@@ -1836,14 +1879,19 @@ async function renderGive(id) {
 
   const all = q.items || [];
   for (const t of all) taskNames.set(t.id, t.title);
-  const rows = !workFilter ? all
-    : all.filter((t) => workFilter === "you" ? t.waiting_on === "you"
-      : workFilter === "in_flight" ? t.waiting_on === "an_agent"
+  const rows = !giveFilter ? all
+    : all.filter((t) => giveFilter === "you" ? t.waiting_on === "you"
+      : giveFilter === "in_flight" ? t.waiting_on === "an_agent"
       : t.waiting_on === "nobody");
 
-  $("workEmpty").hidden = rows.length > 0;
-  $("workList").hidden = rows.length === 0;
-  setHTML("workList", rows.map((t) => `
+  $("giveEmpty").hidden = rows.length > 0;
+  $("giveList").hidden = rows.length === 0;
+  // Dựng feed ngay khi mở màn hình, không chờ khi có frame. Nếu không, một người mở
+  // Give work lúc không ai làm việc gì thấy trống trơn rồi tưởng hỏng — và nếu chờ
+  // frame thì lúc đang có việc thì mới thấy, tức là feed chỉ hữu ích đúng lúc
+  // không cần đến nó nhất.
+  renderActivity();
+  setHTML("giveList", rows.map((t) => `
     <div class="row" data-task="${esc(t.id)}">
       <div class="grow">
         <div class="t">${esc(t.title)}</div>
@@ -2023,11 +2071,36 @@ function watchRun(id) {
   }, 4000);
 }
 
+// **Bound to `#giveFilter`, the register's own segment.**
+//
+// It was bound to `$("workFilter")`, and there were **two** elements with that id --
+// this screen's four-button register filter and the `Needs you` screen's two-button
+// approvals filter. `$()` returns the first in the document, so this handler was
+// attached to the approvals segment and to nothing else: the four buttons a person
+// actually clicks did nothing at all, and neither did they re-render. Measured on the
+// page: `workFilter ×2, workList ×2, workEmpty ×3, workSub ×2` -- and both render paths
+// wrote to the *first* `#workList`, so the register panel in `Give work` was never
+// written to and read as permanently empty while its own tile counted 176 tasks.
+//
+// The two panels are genuinely different lists -- pending approvals with buttons, and
+// the task register with filters -- so they get different ids rather than one of them
+// being deleted.
+// **This screen's own filter, which had no handler at all.** The markup declared
+// `data-f="pending"` / `data-f="all"` and nothing listened, so a person could click
+// "All" a hundred times and see the pending list forever.
 $("workFilter").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-f]");
+  if (!b) return;
+  state.approvalFilter = b.dataset.f || "pending";
+  for (const x of $("workFilter").children) x.classList.toggle("on", x === b);
+  await renderWork();
+});
+
+$("giveFilter").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-w]");
   if (!b) return;
-  workFilter = b.dataset.w || "";
-  for (const x of $("workFilter").children) x.classList.toggle("on", x === b);
+  giveFilter = b.dataset.w || "";
+  for (const x of $("giveFilter").children) x.classList.toggle("on", x === b);
   await renderGive();
 });
 
@@ -2074,13 +2147,93 @@ document.addEventListener("click", async (e) => {
    8. The console. Unchanged in behaviour, kept because it works and
    because it is the only place the delegation tree is visible.
    ================================================================== */
+/* ---------------- what is happening, in words ----------------
+   The complaint this answers is "I pressed Run and cannot see anything the agents are
+   doing". The evidence was already arriving: the SSE frame carries `view.from_agent`,
+   `view.to_agent` and `view.title` — **names, resolved server-side**, precisely so a
+   reader never renders two opaque ids. It was accumulated into `state.events` and then
+   never drawn.
+
+   So this is not a new data source. It is the existing feed, written in sentences, with
+   the department names in it. A line like
+
+       Procurement Agent asked the Executive Agent for "run the tender"  ·  40s ago
+
+   says who is doing what; `evt_… agt_01m3…` says nothing a person can act on, which is
+   what the raw payload was.
+
+   The types are grouped rather than enumerated exhaustively: an unrecognised event falls
+   through to its own name, which is honest and still readable, instead of being hidden. */
+const EVENT_LINES = [
+  [/delegat/i, (v) => v.from_agent && v.to_agent
+    ? `${esc(v.from_agent)} asked ${esc(v.to_agent)} to do the work`
+    : "work was handed to another agent"],
+  [/refus/i, (v) => v.from_agent
+    ? `${esc(v.from_agent)} was refused${v.reason ? `: ${esc(String(v.reason).slice(0, 120))}` : ""}`
+    : "a delegation was refused"],
+  [/approv/i, (v) => `a decision is waiting on a person${v.to_agent ? ` at ${esc(v.to_agent)}` : ""}`],
+  [/execut/i, (v) => v.to_agent || v.from_agent
+    ? `${esc(v.to_agent || v.from_agent)} ran the task` : "the task ran"],
+  [/complet/i, (v) => v.to_agent || v.from_agent
+    ? `${esc(v.to_agent || v.from_agent)} finished and reported` : "the task finished"],
+  [/fail|error/i, (v) => `${esc(v.from_agent || v.to_agent || "the platform")} could not finish it`],
+  [/review|escalat/i, () => "a reviewer looked at the result and asked for another pass"],
+  [/lesson|procedure|skill/i, () => "the agent wrote down what it learned"],
+];
+
+function eventLine(ev) {
+  const v = ev.view || {};
+  const at = ev.occurred_at ? ago(ev.occurred_at) : "";
+  const what = v.title ? esc(String(v.title).slice(0, 90)) : "";
+  for (const [match, say] of EVENT_LINES) {
+    if (match.test(ev.type || "")) {
+      return `${say(v)}${what ? ` — <b>${what}</b>` : ""}`;
+    }
+  }
+  return `${esc(ev.type || "something happened")}${what ? ` — <b>${what}</b>` : ""}${at
+    ? ` <span class="s">${esc(at)}</span>` : ""}`;
+}
+
+function renderActivity() {
+  const feed = $("activity");
+  if (!feed) return;
+  const recent = state.events.slice(-40).reverse();
+  $("activityEmpty").hidden = recent.length > 0;
+  feed.innerHTML = recent.map((ev) => {
+    const at = ev.occurred_at ? ago(ev.occurred_at) : "";
+    const v = ev.view || {};
+    return `<div class="row static feed-row">
+      <span class="t-good feed-dot"></span>
+      <div class="grow"><div class="s" style="font-size:12px">${eventLine(ev)}</div></div>
+      <div class="r"><span class="s">${esc(at)}</span>
+        ${v.task_id ? `<span class="pill">${esc(String(v.task_id).slice(-6))}</span>` : ""}</div>
+    </div>`;
+  }).join("");
+}
+
 function renderFlow() {
   const roots = [...state.tasks.values()].filter((n) => !n.parent_task_id);
   $("flowCount").textContent = roots.length ? `${state.tasks.size} tasks` : "";
   $("flowEmpty").hidden = roots.length > 0;
-  $("tree").innerHTML = roots.map((n, i) => nodeEl(n, false, i === roots.length - 1)).join("");
+  // **`replaceChildren`, not `innerHTML = ....join("")`.**
+  //
+  // `nodeEl` builds and returns an `HTMLElement`, and joining an array of elements
+  // calls `String()` on each one. What the Workflow panel actually rendered, on the
+  // page, was a wall of:
+  //
+  //     [object HTMLLIElement][object HTMLLIElement][object HTMLLIElement]...
+  //
+  // — every root task and every child, spelled out as the *type* of the object rather
+  // than as markup. So the one panel whose entire job is to show how work was handed
+  // out showed a JavaScript type name, and the delegation tree was invisible. Nothing
+  // raised: `String()` on an element is well-defined, it just produces this.
+  //
+  // The `.map((n, i) => ...)` also computed an `isLast` flag that nothing read.
+  // Children are drawn as nested `<ul>`s and the connector CSS uses `:last-child`, so
+  // the flag had no effect even when the markup was right.
+  $("tree").replaceChildren(...roots.map((n) => nodeEl(n)));
 }
-function nodeEl(n, last, isLast) {
+function nodeEl(n) {
   const el = document.createElement("li");
   const div = document.createElement("div");
   div.className = "node";
@@ -2092,7 +2245,7 @@ function nodeEl(n, last, isLast) {
   const kids = (n.children || []).map((c) => state.tasks.get(c)).filter(Boolean);
   if (kids.length) {
     const ul = document.createElement("ul");
-    kids.forEach((k, i) => ul.appendChild(nodeEl(k, false, i === kids.length - 1)));
+    kids.forEach((k) => ul.appendChild(nodeEl(k)));
     el.appendChild(ul);
   }
   return el;
@@ -2189,7 +2342,10 @@ function handleFrame(payload) {
       state.tasks.set(v.task_id, node);
     }
   }
-  if (!state.paused) renderFlow();
+  // The tree **and** the feed, on every frame. Drawing only the tree is why the page
+  // showed a delegation tree and nothing else: the events describing *how* work moved
+  // were arriving on the same socket and being thrown away.
+  if (!state.paused) { renderFlow(); renderActivity(); }
 }
 
 /* ---------------- start a task ---------------- */
@@ -2203,7 +2359,7 @@ $("runBtn").onclick = async () => {
     // screen did nothing: the task was created with nobody to do it.
     const chosen = $("scenario").value;
     const scenario = (state.scenarios || []).find((sc) => sc.key === chosen);
-    await apiPost("/tasks", {
+    const made = await apiPost("/tasks", {
       title: (scenario ? scenario.title : goal).slice(0, 60), goal,
       task_type: $("taskType").value, start_workflow: false,
       owner_agent_id: $("agent").value || null,
@@ -2215,8 +2371,48 @@ $("runBtn").onclick = async () => {
         expected_output_schema: { required: Object.keys(scenario.expected_output) },
       } : {}),
     });
-    toast("Queued.");
-    go("#/console");
+    const taskId = made.task_id || made.id;
+
+    // **Then actually run it. This is the button's whole job and it was not doing it.**
+    //
+    // The handler above created the task with `start_workflow: false`, printed "Queued.",
+    // and navigated away. On `make page` there is no Temporal and no worker, so nothing
+    // ever claimed the row: the queue only ever grew, and every task sat `assigned` with
+    // nobody holding it. Measured on the development tenant — 106 `assigned`, 0 `running`,
+    // "With an agent: 0" on the register, and a person pressing Run with nothing
+    // happening. The button said "Runs on the free model" underneath, which was a promise.
+    //
+    // `POST /tasks/{id}/run` is the path that exists for exactly this case: it drives the
+    // same `TaskExecutionService.execute_task` the Temporal activity drives, on a
+    // background task, and returns a handle immediately. A synchronous run would time
+    // out — the docstring records 644 seconds and 67k tokens for a three-way delegation.
+    //
+    // The refusal is reported rather than swallowed: a run already in flight is a real
+    // refusal, and 67k tokens is a real bill.
+    let started;
+    try {
+      started = await apiPost(`/tasks/${encodeURIComponent(taskId)}/run`, {});
+    } catch (err) {
+      toast("The task exists but nothing is running it: " + err.message, true);
+      if (taskId) go(`#/give/${encodeURIComponent(taskId)}`);
+      return;
+    }
+    // The handle carries `started`, `already_running` and a cost estimate, and all three
+    // change what a person should be told. "Running" on a refusal is the one that lies.
+    if (started.already_running) {
+      toast("Already running — not starting a second one.", true);
+    } else if (started.started === false) {
+      toast("Queued, but nothing is running it: " + (started.reason || "unknown"), true);
+    } else if (started.estimate_tokens) {
+      toast(`Running here. About ${num(started.estimate_seconds)}s and `
+        + `${num(started.estimate_tokens)} tokens — this panel fills in as they report.`);
+    } else {
+      toast("Running. This panel fills in as the agents report.");
+    }
+    // **Straight to the task**, not to a list. The person pressed Run to watch something
+    // happen; a list of rows is not the thing they asked to see.
+    if (taskId) go(`#/give/${encodeURIComponent(taskId)}`);
+    else go("#/give");
   } catch (err) {
     toast("Could not start: " + err.message, true);
   } finally {
@@ -2255,6 +2451,54 @@ $("scenario").onchange = () => {
   hint.hidden = false;
 };
 
+/* ---------------- who can be given the work ----------------
+   **This selector was never filled.** It shipped as `<option value="">loading agents…</option>`
+   and no code ever wrote to it, because the screen that used to populate it was one of the
+   eight cut when the console went from eleven sections to three. A person opening `Give
+   work` saw a picker stuck on "loading agents…" and, pressing Run, created a task with
+   `owner_agent_id: null` — nobody to do it. It looked like a slow page; it was a dead
+   control, and cutting a screen had taken a live control with it.
+
+   Built from `/departments`, which the Departments screen already loads and which is the
+   only endpoint that carries the whole hierarchy with agent names on it. One request, one
+   source, and the picker cannot offer an agent the tree does not have.
+
+   Order is the org chart: chief, then offices, then departments. A person picking an owner
+   is choosing a tier, and the list reads top-down in the shape they know.
+
+   **An unknown roster must say so rather than leave the placeholder.** "No agents found"
+   is a statement about the company; "loading agents…" after the page has finished is a
+   statement about the page, and it is the one that sent me looking in the wrong place. */
+async function loadOwners() {
+  const sel = $("agent");
+  if (!sel) return;
+  try {
+    const d = await apiGet("/departments");
+    const rows = [];
+    const add = (n, tier) => {
+      if (n && n.id && n.name) rows.push({ id: n.id, name: n.name, tier });
+    };
+    add(d.chief, "the whole company");
+    (d.offices || []).forEach((n) => add(n, "an office"));
+    (d.second_tier || []).forEach((n) => add(n, "a department"));
+    if (!rows.length) {
+      sel.innerHTML = '<option value="">no agents found</option>';
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    sel.innerHTML = '<option value="">the chief (default)</option>'
+      + rows.map((r) => `<option value="${esc(r.id)}">${esc(r.name)} — ${esc(r.tier)}</option>`)
+        .join("");
+    // Default to the chief: a coordination goal belongs at the top, and the tiers below
+    // it only come into play when the person picks one deliberately.
+    if (rows.length && rows[0].id) sel.value = rows[0].id;
+  } catch (err) {
+    sel.innerHTML = '<option value="">the roster did not load</option>';
+    sel.disabled = true;
+  }
+}
+
 /* ---------------- boot ---------------- */
 (async function boot() {
   try {
@@ -2265,6 +2509,7 @@ $("scenario").onchange = () => {
     if (err && err.auth) toast("Not authorised. Click Token to enter the service token.", true);
   }
   await loadScenarios();
+  await loadOwners();
   await route();
   if (state.es) state.es.abort();
   state.es = new AbortController();

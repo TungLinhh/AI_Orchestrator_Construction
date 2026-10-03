@@ -87,10 +87,7 @@ WHERE t.organization_id = CAST(:o AS varchar(40))
   AND (CAST(:state AS text) IS NULL OR t.status = :state)
 ORDER BY
   -- `you` first: an approval waiting on a person, or a task nobody owns.
-  CASE WHEN (SELECT count(*) FROM approvals ap WHERE ap.task_id = t.id
-              AND ap.status = 'pending') > 0 THEN 0
-       WHEN t.status IN ('created', 'assigned') THEN 1
-       ELSE 2 END,
+  {WAITING_ON_CASE},
   t.created_at DESC
 LIMIT :limit OFFSET :offset
 """
@@ -104,6 +101,68 @@ WHERE t.organization_id = CAST(:o AS varchar(40))
 #: The account of one task. Each of the five is a separate statement because they have
 #: different shapes and forcing them into one row would mean a `json_agg` per source and a
 #: reader unable to tell an empty list from a missing one.
+
+#: **The one definition of "waiting on whom", as a CASE over a task row.**
+#:
+#: It was written twice -- once in Python as `_waiting_on`, once in SQL in this
+#: module's `ORDER BY` -- and the counts were computed by looping over the **paginated
+#: page** in Python. So the three tiles described one page, not the organisation:
+#:
+#: ```
+#: total      177
+#: needs_you    2      <- counted over rows 0..99
+#: in_flight   67
+#: settled     31      # 2 + 67 + 31 == 100, exactly the limit
+#: ```
+#:
+#: `needs_you + in_flight + settled` summing to the page size is the tell. A person
+#: opening the page with `?limit=5` was told the company had five of everything.
+#:
+#: One constant, substituted into both the ordering and the count, so the row a person
+#: filters on and the number that reports how many there are cannot be two different
+#: rules. Kept as a SQL string rather than moved into Python because counting the whole
+#: table in SQL is one `GROUP BY`, and pulling 177 rows into the process to count them
+#: would be the other kind of wrong.
+#: `t` must be in scope. Substituted with `.format()`, so every literal brace in the
+#: surrounding SQL is doubled -- there is exactly one, and it is this one.
+#:
+#: **Three buckets, and each names a question a person actually asks.**
+#:
+#: | bucket | who | why |
+#: |---|---|---|
+#: | `you` | a person, or nobody yet | an approval pends, or no agent holds it yet |
+#: | `an_agent` | an agent, right now | `running` — genuinely in flight |
+#: | `nobody` | nobody, any more | terminal: settled, one way or the other |
+#:
+#: The second bucket used to be "`created` or `assigned`", which belongs to `you`, and the
+#: mapping in `ceo_work_queue` then sent it to `an_agent` — so the counts and the rows were
+#: two different rules and the register contradicted itself: `needs_you 0` above two rows
+#: reading `waiting_on=you`.
+#:
+#: And the third bucket used to be "everything else", which put a **failed** task in
+#: `an_agent`: the page read "With an agent: 2" beside rows that had failed, and a person
+#: reading it concludes two agents are working. A failed task has no agent on it — that is
+#: the entire meaning of the word. It is settled, badly, but settled.
+WAITING_ON_CASE = """\
+CASE WHEN (SELECT count(*) FROM approvals ap WHERE ap.task_id = t.id
+            AND ap.status = 'pending') > 0 THEN 0
+     WHEN t.status IN ('created', 'assigned', 'failed', 'blocked') THEN 0
+     WHEN t.status = 'running' THEN 1
+     ELSE 2 END"""
+
+# `noqa: S608` -- the only interpolated value is `WAITING_ON_CASE`, a module constant
+# defined thirty lines above. There is no request data anywhere in this string, which is
+# the property the rule exists to enforce.
+_WORK_COUNT_BY_BUCKET = f"""
+SELECT {WAITING_ON_CASE} AS bucket, count(*) AS n
+FROM tasks t
+WHERE t.organization_id = CAST(:o AS varchar(40))
+  AND (CAST(:state AS text) IS NULL OR t.status = :state)
+GROUP BY 1
+"""  # noqa: S608 -- the only interpolated value is `WAITING_ON_CASE`, a module constant
+
+_WORK_QUEUE = _WORK_QUEUE.format(WAITING_ON_CASE=WAITING_ON_CASE)
+
 _REPORT_TASK = """
 SELECT t.id, t.title, t.goal, t.task_type, t.status, t.priority, t.requester_type,
        t.created_at, t.started_at, t.completed_at, t.deadline_at, t.attempt_count,
@@ -178,13 +237,47 @@ ORDER BY t.created_at
 """
 
 
+#: `WAITING_ON_CASE` in SQL, as `(bucket, name)`. Adjacent to it on purpose: a change to
+#: one is visibly a change to the other, which is the whole point of writing it once.
+_BUCKETS: dict[int, str] = {0: "you", 1: "an_agent", 2: "nobody"}
+
+#: Terminal states that still need **a person** to decide what happens next, as opposed to
+#: states that need nobody at all.
+#:
+#: `failed` is here, and it was not. It used to report `an_agent` -- which the register
+#: renders as the tile "With an agent" above a filter called the same -- and that is the
+#: wording of a system that is working, attached to work that has stopped. Measured on the
+#: demo company: the register read **"With an agent: 2"** while both of those tasks had
+#: `status = failed`.
+#:
+#: The test that pinned the old behaviour argued that a failed task "needs somebody but is
+#: not waiting on a person to press a button". Both halves are right and they point
+#: somewhere else: it is waiting on a person to decide, and `you` is the column a person
+#: acts in. `an_agent` is the column that claims a **running** agent holds it, and none
+#: does.
+SETTLED_OK_BY_A_PERSON = frozenset({"failed", "blocked"})
+
+
 def _waiting_on(row: dict[str, Any]) -> str:
-    """Which of the three the CEO is looking at. See the module docstring."""
+    """Which of the three the CEO is looking at. See the module docstring.
+
+    **The same table the counts are computed from**, branch for branch. It used to be a
+    separate `if` chain whose last line was `completed ? nobody : an_agent`, so a **failed**
+    task reported `an_agent` — and the three tiles were a *different* rule again, in SQL.
+    Two rules for one question is how the page came to read "With an agent: 2" above a
+    list of failures.
+    """
     if int(row.get("approvals_waiting") or 0) > 0:
         return "you"
     if row.get("status") in ("created", "assigned"):
         return "you"
-    return "nobody" if row.get("status") == "completed" else "an_agent"
+    if row.get("status") == "running":
+        return "an_agent"
+    if row.get("status") in SETTLED_OK_BY_A_PERSON:
+        # A failed task is waiting on a **decision**, not on an agent. It is in the
+        # person's column because that column is the actionable one.
+        return "you"
+    return "nobody"
 
 
 async def ceo_work_queue(
@@ -219,9 +312,17 @@ async def ceo_work_queue(
         .all()
     )
 
-    counts = {"you": 0, "an_agent": 0, "nobody": 0}
-    for row in rows:
-        counts[_waiting_on(dict(row))] += 1
+    # **Counted over the whole table, not over `rows`.**
+    #
+    # `rows` is the page. Counting it and labelling the result `needs_you` is how the
+    # register came to show "Waiting on you 100" beside a list of 176 tasks and a
+    # "With an agent: 0" tile while 67 tasks were assigned -- the three numbers described
+    # different pages.
+    counts: dict[str, int] = dict.fromkeys(_BUCKETS.values(), 0)
+    for bucket, n in (
+        await conn.execute(text(_WORK_COUNT_BY_BUCKET), {"o": organization_id, "state": state})
+    ).all():
+        counts[_BUCKETS[int(bucket)]] += int(n)
 
     return {
         "items": [

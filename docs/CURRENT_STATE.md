@@ -33,6 +33,37 @@ secrets — simulated personas and a role switcher) and every external integrati
   `unit` so all three tiers can be opened. It was flat — `parent_id` was never
   selected — while 100 console checks passed, because the only hierarchy check was a
   substring match (F240).
+* **A person pressing Run now runs something.** The button posted
+  `start_workflow: false`, printed "Queued." and navigated away — with no Temporal and no
+  worker on the `make page` path, nothing ever claimed the row. It now posts the task and
+  then `POST /tasks/{id}/run`, which drives the same `execute_task` the Temporal activity
+  drives and returns a handle. "With an agent: 0" after pressing Run was true and was the
+  button's own doing (F269).
+
+* **The queue drains.** `abandon_unclaimed_tasks` fails any non-terminal task with no
+  execution started inside `STUCK_AFTER_SECONDS`, writes one audit row each, and is
+  idempotent because the `UPDATE` only matches non-terminal rows. 113 orphans became 113
+  failures with `nobody picked this up, so it never ran` (F269).
+
+* **`make page` sweeps the tenant it opens.** It ran the sweep with no `--org`, and the
+  script resolves its own — a *different* organisation. Every run printed
+  "0 stranded, 0 expired" for a database nobody was looking at. `ORG` is now one make
+  variable read by the sweep, the verifier and the printed URL (F267).
+
+* **Four defects that only a screenshot showed, and no test did.** `[object
+  HTMLLIElement]` filling the Workflow panel (DOM nodes joined into `innerHTML`); two
+  panels sharing four element ids, so one filter's handler was bound to the other panel's
+  segment and both render paths wrote to the same list; a filter written
+  `state.x === "all" ? items : items` with nothing bound to it; and an agent selector
+  stuck on "loading agents…" because the screen that filled it was one of the eight cut
+  (F266). The last one meant every task was created with `owner_agent_id: null`.
+
+* **The register's three tiles counted one page, and the rows used another rule.**
+  `needs_you + in_flight + settled` summed to exactly the page limit; a `failed` task
+  reported `an_agent`, which the register renders as **"With an agent"**. Counts now come
+  from a `GROUP BY` over the whole table and `_BUCKETS` is one table beside the SQL `CASE`
+  it mirrors. `an_agent` means a running task and nothing else (F268).
+
 * **Departments are separated from each other, and the separation is the database's.**
   There was no unit boundary at all: `app.current_tenant` was the only row predicate, the
   company is one organisation, and `internal_database_query` — which refuses writes,
@@ -776,7 +807,7 @@ Two things about that were nearly wrong in a way that would have cost money:
   by the caller rather than guessed.
 
 **Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
-the suite is 3167 unit and integration tests, 8 skipped, 1 deselected, 0 failed, and
+the suite is 3179 unit and integration tests, 3 skipped, 1 deselected, 0 failed, and
 `make lint` and `make typecheck` are clean.
 
 **Two existing tests caught a wrong fix in this pass, which is worth recording.** The

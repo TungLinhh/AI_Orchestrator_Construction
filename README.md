@@ -385,7 +385,7 @@ something harmful are the hardest to test, they will be the least tested.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| `tests/unit` + `tests/integration` | 3167 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
+| `tests/unit` + `tests/integration` | 3179 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
 | `tests/e2e` | 34 | The 8 acceptance scenarios, the event pipeline through real NATS JetStream, and A2A against a spawned remote agent. Gated by `preflight-e2e`, so a missing broker is a failure rather than five skips |
 | `make lint` | clean | 669 findings fixed, including a typo in a target name that made a documented command fail on a clean machine |
 | `make typecheck` | clean | 144 source files, no `Any` escapes and no unused ignores |

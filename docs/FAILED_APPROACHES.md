@@ -7534,3 +7534,155 @@ function existed for.
 usefully."** A correct answer that the platform throws away and then describes as never
 having existed is the worst of the three outcomes: it is wrong, it is confident, and it
 points at somebody who is not at fault.
+
+### F266
+
+**Four defects that a screenshot showed and no test did, in one screen.**
+
+Reported together, 2026-10-03, all on `Give work`: a wall of `[object HTMLLIElement]`
+where the delegation tree should be; "Needs you 100" beside an empty list; a filter that
+could not be clicked; and an agent selector stuck on "loading agents…". Every request
+succeeded, the script loaded without throwing, and every number on the page was a lie.
+
+**The tree was `innerHTML = nodes.join("")`.** `nodeEl` builds and returns an
+`HTMLElement`, and joining an array of elements calls `String()` on each one, which
+produces `[object HTMLLIElement]`. So the one panel whose entire job is showing how work
+was handed out displayed a JavaScript type name. Now `replaceChildren(...nodes)`.
+
+**Two elements shared `id="workFilter"`, and two more pairs shared ids with them.**
+`$()` returns the first in the document, so the click handler for the register's
+four-button filter was attached to the *approvals* screen's two-button segment. The four
+buttons a person actually clicks did nothing. Worse, both render paths wrote to the same
+`#workList`, so the register panel was never written to and read as permanently empty
+while its own tile counted 176 tasks. Measured before the fix: `workFilter ×2,
+workList ×2, workEmpty ×3, workSub ×2`. There is now a check that no id is declared twice,
+because the class of defect is cheap to reintroduce and invisible to review.
+
+**The work filter was `state.x === "all" ? items : items`.** Both branches the same array,
+and nothing was bound to the buttons at all — so "All" showed exactly what "Waiting"
+showed and neither could be changed.
+
+**The agent selector had no code behind it.** It shipped as `<option>loading agents…`
+and nothing ever wrote to it, because the screen that filled it was one of the eight cut
+when the console went from eleven sections to three. Pressing Run therefore created a task
+with `owner_agent_id: null` — nobody to do it. **Cutting a screen took a live control with
+it**, and the markup outlived the function without either looking wrong in review.
+
+### F267
+
+**A maintenance step pointed at the wrong database, which is worse than no step.**
+
+`make page` ran `scripts/sweep_stranded.py` with no `--org`. The script resolves its
+tenant from `sop_definitions`, and on this machine that is a *different* organisation
+from the one the page opens. So every `make page` swept a tenant nobody was looking at
+and printed
+
+```
+org org_01m3t8b2qz836nwmz8mkqsr2vx: closed 0 stranded execution(s), expired 0
+```
+
+while the demo company the browser was showing had **113 tasks sitting `assigned`** that
+no agent would ever pick up. `ORG` is now a make variable read by the sweep, the verifier
+and the printed URL alike, because the only way three of them can be made to agree is for
+them to be one thing.
+
+### F268
+
+**The three tiles counted a page, and the rows were labelled by a different rule.**
+
+```
+total 177 | needs_you 2 | in_flight 67 | settled 31     # 2 + 67 + 31 == 100 == the limit
+```
+
+`needs_you`, `in_flight` and `settled` were computed by looping over the **paginated
+rows**, so they described one page: a person opening the page with `?limit=5` was told the
+company had five of everything. Counting over the whole table fixed that — and exposed two
+more:
+
+* the SQL bucket for `created`/`assigned` was mapped to `an_agent` while the Python said
+  `you`, so `needs_you 0` sat above two rows reading `waiting_on=you`;
+* and a **failed** task reported `an_agent`, because the third bucket was "everything
+  else". The register read "With an agent: 2" over a list of failures — which is the
+  wording of a system that is working, attached to work that stopped.
+
+Both were one rule written twice. There is now one table, `_BUCKETS`, beside the SQL
+`CASE` it mirrors, and `_waiting_on` reads it. Measured after:
+
+```
+total 179 | needs_you 2 | in_flight 0 | settled 177   # sum == total, and matches the rows
+```
+
+### F269
+
+**106 tasks queued, and pressing Run did nothing — by construction.**
+
+The Run button posted `start_workflow: false`, printed "Queued.", and navigated away. On
+`make page` there is no Temporal and no worker, so nothing ever claimed the row: the queue
+only grew, every task sat `assigned`, and the page said "Runs on the free model"
+underneath. A person's report of this was "I can queue a task but no agent is handling
+it", which was exactly right and had been true the whole time.
+
+Two fixes, and the second is the one that matters:
+
+* **Run now runs.** It posts the task and then `POST /tasks/{id}/run`, which drives the
+  same `TaskExecutionService.execute_task` the Temporal activity drives, on a background
+  task, returning a handle. That endpoint's docstring already said it existed "for exactly
+  this case: a page with a Run button and no worker"; nothing called it.
+* **Nothing claimed is failed and leaves the queue.** `abandon_unclaimed_tasks` fails any
+  non-terminal task with no execution started inside `STUCK_AFTER_SECONDS`, writes one
+  audit row each with a reason written for the *agent* rather than the operator, and is
+  safe to run twice because the `UPDATE` only matches non-terminal rows. 113 orphans
+  became 113 `failed` with
+  `nobody picked this up, so it never ran…` and 113 audit rows. `completed: 47`
+  untouched.
+
+The reason text matters more than it looks. "No worker was available" is a fact about
+scheduling and teaches a model nothing; "nobody picked this up, so it never ran — the
+shape of the work, not the budget" is the thing worth carrying into the next run.
+
+### F270
+
+**The harness had four gaps, and each one was reported as a page defect.**
+
+Adding a check for `[object HTMLLIElement]` uncovered that the DOM shim modelled neither
+`select.options`, `element.children`, nor the re-parse of an assigned `innerHTML` — and
+that `check(name, ok, detail)` evaluates `detail` whether or not `ok` is true, so a guard
+in the condition does not protect the message. Three shim gaps in a row each threw out of
+the *check*, which is why they took every check after them down and read as "the
+departments view is broken".
+
+The one worth recording: every node in the harness's id map is built as
+`makeNode(id, "div")` — the map knows ids, not tags — so a `tagName === "SELECT"` guard
+made `options` empty for the page's only selector, and the harness reported a correctly
+filled picker as empty.
+
+**A check that cannot fail is worse than no check, and a check that fails for the wrong
+reason costs more than either** — it sends the next person to fix the instrument.
+
+### F271
+
+**A failed task was counted as "With an agent", and a test pinned it.**
+
+`test_waiting_on_is_classified_by_what_is_left_to_do` asserted `failed → an_agent`, with
+an argument that survives: *a failed task needs somebody, and it is not waiting for a
+person to press a button — it is waiting on a decision about what to do next.*
+
+Both halves are right, and the conclusion was wrong, because `an_agent` is not a
+neutral bucket. It is the column the register renders as the tile **"With an agent"**
+and a filter of the same name. So the number was the wording of a system that is
+working, attached to work that stopped:
+
+```
+needs_you 2 | in_flight 0 | settled 177
+row: failed  waiting_on=nobody      <- after F268
+row: failed  an_agent (before)      <- "With an agent" over a list of failures
+```
+
+`an_agent` now means exactly one thing: a running task. `failed` and `blocked` are in
+`you`, because a decision is what a person makes and `you` is the column a person acts
+in. The old test is rewritten rather than deleted, and its argument is kept — a
+measurement does not make a recorded reasoning wrong, it makes it point somewhere else.
+
+**A column named after a claim about the system's state has to be true.** "With an
+agent", "waiting on you" and "settled" are not categories; they are sentences about the
+company that a reader is expected to believe.

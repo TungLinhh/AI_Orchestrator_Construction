@@ -43,7 +43,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from sqlalchemy import text  # noqa: E402
 
-from ai_orchestrator.application.task_reaper import reap_stranded_executions  # noqa: E402
+from ai_orchestrator.application.fleet_view import STUCK_AFTER_SECONDS  # noqa: E402
+from ai_orchestrator.application.task_reaper import (  # noqa: E402
+    abandon_unclaimed_tasks,
+    reap_stranded_executions,
+)
 from ai_orchestrator.approvals.service import ApprovalService  # noqa: E402
 from ai_orchestrator.persistence.session import Database  # noqa: E402
 
@@ -65,8 +69,24 @@ async def sweep(organization_id: str | None) -> int:
                 print("  no organization holds the dossier catalogue; run `make ingest` first")
                 return 1
         async with db.tenant_session(organization_id) as session:
+            now = dt.datetime.now(tz=dt.UTC)
             closed = await reap_stranded_executions(
-                session, organization_id=organization_id, now=dt.datetime.now(tz=dt.UTC)
+                session, organization_id=organization_id, now=now
+            )
+            # **Tasks nobody ever claimed.**
+            #
+            # Measured 2026-10-03: 106 tasks `assigned`, 0 `running`, and a person
+            # pressing Run with nothing happening. The queue was not draining because
+            # nothing drained it -- a task created over HTTP is committed, and with no
+            # Temporal server and no worker nothing ever claims it. It sat `assigned` for
+            # ever, counted in "waiting on you", and was work no agent would ever do.
+            #
+            # Failing them is the only way the register becomes a statement about the
+            # organisation rather than a record of what was abandoned. Same sweep, same
+            # window the fleet view uses for a stranded box, so the console and the sweep
+            # cannot disagree about what counts as nobody working on it.
+            abandoned = await abandon_unclaimed_tasks(
+                session, organization_id=organization_id, now=now
             )
             # Approvals nobody answered, expired.
             #
@@ -102,10 +122,30 @@ async def sweep(organization_id: str | None) -> int:
                 {"o": organization_id},
             )
         ).scalar()
+    # Đọc lại thay vì tin giá trị trả về. Lỗi F178: một bước bảo trì báo cáo thay đổi
+    # nó vừa rollback, và script này đúng loại được tin.
+    async with Database.from_settings().tenant_session(organization_id) as session:
+        still_open = (
+            await session.execute(
+                text(
+                    "SELECT count(*) FROM tasks WHERE organization_id = CAST(:o AS"
+                    " varchar(64)) AND status IN ('created', 'assigned', 'running')"
+                    " AND updated_at < :since"
+                ),
+                {
+                    "o": organization_id,
+                    "since": dt.datetime.now(tz=dt.UTC) - dt.timedelta(seconds=STUCK_AFTER_SECONDS),
+                },
+            )
+        ).scalar()
     print(
         f"  org {organization_id}: closed {len(closed)} stranded execution(s), "
-        f"expired {len(expired)} unanswered approval(s)"
+        f"expired {len(expired)} unanswered approval(s), "
+        f"abandoned {len(abandoned)} unclaimed task(s)"
     )
+    if still_open:
+        print(f"  FAILED: {still_open} unclaimed task(s) are still open after writing")
+        return 1
     if still:
         print(f"  FAILED: {still} still stranded after writing")
         return 1

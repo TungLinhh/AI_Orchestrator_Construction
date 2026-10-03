@@ -69,6 +69,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from ai_orchestrator.application.fleet_view import STUCK_AFTER_SECONDS
 from ai_orchestrator.domain.enums import TaskStatus
 from ai_orchestrator.domain.ids import new_ulid
 from ai_orchestrator.domain.reaper import (
@@ -253,6 +254,138 @@ WHERE x.id IN (
 )
 RETURNING x.task_id
 """
+
+
+#: A task nobody is holding and nobody will hold.
+#:
+#: `created` / `assigned` / `running`, older than the window, with **no** execution
+#: started inside it. `running` is in the list and `running` is the interesting case: the
+#: task claims to be being worked on, and nothing is working on it.
+#:
+#: `:since` rather than an interval literal, so the window is a parameter of the sweep and
+#: a caller can say "an hour" without this module owning the number.
+_ABANDONED_TASKS = """
+UPDATE tasks t
+SET status = 'failed',
+    last_error = :reason,
+    failure_category = 'infrastructure',
+    updated_at = :now
+WHERE t.id IN (
+    SELECT t.id
+    FROM tasks t
+    WHERE t.organization_id = CAST(:o AS varchar(64))
+      AND t.status IN ('created', 'assigned', 'running')
+      AND t.updated_at < :since
+      AND NOT EXISTS (
+            SELECT 1
+            FROM executions e
+            WHERE e.task_id = t.id
+              AND e.organization_id = t.organization_id
+              AND e.status = 'running'
+              AND e.started_at > :since
+      )
+)
+RETURNING t.id
+"""
+
+#: The words a task fails with when nobody claimed it.
+#:
+#: Written for the **agent**, not for the operator, because this string is what the next
+#: run reads. "no worker was available" is a fact about the platform's scheduling and tells
+#: a model nothing; "nobody picked this up, so it never ran" is the thing worth learning
+#: -- that the shape of the work, not the budget, kept it from being started.
+ABANDONED_REASON = (
+    "nobody picked this up, so it never ran. The task was assigned and left: no worker "
+    "started an execution for it within the queue window, so there is no work to show "
+    "and no result to check. This is a queue fault, not a decision by this department."
+)
+
+
+async def abandon_unclaimed_tasks(
+    conn: AsyncConnection,
+    *,
+    organization_id: str,
+    now: dt.datetime,
+    older_than_s: int = STUCK_AFTER_SECONDS,
+) -> list[str]:
+    """Fail tasks nobody has claimed, and return their ids.
+
+    ## Why this exists
+
+    Measured on the development tenant, 2026-10-03: **106 tasks `assigned`, 0 `running`,
+    and a person pressing Run with nothing happening.** The queue did not drain because
+    nothing ever drained it. A task created over HTTP is committed and then, with no
+    Temporal server and no worker, nothing ever claims it: it sits `assigned` for ever,
+    it counts in "waiting on you", and it counts in nothing else. Every number that
+    describes the organisation's work was reading a backlog of orphans.
+
+    ## Why `failed`, and why now
+
+    The alternative is to leave them, which is the state that was measured. The other
+    alternative is to leave them `assigned` but hide them, which is the same lie with an
+    extra step.
+
+    `failed` is terminal and the state machine says so on purpose, so this needs the
+    window to be wide enough that a task nobody claimed has certainly not been claimed
+    late: the default is an hour, the same `STUCK_AFTER_SECONDS` the fleet view already
+    uses to draw a stranded box. **One window, two consumers** -- so "the console shows a
+    stranded run" and "the sweep gave up on it" can never disagree.
+
+    Safe to run twice: the `UPDATE` matches only non-terminal rows, so a second sweep
+    finds nothing. That is a consequence of the predicate rather than a coincidence, and
+    it is what makes it safe to run on every `make page`.
+
+    The reason is a sentence a department can learn from, because `procedure.recorded`
+    reads failed tasks: the lesson worth keeping is "this shape of work does not get
+    picked up", not "a worker was busy".
+    """
+    if now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError(
+            "abandon_unclaimed_tasks(now=...) must carry a timezone offset; tasks."
+            "updated_at is timestamptz and an untyped bind is ambiguous."
+        )
+    if older_than_s < 0:
+        raise ValueError(f"older_than_s must be >= 0, got {older_than_s}")
+    since = now - dt.timedelta(seconds=older_than_s)
+    result = await conn.execute(
+        text(_ABANDONED_TASKS),
+        {"o": organization_id, "since": since, "now": now, "reason": ABANDONED_REASON},
+    )
+    failed = [str(row[0]) for row in result.fetchall()]
+
+    # **One audit row per task actually failed.** Not one per finding -- a sweep that
+    # changed nothing wrote nothing, which is the rule `_audit`'s docstring already
+    # states and the reason a maintenance step is believed.
+    #
+    # `policy_decision = 'abandon'` is a fourth value alongside the verdict enum's own,
+    # and it is worth being explicit about why the column has no CHECK: `action` is
+    # free text and `policy_decision` already carries values from more than one writer
+    # (`_STALE_EXECUTIONS` writes `runtime_unavailable` into an *error_kind*, and
+    # `reap()` writes `domain.reaper` decisions into this one). Constraining the
+    # vocabulary now would mean inventing a taxonomy across three writers to satisfy a
+    # check, which is the kind of lock that stops the next fact being recorded at all.
+    for task_id in failed:
+        await conn.execute(
+            text(_AUDIT),
+            {
+                "id": f"aud_{new_ulid()}",
+                "o": organization_id,
+                "action": "task.abandon",
+                "task": task_id,
+                "outcome": "failed",
+                "decision": "abandon",
+                "reason": ABANDONED_REASON,
+                "context": json.dumps(
+                    {
+                        "unclaimed_for_seconds": older_than_s,
+                        "window_source": "fleet_view.STUCK_AFTER_SECONDS",
+                    },
+                    ensure_ascii=False,
+                ),
+                "now": now,
+            },
+        )
+    return failed
 
 
 async def reap_stranded_executions(
@@ -480,4 +613,11 @@ async def _audit(
     )
 
 
-__all__ = ["REAPABLE_STATUSES", "ReapReport", "reap"]
+__all__ = [
+    "ABANDONED_REASON",
+    "REAPABLE_STATUSES",
+    "ReapReport",
+    "abandon_unclaimed_tasks",
+    "reap",
+    "reap_stranded_executions",
+]

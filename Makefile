@@ -25,6 +25,20 @@ LOGS := $(DEV)/logs
 #: already running, and so nothing else on the machine is assumed to be free.
 PAGE_PORT ?= 8099
 
+#: The tenant the page opens, resolved **once** and read by the sweep, the verifier and
+#: the printed URL.
+#:
+#: It was resolved separately in three places, and the sweep was worse than redundant:
+#: `scripts/sweep_stranded.py` with no `--org` picks the organisation holding the most
+#: `sop_definitions`, which on this machine is *not* the demo company the page shows.
+#: So every `make page` swept a database nobody was looking at and printed
+#: "0 stranded, 0 expired" while the visible company had 113 tasks sitting `assigned`
+#: that no agent would ever pick up.
+#:
+#: `$(shell)` runs once per make invocation, so this cannot drift. `2>` keeps
+#: `first_org.py`'s note about an empty database off the recipe output.
+PAGE_ORG = $(shell $(PY) scripts/first_org.py 2>/dev/null)
+
 .DEFAULT_GOAL := help
 .PHONY: help install setup migrate migrate-test downgrade seed seed-process dev dev-api dev-worker dev-nats \
         dev-temporal stop status logs test test-unit test-integration test-e2e test-live \
@@ -405,7 +419,6 @@ seed-construction: ## Ingest the reference corpus so the construction surfaces h
 page: ## Start the API, verify the page against real data, print the URL to open
 	@$(PY) scripts/pgctl.py start >/dev/null 2>&1 || true
 	@$(PY) scripts/seed_local_operator.py >/dev/null 2>&1 || true
-	@$(PY) scripts/sweep_stranded.py >/dev/null 2>&1 || true
 	@mkdir -p $(RUN) $(LOGS) .devdata/ui
 	@if [ -f $(RUN)/page.pid ] && kill -0 $$(cat $(RUN)/page.pid) 2>/dev/null; then \
 		kill $$(cat $(RUN)/page.pid) 2>/dev/null || true; sleep 1; fi
@@ -417,11 +430,23 @@ page: ## Start the API, verify the page against real data, print the URL to open
 	done; \
 	curl -sf -o /dev/null "http://127.0.0.1:$(PAGE_PORT)/health" || \
 		{ echo "the API did not come up. $(LOGS)/page.log:"; tail -20 $(LOGS)/page.log; exit 1; }
-	@ORG=$$($(PY) scripts/first_org.py 2>.devdata/ui/tenant.txt); \
-	echo ""; echo "  tenant: $$ORG"; cat .devdata/ui/tenant.txt; echo ""
-	@$(MAKE) --no-print-directory verify-page BASE=http://127.0.0.1:$(PAGE_PORT) ORG=$$($(PY) scripts/first_org.py 2>/dev/null)
+	@echo ""; echo "  tenant: $(PAGE_ORG)"; echo ""
+	@# **The sweep runs here, with `--org`, and not three lines earlier without it.**
+	@#
+	@# `sweep_stranded.py` resolves its tenant from `sop_definitions` when `--org` is
+	@# omitted, and on this machine that is a *different* organisation from the one the
+	@# page opens -- so every `make page` swept a tenant nobody was looking at. Measured
+	@# 2026-10-03: 113 tasks sitting `assigned` in the demo company, and the sweep
+	@# reporting "0 stranded, 0 expired" for the tenant it had chosen for itself.
+	@#
+	@# A maintenance step pointed at the wrong database is worse than no step at all: it
+	@# prints a reassuring line. There is now one tenant, held in one make variable, and
+	@# the sweep, the verify and the printed URL all read that same variable -- which is
+	@# the only way they can be made to agree.
+	@$(PY) scripts/sweep_stranded.py --org $(PAGE_ORG) || exit 1
+	@$(MAKE) --no-print-directory verify-page BASE=http://127.0.0.1:$(PAGE_PORT) ORG=$(PAGE_ORG)
 	@echo ""
-	@echo "  Open this:  http://127.0.0.1:$(PAGE_PORT)/api/v1/ui?org=$$($(PY) scripts/first_org.py 2>/dev/null)"
+	@echo "  Open this:  http://127.0.0.1:$(PAGE_PORT)/api/v1/ui?org=$(PAGE_ORG)"
 	@echo "  Stop it:    make page-stop"
 	@echo ""
 

@@ -235,20 +235,64 @@ class TestTheWorkQueue:
 
     @pytest.mark.parametrize(
         ("status", "expected"),
-        (("created", "you"), ("assigned", "you"), ("completed", "nobody"), ("failed", "an_agent")),
+        (
+            ("created", "you"),
+            ("assigned", "you"),
+            # **`failed` moved from `an_agent` to `you`, 2026-10-03.**
+            #
+            # This line used to pin `an_agent`, with a fair argument: a failed task needs
+            # somebody, and it is not waiting for a button press. Both halves were right
+            # and the conclusion was wrong, because `an_agent` is the column the register
+            # renders as the tile **"With an agent"** and a filter of the same name. That
+            # is the wording of a system that is working, attached to work that stopped.
+            # Measured on the demo company: the register read `With an agent: 2` while
+            # both of those tasks had `status = failed`.
+            #
+            # A failed task is waiting on a **decision**, and `you` is the column a person
+            # acts in. So is where it goes.
+            ("failed", "you"),
+            ("blocked", "you"),
+            ("completed", "nobody"),
+            ("cancelled", "nobody"),
+            # `running` is the *only* thing in this column, and that is the point: a
+            # filter called "With an agent" that can hold a task nobody is working on
+            # cannot be used to answer "is anybody working on this".
+            ("running", "an_agent"),
+        ),
     )
     async def test_waiting_on_is_classified_by_what_is_left_to_do(
         self, tenant: Tenant, status: str, expected: str
     ) -> None:
         """The three-way split, asserted for every case.
 
-        `failed` is `an_agent` and not `you`, which is the one that is easy to get wrong: a
-        failed task needs *somebody* but it is not waiting on a person to press a button,
-        it is waiting on a decision about what to do next.
+        **`an_agent` means one thing: a running task.** Everything else is either waiting
+        on a person -- an approval, an unclaimed task, a failure awaiting a decision -- or
+        finished. The register's three filters are read by eye against these numbers, so a
+        column whose name is a claim about the system's state has to be true.
         """
         await _task(tenant, f"Task {status}", status=status)
         queue = await ceo_work_queue(tenant.session, organization_id=tenant.organization_id)
         assert queue["items"][0]["waiting_on"] == expected
+
+    async def test_nothing_failed_is_ever_reported_as_an_agent_holding_it(
+        self, tenant: Tenant
+    ) -> None:
+        """**The invariant, stated directly**, because the bug was a wording problem.
+
+        The register shows `With an agent: N` and a filter named after it. If a single
+        failed task can appear there, the number means "work that stopped" and the label
+        means "work in progress", and a reader has no way to tell which one they are
+        looking at. This is the assertion that would have caught it on the day the label
+        was written.
+        """
+        for title, status in (("Dead", "failed"), ("Stuck", "blocked"), ("Over", "completed")):
+            await _task(tenant, title, status=status)
+        queue = await ceo_work_queue(tenant.session, organization_id=tenant.organization_id)
+        holders = [t for t in queue["items"] if t["waiting_on"] == "an_agent"]
+        assert holders == [], (
+            f"{[t['status'] for t in holders]} counted as held by an agent; only a running task is"
+        )
+        assert queue["in_flight"] == 0
 
     async def test_a_pending_approval_puts_the_task_in_your_column(self, tenant: Tenant) -> None:
         """Even when the task itself is finished.
@@ -298,7 +342,9 @@ class TestTheWorkQueue:
             f"the tiles say {queue['needs_you']}/{queue['in_flight']}/{queue['settled']} "
             f"and the list has {len(queue['items'])} rows"
         )
-        assert queue["needs_you"] == 2, "created and assigned both need a person"
+        # created, assigned **and** failed: the first two need an owner, the third needs a
+        # decision. `completed` needs nobody.
+        assert queue["needs_you"] == 3, "created, assigned and failed all need a person"
 
     async def test_the_filter_narrows_and_the_count_follows(self, tenant: Tenant) -> None:
         await _task(tenant, "Open one", status="created")
