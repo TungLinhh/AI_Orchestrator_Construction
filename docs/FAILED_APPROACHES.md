@@ -7686,3 +7686,128 @@ measurement does not make a recorded reasoning wrong, it makes it point somewher
 **A column named after a claim about the system's state has to be true.** "With an
 agent", "waiting on you" and "settled" are not categories; they are sentences about the
 company that a reader is expected to believe.
+
+### F272
+
+**A duplicate guard that blocked the company's parallelism, keyed on sixteen tokens.**
+
+Reported as *"a task cannot be done when there is another task going — there should be
+multiple agents working at the same time and cannot block each other's work"*. The
+mechanism was `uq_tasks_live_intent`:
+
+```sql
+UNIQUE (organization_id, owner_agent_id, intent_fingerprint)   -- tenant-wide, per agent
+```
+
+and `intent_fingerprint` was a hash of **the first 16 tokens** of the goal. So a department
+could hold exactly one live task of a given kind, and the collision was not even a
+near-duplicate:
+
+```
+Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy f648b6e3)
+Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy 21a4b662)
+```
+
+Two separate runs, refused against each other, differing only by the **run marker the
+platform itself appends** — which sits after the window. The refusal text a person saw was:
+
+```
+an equivalent task is already active: tsk_01m40w7z787mxdzwqqy8f4v754. It was created
+concurrently, and the colleague that owns it has it.
+```
+
+The window existed for a measured reason — a model re-asks the same work with "aggregate the
+artifacts you already produced" appended, and the whole-goal hash misses it. Four re-asks
+were stopped that way. **The heuristic bought four refusals by blocking the company.**
+
+Three changes, and the trade is stated once: **a guard that fires only on real work is not
+worth having.** Missing a duplicate costs one redundant task, and F263 made that cheap.
+Refusing a real second request costs a department's capacity, which is what was measured.
+
+* `intent_fingerprint` hashes the **whole** normalised goal, so the run marker separates.
+* the index is scoped to the request that raised it — `COALESCE(parent_task_id, '')` — so a
+  re-ask inside one parent still collides and two different requests never do.
+* the near-duplicate case is F244, a documented non-goal.
+
+`COALESCE(parent_task_id, id)` was tried first and is **wrong**: it makes every root task its
+own bucket, so two identical root goals never collide — which breaks pressing Run twice with
+the same goal, and `test_a_refused_duplicate_leaves_the_callers_work_intact` said so
+immediately.
+
+### F273
+
+**An index on an expression, which the ORM cannot declare — and `model-sync` proved it by
+generating code that does not import.**
+
+`COALESCE(parent_task_id, '')` inside a unique index is correct and is what `model-sync`
+turned into:
+
+```python
+Index("uq_tasks_live_intent", "organization_id", "owner_agent_id",
+      "COALESCE(parent_task_id", "''::character", "intent_fingerprint",
+      unique=True, postgresql_ops=["varying)"], ...)
+```
+
+— split on the commas inside the call. SQLAlchemy then refuses it, so **the model module
+would not import at all**:
+
+```
+ConstraintColumnNotFoundError: Can't create Index on table 'tasks': no column named
+'COALESCE(parent_task_id' is present.
+```
+
+`test_schema_matches_models` — a test that has nothing to do with delegation — was the thing
+that noticed, which is exactly what it is for.
+
+The fix is to stop computing it. `tasks.intent_scope` holds the value the expression
+computed, written by the same code that writes `intent_fingerprint`, and the index is four
+ordinary columns. A column can be indexed, inspected in a query, backfilled, and compared by
+the drift test. **An expression index that the drift test cannot see is worse than no index**,
+because the one instrument that verifies the schema has been edited has a hole in it exactly
+where the cleverness is.
+
+### F274
+
+**The console harness had been passing on a fixture nobody had declared.**
+
+`verify_page.mjs` asserts on rendered output — that the stream carries events, that the
+register has rows, that an office panel separates its own work from its departments'. Every
+one needs something to render. Then the owner said *"delete all the tasks you generated to
+test the system, I want to try some of my own right now"*, and the harness reported:
+
+```
+FAIL  the stream carries events  — 0 frames
+FAIL  the event shape has `id`   — keys: none
+... five more
+```
+
+**Which is the harness telling the truth and the fixture having been load-bearing.** The
+checks were never wrong. They had been relying on a tenant that testing happened to fill,
+which means they would fail on a clean machine, in CI, and for the next person.
+
+`make page` now seeds two **scripted** runs before verifying: an `analysis` task that
+completes, and a `coordination` task that **fails for real**, because the scripted runtime
+cannot call `delegate_to_agent` and a coordination task that answers alone is failed by the
+platform on purpose. Nothing about that failure is staged — it is the same outcome a model
+produces when it ignores its instructions, and without it the Issues panel, the retry path
+and the "what went wrong" wording have nothing to render.
+
+Costs nothing: `model_provider_default=fake` is forced, so this is the path the 3,000-test
+suite takes, at one task instead of thousands.
+
+Three smaller things in the same script, each found by running it:
+
+* it returned early when the register already had work, which left two `assigned` tasks with
+  no execution — that `abandon_unclaimed_tasks` then failed an hour later as abandoned, so
+  the console showed two failures that were really this script's half-finished work.
+  **Idempotent by state, not by count.**
+* it called `commit()` inside `async with db.tenant_session(...)`, which owns one
+  transaction: the next statement raises `InvalidRequestError: can't operate on closed
+  transaction inside context manager`. Three times before it was read off the error.
+* it started every runnable task, including one the harness itself had created **with no
+  owner** to check the retry refusal — and `local_runner.start` correctly raises
+  `ConflictError` on a task with no agent. A fixture is not a validator.
+
+And the delegation check, which required data only a real model produces, now asserts the
+**rendering** instead: with delegations it draws them, with none it says so rather than
+showing an empty rectangle. Both are real; neither needs a model call.

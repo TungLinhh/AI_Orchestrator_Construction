@@ -459,6 +459,41 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
   font-variant-numeric: tabular-nums; }
 .abox .roll b { color: var(--text-2); }
 
+/* An issue row that opens.
+   **`<details>` rather than a div with a click handler**, so it is keyboard-operable and
+   keeps working with the page's own scripts absent. The summary is the collapsed line — the
+   task, who holds it, and the first sentence of the reason — and the body is the whole
+   reason plus the two actions. A person deciding whether to re-run something needs the
+   reason before the button, not after. */
+details.issue { display: block; padding: 0; }
+details.issue > summary {
+  list-style: none; cursor: pointer; padding: 9px 12px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+details.issue > summary::-webkit-details-marker { display: none; }
+details.issue > summary:hover { background: var(--fill); }
+/* A chevron that rotates, so the row's state is visible without clicking. The one thing a
+   `<details>` does not give you for free. */
+details.issue > summary::after {
+  content: "▸"; color: var(--text-3); font-size: 11px;
+  transition: transform .15s ease;
+}
+details.issue[open] > summary::after { transform: rotate(90deg); }
+details.issue > summary { position: relative; padding-right: 28px; }
+details.issue > summary::after { position: absolute; right: 12px; top: 12px; }
+.issue-body {
+  padding: 0 12px 11px 12px; border-top: 1px solid var(--line); margin-top: 2px;
+}
+.issue-body .reason {
+  font: 11.5px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word;
+  background: var(--sunken); border-radius: 8px; padding: 9px 10px; margin: 9px 0;
+  max-height: 34vh; overflow: auto;
+}
+.issue-body .btn-row { margin-top: 4px; }
+/* The reason, in the collapsed line. Warmer than the metadata above it, because it is the
+   part that explains why the row exists. */
+details.issue .s.err { color: var(--warn, #a8712a); white-space: normal; }
+
 /* The live feed: one line per event, newest first. Dense on purpose — this is a
    ticker, not a table, and a person reads it by scrolling once and looking for the
    line with their department's name in it. The dot marks recency, not a verdict: the
@@ -574,14 +609,30 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
       <a href="#/give" data-nav="give"><span class="ic">▷</span> Give work</a>
       <a href="#/work"      data-nav="work">
         <span class="ic">◔</span> Needs you
-        <span class="count" id="navApprovalCount" hidden></span>
       </a>
 
-      <div class="label">Reference</div>
+      <div class="label">Attention</div>
+      <!--
+        **Two destinations a boss actually opens**, and both were missing.
 
-      <details class="more">
-        <summary>More</summary>
-      </details>
+        The nav had `Reference` as a heading over an empty list and a `<details>More</details>`
+        with nothing inside it — leftovers from when the console had eleven sections. A
+        heading for a list that does not exist, and a control that reveals nothing, are
+        worse than absent: they read as "there is more here" and there is not, so a person
+        clicks and concludes something is broken.
+
+        What was missing is what the report asked for: a place to reach the *issues* and
+        the *needs of approval*, and to see them expanded. Both counts are live, and both
+        are the numbers a person is accountable for.
+      -->
+      <a href="#/work"      data-nav="issues">
+        <span class="ic">⚠</span> Issues
+        <span class="count" id="navIssueCount" hidden></span>
+      </a>
+      <a href="#/work"      data-nav="approvals">
+        <span class="ic">◷</span> Approvals
+        <span class="count" id="navApprovalCount" hidden></span>
+      </a>
     </div>
     <div class="foot">
       <div style="font-size:11.5px;color:var(--text-2);display:flex;align-items:center;gap:6px">
@@ -615,8 +666,37 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
 
       <!-- ============================= dashboard ============================= -->
 
-      <!-- ============================== work ================================ -->
+      <!-- ============================== work ================================
+           Two lists under one screen, because they answer one question between them:
+           **what is this company waiting on me for?** An approval needs a decision and an
+           issue needs a judgement; both are the boss's, both are countable, and putting
+           them in two screens meant the sidebar offered two dead headings and no way to
+           reach either.
+
+           Each row expands. A row that says "failed" and gives no reason is not actionable
+           — the person has to open the task to learn what happened, which is the same as
+           not having an issues list. **Every row carries its reason inline, and expands to
+           the full text.** -->
       <section class="view" id="view-work" hidden>
+        <div class="stats" id="needStats"></div>
+        <div class="card">
+          <header>
+            <h2>Issues</h2>
+            <span class="sub" id="issueSub"></span>
+            <span class="spacer"></span>
+            <span class="seg" id="issueFilter">
+              <button class="on" data-i="">Everything</button>
+              <button data-i="failed">Failed</button>
+              <button data-i="blocked">Blocked</button>
+              <button data-i="waiting">No owner</button>
+            </span>
+          </header>
+          <div class="list" id="issueList"></div>
+          <div class="empty" id="issueEmpty" hidden>
+            <div class="big">✓</div> Nothing has gone wrong. Every task either finished or
+            is still being worked on.
+          </div>
+        </div>
         <div class="card">
           <header>
             <h2>Approvals</h2>
@@ -1275,8 +1355,78 @@ function depthOf(items, node) {
   return d;
 }
 
+/* ---------------- issues: what went wrong, with the reason ---------------- */
+let issueFilter = "";
+
+/** Escape and wrap for a `<pre>` block, so a multi-line reason reads as a paragraph. */
+function reasonBlock(text) {
+  return `<pre class="reason">${esc(String(text).slice(0, 1400))}</pre>`;
+}
+
+/**
+ * Render the issues list from the register, every row expandable.
+ *
+ * **The reason is in the row, collapsed, and full when opened.** A list of `failed`
+ * without its cause is not an issues list: the person has to open each task to find out
+ * what happened, which is what they were trying to avoid. So the first line carries a
+ * trimmed reason, and `<details>` carries the whole of it.
+ *
+ * `<details>`/`<summary>` rather than a click handler because it is keyboard-accessible
+ * and works without JavaScript wiring — the same reason it is used for the tooltip.
+ */
+function renderIssues(q) {
+  const all = (q.items || []).filter((t) => ["failed", "blocked", "cancelled"].includes(t.status)
+    || (t.waiting_on === "you" && t.status === "created"));
+  const rows = !issueFilter ? all
+    : all.filter((t) => (issueFilter === "waiting" ? t.status === "created" : t.status === issueFilter));
+
+  const failed = all.filter((t) => t.status === "failed").length;
+  const blocked = all.filter((t) => t.status === "blocked").length;
+  const unowned = all.filter((t) => t.status === "created").length;
+  setHTML("needStats",
+    statTile("Needs you", num(q.needs_you ?? 0),
+      "a decision, an owner, or a judgement", (q.needs_you ?? 0) ? "warn" : "good")
+    + statTile("Failed", num(failed), "the company could not finish them",
+      failed ? "alarm" : "good")
+    + statTile("Blocked", num(blocked), "waiting on something", blocked ? "warn" : "good")
+    + statTile("Approvals", num(state.inbox ? state.inbox.length : 0),
+      "pending a person", (state.inbox || []).length ? "warn" : "good"));
+
+  $("issueSub").textContent = all.length
+    ? `${all.length} to look at`
+    : "nothing has gone wrong";
+  $("issueEmpty").hidden = rows.length > 0;
+  setHTML("issueList", rows.map((t) => {
+    const short = t.last_error ? String(t.last_error).slice(0, 150) : "no reason recorded";
+    return `
+    <details class="row issue" data-task="${esc(t.id)}">
+      <summary class="grow">
+        <div class="t"><span class="pill del">${esc(t.status)}</span> ${esc(t.title)}</div>
+        <div class="s">${esc(t.task_type || "task")}${t.owner_name
+          ? " · held by " + esc(t.owner_name) : " · nobody holds it"}
+          ${t.children ? ` · ${t.children} subtask(s)` : ""}</div>
+        <div class="s err">${esc(short)}${String(t.last_error || "").length > 150 ? "…" : ""}</div>
+      </summary>
+      <div class="issue-body">
+        ${t.last_error ? reasonBlock(t.last_error)
+          : '<div class="s">No reason was recorded for this outcome.</div>'}
+        <div class="btn-row">
+          <a class="btn sm" href="#/give/${encodeURIComponent(t.id)}">Open it</a>
+          <button class="btn sm" data-retry="${esc(t.id)}">Run it again</button>
+        </div>
+      </div>
+    </details>`;
+  }).join(""));
+}
+
 /* ---------------- work: the queue you can actually act on ---------------- */
 async function renderWork() {
+  // **The issues list and the approvals list come from one question**, so they are loaded
+  // together and rendered together. `/ceo/work` is the register — statuses, owners, and the
+  // reason on anything that stopped — and `/approvals/inbox` is what a person must decide.
+  // Both counts go into the sidebar, because a badge a person cannot reach is decoration.
+  let register = {};
+  try { register = await apiGet("/ceo/work", { limit: 200 }); } catch (err) { /* shown below */ }
   // **The filter does something, which it did not.**
   //
   // It used to read `const shown = state.workFilter === "all" ? d.items : d.items;` --
@@ -1340,6 +1490,14 @@ async function renderWork() {
       ${buttons}
     </div>`;
   }).join(""));
+  renderIssues(register);
+  const issueBadge = $("navIssueCount");
+  const issues = (register.items || []).filter((t) => ["failed", "blocked", "cancelled"].includes(t.status));
+  if (issueBadge) {
+    issueBadge.textContent = issues.length ? String(issues.length) : "";
+    issueBadge.hidden = !issues.length;
+  }
+
   setHTML("workNote",
     "Oldest first, because an approval queue has no urgency field and a person working "
     + "it by insertion order is working it by accident. <b>Ask</b> sends the task back to "
@@ -1349,7 +1507,54 @@ async function renderWork() {
   $("navApprovalCount").hidden = !d.count;
 }
 
+/* ---------------- retry, once, for every place that offers it ---------------- */
+/**
+ * Run a failed piece of work again, as a **new** task that remembers the first attempt.
+ *
+ * `POST /tasks/{id}/retry`, not `POST /tasks/{id}/run`. Two reasons, both from the API:
+ * a failed task is terminal and reusing the row would make the audit trail lie about what
+ * was attempted; and a retry is a new task linked by `task_dependencies`, so the attempt
+ * graph is real rather than a column somebody updates.
+ *
+ * **One function for two buttons**, because the task-detail Retry button was rendered,
+ * titled and shown — and had no handler at all. `grep retryBtn` found a `hidden` line, a
+ * `title` line and nothing else: a control that appeared exactly when it was useful and
+ * did nothing when pressed.
+ */
+async function retryTask(id, button) {
+  const label = button ? button.textContent : "";
+  if (button) { button.disabled = true; button.textContent = "Starting…"; }
+  try {
+    const made = await apiPost(`/tasks/${encodeURIComponent(id)}/retry`, {});
+    const newId = made.task_id || made.id;
+    if (newId) {
+      toast(made.started === false
+        ? "Queued for another attempt."
+        : "Running the same work again as a new task.");
+      go(`#/give/${encodeURIComponent(newId)}`);
+      return;
+    }
+    toast("Could not start it again: " + (made.reason || made.error || "unknown"), true);
+  } catch (err) {
+    // A refusal here is usually "an equivalent task is already active" — the platform
+    // protecting itself from doing the same work twice. Reported, not swallowed, because
+    // the alternative is a button that appears to work.
+    toast("Could not start it again: " + err.message, true);
+  } finally {
+    if (button) { button.disabled = false; button.textContent = label; }
+  }
+}
+$("retryBtn").onclick = () => retryTask(state.taskId, $("retryBtn"));
+
 document.addEventListener("click", async (e) => {
+  const retry = e.target.closest("button[data-retry]");
+  if (retry) {
+    // A `<details>` row must not also navigate: the click lands on the summary too.
+    e.preventDefault();
+    e.stopPropagation();
+    await retryTask(retry.dataset.retry, retry);
+    return;
+  }
   const btn = e.target.closest("button[data-do]");
   if (!btn) return;
   const { do: action, id } = btn.dataset;
@@ -2088,6 +2293,14 @@ function watchRun(id) {
 // **This screen's own filter, which had no handler at all.** The markup declared
 // `data-f="pending"` / `data-f="all"` and nothing listened, so a person could click
 // "All" a hundred times and see the pending list forever.
+$("issueFilter").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-i]");
+  if (!b) return;
+  issueFilter = b.dataset.i || "";
+  for (const x of $("issueFilter").children) x.classList.toggle("on", x === b);
+  await renderWork();
+});
+
 $("workFilter").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-f]");
   if (!b) return;

@@ -1044,15 +1044,27 @@ class AgentToolBinding(Base):
     )
 
 
-# ====================================================== tasks & delegation ==
+# ====================================================== tasks & delegation
+#
+#: Shared by migration 0032 and this model, for the reason `DEL_INTENT_COMMENT`
+#: exists: a `modify_comment` drift is not something a `__table_args__` rebuild
+#: can repair.
+DEL_SCOPE_COMMENT = (
+    "The request this task belongs to: parent_task_id, or '' for a root. Stored rather "
+    "than computed at index time, because an expression index cannot be declared on the "
+    "ORM and a rule the drift test cannot see is a rule nobody verifies."
+)
+
 #: The comment on `tasks.intent_fingerprint`, shared by the migration and the model. A
 #: `modify_comment` drift is what a rebuild-based sync cannot repair on its own, and the check
 #: that caught it -- `test_there_is_no_drift` -- is the reason it is a constant and not prose
 #: twice.
 DEL_INTENT_COMMENT = (
-    "Hash of the first 16 normalised tokens of the goal, in order, plus the owner agent. "
+    "Hash of the whole normalised goal, in order, plus the owner agent. "
     "What the delegating executor writes; what the partial unique index keys on. "
-    "NULL means the row was not created by a delegation."
+    "NULL means the row was not created by a delegation. It was the first 16 tokens until "
+    "F272: that blocked a second run of the same tender from starting, because the run "
+    "marker the platform appends sits past the window."
 )
 
 
@@ -1124,6 +1136,20 @@ class Task(Base):
     #: guessing.
     intent_fingerprint: Mapped[str | None] = mapped_column(
         String(64), nullable=True, comment=DEL_INTENT_COMMENT
+    )
+    #: Migration 0032. **The request this task belongs to, stored rather than computed.**
+    #:
+    #: The duplicate index has to say "has *this request* already asked this agent for this
+    #: work?", and `parent_task_id` is nullable -- a NULL never compares equal, so roots
+    #: would be exempt. The obvious fix, `COALESCE(parent_task_id, '')` inside the index,
+    #: cannot be declared on the ORM: `make model-sync` splits the expression on its commas
+    #: and the model stops importing with `ConstraintColumnNotFoundError`.
+    #:
+    #: So the value is data. `''` means a root, and every root shares one bucket -- so
+    #: pressing Run twice with the same goal is still refused, which is the case the index
+    #: was built for and the one a `COALESCE(parent_task_id, id)` key silently broke.
+    intent_scope: Mapped[str] = mapped_column(
+        String(40), nullable=False, server_default="", default="", comment=DEL_SCOPE_COMMENT
     )
     # The shape of the work, distinct from the wording of the request. `fingerprint`
     # answers "have I been asked this before?" and is applied to a unique index, so
@@ -1205,22 +1231,23 @@ class Task(Base):
             unique=True,
         ),
         Index(
-            "uq_tasks_live_intent",
-            "organization_id",
-            "owner_agent_id",
-            "intent_fingerprint",
-            unique=True,
-            postgresql_where=text(
-                "((status)::text = ANY ((ARRAY['created'::character varying, "
-                "'assigned'::character varying, 'running'::character varying])::text[]))",
-            ),
-        ),
-        Index(
             "ix_tasks_requester_agent",
             "organization_id",
             "requester_agent_id",
             postgresql_where=text(
                 "(requester_agent_id IS NOT NULL)",
+            ),
+        ),
+        Index(
+            "uq_tasks_live_intent",
+            "organization_id",
+            "owner_agent_id",
+            "intent_scope",
+            "intent_fingerprint",
+            unique=True,
+            postgresql_where=text(
+                "((status)::text = ANY ((ARRAY['created'::character varying, "
+                "'assigned'::character varying, 'running'::character varying])::text[]))",
             ),
         ),
         Index(

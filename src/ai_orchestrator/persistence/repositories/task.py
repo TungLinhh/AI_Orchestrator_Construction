@@ -171,6 +171,7 @@ class TaskRepository:
         allow_parallel: bool = False,
         event_id: str | None = None,
         intent_fingerprint: str | None = None,
+        intent_scope: str | None = None,
     ) -> Task:
         if not goal.strip():
             msg = "task goal must not be empty"
@@ -268,6 +269,14 @@ class TaskRepository:
             fingerprint=fingerprint,
             dedup_key=dedup_key,
             intent_fingerprint=intent_fingerprint,
+            # **The request this task belongs to, computed here rather than at index
+            # time.** See migration 0032: an expression index cannot be declared on the
+            # ORM, so `model-sync` produced `Index("COALESCE(parent_task_id", "''::character",
+            # ...)` and the model module stopped importing with
+            # `ConstraintColumnNotFoundError`. A column can be indexed, inspected and
+            # checked by `test_schema_matches_models`, which an expression index silently
+            # exempts from.
+            intent_scope=intent_scope if intent_scope is not None else (parent_task_id or ""),
             budget_limit_usd=budget_limit_usd,
             budget_limit_tokens=budget_limit_tokens,
             deadline_at=deadline_at,

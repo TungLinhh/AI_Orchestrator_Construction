@@ -444,6 +444,19 @@ page: ## Start the API, verify the page against real data, print the URL to open
 	@# the sweep, the verify and the printed URL all read that same variable -- which is
 	@# the only way they can be made to agree.
 	@$(PY) scripts/sweep_stranded.py --org $(PAGE_ORG) || exit 1
+	@# **One scripted run first, so the console is verified against real data.**
+	@#
+	@# `verify_page.mjs` asserts on *rendered output* -- that the stream carries events,
+	@# that the register has rows, that an office panel separates its own work from its
+	@# departments'. Every one of those needs something to render, and the fixture had
+	@# been silently load-bearing on a tenant someone else had already filled: after
+	@# "delete every task, I want to try my own", the harness reported six honest
+	@# failures and 0 frames.
+	@#
+	@# Costs nothing. The provider is forced to `fake`, so this is the same scripted path
+	@# the 3,000-test suite takes, at one task instead of thousands. It skips when the
+	@# tenant already has work, so it never becomes the source of what it checks.
+	@$(PY) scripts/seed_page_data.py $(PAGE_ORG) || exit 1
 	@$(MAKE) --no-print-directory verify-page BASE=http://127.0.0.1:$(PAGE_PORT) ORG=$(PAGE_ORG)
 	@echo ""
 	@echo "  Open this:  http://127.0.0.1:$(PAGE_PORT)/api/v1/ui?org=$(PAGE_ORG)"

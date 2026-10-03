@@ -64,6 +64,23 @@ secrets — simulated personas and a role switcher) and every external integrati
   from a `GROUP BY` over the whole table and `_BUCKETS` is one table beside the SQL `CASE`
   it mirrors. `an_agent` means a running task and nothing else (F268).
 
+* **One department, many pieces of work at once.** `uq_tasks_live_intent` was unique on
+  `(org, owner_agent_id, fingerprint)` tenant-wide, keyed on the **first 16 tokens** of the
+  goal — so a department could hold one live task of a given kind, and two runs of the same
+  tender collided because the only difference was the run marker the platform appends,
+  which sits past the window. The refusal a person saw was *"an equivalent task is already
+  active… move on to the next piece of work"*. The fingerprint is now the whole goal and the
+  index is scoped to the request that raised it (`tasks.intent_scope`, migration 0032), so a
+  re-ask inside one request still collides and two different requests never do (F272).
+  Measured on `hiring-pipeline`: **32 delegations applied, 0 refused as a duplicate.**
+
+* **The console is verified against data it creates.** `verify_page.mjs` asserts on rendered
+  output, and it had been silently relying on a tenant someone else had filled. Emptied at
+  the owner's request, it reported six honest failures and 0 frames. `make page` now seeds
+  two **scripted** runs first — one `analysis` that completes, one `coordination` that fails
+  for real, because the scripted runtime cannot delegate — at no model cost, and it starts
+  anything left unrun rather than skipping (F274).
+
 * **Departments are separated from each other, and the separation is the database's.**
   There was no unit boundary at all: `app.current_tenant` was the only row predicate, the
   company is one organisation, and `internal_database_query` — which refuses writes,
@@ -807,7 +824,7 @@ Two things about that were nearly wrong in a way that would have cost money:
   by the caller rather than guessed.
 
 **Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
-the suite is 3179 unit and integration tests, 3 skipped, 1 deselected, 0 failed, and
+the suite is 3184 unit and integration tests, 3 skipped, 1 deselected, 0 failed, and
 `make lint` and `make typecheck` are clean.
 
 **Two existing tests caught a wrong fix in this pass, which is worth recording.** The

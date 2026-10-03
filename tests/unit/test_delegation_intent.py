@@ -52,19 +52,50 @@ def key(goal: str, agent: str = HR) -> str:
     )
 
 
-class TestTheKeyCatchesARestatement:
+class TestARestatementIsNoLongerCaughtByTheKey:
+    """**This is now the wrong behaviour, deliberately, and the measurement decided it.**
+
+    The key used to be the first 16 tokens of the goal, so "the same work with a clause
+    appended" produced the same key and the re-ask was refused. Four re-asks on one parent
+    were stopped that way, and it was the only thing stopping them.
+
+    Then a person reported that *a task could not be done while another task was going*, and
+    measured the collisions:
+
+    ```
+    Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy f648b6e3)
+    Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy 21a4b662)
+    ```
+
+    Two separate runs of the same tender, refused against each other, because the only
+    difference is the run marker the platform appends — and it sits *after* the window. So
+    the prefix bought its four refusals by blocking the company's parallelism.
+
+    **The trade, stated once:** a heuristic that fires only on real work is not worth having.
+    Missing a duplicate costs one redundant task, and the terminal-refusal work (F263) made
+    that cheap. Refusing a real second request costs the company a department's capacity,
+    which is what was measured.
+
+    The re-ask is still caught, by a different mechanism and at the right scope: the index is
+    now keyed on the parent request, so the *same* parent asking twice collides regardless of
+    wording, while two different requests never do
+    (`test_task_delegation.py::TestParallelismIsNotBlockedByDuplicateDetection`).
+    """
+
     @pytest.mark.parametrize(
         ("original", "restated"),
         [(ONE, ONE_RESTATED), (THREE, THREE_RESTATED)],
         ids=["short-objective", "long-objective"],
     )
-    def test_appending_a_clause_does_not_move_the_key(self, original: str, restated: str) -> None:
-        """The measured failure: the model re-asked the same work with a clause appended.
+    def test_appending_a_clause_moves_the_key(self, original: str, restated: str) -> None:
+        """The restatement is now a *different request*, and must be allowed through."""
+        assert key(original) != key(restated)
 
-        Four times on one parent, and nothing stopped it. A key that moves when a clause is
-        appended is not a key for "the same instruction".
-        """
-        assert key(original) == key(restated)
+    def test_the_identical_wording_still_collides(self) -> None:
+        """**What must not regress.** Two requests with the same words are still one
+        request as far as the key is concerned — this is what still refuses a verbatim
+        double-ask, and losing it would be the same failure in the other direction."""
+        assert key(ONE) == key(ONE)
 
 
 class TestTheKeyDoesNotOverreach:
@@ -74,8 +105,20 @@ class TestTheKeyDoesNotOverreach:
         These two share their first fifteen tokens -- same project, same verb -- and diverge
         only at *token 16*. A prefix of 15 or fewer would refuse one of them, which is refusing
         real delegation. The test exists to fail if the constant is ever shortened.
+
+        It also survives the removal of the window, which is the point: the whole-goal hash
+        separates them by more than a token, and this is the assertion that says so.
         """
         assert key(ONE) != key(THREE)
+
+    def test_a_run_marker_separates_two_runs(self) -> None:
+        """**The measured pair.** Two runs of the same tender, which the prefix refused.
+
+        The run marker is appended by the platform and lands at the end of the goal, so it
+        was outside the window that decided they were the same work.
+        """
+        base = "Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm"
+        assert key(f"{base} (lần chạy f648b6e3)") != key(f"{base} (lần chạy 21a4b662)")
 
     def test_the_same_instruction_to_two_agents_is_two_pieces_of_work(self) -> None:
         assert key(ONE, HR) != key(ONE, FINANCE)

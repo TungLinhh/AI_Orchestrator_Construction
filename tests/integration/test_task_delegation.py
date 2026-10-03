@@ -15,7 +15,11 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import select, text
 
-from ai_orchestrator.domain.delegation import DelegationLimits, DelegationPath
+from ai_orchestrator.domain.delegation import (
+    DelegationLimits,
+    DelegationPath,
+    intent_fingerprint,
+)
 from ai_orchestrator.domain.enums import EventType, TaskStatus
 from ai_orchestrator.domain.errors import (
     ConflictError,
@@ -868,3 +872,152 @@ class TestAbandonedWorkDoesNotHoldTheBudget:
             "a run interrupted three hours ago still holds the budget, which is the "
             "same leak as a never-started task"
         )
+
+
+class TestParallelismIsNotBlockedByDuplicateDetection:
+    """**One department may hold several pieces of work at once.**
+
+    Reported as *"a task cannot be done when there is another task going — there should be
+    multiple agents working at the same time and not blocking each other's work"*, and the
+    mechanism was a unique index:
+
+    ```
+    UNIQUE (organization_id, owner_agent_id, intent_fingerprint)
+    ```
+
+    per agent, tenant-wide, keyed on **the first 16 tokens** of the goal. And the
+    collision was not a near-duplicate at all — the two goals differed only by the run
+    marker the platform appends, which sits after the window:
+
+    ```
+    Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy f648b6e3)
+    Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy 21a4b662)
+    ```
+
+    Two separate runs, refused against each other, with *"an equivalent task is already
+    active… move on to the next piece of work"*.
+
+    **Duplicate detection is about a model re-asking, and re-asking happens inside one
+    request.** So the index is scoped to the parent, and the fingerprint is the whole goal
+    rather than a prefix of it.
+    """
+
+    GOAL = "Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm"
+
+    async def _delegate(
+        self, tenant, source: str, target: str, goal: str, parent: str | None = None
+    ):
+        """One delegation, optionally under a named parent. Returns the child task."""
+
+        delegations = DelegationRepository(tenant.session, tenant.organization_id)
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        parent_id = parent or str(
+            (
+                await repo.create(
+                    title="the goal",
+                    goal="run the tender",
+                    owner_agent_id=source,
+                    allow_parallel=True,
+                )
+            ).id
+        )
+        child = await repo.create(
+            title=goal[:60],
+            goal=goal,
+            owner_agent_id=target,
+            parent_task_id=parent_id,
+            allow_parallel=True,
+            # **The fingerprint, as the executor writes it.** Without this the column is
+            # NULL and the unique index is never consulted — so the "still refuses a
+            # duplicate" test would have passed by proving nothing, which is the exact
+            # mistake an older version of this file documents.
+            intent_fingerprint=intent_fingerprint(
+                organization_id=str(tenant.organization_id),
+                task_type="analysis",
+                goal=goal,
+                owner_agent_id=target,
+            ),
+        )
+        await delegations.record(
+            parent_task_id=parent_id,
+            child_task_id=child.id,
+            source_agent_id=source,
+            target_agent_id=target,
+            objective=goal,
+            platform_limits=DelegationLimits.platform_default(),
+            path=DelegationPath(),
+            parent_limits=DelegationLimits.platform_default(),
+        )
+        return child
+
+    async def test_two_runs_of_the_same_tender_do_not_collide(self, tenant) -> None:
+        """**The measured pair, verbatim.**
+
+        The only difference is the run marker, and it used to land outside the 16-token
+        window — so the second run of the same tender was refused as a duplicate of the
+        first. This is the assertion that would have caught it.
+        """
+        source, target = await _agent_ids(tenant.session, str(tenant.organization_id), 2)
+        first = await self._delegate(tenant, source, target, f"{self.GOAL} (lần chạy f648b6e3)")
+        second = await self._delegate(tenant, source, target, f"{self.GOAL} (lần chạy 21a4b662)")
+        assert str(first.id) != str(second.id)
+
+    async def test_the_same_agent_holds_several_live_tasks(self, tenant) -> None:
+        """The literal requirement: agents work at the same time, not one after another."""
+        source, target = await _agent_ids(tenant.session, str(tenant.organization_id), 2)
+        goals = [
+            "Soạn JD cho kỹ sư chất lượng",
+            "Xây dựng rubric đánh giá ứng viên",
+            "Phân tích CV ứng viên ứng tuyển",
+            "Lập danh mục vật tư cho dự án Bãi Trầm",
+        ]
+        for goal in goals:
+            await self._delegate(tenant, source, target, goal)
+        live = (
+            await tenant.session.execute(
+                text(
+                    "SELECT count(*) FROM tasks WHERE organization_id = :o"
+                    " AND owner_agent_id = :a AND status IN ('created','assigned','running')"
+                ),
+                {"o": str(tenant.organization_id), "a": target},
+            )
+        ).scalar()
+        assert live == len(goals), (
+            f"only {live} of {len(goals)} live tasks on one agent: a department can hold "
+            "one piece of work at a time, which is a queue that admits one of anything"
+        )
+
+    async def test_the_same_request_still_refuses_a_duplicate(self, tenant) -> None:
+        """**The other direction, and it is the case the index was built for.**
+
+        Without this, "parallelism" could be achieved by deleting the control, and the
+        first regression it caused was a fan-out cap that stopped meaning anything.
+        """
+        source, target = await _agent_ids(tenant.session, str(tenant.organization_id), 2)
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        parent = (
+            await repo.create(
+                title="g", goal="run the tender", owner_agent_id=source, allow_parallel=True
+            )
+        ).id
+        # First ask: accepted.
+        await self._delegate(tenant, source, target, self.GOAL, parent=parent)
+        # **Same parent, same agent, same words: refused.** This is the re-ask the index
+        # exists for, and it is what a fan-out cap stops meaning nothing without.
+        with pytest.raises(ConflictError):
+            await self._delegate(tenant, source, target, self.GOAL, parent=parent)
+        live = (
+            await tenant.session.execute(
+                text(
+                    "SELECT count(*) FROM tasks WHERE organization_id = :o"
+                    " AND owner_agent_id = :a AND parent_task_id = :p"
+                    " AND intent_fingerprint IS NOT NULL"
+                ),
+                {"o": str(tenant.organization_id), "a": target, "p": parent},
+            )
+        ).scalar()
+        assert live == 1, (
+            f"{live} tasks carry the same intent under one parent: a model re-asking is "
+            "not parallel work, it is the duplicate the index exists to refuse"
+        )
+        assert ConflictError is not None

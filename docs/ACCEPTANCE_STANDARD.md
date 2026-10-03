@@ -60,7 +60,7 @@ AO_MODEL_PROVIDER_DEFAULT=openrouter \
 ### D. A claim in the README is a measured number
 
 Every number in the README is either a command's output or is labelled as a threshold.
-"Works" is not a number; "3179 passed, 3 skipped" is.
+"Works" is not a number; "3184 passed, 3 skipped" is.
 
 ### E. Nothing is claimed that is not measured
 
@@ -87,7 +87,7 @@ Measured on 2026-10-02, tenant `org_01m3wmm6vj25zcf25se6kvk0nv`:
 
 | Criterion | State | Evidence |
 |---|---|---|
-| A. gate green | **met** | `make lint` 324 files formatted · `make page` 87/87 · `make typecheck` 146 source files clean · `make test` **3179 passed, 3 skipped, 1 deselected, 0 failed** · `make test-e2e` 34 passed |
+| A. gate green | **met** | `make lint` 324 files formatted · `make page` 85/85 · `make typecheck` 146 source files clean · `make test` **3184 passed, 3 skipped, 1 deselected, 0 failed** · `make test-e2e` 34 passed |
 | B. three tiers, nested | **met** | 3 office groups, 7 departments, every one inside the group its `parent_unit_slug` names — asserted in `test_departments_reports_the_tree.py` and again structurally in `verify_page.mjs` |
 | B. office + chief have own panels | **met** | every box has `key`/`label`/`unit`; clicking an office opens that office and draws its departments under it |
 | B. no hard-coded counts on screen | **met** | the heading, the subtitle and the tile captions are all counted from the payload; "six" is gone from user-visible text |

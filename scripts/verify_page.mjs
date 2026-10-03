@@ -658,8 +658,39 @@ try {
     check(`the event shape has \`${field}\``, field in sample,
       `keys: ${Object.keys(sample).join(",") || "none"}`);
   }
-  check("there is a delegation on the record", delegations.length > 0,
-    `${delegations.length} delegation events — an empty tree means no agent has handed work off`);
+  /* **A conditional, and the reason is a fact about the provider.**
+   *
+   * The scripted runtime cannot call `delegate_to_agent`, so `make page` — which forces
+   * `model_provider_default=fake` and must not spend model calls — cannot produce a
+   * delegation. Making this a hard failure meant the console could only be verified on a
+   * tenant someone had already filled by hand, which is precisely the fixture that broke
+   * the moment the owner emptied the company to start their own work.
+   *
+   * So it reports what it found and says why. Falsely passing it would be worse: "the
+   * delegation tree renders" is a claim about rendering, and it is checked below against
+   * the real tree whenever there is one to check.
+   */
+  /* **Assert the rendering, not the data.**
+   *
+   * "There is a delegation on the record" is a claim about the *database*, and it was
+   * passing only because a tenant happened to have history. The scripted runtime cannot
+   * call `delegate_to_agent`, and `make page` forces `model_provider_default=fake` and
+   * must not spend model calls — so this can never be asserted unconditionally here.
+   *
+   * What *is* assertable is that the tree behaves: with delegations it draws them, and
+   * with none it says so rather than showing an empty rectangle. Both are real, both are
+   * what a person sees, and neither needs a model.
+   */
+  const flowTree = $("tree");
+  const flowEmpty = $("flowEmpty");
+  const treeDrawn = flowTree && /class="node/.test(flowTree.innerHTML);
+  const emptyStated = flowEmpty && flowEmpty.hidden === false;
+  check("the delegation tree either draws the record or states there is none",
+    delegations.length > 0 ? treeDrawn : emptyStated,
+    delegations.length
+      ? `${delegations.length} delegation event(s), tree drawn=${treeDrawn}`
+      : `none on this tenant — the scripted runtime does not delegate and \`make page\``
+        + ` does not spend model calls; empty state shown=${emptyStated}`);
   check("and task lifecycle events alongside", lifecycle.length > 0, `${lifecycle.length}`);
   if (delegations.length) {
     const d = delegations[delegations.length - 1];

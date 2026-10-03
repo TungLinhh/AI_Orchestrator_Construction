@@ -260,6 +260,90 @@ SCENARIOS: tuple[Scenario, ...] = (
         deliverable="Mức lương + ngày bắt đầu + kết luận có cần GĐH duyệt",
         context={"budget_cap_vnd": 26_000_000, "market": "22-27tr"},
     ),
+    Scenario(
+        key="hiring-pipeline",
+        objective=(
+            "Soạn JD cho vị trí Kỹ sư Chất lượng, xây dựng rubric chấm điểm và rà soát "
+            "hồ sơ ứng viên, theo thứ tự đó"
+        ),
+        office="back-office",
+        title="Tuyển Kỹ sư Chất lượng: JD → rubric → CV",
+        goal=(
+            "Tuyển một Kỹ sư Chất lượng cho nhà máy Bãi Trầm. Làm theo đúng ba bước sau, "
+            "mỗi bước dựa vào bước trước, và dừng lại để người duyệt ở đúng chỗ.\n\n"
+            "BƯỚC 1 — JD (cần người duyệt). Viết mô tả công việc: nhiệm vụ, yêu cầu bắt buộc, "
+            "yêu cầu lý lẽm, mức lương dự kiến và nơi làm việc. JD là văn bản công khai, "
+            "nên **phần lương và điều khoản phải được một người duyệt trước khi đăng** — "
+            "hãy yêu cầu phê duyệt cho phần đó và ghi rõ bạn đang chờ.\n\n"
+            "BƯỚC 2 — Rubric (cần người duyệt). Từ JD đó, xây dựng thang chấm điểm có trọng "
+            "số: mỗi tiêu chí, mức độ tốt/khá/trung bình/kém, và điểm số cụ thể cho từng "
+            "mức. Rubric quyết định ai được tham gia phỏng vấn, nên **phải được người duyệt "
+            "trước khi dùng để chấm**.\n\n"
+            "BƯỚC 3 — Rà soát CV. Dùng rubric đã duyệt để chấm hồ sơ dưới đây, chấm theo "
+            "đúng tiêu chí và trọng số đã định nghĩa, rồi kết luận ai đi phỏng vấn.\n\n"
+            "Hồ sơ ứng viên:\n"
+            "— Nguyễn Thị Lan: 7 năm QA trong ngành điện tử, chứng chỉ ISO 9001 Lead "
+            "Auditor, từng dẫn dắt 3 audit nhà cung cấp, thành thạo SAP QM.\n"
+            "— Trần Minh Hùng: 4 năm kiểm soát chất lượng sản xuất cơ khí, đọc bản vẽ kỹ "
+            "thuật, biết kiểm tra theo ISO 9001 nhưng chưa từng dẫn dắt audit.\n"
+            "— Lê Thị Mai: 9 năm ở phòng QC ngành dệt may, mạnh kiểm tra mắt thẻ độ, yếu về "
+            "kiểm tra hệ thống và phân tích dữ liệu lỗi."
+        ),
+        department="hr",
+        task_type="coordination",
+        expected_output={
+            "jd": "mô tả công việc đã soạn",
+            "rubric": "thang chấm điểm và trọng số",
+            "shortlist": "kết luận mỗi ứng viên và ai đi phỏng vấn",
+            "approvals_needed": "những phần đang chờ người duyệt",
+        },
+        deliverable=(
+            "JD, rubric có trọng số, và kết luận shortlist — với hai phần cần người duyệt "
+            "được nêu rõ"
+        ),
+        context={"company": "Bãi Trầm", "currency": "VND", "role": "Kỹ sư Chất lượng"},
+    ),
+    Scenario(
+        key="bom-sourcing",
+        objective=(
+            "Lập danh mục vật tư cho dự án Bãi Trầm và phân tích chất lượng nhà cung cấp "
+            "theo từng nhóm linh kiện"
+        ),
+        office="front-office",
+        title="BOM dự án Bãi Trầm + đánh giá nhà cung cấp",
+        goal=(
+            "Dự án Bãi Trầm cần lắp đặt một dây chuyền lạnh công nghiệp. Hãy làm hai việc.\n\n"
+            "VIỆC 1 — BOM. Lập danh mục vật tư (BOM) gồm các nhóm sau, với số lượng, đơn vị "
+            "và chủng loại đề xuất: máy nén xoay 50HP, tủ điện tối thiểu 400kW, dàn trao "
+            "đổi nhiệt bằng nhựp gọn, ống thép đồng kích thước DN150, van điện từ, và bơm "
+            "tuần hoàn.\n\n"
+            "VIỆC 2 — Đánh giá chất lượng. Với từng nhóm, so sánh chất lượng của các nhà cung "
+            "cấp dưới đây theo đúng tiêu chí kỹ thuật **và** rủi ro vận hành, rồi chọn "
+            "đề xuất. Nêu rõ điểm mạnh, điểm yếu và rủi ro của lựa chọn đề xuất.\n\n"
+            "Nhà cung cấp:\n"
+            "A — Cơ Điện Hải Phòng: máy nén Đặc Quốc 3 năm, tủ điện Schneider, có chứng "
+            "chỉ ISO 9001 và bảo hành tại chỗ trong 24 giờ.\n"
+            "B — Điện Lạnh Việt: máy nén Copeland, tủ điện tiết kiệm năng lượng hơn, "
+            "chứng chỉ ISO 9001 nhưng bảo hành qua đại lý và không có kho phụ tùng tại chỗ.\n"
+            "C — Toàn Cầu: giá thấp nhất, không có chứng chỉ ISO 9001, bảo hành 12 tháng, "
+            "nhiều dự án tương tự đã hoàn thành.\n\n"
+            "Lưu ý quy trình: **phần chọn nhà cung cấp cuối cùng cần người ký duyệt** vì nó "
+            "gắn với chi phí cam kết. Hãy làm đến mức đề xuất và nêu rõ phần nào đang chờ "
+            "phê duyệt."
+        ),
+        department="procurement",
+        task_type="coordination",
+        expected_output={
+            "bom": "danh mục vật tư theo từng nhóm",
+            "quality_comparison": "đánh giá chất lượng từng nhóm giữa các nhà cung cấp",
+            "recommended": "lựa chọn đề xuất kèm lý do",
+            "approvals_needed": "những phần đang chờ người ký",
+        },
+        deliverable=(
+            "BOM đầy đủ, đánh giá chất lượng theo từng nhóm linh kiện, và lựa chọn đề xuất chờ ký"
+        ),
+        context={"project": "Bãi Trầm", "currency": "VND"},
+    ),
 )
 
 

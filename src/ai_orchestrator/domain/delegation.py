@@ -294,10 +294,31 @@ def require_delegation_allowed(**kwargs: object) -> DelegationLimits:
 #: same-work pair 29 tokens long -- so there is 12 tokens of headroom before the two could
 #: meet, and 12 tokens of slack after the different work has already separated.
 #:
-#: **This is still one tenant's corpus.** The window is measured, not derived, and a corpus
-#: whose instructions separate later or restate later would need a different number. The
-#: alternative -- asking the model to carry a stable delegation id -- needs no constant at
-#: all, and is recorded as the better design.
+#: **Kept, unused, with the number that replaced it recorded next to it.**
+#:
+#: The window was 16 because a model re-asks the same work with a clause *appended* ("and
+#: aggregate the artifacts you have already created"), which a whole-goal hash misses.
+#: Measured on 2026-10-03, that heuristic blocked **legitimate parallel work**, and the
+#: collision is not a near-duplicate at all:
+#:
+#: ```
+#: Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy f648b6e3)
+#: Chọn nhà thầu cho gói thiết bị điều hòa của dự án Bãi Trầm (lần chạy 21a4b662)
+#: ```
+#:
+#: The only difference is the **run marker the platform itself appends**, and it sits after
+#: the window. So two separate runs of the same tender hashed identically, and the second
+#: was refused with *"an equivalent task is already active"* — which is the report that one
+#: piece of work blocks another and the company cannot run in parallel.
+#:
+#: **A heuristic that only ever fires on real work has to be deleted, not tuned.** Being
+#: wrong in this direction costs a redundant task; being wrong in the other direction costs
+#: the company its parallelism. The near-duplicate case it was built for is F244, already a
+#: documented non-goal, and the terminal-refusal work (F263) made a missed duplicate cheap.
+#:
+#: So the whole goal is hashed. The constant is kept because the alternative -- asking the
+#: model to carry a stable delegation id -- is still the better design and this is where that
+#: note belongs.
 INTENT_PREFIX_TOKENS = 16
 
 
@@ -313,9 +334,15 @@ def intent_fingerprint(
     hash moved and the duplicate got through. Four times, on one parent.
 
     Normalised the same way -- lowercased, punctuation to spaces, stop words dropped -- and then
-    **the first `INTENT_PREFIX_TOKENS` in their original order**, so punctuation, casing and
-    word order at the front do not move the key, and an appended clause at the end does not
-    reach it.
+    **in full, in their original order**. Casing, punctuation and word order at the front do
+    not move the key; anything else does, including a clause appended at the end.
+
+    That last part is the deliberate trade. The window existed to catch a model re-asking
+    its own work with "aggregate what you already produced" appended, and it caught it four
+    times on one parent -- and then blocked a second, genuinely separate run of the same
+    tender, because the run marker is appended at the end and fell outside the window.
+    **Wrong in this direction costs a redundant task; wrong in the other costs the company
+    its parallelism.** See `INTENT_PREFIX_TOKENS`.
 
     The owner agent is in the payload, because "this agent was already given this" must not
     match "some other agent was already given this": the same instruction to two departments is
@@ -326,8 +353,7 @@ def intent_fingerprint(
 
     normalised_goal = re.sub(r"[^\w\s]", " ", goal.lower())
     ordered = [t for t in normalised_goal.split() if t and t not in _STOP_WORDS]
-    prefix = " ".join(ordered[:INTENT_PREFIX_TOKENS])
-    payload = f"{organization_id}\x1f{task_type}\x1f{owner_agent_id}\x1f{prefix}"
+    payload = f"{organization_id}\x1f{task_type}\x1f{owner_agent_id}\x1f{' '.join(ordered)}"
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
