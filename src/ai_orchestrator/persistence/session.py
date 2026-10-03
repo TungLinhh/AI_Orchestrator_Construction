@@ -240,6 +240,26 @@ async def _set_tenant(session: AsyncSession, organization_id: str, actor_id: str
             text(f"SELECT set_config('{ACTOR_GUC}', :actor, true)"),
             {"actor": actor_id},
         )
+    # **Unit scope defaults to unrestricted, and only the agent path narrows it.**
+    #
+    # Migration 0030 adds a policy on `tasks`, `executions`, `delegations` and
+    # `approvals` that reads `app.agent_unit_ids`, and its rule is that an empty or
+    # unset list sees **nothing**. That is the right rule for an agent the platform
+    # failed to place -- it is the safe direction -- and it would hide the whole
+    # product from the console, the API and the pipeline if the default were not set
+    # here.
+    #
+    # So the default is `'*'`, written on every tenant bind. Exactly one place narrows
+    # it: `TaskExecutionService._bind_unit_scope`, on the path where a *model* is
+    # about to run SQL. An operator looking at the department that misbehaved still
+    # sees everything, which is the difference between a boundary and a black hole.
+    #
+    # It is `'*'` and not NULL on purpose. NULL means "nobody set it", which is a
+    # bug; `'*'` means "this reader is unrestricted", which is a decision. The database
+    # cannot tell those apart unless they are written differently.
+    await session.execute(
+        text("SELECT set_config('app.agent_unit_ids', '*', true)"),
+    )
 
 
 async def assert_no_leaked_tenant(engine: AsyncEngine) -> list[str]:

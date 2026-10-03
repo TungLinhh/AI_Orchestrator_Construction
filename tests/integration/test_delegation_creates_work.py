@@ -18,7 +18,13 @@ from sqlalchemy import select
 from ai_orchestrator.agent_runtime import ScriptedRuntime
 from ai_orchestrator.application.task_execution import TaskExecutionService
 from ai_orchestrator.domain.state_machines import Transition
-from ai_orchestrator.persistence.models import Agent, Delegation, Organization, Task
+from ai_orchestrator.persistence.models import (
+    Agent,
+    Delegation,
+    Organization,
+    OrgUnit,
+    Task,
+)
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.seed import seed
 
@@ -521,3 +527,135 @@ class TestTheChiefIsNotHandedTheWork:
         assert service._input_the_agent_sees(child, None).get("brief"), (
             "a department with no material cannot answer, and the brief must arrive with the work"
         )
+
+
+class _RefusingRuntime(_DelegatingRuntime):
+    """Delegates to an agent that does not exist, so the refusal path is the one under test."""
+
+    async def execute(self, task, context, *, execute_tool=None, **kwargs):  # type: ignore[no-untyped-def]
+        if execute_tool is not None:
+            self.last_result = await execute_tool(
+                tool_name="delegate_to_agent",
+                arguments={
+                    "agent_name": "Procurement",
+                    "objective": "run the tender",
+                },
+            )
+        return await super().execute(task, context, execute_tool=None, **kwargs)
+
+
+class TestTheRefusalIsReadable:
+    """**A refusal a model cannot act on is a request it will spend again.**
+
+    Measured on a real procurement run, before this file's assertions existed. The
+    tool answered every denial with
+
+    ```
+    accepted: false, error_message: "the platform refused this delegation"
+    ```
+
+    and the chief answered that 358 times, ending `budget_error` with sixteen
+    delegations dispatched and **none of them executed** — the whole request budget
+    spent rediscovering a ceiling that was never named.
+
+    So three things are asserted here, and each one is a different failure:
+
+    * the refusal carries a **cause**, not just a denial;
+    * an **unresolvable name** is answered with the names that do resolve;
+    * a **structural ceiling** says the delegation is closed, so retrying is pointless.
+    """
+
+    async def _refuse(self, seeded, runtime_cls):  # type: ignore[no-untyped-def]
+        org_id = seeded.organization_id
+        executive = (
+            await seeded.session.execute(
+                select(Agent).where(
+                    Agent.organization_id == org_id, Agent.name == "Executive Agent"
+                )
+            )
+        ).scalar_one()
+        tasks = TaskRepository(seeded.session, org_id)
+        runtime = runtime_cls()
+        service = TaskExecutionService(seeded.session, org_id, runtime=runtime)
+        task = await tasks.create(
+            title="Executive goal",
+            goal="Buy 5 laptops for Marketing, needs approval before ordering",
+            task_type="coordination",
+            requester_type="human",
+        )
+        await tasks.assign(task.id, executive.id)
+        await service.execute_task(task.id, agent_id=executive.id)
+        return runtime
+
+    async def test_the_refusal_is_a_failure_and_says_so(self, seeded) -> None:
+        runtime = await self._refuse(seeded, _RefusingRuntime)
+        result = runtime.last_result
+        assert result is not None
+        assert not result.ok, "a refused delegation reported success"
+        assert result.output["accepted"] is False
+        assert result.output["child_task_ids"] == []
+
+    async def test_the_refusal_names_a_cause(self, seeded) -> None:
+        """`"refused"` is not a cause. The model needs to know *which* rule said no."""
+        runtime = await self._refuse(seeded, _RefusingRuntime)
+        reason = str(runtime.last_result.output.get("reason") or "")
+        assert reason.strip(), (
+            "the refusal carries no reason, so the model has nothing to change and "
+            "will try again with a different wording"
+        )
+        assert runtime.last_result.error_message == reason, (
+            "the reason is in one field and not the other, so whichever the runtime "
+            "surfaces to the model is the empty one"
+        )
+        assert "procurement" in reason.lower(), reason
+
+    async def test_an_unknown_name_is_answered_with_the_roster(self, seeded) -> None:
+        """The fix for a wrong name is the list of right ones.
+
+        The first real model run delegated to a department this company does not have.
+        The platform refused it — correctly — and the goal was still lost, because the
+        refusal said only "no".
+        """
+        runtime = await self._refuse(seeded, _RefusingRuntime)
+        reason = str(runtime.last_result.output["reason"])
+
+        # The chief's roster is the three **offices**, not the seven departments: a
+        # coordinator hands work downward one level, which is also what keeps a
+        # department from delegating at all. So the assertion is made against the
+        # roster itself rather than a name written into the test — a test that pinned
+        # "Finance Agent" would be asserting an org chart, not a contract, and would
+        # fail the day the chart changed correctly.
+        office_heads = (
+            (
+                await seeded.session.execute(
+                    select(Agent.name)
+                    .join(OrgUnit, OrgUnit.id == Agent.org_unit_id)
+                    .where(
+                        Agent.organization_id == str(seeded.organization_id),
+                        OrgUnit.unit_type == "office",
+                        Agent.lifecycle_status == "active",
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert office_heads, "the seeded company has no active office agent to delegate to"
+        for name in office_heads:
+            assert str(name) in reason, (
+                f"the refusal omits {name!r}, so the model has to guess the roster again: "
+                f"{reason!r}"
+            )
+
+    async def test_a_duplicate_is_not_treated_as_a_closed_delegation(self, seeded) -> None:
+        """Only *structural* ceilings close delegation.
+
+        A duplicate is about one objective. Saying "stop delegating" there would turn a
+        recoverable near-repeat into the end of a coordinator's fan-out — the opposite
+        of the fix.
+        """
+        runtime = await self._refuse(seeded, _RefusingRuntime)
+        assert runtime.last_result.output["delegation_closed"] is False, (
+            "an unresolvable agent name closed the delegation budget for the task"
+        )
+        assert "once more" in runtime.last_result.output["next_step"]

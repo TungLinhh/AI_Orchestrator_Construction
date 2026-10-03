@@ -88,14 +88,47 @@ def describe_mismatch(output: dict[str, Any] | None, schema: dict[str, Any] | No
 
     Both halves, because "it did not do what it said" without saying which part is the kind of
     message that gets a task retried without anybody looking at why.
+
+    **And a third case, which is not a failure of the department.** A value the model
+    began and did not finish is a *platform* fault — the answer was cut off in transit,
+    not withheld — and it is reported as such. Measured on a real procurement run: a
+    department produced exactly the right answer and it was truncated, and the message
+    said `produced nothing`. That is a confident, specific and wrong statement about
+    work that was done, and it sends the review loop to rerun the same work forever.
     """
     needed = required_keys(schema)
-    got = sorted(output or {})
+    present = sorted(output or {})
+    if present and all(_is_truncated(v) for v in (output or {}).values()):
+        return (
+            f"this task said it would produce {', '.join(needed)}, and began "
+            f"{', '.join(present)} but every value was cut off before it finished. "
+            "This is a runtime fault, not a department that declined to answer: the "
+            "answer was truncated, so the task is recorded as failed and the keys it did "
+            "not reach are not counted as produced"
+        )
+    if present and any(_is_truncated(v) for v in (output or {}).values()):
+        cut = sorted(k for k, v in (output or {}).items() if _is_truncated(v))
+        return (
+            f"this task said it would produce {', '.join(needed)}, and produced "
+            f"{', '.join(present)} — but {', '.join(cut)} was cut off mid-answer. "
+            "The missing part is a runtime limit, not missing work"
+        )
     return (
         f"this task said it would produce {', '.join(needed)}, and produced "
-        f"{', '.join(got) if got else 'nothing'}. A task that does not produce what it declared "
-        "has not done the work, so it is recorded as failed rather than finished"
+        f"{', '.join(present) if present else 'nothing'}. A task that does not produce what "
+        "it declared has not done the work, so it is recorded as failed rather than finished"
     )
+
+
+def _is_truncated(value: Any) -> bool:
+    """True for a value the runtime knows was cut off.
+
+    Duck-typed on the marker rather than imported from the runtime, because this is
+    `domain/` and it may not import upward. The marker is a `str` subclass carrying a
+    `truncated` property, and anything else — including a plain string the model wrote
+    itself — is not truncated.
+    """
+    return getattr(value, "truncated", False) is True
 
 
 __all__ = ["PRODUCES", "REQUIRED", "describe_mismatch", "missing_keys", "required_keys"]

@@ -218,7 +218,24 @@ class Settings(BaseSettings):
     #: per execution, so no distribution exists to set this against. The number
     #: is a guess and is marked as one. It matches `max_requests` so there is one
     #: ceiling to reason about rather than two that disagree.
-    max_tool_calls: int = 48
+    #: **Raised from 48 to 240, and the two ceilings are not the same kind of guard.**
+    #:
+    #: 48 was measured cutting off work in progress. Two real goals, on a real free
+    #: model, ended `category=budget_error  reason='the agent exceeded its turn budget
+    #: and was stopped'` — the procurement run with 16 delegations and 21 duplicate
+    #: refusals still in flight, and the HR run having delegated nothing at all. Neither
+    #: was a runaway: the request count is what a *long* task spends.
+    #:
+    #: So the request ceiling is now loose enough that only a genuinely looping model
+    #: reaches it, and the real guard against a bill is two ceilings that were always
+    #: there and are not touched by this: `default_max_cost_usd_per_task` and
+    #: `default_max_tokens_per_task`. **A loop that burns 240 requests still cannot
+    #: spend more than the cost ceiling, which is the point of having two.**
+    #:
+    #: Override with `AO_MAX_TOOL_CALLS`; it is read from the environment like every
+    #: other knob, because the right number depends on the provider and a constant
+    #: cannot know that.
+    max_tool_calls: int = 240
 
     # ------------------------------------------------------------- sandbox --
     # Refuses to execute code when true. The only permitted implementation is

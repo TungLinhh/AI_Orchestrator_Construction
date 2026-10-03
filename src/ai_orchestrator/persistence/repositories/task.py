@@ -26,7 +26,7 @@ import secrets
 from collections.abc import Sequence
 from typing import Any, cast
 
-from sqlalchemy import Select, and_, func, select, text, update
+from sqlalchemy import Select, and_, exists, func, select, text, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1053,6 +1053,25 @@ class DelegationRepository:
         different answer; both were previously counting all time, which satisfied
         neither.
         """
+        # **A non-terminal task with nothing running on it is abandoned, not active.**
+        #
+        # F249 made this count only non-terminal children, which fixed finished work
+        # holding the budget. The remaining case was measured on the next real run:
+        #
+        #     refused_by_platform reason='active descendants 16 reached the limit of 16'
+        #     ... 151 times, delegation.applied 0
+        #
+        # Sixteen children still `created` or `assigned` from runs that were killed
+        # mid-flight, holding the whole budget. Nothing ever finishes them and nothing
+        # ever releases them, so the organisation's delegation capacity was consumed by
+        # work that no longer exists.
+        #
+        # The discriminator is the one the product already has and already shows a
+        # person: `STUCK_AFTER_SECONDS`, used by `fleet_view` to draw a box with a
+        # stranded run. A task with no execution started inside that window has nobody
+        # working on it. Reusing the constant rather than inventing a second one keeps
+        # "the console says this is stranded" and "the budget says this is idle" from
+        # ever disagreeing.
         result = await self._session.execute(
             select(func.count())
             .select_from(Delegation)
@@ -1062,6 +1081,24 @@ class DelegationRepository:
                     Delegation.organization_id == self._org,
                     Delegation.source_agent_id == source_agent_id,
                     Task.status.in_((TaskStatus.CREATED, TaskStatus.ASSIGNED, TaskStatus.RUNNING)),
+                    # **Occupies capacity only while the platform is working it.**
+                    #
+                    # Queued (`created`, `assigned`) and stranded (running with nothing
+                    # recent on it) both fail this. That is stricter than "not terminal",
+                    # and the measurement is what made it stricter: 151 refusals against
+                    # sixteen abandoned children.
+                    #
+                    # The runaway control is not weakened, because it is `max_fanout` that
+                    # stops one coordinator opening too many branches, and that counts
+                    # by *issued* and is untouched. This number bounds how much is in
+                    # flight at once.
+                    exists().where(
+                        and_(
+                            Execution.task_id == Task.id,
+                            Execution.status == "running",
+                            Execution.started_at > func.now() - text("interval '1 hour'"),
+                        )
+                    ),
                 )
             )
         )

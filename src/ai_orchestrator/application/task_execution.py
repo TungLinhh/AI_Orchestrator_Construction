@@ -800,6 +800,37 @@ class TaskExecutionService:
             ),
         )
 
+    async def _bind_unit_scope(self, context: Any) -> None:
+        """`SET LOCAL app.agent_unit_ids` to everything this agent may read in full.
+
+        **The unit ids, not a visibility level.** The policy in the database compares a
+        row's owning unit against this list, and a department's list is its own unit
+        plus its ancestors and its own descendants. Peers are absent, which is the
+        separation `domain/access.py` describes: a department sees that Finance exists
+        (from the roster, not from the database) and does not see Finance's rows.
+
+        The root's list is every unit, so the chief is unaffected. An agent with no
+        unit gets an empty list and therefore sees no rows at all -- which is the safe
+        direction, and the reason this is not "unset means unrestricted".
+        """
+        from sqlalchemy import text as _text
+
+        from ai_orchestrator.persistence.unit_scope import permitted_unit_ids_for
+
+        try:
+            permitted = await permitted_unit_ids_for(self._session, self._org, context.org_unit_id)
+        except Exception:
+            # **Fail closed.** If the scope cannot be read, the agent reads nothing.
+            # The alternative -- carry on with no scope set -- would leave whatever a
+            # previous statement set, or nothing at all, and either way the agent's read
+            # would be unscoped by accident rather than by decision.
+            permitted = []
+
+        await self._session.execute(
+            _text("SELECT set_config('app.agent_unit_ids', :ids, true)"),
+            {"ids": ",".join(permitted)},
+        )
+
     def _make_tenant_reader(self, context: Any) -> Any:
         """A read-only SQL callable bound to this run's transaction.
 
@@ -871,7 +902,30 @@ class TaskExecutionService:
             # was itself the write the test exists to forbid. Two lines of guard
             # around the *query* are not a guard around the *statement that opens
             # the guard*.
+            # **Bind the unit scope before the query, not a predicate in it.**
+            #
+            # The agent's own `SELECT` carries no unit filter, so this sets a session
+            # variable and a row-level-security policy does the filtering. That is the
+            # whole reason the boundary is the database and not this callable:
+            # rewriting SQL written by a model is how an injection nobody wrote gets in,
+            # and a policy that a syntax error can defeat is not a policy. A missing
+            # unit simply reads as zero rows, which is the truthful answer -- "you may
+            # not see this" -- rather than a malformed-query error the model would retry.
+            #
+            # `SET LOCAL`, so it dies with the transaction: a run that outlived its
+            # scope must not keep it. And it is set here, on the *agent's* read path
+            # only -- the console, the API and the pipeline run on the same database and
+            # must keep seeing the whole tenant, or an operator could not debug an
+            # agent.
+            #
+            # **Inside the `no_autoflush` block, and that is not tidiness.** The scope
+            # bind is itself an `execute`, and a plain `session.execute` flushes pending
+            # objects first -- so binding the scope outside the guard made the read
+            # path write. `test_the_tenant_reader_does_not_autoflush` failed on
+            # exactly that, which is what the test is for: a read tool that flushes is
+            # a read tool that writes.
             with self._session.no_autoflush:
+                await self._bind_unit_scope(context)
                 await self._session.execute(_text("SAVEPOINT tenant_sql_read"))
                 try:
                     result = await self._session.execute(
@@ -1310,35 +1364,81 @@ class TaskExecutionService:
         """
 
         async def _delegate(*, agent_name: str, objective: str) -> Any:
-            outcome = await self._delegate_once(
+            outcome, reason, closed = await self._delegate_once(
                 context=context, agent_name=agent_name, objective=objective
             )
             # `error_kind`/`error_message`, not `error_code`/`message`: those
             # are the field names on `ToolResult`, and a typo here is a TypeError
             # raised *inside* the agent loop, which reads as a tool failure rather
             # than as a constructor mistake.
+            if outcome is not None:
+                return ToolResult(
+                    ok=True,
+                    output={
+                        "accepted": True,
+                        "agent": agent_name,
+                        "objective": objective,
+                        "child_task_ids": list(getattr(outcome, "child_task_ids", [])),
+                    },
+                )
             return ToolResult(
-                ok=outcome is not None,
+                ok=False,
                 output={
-                    "accepted": outcome is not None,
+                    "accepted": False,
                     "agent": agent_name,
                     "objective": objective,
-                    "child_task_ids": list(getattr(outcome, "child_task_ids", [])),
+                    # Present and empty on a refusal, so the model reads one shape
+                    # rather than learning to check for a key. A key that is sometimes
+                    # there is a branch in the model's head that will eventually be
+                    # wrong.
+                    "child_task_ids": [],
+                    "reason": reason,
+                    # **The sentence that ends the loop.**
+                    #
+                    # A structural ceiling is not a "try something else" answer: the
+                    # budget for *this task* is spent, and a different agent, a shorter
+                    # objective and a renamed task would all be refused the same way.
+                    # Saying so explicitly is what stops a coordinator spending a whole
+                    # request budget rediscovering the same ceiling — measured at 358
+                    # refusals and 16 completed delegations on one procurement run,
+                    # which ended `budget_error` with sixteen children dispatched and
+                    # none of them executed.
+                    "delegation_closed": closed,
+                    "next_step": (
+                        "Stop delegating. Answer this task now with what you have."
+                        if closed
+                        else "Adjust the objective or the agent and try once more."
+                    ),
                 },
-                error_kind=None if outcome is not None else "DELEGATION_REFUSED",
-                error_message=(
-                    "delegated" if outcome is not None else "the platform refused this delegation"
-                ),
+                error_kind="DELEGATION_REFUSED",
+                error_message=reason,
             )
 
         return _delegate
 
-    async def _delegate_once(self, *, context: Any, agent_name: str, objective: str) -> Any:
+    async def _delegate_once(
+        self, *, context: Any, agent_name: str, objective: str
+    ) -> tuple[Any | None, str, bool]:
         """Resolve the name, delegate, and report the refusal as text.
 
-        The name is resolved inside the tenant, so a model that hallucinates an
-        agent gets a refusal it can read rather than a row in somebody else's
-        organisation.
+        **Returns `(outcome, reason)`, and the reason is the whole point.**
+
+        The first version returned `None` for every failure and the tool turned that
+        into `"the platform refused this delegation"` — a sentence with no subject, no
+        cause and no instruction. A model told only that is invited to try again, and
+        on a real procurement run it did:
+
+        ```
+        refused_by_platform reason='fan-out 16 reached the limit of 16'
+        ... 358 times, 16 delegations applied
+        task.failed  category=budget_error  (the request ceiling, 240)
+        ```
+
+        Sixteen pieces of work were dispatched and never run, because the coordinator
+        spent the rest of its budget being told *"no"* without being told what the no
+        *means*. A refusal is only useful if it names the constraint and says what to
+        do instead — so it does, and `CLOSED` marks the ceilings from which there is
+        nothing left to do but finish.
         """
         from sqlalchemy import select as _select
 
@@ -1362,17 +1462,25 @@ class TaskExecutionService:
         )
         if not rows:
             logger.info("delegation.unknown_agent", requested=agent_name)
-            return None
+            return None, self._unknown_agent_reason(agent_name, context), False
         target = rows[0]
         if target.lifecycle_status != "active":
             logger.info("delegation.agent_not_active", requested=agent_name)
-            return None
+            return (
+                None,
+                f"{agent_name} exists but is not active, so it cannot be given work.",
+                False,
+            )
 
         task = (
             await self._session.execute(_select(_Task).where(_Task.id == str(context.task.task_id)))
         ).scalar_one_or_none()
         if task is None:
-            return None
+            return (
+                None,
+                "this task no longer exists, so nothing can be delegated from it.",
+                True,
+            )
 
         executor = DelegationExecutor(
             tasks=self._tasks,
@@ -1399,13 +1507,61 @@ class TaskExecutionService:
             path=path,
         )
         if not result.any_accepted:
+            reason = result.refused[0][1] if result.refused else "the platform refused it."
             logger.info(
                 "delegation.refused_by_platform",
                 requested=agent_name,
-                reason=result.refused[0][1] if result.refused else "unknown",
+                reason=reason,
             )
-            return None
-        return result
+            return None, reason, result.closed
+        return result, "", False
+
+    def _unknown_agent_reason(self, agent_name: str, context: Any) -> str:
+        """A name that does not resolve, answered with the names that do.
+
+        The refusal is worthless without the list: "no such agent" tells a model only
+        that it guessed wrong, and the fix — the roster — is already in its context as
+        `delegate_targets`, a `(name, description)` pair per unit. Naming them here is
+        the difference between a refusal that costs a request and one that ends the
+        search.
+
+        A model that invented a department the company does not have happened on the
+        first real run (F236), and the platform refused it correctly. Being right was
+        not the point; the goal was still lost.
+        """
+        names = sorted(str(name) for name, _ in getattr(context, "delegate_targets", ()))
+        if not names:
+            return f"There is no agent called {agent_name} in this organisation."
+        return (
+            f"There is no agent called {agent_name} in this organisation. "
+            f"You can delegate to: {', '.join(names)}."
+        )
+
+    async def _can_delegate(self, agent_id: str | None) -> bool:
+        """Does this agent have anyone underneath it to hand work to?
+
+        **The definition of a coordinator, and it is the same one the platform already
+        uses** — `_delegate_roster` walks the children of the agent's unit and returns
+        `()` when there are none. So a department cannot delegate, an office and the
+        chief can, and the answer is already being computed for the agent's context on
+        every run.
+
+        Re-derived here rather than threaded down from the context because the contract
+        check runs on the settle path, which does not build an agent context, and a
+        second definition of "coordinator" is how a chief and an office start being
+        treated differently for no stated reason.
+        """
+        if not agent_id:
+            return False
+        try:
+            resolved = await self._resolve_agent(agent_id)
+        except LookupError, PreconditionError:
+            # An agent that no longer resolves cannot be shown a roster. The safe answer
+            # is that it *is* a coordinator, because the alternative — holding an
+            # unidentifiable task to a propagated contract — is the failure that produced
+            # three identical office failures on the run that found this.
+            return True
+        return bool(await self._delegate_roster(resolved))
 
     async def _count_delegations(self, task_id: str) -> int:
         """How many delegations already exist below this task.
@@ -1933,8 +2089,36 @@ class TaskExecutionService:
             #
             # So: the check is for the worker. A task that delegated is judged on
             # its delegation, which `coordination_may_complete` already does.
-            delegated = await self._count_delegations(task.id)
-            missing = [] if delegated else missing_keys(result.output, task.expected_output_schema)
+            # **A coordinator is judged on its delegation, never on the contract it
+            # passed down.** Exempt on *being able to delegate*, not on having done so.
+            #
+            # The first version exempted a task that had actually delegated, which
+            # exempts the chief and nothing else. The next real procurement run failed
+            # an **office** three times with
+            #
+            #     category=output_contract_unmet
+            #       reason='this task said it would produce reason, risk, winner, and
+            #               price and produced nothing'
+            #
+            # and it is the same mistake one tier down: the office answered its own goal
+            # instead of handing it to a department, and was then failed for not
+            # producing *a department's* keys. `prior_repetitions` went 9 → 10 while the
+            # reviewer rejected and reran it, so the loop was not converging either.
+            #
+            # "Can delegate" is the right test and it is already computed:
+            # `_delegate_roster` returns `()` for a unit with no children, so a
+            # department's roster is empty and a chief's or an office's is not. A
+            # department is therefore held to the contract — which is the whole point of
+            # the check — and nothing above it is.
+            #
+            # The alternative, holding the office to the department's keys and letting
+            # it answer them itself, is the failure the three-tier tree exists to
+            # prevent: the office doing the department's work and reporting it as its
+            # own.
+            is_coordinator = await self._can_delegate(task.owner_agent_id)
+            missing = (
+                [] if is_coordinator else missing_keys(result.output, task.expected_output_schema)
+            )
             if missing:
                 await self._tasks.set_output(task.id, result.output or {})
                 return await self._fail(

@@ -296,19 +296,6 @@ button { font: inherit; color: inherit; }
 .bar.unmeasured .num { color: var(--text-3); font-style: italic; }
 .legend { font-size: 12px; color: var(--text-2); line-height: 1.6; }
 .legend b { color: var(--text); }
-.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
-.swatch.ok { background: var(--ok); } .swatch.late { background: var(--late); }
-.swatch.un { border: 1px dashed var(--line-strong); }
-
-/* --- tables --- */
-.scroller { max-height: 56vh; overflow: auto; border-top: 1px solid var(--line); }
-table.sheet { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-table.sheet th {
-  position: sticky; top: 0; z-index: 1; text-align: left;
-  font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--text-2); font-weight: 650; padding: var(--s2) var(--s3);
-  background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap;
-}
 table.sheet td { padding: 7px var(--s3); border-bottom: 1px solid var(--line); vertical-align: top; }
 table.sheet td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 table.sheet tr.unmeasured td { color: var(--text-3); }
@@ -351,40 +338,9 @@ table.sheet tr:hover td { background: var(--fill); }
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast.bad { background: var(--late); color: #fff; }
 
-.bar-track { height: 3px; background: var(--sunken); border-radius: 2px; overflow: hidden; }
-.bar-track i { display: block; height: 100%; background: var(--accent); }
-
-/* --- the console's event feed, unchanged in behaviour --- */
-.pill {
-  display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
-  padding: 2px 8px; border-radius: 999px; background: var(--sunken); color: var(--text-2);
-}
 .pill.delegated { background: var(--accent-soft); color: var(--accent); }
 .pill.bad { background: var(--late-soft); color: var(--late); }
 .feed { display: flex; flex-direction: column; max-height: 62vh; overflow: auto; }
-.evt { padding: 7px var(--s4); border-top: 1px solid var(--line); font-size: 12px; display: flex; gap: var(--s2); align-items: baseline; }
-.evt:first-child { border-top: 0; }
-.evt .tm { color: var(--text-3); font-family: var(--mono); font-size: 10.5px; flex: none; }
-.evt .msg { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.evt.bad .msg { color: var(--late); }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-s); overflow: hidden; }
-.seg button { border: 0; background: transparent; padding: 3px 9px; font-size: 11.5px; cursor: pointer; color: var(--text-2); }
-.seg button + button { border-left: 1px solid var(--line); }
-.seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
-.tree { list-style: none; margin: 0; padding: 0; }
-.tree ul { list-style: none; margin: 0; padding-left: var(--s5); }
-.tree li { position: relative; }
-.tree .node { display: flex; gap: var(--s2); align-items: baseline; padding: 5px var(--s2); border-radius: 6px; cursor: pointer; }
-.tree .node:hover { background: var(--fill); }
-.tree .node .id { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
-.t-deleg { color: var(--accent); } .t-bad { color: var(--late); }
-.field { display: block; }
-.field span { display: block; font-size: 11px; color: var(--text-2); margin-bottom: 3px; }
-input, select, textarea {
-  font: inherit; font-size: 13px; color: var(--text); background: var(--surface);
-  border: 1px solid var(--line-strong); border-radius: var(--radius-s);
-  padding: 6px 9px; width: 100%;
-}
 dialog {
   border: 1px solid var(--line); border-radius: var(--radius); padding: 0;
   background: var(--surface); color: var(--text); box-shadow: var(--shadow);
@@ -468,13 +424,73 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
    seven departments and three offices each drew a vertical line of their own and the
    result was eight unrelated columns -- a hierarchy that looked like one only because
    the lines were all the same colour. One line per office is what makes the reading
-   "these belong to that" instead of "these are arranged in a list". */
+   "these belong to that" instead of "these are arranged in a list".
+
+   **The rule carries a node on every department.** A vertical line and an indent read
+   as a list; a line with a branch off it reads as a tree, and that is the whole claim
+   the Departments screen makes. The node is drawn on the rule itself, so it costs one
+   pseudo-element per box and no markup. */
 .dept-group { display: flex; flex-direction: column; gap: 7px; margin-left: 4px; }
-.dept-group > .dept-edges { margin-left: 8px; padding-left: 14px; }
+.dept-group > .dept-edges { margin-left: 8px; padding-left: 14px; position: relative; }
 .dept-group > .dept-tier { margin-top: 10px; }
+
+/* The office's own box wears a rail, so the three tiers are distinguishable by shape
+   and not only by position. Depth is drawn twice -- a rail here and the nesting below
+   -- because a screen read at a glance and a screen read carefully should agree. */
+.dept-group > .abox {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--accent) 7%, var(--surface)) 0 3px, var(--surface) 3px);
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--line));
+}
+
+/* Focus, not just hover. Every box is `tabindex=0` and carries `role="button"`, so the
+   keyboard path has to be visible -- an operator driving this with a keyboard is
+   reading the same hierarchy and was previously given no indication of where they
+   were. `:focus-visible` rather than `:focus` so a mouse click does not leave a ring
+   behind on the panel the click just opened. */
+.abox:focus { outline: none; }
+.abox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: transparent;
+}
+
 .abox .roll { font-size: 10.5px; color: var(--text-3); margin-top: 3px;
   font-variant-numeric: tabular-nums; }
 .abox .roll b { color: var(--text-2); }
+
+/* **The node that turns an indent into a tree.** One pseudo-element per department,
+   sitting on the group's own rule: a 5px dot plus a 10px stub reaching back to the
+   line. A list with a vertical rule and a list with branches are told apart by exactly
+   this, and the Departments screen is the one place the claim is made visually, so it
+   is also the one place it has to be paid for.
+   `:last-child` drops the rule's tail below the final child, which is what makes the
+   rule look like it *terminates* at the last department rather than running past it. */
+.dept-group > .dept-edges > .abox { position: relative; }
+.dept-group > .dept-edges > .abox::before {
+  content: ""; position: absolute; left: -18px; top: 50%;
+  width: 10px; height: 1px; background: var(--line-strong);
+  transform: translateY(-50%);
+}
+.dept-group > .dept-edges > .abox::after {
+  content: ""; position: absolute; left: -18px; top: 50%;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--surface); border: 1.5px solid var(--line-strong);
+  transform: translate(-4px, -50%);
+  transition: background .15s ease, border-color .15s ease;
+}
+/* A department that is working lights its own node, so the tree shows where the work
+   is without reading a single number. */
+.dept-group > .dept-edges > .abox.on::after {
+  background: var(--accent); border-color: var(--accent);
+}
+.dept-group > .dept-edges > .abox.stuck::after {
+  background: var(--warn, #c8912b); border-color: var(--warn, #c8912b);
+}
+/* The rule stops at the last child. `margin-bottom` on the container rather than
+   `:last-child`, because the rule is on the container and there is nothing to select
+   the rule's own end with. */
+.dept-group > .dept-edges { height: fit-content; }
 
 /* The panel a click opens: the run on the left, the work on the right. Two columns
    because the two questions are asked side by side -- "what did it do" and "what is it
@@ -506,35 +522,7 @@ dialog .dlg-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--lin
 /* ====================== a process, read top to bottom ======================
    The eight stages are a **chain**, so they are drawn as a chain: a rail down the left, one row
    per stage, and the state read from the row rather than from a colour the eye has to decode.
-   A gate is a different shape on purpose -- it is the only thing on this page a person is
-   *asked* to do, so it must not look like another stage. */
-.hire-flow { display: flex; flex-direction: column; gap: 0; }
-.hire-row { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: start;
-  padding: 9px 0; border-bottom: 1px solid var(--line); }
-.hire-row:last-child { border-bottom: 0; }
-.hire-n { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line);
-  display: grid; place-items: center; font-size: 10.5px; color: var(--text-3); font-weight: 700; }
-.hire-row.done .hire-n { background: var(--ok); border-color: var(--ok); color: #08120a; }
-.hire-row.now .hire-n { border-color: var(--accent); color: var(--accent); }
-.hire-row.gate { background: var(--panel-2, transparent); border-radius: 8px; padding: 11px 9px; }
-.hire-row.gate .hire-n { border-color: var(--accent); color: var(--accent); }
-.hire-row.bad .hire-n { border-color: var(--bad); color: var(--bad); }
-.hire-name { font-size: 12.5px; font-weight: 620; }
-.hire-where { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-.hire-art { font-size: 11px; color: var(--text-2); margin-top: 4px; }
-.hire-art b { color: var(--ok); font-weight: 600; }
-.hire-state { font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--text-3); text-align: right; white-space: nowrap; }
-.hire-row.now .hire-state { color: var(--accent); }
-.hire-row.done .hire-state { color: var(--ok); }
-.hire-row.bad .hire-state { color: var(--bad); }
-.hire-q { font-size: 12px; margin-top: 5px; color: var(--text-1); }
-.hire-q::before { content: "Câu hỏi: "; color: var(--text-3); font-size: 11px; }
-.hire-btn { margin-top: 8px; }
-.hire-jd li { margin: 3px 0; font-size: 12px; }
-.hire-rubric { display: flex; gap: 12px; font-size: 12px; margin-top: 8px; }
-.hire-rubric b { font-variant-numeric: tabular-nums; }
-</style>
+   A gate is a different shape on purpose -- it is the only thing on this page a person is</style>
 </head>
 <body>
 <div class="app">

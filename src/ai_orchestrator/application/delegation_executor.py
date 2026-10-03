@@ -54,10 +54,25 @@ class DelegationOutcome:
     accepted: list[str] = field(default_factory=list)
     refused: list[tuple[str, str]] = field(default_factory=list)
     child_task_ids: list[str] = field(default_factory=list)
+    #: **True when a refusal was structural**, so no further proposal in this run can
+    #: succeed either. Carried out of `DelegationVerdict.terminal` because the caller
+    #: needs to tell a model "stop delegating and answer", and it cannot work that out
+    #: from a sentence it has to pattern-match.
+    closed: bool = False
 
     @property
     def any_accepted(self) -> bool:
         return bool(self.accepted)
+
+    @property
+    def refusal_reason(self) -> str:
+        """The one refusal worth showing, or `""` when something was accepted.
+
+        With several refusals the first is the binding one, because `authorize_delegation`
+        checks its ceilings in order and stops at the first that fires — so the list is
+        not unordered and "the first" is a fact about the rule, not about timing.
+        """
+        return self.refused[0][1] if self.refused else ""
 
     @property
     def summary(self) -> str:
@@ -175,6 +190,7 @@ class DelegationExecutor:
         )
         if not verdict.allowed:
             outcome.refused.append((str(target.id), verdict.reason))
+            outcome.closed = outcome.closed or verdict.terminal
             await self._record_refusal(parent, source_agent_id, target.id, verdict.reason)
             return
 
@@ -252,6 +268,18 @@ class DelegationExecutor:
                 goal=proposal.objective or parent.goal,
                 task_type=parent.task_type,
                 parent_task_id=parent.id,
+                # **The child's owning unit, which is the target agent's unit.**
+                #
+                # It was not passed, so every delegated task in the tenant carried
+                # `org_unit_id = NULL` -- and migration 0030's rule for a NULL unit is
+                # "readable by everyone", because a task with no unit belongs to nobody
+                # in particular. So the unit boundary was inert on `tasks`, the one table
+                # it most needed to cover, and every agent could read every department's
+                # work while the policy said it could not.
+                #
+                # This is what makes the boundary mean anything: the row has to say whose
+                # work it is, and the executor is the only place that knows.
+                org_unit_id=str(target.org_unit_id) if target.org_unit_id else None,
                 owner_agent_id=target.id,
                 requester_type="agent",
                 # The delegating agent is who asked for this work. Without this the

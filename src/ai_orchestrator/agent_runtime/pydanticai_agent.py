@@ -733,30 +733,63 @@ def _template_for(task: Any, context: AgentContext) -> ModelRequest:
     )
 
 
+#: What a turn that is not declaring a contract gets. Measured on the same goal, the
+#: same roster and the same tools:
+#:
+#: | allowance | finish       | reasoning | first tool call           |
+#: |-----------|--------------|-----------|---------------------------|
+#: | 2048      | tool_calls   |     546   | `write_report` — did it all |
+#: | 8192      | tool_calls   |     308   | `delegate_to_agent`        |
+#:
+#: The tighter cap did not make the model faster or cheaper. It made it skip the
+#: reasoning that produces a delegation, and answer the goal itself.
+_ROUTING_ALLOWANCE = 8192
+
+#: What a turn that **must** return a declared object gets, and the reason is measured.
+#:
+#: `qwen/qwen3.8-27b:free` is a reasoning model and its thinking is billed against
+#: `max_tokens`. At 8192 the procurement department produced exactly the right answer —
+#: a ranked comparison by price, warranty and delivery with the winner named — and the
+#: platform threw it away:
+#:
+#: ```
+#: executions.output_tokens   15644      # four model calls in the run
+#: summary                    1077 chars, ends mid-string:
+#:   {"reason": "...tiêu chí quyết định: C (Công ty Toàn Cầu) 1.090.000.000 VND..."
+#: ended    "...hoặc giá C ních lên bằng hoặc cao"   # no closing brace
+#: ```
+#:
+#: `_declared_output` could not parse a truncated object, so the task failed with
+#: `output_contract_unmet` and the message said the department had produced **nothing**.
+#: That is the most expensive wrong answer in this file: a correct answer, discarded,
+#: reported as an absence, on the one criterion the whole product is judged by.
+#:
+#: So a turn with a declared contract gets room for the thinking *and* the answer. The
+#: model is permitted 235929 output tokens (OpenRouter, measured), so this is not near
+#: the provider's ceiling; and the cost ceiling that actually governs spend —
+#: `max_cost_usd` — is untouched by it.
+_CONTRACT_ALLOWANCE = 32_768
+
+
 def _output_allowance(context: AgentContext) -> int:
     """How many tokens this turn may use to think *and* answer.
 
-    Measured, not guessed. This model is a reasoning model: on a 32-token request
-    it spent 30 tokens on reasoning and returned empty content. The allowance
-    therefore has to cover deliberation, or the model takes the first action that
-    occurs to it instead of the right one.
+    Two numbers, because a coordinator and a worker are different jobs. A coordinator
+    needs enough room to decide *who to delegate to* — measured above, and 8192 is what
+    buys that. A worker has to reason about the domain and then emit the keys it promised,
+    and the same model will spend several thousand tokens thinking first. Measured cost
+    of getting that wrong: three failed department runs and one silently discarded
+    correct answer. See `_CONTRACT_ALLOWANCE`.
 
-    The same executive goal, the same roster, the same tools, differing only in
-    this number:
-
-    | allowance | finish  | reasoning | first tool call          |
-    |-----------|---------|-----------|--------------------------|
-    | 2048      | tool_calls | 546    | `write_report` — did it all |
-    | 8192      | tool_calls | 308    | `delegate_to_agent`        |
-
-    The tighter cap did not make the model faster or cheaper. It made it skip the
-    reasoning that produces a delegation, and answer the goal itself.
-
-    The floor exists because a cap below ~1024 cannot hold a tool call. The
-    ceiling is the platform's, not the envelope's: `max_tokens` is a context
-    window, and a 200k window is not permission to write 200k tokens.
+    The floor exists because a cap below ~1024 cannot hold a tool call. The ceiling is
+    the platform's, not the envelope's: `max_tokens` is a context window, and a 200k
+    window is not permission to write 200k tokens.
     """
-    return 8192
+    task = getattr(context, "task", None)
+    schema = getattr(task, "expected_output_schema", None) if task is not None else None
+    if isinstance(schema, dict) and schema.get("required"):
+        return _CONTRACT_ALLOWANCE
+    return _ROUTING_ALLOWANCE
 
 
 def _render_instructions(context: AgentContext) -> str:
@@ -862,7 +895,144 @@ def _declared_output(text: str, schema: Any) -> dict[str, Any] | None:
             continue
         if isinstance(parsed, dict):
             return {str(k): v for k, v in parsed.items()}
-    return None
+
+    # **A truncated object is not an absent one.**
+    #
+    # Measured on a real procurement run: the department wrote exactly the right answer
+    # — a ranked comparison by price, warranty and delivery with the winner named — and
+    # the reasoning model ran out of `max_tokens` partway through the last string
+    # value. `json.loads` refused the whole reply, `_declared_output` returned `None`,
+    # and the platform reported
+    #
+    #     failed | output_contract_unmet | this task said it would produce reason, risk,
+    #     winner, and produced nothing
+    #
+    # on a task that had produced two of the three. Discarding a partial answer because
+    # the *tail* is missing throws away work that was genuinely done, and — worse — it
+    # misreports it as an absence, so the review loop rejects and reruns the same work
+    # and the answer never converges.
+    #
+    # So: keep every top-level pair that **completed**, drop the one that was cut, and
+    # let the contract check say which key is genuinely missing. That is the honest
+    # reading — the keys that arrived are reported, and the truncated value is not
+    # passed off as if the model had finished it.
+    partial = _completed_pairs(text)
+    if partial:
+        logger.warning(
+            "runtime.output_truncated",
+            recovered=sorted(partial),
+            wanted=sorted(str(k) for k in wanted),
+        )
+    return partial or None
+
+
+class TruncatedValue(str):
+    """A value the model began and did not finish.
+
+    **A `str` on purpose.** It has to survive `json.loads` on the way back into the
+    database and compare equal to the text the model wrote, so it cannot be a wrapper
+    with a different type. What it carries is the *fact* that the value is partial, and
+    that fact is what `describe_mismatch` reads to say "the answer was cut off" rather
+    than "the department produced nothing".
+
+    Two readings have to stay apart, because the platform only just learned the
+    difference the hard way:
+
+    * the model wrote nothing → the department did not do the work;
+    * the model wrote most of it and was cut → the department did the work and the
+      *runtime* failed to hold it.
+
+    The second is a platform fault and is reported as one. Collapsing it into the first
+    is how a correct answer got discarded and a review loop was sent to rerun work that
+    was already finished — measured, and it cost three failed department runs.
+    """
+
+    __slots__ = ()
+
+    @property
+    def truncated(self) -> bool:
+        return True
+
+
+def _completed_pairs(text: str) -> dict[str, Any]:
+    """Top-level `"key": value` pairs of a JSON object that was cut off mid-answer.
+
+    A pair whose value **finished** is returned as itself. A pair whose value was cut is
+    returned as a :class:`TruncatedValue` holding the text so far — enough to read, and
+    honest about not being whole. Anything after the cut is dropped, because the model
+    never wrote it and reconstructing it would be inventing an answer.
+    """
+    start = text.find("{")
+    if start == -1:
+        return {}
+    decoder = json.JSONDecoder()
+    out: dict[str, Any] = {}
+    index = start + 1
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char.isspace() or char == ",":
+            index += 1
+            continue
+        if char == "}":
+            break
+        if char != '"':
+            break
+        try:
+            key, cursor = decoder.raw_decode(text, index)
+        except ValueError:
+            break
+        rest = text[cursor:]
+        stripped = rest.lstrip()
+        if not stripped.startswith(":"):
+            break
+        # Skip the colon **and** the space after it. The first version did
+        # `cursor + (len(rest) - len(stripped)) + 1`, which is right only when the
+        # colon is followed immediately by the value -- and pretty-printed JSON always
+        # has a space there, so the cursor landed on whitespace, `_unterminated_string`
+        # was handed a space, and every truncated answer came back empty. Which is to
+        # say: it recovered nothing at all, on exactly the input it was written for.
+        cursor += len(rest) - len(stripped) + 1
+        cursor += len(text[cursor:]) - len(text[cursor:].lstrip())
+        try:
+            value, after = decoder.raw_decode(text, cursor)
+        except ValueError:
+            partial = _unterminated_string(text, cursor)
+            if partial is None:
+                break
+            out[str(key)] = TruncatedValue(partial)
+            break
+        out[str(key)] = value
+        index = after
+    return out
+
+
+def _unterminated_string(text: str, index: int) -> str | None:
+    """The contents of a JSON string that was opened and never closed.
+
+    `None` unless the value at `index` really is an unterminated string, so a reply that
+    was cut in some other way does not get a fabricated string value.
+    """
+    if index >= len(text) or text[index] != '"':
+        return None
+    out: list[str] = []
+    cursor = index + 1
+    while cursor < len(text):
+        char = text[cursor]
+        if char == "\\" and cursor + 1 < len(text):
+            out.append(text[cursor : cursor + 2])
+            cursor += 2
+            continue
+        if char == '"':
+            # A closing quote: the string was complete and something else broke.
+            return None
+        if char in "\n\r":
+            # JSON strings may not contain raw newlines, so one here means the model was
+            # writing a *pretty-printed* answer rather than a JSON string value.
+            return None
+        out.append(char)
+        cursor += 1
+    return "".join(out) or None
 
 
 def _json_candidates(text: str) -> list[str]:

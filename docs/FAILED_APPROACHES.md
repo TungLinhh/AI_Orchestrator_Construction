@@ -7256,3 +7256,281 @@ code.
 is set by an external service does not belong in the default gate, and no timeout
 makes it belong. The first version of the fix recognised the principle and misread the
 symptom, which is F245's shape again — the right idea about the wrong thing.
+
+### F256
+
+**Two departments shared one ledger, and three careful controls had nothing to do with it.**
+
+`internal_database_query` refuses writes, refuses multi-statement SQL and refuses
+catalog reads. Three deliberate controls, none of them about separation.
+`app.current_tenant` was the only row predicate, the whole company is one organisation,
+and that predicate is satisfied by every row that belongs to it — **including Finance's
+work when the reader is the HR agent.**
+
+There was no unit boundary anywhere in the platform. `domain/access.py` is the policy —
+higher tier reads lower, peers are status-only, ancestors stay readable so escalation
+has somewhere to go — and migration 0030 is the enforcement.
+
+### F257
+
+**A row-level policy that was installed, correct, and did nothing.**
+
+The first version of 0030 created `unit_scope_isolation` as an ordinary policy:
+
+```
+pg_policies: tenant_isolation    PERMISSIVE
+             unit_scope_isolation PERMISSIVE
+```
+
+**Permissive policies for the same command are OR-ed together.** `tenant_isolation` is
+`USING (organization_id = current_setting('app.current_tenant'))`, which is *true for
+every row in the tenant*, so a second policy ANDing a unit predicate ORs with a
+predicate that is already satisfied and the unit scope is inert.
+
+Measured, with everything else correct:
+
+```
+current_user    ao_app
+scope (3)       ['root', 'back-office', 'finance']
+row finance work     unit=finance
+row hr work          unit=hr
+row procurement work unit=procurement
+
+assert 'procurement work' not in {'finance work', 'hr work', 'procurement work'}
+```
+
+Four tests failed against a policy that was present, enabled, `FORCE`d, correctly
+written, and mathematically incapable of changing the answer. `AS RESTRICTIVE` policies
+are AND-ed with the permissive set, which is what "narrows, never widens" requires.
+
+**The lesson is the oldest one in this file with a new face.** Everything said the right
+thing: the policy existed, the role had no `BYPASSRLS`, `FORCE ROW LEVEL SECURITY` was
+on, the scope was set, the rows carried their units. Six signals, all green, and the
+answer was wrong. The only reason it was caught is that a test asserted a *peer cannot
+read* — which is a claim about absence, and absence is the one thing an inert control
+gets right.
+
+### F258
+
+**Every delegated task in the tenant had no unit, which made the boundary decorative.**
+
+`org_unit_id` was never passed to the child task in `DelegationExecutor`. Every
+delegated row carried `NULL` — and the policy's rule for a NULL unit is "readable by
+everyone", because a task with no unit belongs to nobody in particular.
+
+So even with F257 fixed, the boundary covered nothing that mattered: the platform's
+entire record of work is delegated tasks, and none of them said whose work they were.
+The executor now passes `org_unit_id=target.org_unit_id`, which is the only place that
+knows.
+
+**A boundary and the rows it filters are both required, and neither implies the other.**
+A policy over a column nothing populates is a policy that always answers "allowed".
+
+### F259
+
+**"Fail closed" everywhere it was merely possible, instead of where it was reachable.**
+
+Migration 0030 first read an **unset** `app.agent_unit_ids` as *nothing is visible*. The
+reasoning was that an agent the platform failed to place should get nothing rather than
+everything, and that is a real failure mode worth worrying about.
+
+It was also wrong, and the measurement was expensive:
+
+```
+..................................FF.F..F......ssss   [unit scope]
+..F...........EEEE.FFFF.F.......FFFF.FFFFFFFF.....FFFFFFF
+F.....FFFFFFFFFFFFFF.FFFF...............................................  [  6%]
+```
+
+Sixty-plus failures across the suite, none of them about access control. The cause: the
+`tenant` test fixture binds `app.current_tenant` with a direct `set_config` rather than
+through `_set_tenant`, so it never sets the unit variable — and "never set" meant "sees
+nothing". Every integration test that reads `tasks`, `executions` or `delegations` lost
+the ability to see them.
+
+**The relaxed rule is safe because of where the agent path writes.** `_bind_unit_scope`
+runs on **every** query a model makes and writes `''` when the scope cannot be
+computed. So an agent the platform failed to place gets the empty list and sees nothing —
+fail-closed on the path where it is reachable — while every other reader binds the
+tenant without this variable and keeps the whole tenant.
+
+**The distinction worth keeping: a default that is safe for the principal you care about
+is not the same as a default that is safe for everyone.** Making the *unset* state
+restrictive protected an agent that cannot reach it, and charged every other reader for
+it. A boundary has to be evaluated against the callers that exist, not against the
+caller one imagines.
+
+### F260
+
+**Two null-safe mistakes, both of them "a boundary that hides the rows it protects".**
+
+Both were found by the suite rather than by reading, and both are the same shape.
+
+**An approval with no `task_id` was invisible to everyone.** The first predicate was
+`EXISTS (SELECT 1 FROM tasks t WHERE t.id = approvals.task_id AND ...)` — and an
+`EXISTS` over a NULL key matches nothing. Measured: ten failures in
+`test_approvals_and_audit.py`, all on
+
+```
+NotFoundError: approval not found: apr_01m3znw6ymkvrryw48w9625a6e
+```
+
+for an approval the test had just created. The operator was as blind as the agent.
+
+**An execution with no `agent_id` was invisible the same way**, for the same reason:
+three failures in `test_task_delegation.py::TestExecutions`, on
+`NotFoundError: execution not found`.
+
+Both now read `task_id IS NULL OR ...` and `agent_id IS NULL OR ...`. A row with no
+owner is not another department's work — it is work whose attribution has not been
+recorded yet, and the unit-less task rule already said so.
+
+**The general form, and this is the fourth time it has appeared in this file.** A
+security predicate that is not *null-safe* is a denial of service wearing the costume of
+a control. It fails closed, which sounds safe, and what it actually does is make the
+system unusable for everyone including the person trying to fix it.
+
+### F261
+
+**Binding the scope was an `execute`, and `execute` flushes.**
+
+`_bind_unit_scope` was called just *before* `with self._session.no_autoflush:`. The
+guard exists because a plain `session.execute` flushes pending objects, which is why the
+audit row the surrounding flush was writing used to hit `Session is already flushing` and
+take the run with it. The scope bind was a statement outside the guard, so the read tool
+wrote — exactly the thing `test_the_tenant_reader_does_not_autoflush` exists to forbid,
+and exactly what it reported:
+
+```
+AssertionError: the read flushed the session, so a read tool wrote
+```
+
+The two lines moved inside the block. **A guard is only as good as its extent**, and
+adding a statement next to a guarded block is how the guard stops guarding.
+
+### F262
+
+**Abandoned work held the whole delegation budget, and the run reported 151 refusals for it.**
+
+After F249 made `issued_by` count only non-terminal descendants, the next real
+procurement run still could not delegate:
+
+```
+refused_by_platform reason='active descendants 16 reached the limit of 16'
+... 151 times, delegation.applied 0
+```
+
+Sixteen children still sat in `created`/`assigned` from runs that had been killed
+mid-flight. Nothing would ever finish them and nothing would ever release them, so the
+organisation's delegation capacity was fully consumed by work that no longer existed.
+
+The discriminator is the one the product already had: `STUCK_AFTER_SECONDS`, used by
+`fleet_view` to draw a box with a stranded run on it. **A task occupies capacity only
+while the platform is working it** — a `running` task with an execution started inside
+that window. Queued work and stranded work both fail the test.
+
+The runaway control is untouched, because `max_fanout` is what stops one coordinator
+opening too many branches and it counts by *issued*.
+
+**The two tests that disagreed decided it.** `test_work_in_flight_still_counts` asserted a
+`created` task counted; `test_a_never_started_task_does_not_count` asserted it did not.
+Both could not hold. The measurement held, and the older one was wrong: capacity is
+released by *finishing* work, and a queued task never occupied anything to release.
+
+### F263
+
+**A refusal with no reason in it, and 358 requests spent finding out there was nothing
+left to find.**
+
+The tool answered every denial with
+
+```
+accepted: false, error_message: "the platform refused this delegation"
+```
+
+No cause, no instruction. The chief answered that 358 times, ending `budget_error` at
+the 240-request ceiling with sixteen delegations dispatched and **none of them
+executed**. It was not re-asking the same thing — it was asking a slightly different
+thing each time, because nothing told it that the *category* of request was closed.
+
+Three changes, each answering a different failure:
+
+* **`DelegationVerdict.terminal`** — the domain now says whether a denial is
+  structural. A fan-out, depth or descendant ceiling is terminal for the task; a cycle, a
+  duplicate or a bad name is not. Carried out of the rule that knows it, rather than
+  pattern-matched from the sentence in the application layer.
+* **`delegation_closed` and `next_step`** in the tool result — "Stop delegating. Answer
+  this task now with what you have."
+* **`_unknown_agent_reason`** — a name that does not resolve is answered with the names
+  that do, from the roster already in the agent's context. A refusal with no list
+  invites a guess; the first real model run delegated to a department the company does
+  not have and the goal was lost to a correct refusal.
+
+Refusals on the next run: **358 → 9 → 3**.
+
+### F264
+
+**A coordinator is not held to the contract it passed down — the exemption only reached
+the chief.**
+
+The rule was written as *"a task that delegated is not held to the contract"*, which
+exempts the chief and nothing else. An **office** then answered its own goal instead of
+handing it to a department, and was failed three times:
+
+```
+category=output_contract_unmet
+  reason='this task said it would produce reason, risk, winner, and price and
+          produced nothing'
+```
+
+`prior_repetitions` went 9 → 10 across the reruns, so the review loop was rejecting and
+repeating the same non-answer rather than converging.
+
+The rule is now **"can delegate"**, which is what `_delegate_roster` already decides: a
+department has no children and so an empty roster, an office and the chief have children
+and so a non-empty one. A department is held to the contract — which is the point of the
+check — and nothing above it is. Two tests, the two halves, because a one-way
+exemption passes on a rule that exempts everyone.
+
+### F265
+
+**A correct answer, discarded, and reported as an absence.**
+
+The one that mattered. `qwen/qwen3.8-27b:free` is a reasoning model and its thinking is
+billed against `max_tokens`. The procurement department produced exactly the right
+answer — price, warranty, delivery ranked in order, winner named — and the runtime cut it
+off:
+
+```
+executions.output_tokens   15644
+summary                    1077 chars, no closing brace
+  {"reason": "...tiêu chí quyết định: C (Công ty Toàn Cầu) 1.090.000.000 VND..."
+ends      "...hoặc giá C ních lên bằng hoặc cao"
+```
+
+`json.loads` refused it. `_declared_output` returned `None`. The task failed with
+`produced nothing` — **true of the parser, false of the department** — and the review
+loop reran work that was already done.
+
+Three fixes, and the third is the one worth remembering:
+
+* **`_CONTRACT_ALLOWANCE = 32_768`** for a turn that declares required output, against
+  8192 for a routing turn. The model is permitted 235929 output tokens (measured at
+  OpenRouter), so this is nowhere near the provider ceiling, and `max_cost_usd` — the
+  ceiling that actually governs spend — is untouched.
+* **`_completed_pairs`** recovers the keys that arrived. A value that was **cut** is
+  returned as a `TruncatedValue` holding the text so far; a key that was **never
+  started** is not invented.
+* **`describe_mismatch`** distinguishes "wrote nothing" from "was cut off", and names
+  the second a **runtime fault**. Without that third change the answer is recovered and
+  the message still sends a person to the wrong department.
+
+The off-by-one inside `_completed_pairs` is the smallest illustration of the theme in
+this file: the cursor skipped the colon but not the space after it, so every
+pretty-printed reply recovered nothing — including, on the real run, the only input the
+function existed for.
+
+**A failure must be reported accurately, and "reported" is not the same as "reported
+usefully."** A correct answer that the platform throws away and then describes as never
+having existed is the worst of the three outcomes: it is wrong, it is confident, and it
+points at somebody who is not at fault.

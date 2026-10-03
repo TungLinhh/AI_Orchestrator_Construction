@@ -202,3 +202,102 @@ class TestTheCoordinatorIsJudgedOnItsCoordination:
                 await session.execute(select(Task.status).where(Task.id == str(task.id)))
             ).scalar_one()
         assert str(final) == "failed", f"a department that produced nothing finished as {final}"
+
+
+class TestTheOfficeIsACoordinatorToo:
+    """The same mistake, one tier down, and the rule that had not reached it.
+
+    **Measured on a real procurement run, 2026-10-03.** The exemption was written as
+    *"a task that delegated is not held to the contract"*, which exempts the chief and
+    nothing else. An **office** then answered its own goal instead of handing it to a
+    department and was failed three times with
+
+    ```
+    category=output_contract_unmet
+      reason='this task said it would produce reason, risk, winner, and price and
+              produced nothing'
+    ```
+
+    `prior_repetitions` went 9 → 10 across the reruns, so the review loop was rejecting
+    and repeating the same non-answer rather than converging.
+
+    The rule is now **"can delegate"**, which is what `_delegate_roster` already
+    decides: a department has no children and so an empty roster; the chief and each
+    office have children and so a non-empty one. These two tests are the two halves.
+    """
+
+    async def _run_once(self, seeded, agent_name: str):  # type: ignore[no-untyped-def]
+        """Execute one task owned by `agent_name`, with a runtime that produces nothing."""
+        from ai_orchestrator.application.task_execution import TaskExecutionService
+        from ai_orchestrator.persistence.models import Task
+        from ai_orchestrator.persistence.repositories.task import TaskRepository
+        from ai_orchestrator.persistence.session import Database
+
+        tasks = TaskRepository(seeded.session, seeded.organization_id)
+        owner = (
+            await seeded.session.execute(
+                select(Agent).where(
+                    Agent.organization_id == seeded.organization_id,
+                    Agent.name == agent_name,
+                )
+            )
+        ).scalar_one()
+        task = await tasks.create(
+            title="Kết luận đấu thầu",
+            goal="Chọn nhà cung cấp theo tiêu chí",
+            task_type="analysis",
+            requester_type="human",
+            owner_agent_id=owner.id,
+            expected_output_schema=CONTRACT,
+        )
+        await seeded.session.commit()
+
+        class _Silent(_DelegatingRuntime):
+            async def execute(self, t, context, *, execute_tool=None, **kwargs):  # type: ignore[no-untyped-def]
+                # Produces nothing and delegates nothing: the exact shape that failed
+                # an office three times on the real run.
+                return AgentResult(
+                    status=AgentResultStatus.COMPLETED,
+                    summary="Đã xem xét",
+                    execution_id=str(getattr(t, "execution_id", None) or "exec_pending"),
+                    task_id=str(t.task_id),
+                )
+
+        db = Database.from_settings()
+        try:
+            async with db.committing_tenant_session(seeded.organization_id) as session:
+                service = TaskExecutionService(
+                    session=session,
+                    organization_id=seeded.organization_id,
+                    runtime=_Silent(),
+                    run_mode=RunMode.LIVE,
+                )
+                await service.execute_task(str(task.id))
+                await session.commit()
+            async with db.committing_tenant_session(seeded.organization_id) as session:
+                final = (
+                    await session.execute(select(Task.status).where(Task.id == str(task.id)))
+                ).scalar_one()
+        finally:
+            await db.dispose()
+        return str(final)
+
+    async def test_an_office_that_answers_its_own_goal_is_not_failed(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        """An office has departments underneath it, so it is a coordinator."""
+        status = await self._run_once(seeded, "Back Office Agent")
+        assert status != "failed", (
+            "an office was failed for not producing a department's keys, having "
+            "answered its own goal instead of delegating to that department"
+        )
+
+    async def test_a_department_is_still_failed_for_producing_nothing(self, seeded) -> None:  # type: ignore[no-untyped-def]
+        """The other half. Relaxing coordinators must not relax the worker.
+
+        Without this the two tests together would pass on a rule that exempts everyone,
+        which is the shape a "fix" takes when it is made from one stack trace.
+        """
+        status = await self._run_once(seeded, "Finance Agent")
+        assert status == "failed", (
+            f"a department that produced nothing and delegated nothing finished as "
+            f"{status}: the output contract is no longer enforced on anyone"
+        )

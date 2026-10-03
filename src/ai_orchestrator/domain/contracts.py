@@ -215,10 +215,19 @@ class BudgetEnvelope(BaseModel):
     #: default to is thin -- one run at the boundary -- so a per-task override would let the
     #: data set the number instead of a constant guessing it.
     #:
-    #: **Removing this limit is not the fix.** The comment above explains what it is for, and
-    #: the three failures are exactly the case it exists for: unbounded spending on a model
-    #: that has lost the thread.
-    max_requests: int = 48
+    #: **Raised 48 -> 240, and the money ceiling is the guard that matters.**
+    #:
+    #: The three failures the comment above describes were long tasks, not loops: two real
+    #: goals ended at 48 with work still in flight. A ceiling that a *normal* task reaches
+    #: is not a control, it is an outage.
+    #:
+    #: The thing that actually stops a bill is `max_cost_usd`, and it is not touched by
+    #: this. A model that loops 240 times cannot spend more than the task's cost ceiling,
+    #: which is why there are two numbers and why this one is allowed to be loose.
+    #:
+    #: The runtime override is `BudgetState.max_requests` -- the field, not a constant --
+    #: so a caller can still ask for less on work that should not run long.
+    max_requests: int = 240
     #: Ceiling on tool calls, which is the other way a loop can run away: one
     #: model call, twenty tool calls, and the budget is untouched.
     #:
@@ -228,7 +237,7 @@ class BudgetEnvelope(BaseModel):
     #: one call, and that every failure stopped at the ceiling. Raise it with
     #: that in mind — a higher ceiling buys a confused model more turns, it does
     #: not make it more capable.
-    max_tool_calls: int = 48
+    max_tool_calls: int = 240
     spent_tokens: int = 0
     spent_cost_usd: Money = Money("0")
 

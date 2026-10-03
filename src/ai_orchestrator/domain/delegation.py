@@ -159,6 +159,20 @@ class DelegationVerdict:
     allowed: bool
     reason: str
     effective_limits: DelegationLimits
+    #: **True when retrying differently cannot help.**
+    #:
+    #: A denial for a structural reason — this task's fan-out, depth or active-descendant
+    #: budget is spent — is terminal for the task. A denial for a specific request — a
+    #: cycle, self-delegation, a duplicate intent — is not: a different target or a
+    #: different objective is a different request, and may well be allowed.
+    #:
+    #: This is the difference between telling a coordinator *"no"* and telling it *"no,
+    #: and there is nothing else to try"*, and it is not cosmetic. A real procurement run
+    #: was handed the bare refusal 358 times and ended `budget_error` with sixteen
+    #: children dispatched and none executed, purely because the message never said
+    #: which refusals had a different answer waiting. The flag carries that knowledge
+    #: from the rule that knows it to the caller that has to write it down.
+    terminal: bool = False
 
     def __bool__(self) -> bool:
         return self.allowed
@@ -208,13 +222,19 @@ def authorize_delegation(
             allowed=False,
             reason=f"delegation depth {path.depth} reached the limit of {ceiling.max_depth}",
             effective_limits=ceiling,
+            terminal=True,
         )
 
     if current_fanout >= ceiling.max_fanout:
         return DelegationVerdict(
             allowed=False,
-            reason=f"fan-out {current_fanout} reached the limit of {ceiling.max_fanout}",
+            reason=(
+                f"fan-out {current_fanout} reached the limit of {ceiling.max_fanout}. "
+                "This task has already delegated as widely as it is allowed to, so no "
+                "further agent and no reworded objective will be accepted."
+            ),
             effective_limits=ceiling,
+            terminal=True,
         )
 
     if current_active_descendants >= ceiling.max_active_descendants:
@@ -222,9 +242,11 @@ def authorize_delegation(
             allowed=False,
             reason=(
                 f"active descendants {current_active_descendants} reached the limit of "
-                f"{ceiling.max_active_descendants}"
+                f"{ceiling.max_active_descendants}. Too much delegated work is already "
+                "in flight, so this task cannot delegate again until some of it finishes."
             ),
             effective_limits=ceiling,
+            terminal=True,
         )
 
     if source == target:

@@ -33,6 +33,23 @@ secrets — simulated personas and a role switcher) and every external integrati
   `unit` so all three tiers can be opened. It was flat — `parent_id` was never
   selected — while 100 console checks passed, because the only hierarchy check was a
   substring match (F240).
+* **Departments are separated from each other, and the separation is the database's.**
+  There was no unit boundary at all: `app.current_tenant` was the only row predicate, the
+  company is one organisation, and `internal_database_query` — which refuses writes,
+  multi-statement SQL and catalog reads, three deliberate controls — let a department read
+  the whole ledger. Migration 0030 adds `app.agent_unit_ids` as a second, `RESTRICTIVE`
+  policy over `tasks`, `executions`, `delegations` and `approvals`:
+  higher tier reads lower in full, a peer is **status-only** (visible in the roster,
+  not in the rows), and ancestors stay readable so escalation has somewhere to go.
+  `domain/access.py` is the policy and is pure; eleven integration tests go through the
+  database (F256, F257, F258, F259).
+
+* **A turn budget a normal task could reach.** `max_requests` and `max_tool_calls` were
+  both 48, and two real goals died at that ceiling with work still in flight. Both are
+  240 now, configurable with `AO_MAX_TOOL_CALLS`. The ceiling that actually stops a bill
+  — `max_cost_usd` — is untouched by this, and that is the point of having two numbers
+  (F241, F253).
+
 * **The console is three screens, and `make page` exits 0.**
   Departments, Give work and Needs you. Roster duplicated Departments; Dashboard
   duplicated Needs you plus two corpus-dependent views; Decision log duplicated the
@@ -759,7 +776,7 @@ Two things about that were nearly wrong in a way that would have cost money:
   by the caller rather than guessed.
 
 **Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
-the suite is 3079 unit and integration tests, 8 skipped, 1 deselected, 0 failed, and
+the suite is 3167 unit and integration tests, 8 skipped, 1 deselected, 0 failed, and
 `make lint` and `make typecheck` are clean.
 
 **Two existing tests caught a wrong fix in this pass, which is worth recording.** The

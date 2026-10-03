@@ -15,9 +15,31 @@ three tools, varying *only* this number:
 The model is a reasoning model. A tight cap does not make it cheaper or faster —
 it removes the deliberation that produces a delegation, and the model answers the
 goal itself instead. That is the single most important number in the runtime.
+
+## And a second number, added after the first one truncated an answer
+
+8192 is right for a *routing* turn and it is not enough for a turn that must emit a
+declared object. Same model, same goal, and the procurement department's answer was cut
+off mid-string — 15644 output tokens against an 8192 per-request ceiling, because
+`qwen3`'s thinking is billed against `max_tokens`:
+
+```
+summary  1077 chars, no closing brace
+  {"reason": "...tiêu chí quyết định: C (Công ty Toàn Cầu) 1.090.000.000 VND..."
+ends    "...hoặc giá C ních lên bằng hoặc cao"
+```
+
+The answer was correct and the runtime threw it away. So a turn that declares required
+keys gets 32768, measured against the 235929 the provider actually permits, and the
+cost ceiling that governs spend is untouched by either number. F265.
+
+The property that matters is unchanged and still holds for both: **a wider context
+window must not widen the answer.**
 """
 
 from __future__ import annotations
+
+from types import SimpleNamespace
 
 import pytest
 
@@ -37,11 +59,21 @@ MEASURED_DELEGATING_ALLOWANCE = 8192
 MEASURED_SOLO_ALLOWANCE = 2048
 
 
-def _context(max_tokens: int) -> AgentContext:
+def _context(max_tokens: int, *, contract: dict | None = None) -> AgentContext:
+    task = None
+    if contract is not None:
+        task = SimpleNamespace(expected_output_schema=contract)
     return AgentContext.model_construct(
         budget=BudgetEnvelope(max_tokens=max_tokens, max_cost_usd=Money("1.00"), max_runtime_s=300),
         data_classification=DataClassification.INTERNAL,
+        task=task,
     )
+
+
+#: The measured allowance for a turn that must emit the keys it declared.
+MEASURED_CONTRACT_ALLOWANCE = 32_768
+
+CONTRACT = {"required": ["reason", "risk", "winner"]}
 
 
 class TestTheAllowanceIsAMeasuredNumber:
@@ -65,3 +97,51 @@ class TestTheAllowanceIsAMeasuredNumber:
         tokens of prose and then asked for 100k.
         """
         assert _output_allowance(_context(max_tokens)) == MEASURED_DELEGATING_ALLOWANCE
+
+
+class TestAWorkerGetsRoomToAnswer:
+    def test_a_declared_contract_gets_the_larger_allowance(self) -> None:
+        assert _output_allowance(_context(64_000, contract=CONTRACT)) == MEASURED_CONTRACT_ALLOWANCE
+
+    def test_the_larger_allowance_is_not_the_context_window(self) -> None:
+        """The property the whole file exists for, applied to the second number.
+
+        A 512k window is not permission to write 512k tokens, and the fix for the
+        truncation must not have quietly become "ask for everything".
+        """
+        for window in (1_000, 8_000, 64_000, 512_000):
+            got = _output_allowance(_context(window, contract=CONTRACT))
+            assert got == MEASURED_CONTRACT_ALLOWANCE, f"{window}: got {got}"
+            assert got < window or window < 64_000, (
+                f"a {window}-token window was answered with {got} tokens"
+            )
+
+    def test_a_contract_without_required_keys_is_not_a_contract(self) -> None:
+        """`{"produces": ...}` is documentation, and gets the routing allowance.
+
+        The column is read as either `required` or `produces`; only `required` is a
+        promise the gate enforces, so only it earns the larger budget.
+        """
+        assert _output_allowance(_context(64_000, contract={"field_meaning": {}})) == (
+            MEASURED_DELEGATING_ALLOWANCE
+        )
+
+    def test_the_contract_allowance_is_within_what_the_provider_permits(self) -> None:
+        """Measured at OpenRouter for `qwen/qwen3.8-27b:free`: 235929.
+
+        Asserted so that raising this number past the provider's ceiling is a test
+        failure rather than a run full of `token limit exceeded`.
+        """
+        assert MEASURED_CONTRACT_ALLOWANCE <= 235_929
+
+
+class TestAContextWithNoTask:
+    def test_a_context_without_a_task_gets_the_routing_allowance(self) -> None:
+        """The shape the existing tests in this file build.
+
+        Reading `context.task` unguarded raised `AttributeError` rather than
+        returning the default, so a unit test that never needed a task could not be
+        written — and the fallback is the *narrower* number, which is the right
+        direction for something that cannot declare a contract.
+        """
+        assert _output_allowance(_context(64_000)) == MEASURED_DELEGATING_ALLOWANCE

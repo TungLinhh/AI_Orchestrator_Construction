@@ -385,7 +385,7 @@ something harmful are the hardest to test, they will be the least tested.
 
 | Suite | Count | What it proves |
 |---|---|---|
-| `tests/unit` + `tests/integration` | 3079 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
+| `tests/unit` + `tests/integration` | 3167 | Domain rules, the runtime swap, the PydanticAI bridge, gateway gates, tenant-isolation tests, the office review loop, all 28 SOPs, MCP against a real subprocess, A2A against a real peer process |
 | `tests/e2e` | 34 | The 8 acceptance scenarios, the event pipeline through real NATS JetStream, and A2A against a spawned remote agent. Gated by `preflight-e2e`, so a missing broker is a failure rather than five skips |
 | `make lint` | clean | 669 findings fixed, including a typo in a target name that made a documented command fail on a clean machine |
 | `make typecheck` | clean | 144 source files, no `Any` escapes and no unused ignores |
@@ -441,6 +441,17 @@ finished is worse than none. The gaps that matter:
   report says "not ready, 9 days of 28" until they exist rather than passing a rate.
 - **No deployment.** No Dockerfile, no compose, no Kubernetes — deliberately, per
   the note above. `make setup && make page` is the whole story.
+- **Departments were separated this week and the separation is not complete.** There was
+  no unit boundary at all: one organisation, one row predicate, and a read tool that
+  let a department see the whole ledger. `app.agent_unit_ids` and a `RESTRICTIVE` policy
+  now enforce higher-reads-lower, peers-are-status-only, and ancestors-readable — but the
+  *grant* model does not exist, so every unit is either allowed or not. A department that
+  needs a colleague's figure has no way to ask for it.
+- **A real goal still does not reach a completed department.** Both scenarios the owner
+  named — procurement and HR — end `failed` with `budget_error`. Four real defects were
+  found and fixed getting there (F249–F253); the remaining gap is that the chief spends
+  its request budget re-asking. `docs/AUTONOMOUS_ORGANISATION_PLAN.md` §1 is that work,
+  written down with the four candidate causes in the order they should be ruled out.
 - **Eight of the console's eleven screens are gone.** Departments, Give work and
   Needs you remain. Roster duplicated Departments; Dashboard duplicated Needs you and
   the corpus-dependent views; Decision log duplicated the approvals view and every agent
@@ -484,6 +495,7 @@ The full list, with the reason for each, is
 | [SRS.md](docs/SRS.md) | Requirement → where it is implemented → where it is tested |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | The shape, and the diagrams for execution, delegation, events, approval, tenancy |
 | [DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md) | The vocabulary, the state machines, the authority flow |
+| [AUTONOMOUS_ORGANISATION_PLAN.md](docs/AUTONOMOUS_ORGANISATION_PLAN.md) | What is not built, in the order it should be, with the measurement each item is done by |
 | [DATA_MODEL.md](docs/DATA_MODEL.md) | 104 tables and the six constraints that carry the design |
 | [SECURITY.md](docs/SECURITY.md) | The threat model, and the controls that are missing |
 | [OPERATIONS.md](docs/OPERATIONS.md) | Runbooks: symptom, meaning, action |

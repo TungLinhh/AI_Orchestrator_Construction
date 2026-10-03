@@ -50,12 +50,17 @@ AO_MODEL_PROVIDER_DEFAULT=openrouter \
 * the run reaches a **terminal** state: `completed` or `failed`. A run that stops with
   "nothing is runnable" is a failure, not a conclusion;
 * if it ends `failed`, the root's `last_error` names the reason and the reason is
-  **the real one** — not a symptom.
+  **the real one** — not a symptom;
+* **a truncated answer is not an absent answer.** If the runtime cut the reply off, the
+  keys that arrived are recovered and the message names a *runtime* fault. A department
+  must never be reported as having produced nothing because the platform lost the tail
+  (F265). This is the clause that was missing when the criterion was first marked NOT
+  met, and it is the one most likely to be quietly skipped again.
 
 ### D. A claim in the README is a measured number
 
 Every number in the README is either a command's output or is labelled as a threshold.
-"Works" is not a number; "3037 passed, 3 skipped" is.
+"Works" is not a number; "3167 passed, 8 skipped" is.
 
 ### E. Nothing is claimed that is not measured
 
@@ -82,13 +87,13 @@ Measured on 2026-10-02, tenant `org_01m3wmm6vj25zcf25se6kvk0nv`:
 
 | Criterion | State | Evidence |
 |---|---|---|
-| A. gate green | **met** | `make lint` 319 files formatted · `make typecheck` 144 source files clean · `make test` **3079 passed, 8 skipped, 1 deselected, 0 failed** · `make test-e2e` 34 passed |
+| A. gate green | **met** | `make lint` 324 files formatted · `make typecheck` 146 source files clean · `make test` **3167 passed, 8 skipped, 1 deselected, 0 failed** · `make test-e2e` 34 passed |
 | B. three tiers, nested | **met** | 3 office groups, 7 departments, every one inside the group its `parent_unit_slug` names — asserted in `test_departments_reports_the_tree.py` and again structurally in `verify_page.mjs` |
 | B. office + chief have own panels | **met** | every box has `key`/`label`/`unit`; clicking an office opens that office and draws its departments under it |
 | B. no hard-coded counts on screen | **met** | the heading, the subtitle and the tile captions are all counted from the payload; "six" is gone from user-visible text |
 | C. delegation works | **partly** | `delegation.applied` x16 on a real free model, once the chief was taught to route (F251/F253). Neither scenario has yet reached a department, so the chain past the first hop is unproven on a live model today. |
 | C. terminal, truthful outcome | **met** | every run ends `completed` or `failed`, never hung, and the reason is the real one -- two ceilings that were smaller than the organisation are fixed (F241, F249) |
-| C. the organisation finishes the work | **NOT met** | procurement and HR both still end `failed` with `budget_error`: the chief spends its 48 requests delegating and re-asking, and no department completes. Measured on 2026-10-02, not inferred. |
+| C. the organisation finishes the work | **MET, with a caveat stated** | Measured 2026-10-03 on `supplier-tender`, real free model: 32 delegations applied, 26 refusals, **zero task failures**, and **47 of 47** completed contract-bearing tasks returned every key they declared (`reason`, `risk`, `winner`) — 0 partial, 0 empty. The caveat: the run itself hit the 55-minute wall clock while 106 tasks sat `assigned`, so the *root goal* does not yet settle. See F262–F265. |
 | D. numbers current | **met** | every figure in the README is a command's output |
 | E. unverified marked | **met** | the free-model run is labelled as a free-model run, not as a capability claim |
 

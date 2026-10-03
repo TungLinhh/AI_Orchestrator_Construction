@@ -13,7 +13,7 @@ application uses, so the RLS tenant binding under test is the production one.
 from __future__ import annotations
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from ai_orchestrator.domain.delegation import DelegationLimits, DelegationPath
 from ai_orchestrator.domain.enums import EventType, TaskStatus
@@ -236,6 +236,26 @@ class TestTaskLifecycle:
         # both refuse.
         with pytest.raises(NotFoundError):
             await repo_other.get(task.id)
+
+
+async def _start_running(tenant, task_id: str, agent_id: str, age: str = "now()") -> None:
+    """Put a task into the one state that occupies delegation capacity: being worked on.
+
+    `age` is a SQL interval expression, so a run three hours old -- the shape the
+    console already draws as a stranded box -- is the same code path with a different
+    argument rather than a second fixture.
+    """
+    repo = TaskRepository(tenant.session, tenant.organization_id)
+    await repo.transition(task_id, Transition.ASSIGN)
+    await repo.transition(task_id, Transition.BEGIN_WORK)
+    await tenant.session.execute(
+        text(
+            "INSERT INTO executions (id, organization_id, task_id, agent_id, status,"
+            f" started_at) VALUES (gen_random_uuid()::varchar, :o, :t, :a, 'running',"
+            f" {age})"
+        ),
+        {"o": str(tenant.organization_id), "t": task_id, "a": agent_id},
+    )
 
 
 async def _agent_ids(session, organization_id: str, count: int) -> list[str]:
@@ -700,8 +720,10 @@ class TestTheActiveDescendantCapCountsLiveWork:
 
     async def _finish(self, tenant, task_id: str) -> None:
         repo = TaskRepository(tenant.session, tenant.organization_id)
-        await repo.transition(task_id, Transition.ASSIGN)
-        await repo.transition(task_id, Transition.BEGIN_WORK)
+        status = await repo.get(task_id)
+        if status.status != TaskStatus.RUNNING.value:
+            await repo.transition(task_id, Transition.ASSIGN)
+            await repo.transition(task_id, Transition.BEGIN_WORK)
         await repo.transition(task_id, Transition.COMPLETE)
 
     async def test_finished_delegations_do_not_count(self, tenant) -> None:
@@ -718,10 +740,112 @@ class TestTheActiveDescendantCapCountsLiveWork:
             "organisation runs out of capacity permanently rather than under load"
         )
 
-    async def test_live_delegations_still_count(self, tenant) -> None:
-        """Otherwise the fix removed the control rather than correcting it."""
+    async def test_work_in_flight_still_counts(self, tenant) -> None:
+        """Otherwise the fix removed the control rather than correcting it.
+
+        **In flight means in flight**: a `running` task with an execution started inside
+        the window. A *queued* task -- `created`, `assigned`, nothing running on it --
+        does not count, and
+        `TestAbandonedWorkDoesNotHoldTheBudget::test_a_never_started_task_does_not_count`
+        is the other half of this same rule. The two were written as if they disagreed
+        and the measurement decided it: 151 refusals against sixteen abandoned children.
+        """
         source, target = await self._two_agents(tenant)
-        await self._delegate_once(tenant, source, target, "still in flight")
+        delegations = DelegationRepository(tenant.session, tenant.organization_id)
+        child = await self._delegate_once(tenant, source, target, "still being worked")
+        await _start_running(tenant, child, target)
+        counted = await delegations.issued_by(source)
+        assert counted == 1, (
+            "the cap has stopped bounding concurrent fan-out, which is the runaway it "
+            "exists to prevent"
+        )
+
+    async def test_the_same_row_stops_counting_when_it_terminates(self, tenant) -> None:
+        """A cap that only grows never recovers; one that only shrinks never binds.
+
+        The row has to start in flight — capacity is released by *finishing* work, and
+        under the abandoned-work rule (F249's successor) a queued task never occupied
+        anything to release.
+        """
+        source, target = await self._two_agents(tenant)
+        delegations = DelegationRepository(tenant.session, tenant.organization_id)
+        child = await self._delegate_once(tenant, source, target, "one piece of work")
+        await _start_running(tenant, child, target)
+
+        assert await delegations.issued_by(source) == 1
+        await self._finish(tenant, child)
+        assert await delegations.issued_by(source) == 0
+
+
+class TestAbandonedWorkDoesNotHoldTheBudget:
+    """Capacity consumed by work that no longer exists is capacity that is gone.
+
+    **Measured on a real run, immediately after F249.** F249 made the count exclude
+    *finished* children, which was right and not sufficient. The next real procurement
+    run reported
+
+        refused_by_platform reason='active descendants 16 reached the limit of 16'
+        ... 151 times, delegation.applied 0
+
+    Sixteen children still `created` or `assigned` from runs that were killed
+    mid-flight. Nothing would ever finish them and nothing would ever release them, so
+    the delegation budget was fully consumed by work that no longer existed.
+
+    The discriminator is the one the product already uses to draw a box with a stranded
+    run on it: no execution started inside `STUCK_AFTER_SECONDS` means nobody is
+    working on it.
+    """
+
+    async def _child(self, tenant, owner: str, goal: str):
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        return str(
+            (
+                await repo.create(
+                    title=goal[:60],
+                    goal=goal,
+                    owner_agent_id=owner,
+                    allow_parallel=True,
+                )
+            ).id
+        )
+
+    async def _record(self, tenant, source: str, target: str, child_id: str, goal: str) -> None:
+        delegations = DelegationRepository(tenant.session, tenant.organization_id)
+        parent = await self._child(tenant, source, f"the goal that sent {goal}")
+        await delegations.record(
+            parent_task_id=parent,
+            child_task_id=child_id,
+            source_agent_id=source,
+            target_agent_id=target,
+            objective=goal,
+            platform_limits=DelegationLimits.platform_default(),
+            path=DelegationPath(),
+            parent_limits=DelegationLimits.platform_default(),
+        )
+
+    async def test_a_never_started_task_does_not_count(self, tenant) -> None:
+        """The exact shape that consumed the whole budget: assigned, never run."""
+        ids = await _agent_ids(tenant.session, str(tenant.organization_id), 2)
+        source, target = ids
+        child = await self._child(tenant, target, "work that was abandoned")
+        await self._record(tenant, source, target, child, "the abandoned one")
+
+        counted = await DelegationRepository(tenant.session, tenant.organization_id).issued_by(
+            source
+        )
+        assert counted == 0, (
+            f"{counted} never-started task(s) still hold the delegation budget, so the "
+            "organisation cannot delegate again on this tenant"
+        )
+
+    async def test_a_task_with_a_recent_running_execution_still_counts(self, tenant) -> None:
+        """Otherwise the fix would have removed the control instead of correcting it."""
+        ids = await _agent_ids(tenant.session, str(tenant.organization_id), 2)
+        source, target = ids
+        child = await self._child(tenant, target, "work in flight")
+        await self._record(tenant, source, target, child, "the in-flight one")
+
+        await _start_running(tenant, child, target)
         counted = await DelegationRepository(tenant.session, tenant.organization_id).issued_by(
             source
         )
@@ -730,12 +854,17 @@ class TestTheActiveDescendantCapCountsLiveWork:
             "exists to prevent"
         )
 
-    async def test_the_same_row_stops_counting_when_it_terminates(self, tenant) -> None:
-        """A cap that only grows never recovers; one that only shrinks never binds."""
-        source, target = await self._two_agents(tenant)
-        delegations = DelegationRepository(tenant.session, tenant.organization_id)
-        child = await self._delegate_once(tenant, source, target, "one piece of work")
-
-        assert await delegations.issued_by(source) == 1
-        await self._finish(tenant, child)
-        assert await delegations.issued_by(source) == 0
+    async def test_a_stranded_run_stops_counting(self, tenant) -> None:
+        """A `running` task whose execution is old is the stranded box the console draws."""
+        ids = await _agent_ids(tenant.session, str(tenant.organization_id), 2)
+        source, target = ids
+        child = await self._child(tenant, target, "work that was interrupted")
+        await self._record(tenant, source, target, child, "the interrupted one")
+        await _start_running(tenant, child, target, age="now() - interval '3 hours'")
+        counted = await DelegationRepository(tenant.session, tenant.organization_id).issued_by(
+            source
+        )
+        assert counted == 0, (
+            "a run interrupted three hours ago still holds the budget, which is the "
+            "same leak as a never-started task"
+        )
