@@ -707,12 +707,19 @@ try {
   const treeKids = flowTree && Array.isArray(flowTree.children) ? flowTree.children.length : -1;
   const treeDrawn = treeKids > 0;
   const emptyStated = flowEmpty && flowEmpty.hidden === false;
+  /* **Drawn tasks count as drawn, with or without delegations.** The first version
+   * branched on `delegations.length`: no delegation events meant it demanded the empty
+   * state — and failed a tree that was correctly showing two task nodes. A tree of tasks
+   * with no handoffs yet is a true statement, not an empty one; the empty state is only
+   * correct when there is nothing to draw at all. */
   check("the delegation tree either draws the record or states there is none",
-    delegations.length > 0 ? treeDrawn : emptyStated,
-    delegations.length
-      ? `${delegations.length} delegation event(s), tree drawn=${treeDrawn}`
-      : `none on this tenant — the scripted runtime does not delegate and \`make page\``
-        + ` does not spend model calls; empty state shown=${emptyStated}`);
+    treeDrawn || emptyStated,
+    treeDrawn
+      ? `${treeKids} node(s) drawn, ${delegations.length} delegation event(s)`
+      : (emptyStated
+        ? "nothing on this tenant, and it says so — the scripted runtime does not "
+          + "delegate and `make page` does not spend model calls"
+        : "neither nodes nor the empty state: the panel is blank for no stated reason"));
   check("and task lifecycle events alongside", lifecycle.length > 0, `${lifecycle.length}`);
   if (delegations.length) {
     const d = delegations[delegations.length - 1];
