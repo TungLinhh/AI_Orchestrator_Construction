@@ -7876,3 +7876,25 @@ projection: everything display-only under `view`, in both.
 Caught by reading the line rather than by running it, which is worth stating plainly:
 a test that renders one step with known token counts would have caught it, and there
 is now a reason to add one rather than a habit of re-reading.
+
+### F280
+
+**A parameter order the schema happened to use, silently un-exposing a tool.**
+
+`document_reader` — bound by six of seven departments — was refused on every run with
+`tool_schema_unsupported`, and the schema is perfectly expressible. The generated
+signature was
+
+```python
+async def _tool(max_chars: int = int(), document_id: str) -> str:
+```
+
+because the schema lists the optional `max_chars` before the required `document_id`,
+and a non-default argument may not follow a default one. A `SyntaxError` on `exec`,
+caught, returned as `None`, logged as "a shape the agent loop cannot express" — and no
+agent in the company could read a document.
+
+Two failures in one: the ordering bug, and a refusal message naming the wrong cause
+("cannot express"), which is why this was found by reproducing the refusal against the
+real schema rather than by reading the warning. Required parameters are now sorted
+first (stably, so the signature stays deterministic).
