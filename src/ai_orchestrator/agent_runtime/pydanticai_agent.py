@@ -1141,7 +1141,21 @@ def _user_prompt(task: Any, context: AgentContext) -> str:
                 "Answer with that JSON and nothing else. Do not explain it, do not "
                 "wrap it in prose, do not add other keys. If you are unsure of a "
                 "value, give your best assessment under that key rather than "
-                "leaving it out -- a missing key is a failed run.",
+                "leaving it out -- a missing key is a failed run.\n"
+                # **The key names are identifiers, not words.**
+                #
+                # Measured on a real design run: the department did the work correctly
+                # and answered with `dieu_khoan, muc_do_rui_ro, ...` instead of the
+                # declared `proposed_changes, risks` — the goal and context were
+                # Vietnamese, so the model translated the *keys* too. The answer was
+                # right and the contract failed it, which is the most expensive way to
+                # be wrong about a language.
+                #
+                # Values may be in any language. Keys may not: use them
+                # character-for-character, exactly as listed above.
+                "Use the key names above character-for-character. Do not translate "
+                "them, do not reword them, do not add accents or change their case. "
+                "The values may be in any language; the keys are identifiers.",
             ]
 
     lines += [
