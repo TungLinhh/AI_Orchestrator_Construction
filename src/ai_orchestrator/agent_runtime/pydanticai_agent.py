@@ -1214,8 +1214,24 @@ def _make_tool_fn(contract: Any, execute: Any) -> Any:
         return None
 
     required = set(schema.get("required") or properties)
+    # **Required parameters first, because Python says so.**
+    #
+    # Measured on the live tenant: `document_reader` — bound by six of seven
+    # departments — was refused with `tool_schema_unsupported` on every run, and the
+    # schema is perfectly expressible. The generated signature was
+    #
+    #     async def _tool(max_chars: int = int(), document_id: str) -> str:
+    #
+    # because the schema lists the optional `max_chars` before the required
+    # `document_id`, and a non-default argument may not follow a default one. A
+    # `SyntaxError` on `exec`, caught, returned as `None`, logged as "unsupported" —
+    # and no agent in the company could read a document.
+    #
+    # The sort is stable, so two required (or two optional) parameters keep the
+    # schema's own order and the generated signature is deterministic.
     params: list[str] = []
-    for prop, spec in properties.items():
+    ordered = sorted(properties.items(), key=lambda kv: kv[0] not in required)
+    for prop, spec in ordered:
         if not isinstance(spec, dict) or prop == "self":
             return None
         annotation = _JSON_TO_PY.get(str(spec.get("type", "")))

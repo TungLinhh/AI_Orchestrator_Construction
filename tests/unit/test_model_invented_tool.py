@@ -220,3 +220,97 @@ class TestTheRetryBudgetIsActuallyApplied:
         assert "delegate_to_agent" in toolset.tools, (
             f"registered under {list(toolset.tools)!r} instead of its contract name"
         )
+
+
+class TestAnOptionalPropertyBeforeARequiredOne:
+    """**The schema order must not decide whether a tool exists.**
+
+    Measured on the live tenant: `document_reader` — bound by six of seven departments —
+    was refused on every run with `tool_schema_unsupported`, and the schema is perfectly
+    expressible. The generated signature was
+
+        async def _tool(max_chars: int = int(), document_id: str) -> str:
+
+    because the schema lists the optional `max_chars` before the required `document_id`,
+    and a non-default argument may not follow a default one. A `SyntaxError` on `exec`,
+    caught, returned as `None`, logged as "unsupported" — and no agent in the company
+    could read a document.
+
+    The refusal message named the wrong cause ("a shape the agent loop cannot express"),
+    which is why this was found by reproducing the refusal against the real schema
+    rather than by reading the warning.
+    """
+
+    def _contract(self, properties: dict, required: list[str]) -> ToolContract:
+        return ToolContract(
+            tool_id=str(ToolId.create()),
+            name="document_reader",
+            description="Read a document previously stored for this organization.",
+            input_schema={
+                "type": "object",
+                "properties": properties,
+                "required": required,
+                "additionalProperties": False,
+            },
+            risk=ToolRisk.READ_ONLY,
+        )
+
+    async def _noop(self, **_kwargs: object) -> str:
+        return "ok"
+
+    def test_the_real_document_reader_schema_is_exposed(self) -> None:
+        """The exact schema from `tool_versions`, verbatim — optional first."""
+        fn = _make_tool_fn(
+            self._contract(
+                {
+                    "max_chars": {"type": "integer"},
+                    "document_id": {"type": "string"},
+                },
+                ["document_id"],
+            ),
+            self._noop,
+        )
+        assert fn is not None, (
+            "document_reader is withheld: every department bound to it cannot read, "
+            "and the warning names the wrong cause"
+        )
+
+    def test_required_parameters_come_first_whatever_the_schema_order(self) -> None:
+        import inspect
+
+        fn = _make_tool_fn(
+            self._contract(
+                {
+                    "max_chars": {"type": "integer"},
+                    "document_id": {"type": "string"},
+                },
+                ["document_id"],
+            ),
+            self._noop,
+        )
+        assert fn is not None
+        params = list(inspect.signature(fn.function).parameters.values())
+        names = [p.name for p in params]
+        assert names.index("document_id") < names.index("max_chars"), names
+        assert all(p.default is inspect.Parameter.empty for p in params[:1])
+
+    def test_all_optional_keeps_schema_order(self) -> None:
+        """The sort is stable: within one group nothing moves, so the signature is
+        deterministic and a test that pins it does not depend on dict ordering luck."""
+        import inspect
+
+        fn = _make_tool_fn(
+            self._contract(
+                {
+                    "zeta": {"type": "string"},
+                    "alpha": {"type": "string"},
+                },
+                [],
+            ),
+            self._noop,
+        )
+        assert fn is not None
+        assert [p.name for p in inspect.signature(fn.function).parameters.values()] == [
+            "zeta",
+            "alpha",
+        ]
