@@ -344,6 +344,37 @@ SCENARIOS: tuple[Scenario, ...] = (
         ),
         context={"project": "Bãi Trầm", "currency": "VND"},
     ),
+    Scenario(
+        key="access-review",
+        objective=(
+            "Review three access requests against the access policy and report the "
+            "backup restore-test status"
+        ),
+        office="back-office",
+        title="Review access requests + backup status",
+        goal=(
+            "Ba yêu cầu cấp quyền đang chờ xem xét. Với từng yêu cầu, nêu rõ: người được "
+            "cấp, vai trò, hệ thống liên quan, và ngày thu hồi. Nếu thiếu bất kỳ mục nào, "
+            "hãy từ chối yêu cầu đó và nói rõ thiếu gì.\n\n"
+            "Yêu cầu 1: Nguyễn Văn An, vai trò Kế toán viên, hệ thống SAP phân hệ FI, "
+            "ngày thu hồi 2026-12-31.\n"
+            "Yêu cầu 2: Trần Thị Bình, vai trò Quản trị kho, hệ thống WMS, "
+            "không nêu ngày thu hồi.\n"
+            "Yêu cầu 3: Lê Văn Cường, vai trò Xem báo cáo, hệ thống BI, "
+            "ngày thu hồi 2026-06-30 (đã qua).\n\n"
+            "Sau đó báo cáo tình trạng sao lưu: lần kiểm thử phục hồi gần nhất là "
+            "ngày 2026-09-15, kết quả đạt, phạm vi toàn bộ CSDL ERP."
+        ),
+        department="it",
+        task_type="decision",
+        expected_output={
+            "decisions": "mỗi yêu cầu: duyệt / từ chối kèm lý do",
+            "missing": "mục còn thiếu của yêu cầu bị từ chối",
+            "backup_status": "ngày kiểm thử phục hồi gần nhất và kết quả",
+        },
+        deliverable="Quyết định 3 yêu cầu kèm lý do và tình trạng sao lưu",
+        context={"policy": "đủ 4 mục mới duyệt; thiếu là từ chối"},
+    ),
 )
 
 
