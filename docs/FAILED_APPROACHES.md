@@ -7855,3 +7855,24 @@ Then the replacement check read `$("tree").innerHTML` for `class="node` — but 
 writes via `replaceChildren`, and the shim's `innerHTML` is a write-only string. It reads
 the children now. Each render path is observed the way it writes, or the check asserts the
 shim rather than the page.
+
+### F278
+
+**The report and the stream disagreed about the same events, and the task page showed
+the worse of the two.**
+
+The report returned raw `event_type` + `actor_id` — `task.delegation_accepted ·
+agt_01m3…` — while the live feed read the same log as sentences. The report query did
+not even select the `data` column, so there was nothing to resolve names from. `enrich`
+moved from `api/stream.py` to `application/event_view.py`, and the report runs the same
+projection: everything display-only under `view`, in both.
+
+### F279
+
+**A formatted number is a string, and adding two of them concatenates.**
+
+`stepPointers` computed a step's cost as `num(in) + num(out)` where `num()` returns an
+`Intl.NumberFormat` string — so 120 + 80 tokens read as "12080 tokens" on every step.
+Caught by reading the line rather than by running it, which is worth stating plainly:
+a test that renders one step with known token counts would have caught it, and there
+is now a reason to add one rather than a habit of re-reading.

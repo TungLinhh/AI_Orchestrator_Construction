@@ -793,6 +793,28 @@ try {
     check("the report is written in words", /Reported/.test($("taskNote").innerHTML),
       $("taskNote").innerHTML.slice(0, 120));
 
+    /* ---- the task page answers the boss's questions, in order ----
+       Each of these was a reported gap, and each is structural rather than textual: the
+       failure reason lived only in a tooltip, the model's words lived nowhere, and
+       arrivals were silent. Asserted here so none of them can regress quietly. */
+    check("the bell exists on every screen",
+      !!$("notifBtn") && !!$("notifPanel") && !!$("notifCount"),
+      "bell + panel + count");
+    check("the task states what happened first",
+      $("taskBanner").innerHTML.length > 0,
+      $("taskBanner").textContent.slice(0, 100));
+    check("the steps say what each hand did",
+      /data-step=/.test($("taskSteps").innerHTML) || !$("taskStepsEmpty").hidden,
+      `${($("taskSteps").innerHTML.match(/data-step=/g) || []).length} step(s)`);
+    check("a step carries its pointers, not just a status",
+      /data-step=/.test($("taskSteps").innerHTML)
+        ? /Done\.|Ended as|Issue:|Cost:/.test($("taskSteps").innerHTML)
+        : true,
+      "pointers or an honest empty state");
+    check("the full text has somewhere to open",
+      !!$("sheet") && !!$("sheetBody"),
+      "dialog + body");
+
     /* The graph. Asserted on *edges*, not on the presence of an <svg>: a graph with no
        lines is a list with a border, and `delegations.child_task_id` is NULL on every
        delegation the real executor writes -- so the structure comes from

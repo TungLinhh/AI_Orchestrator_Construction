@@ -338,8 +338,17 @@ table.sheet tr:hover td { background: var(--fill); }
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast.bad { background: var(--late); color: #fff; }
 
+/* Pills name a status in one word. The base carries the shape; each variant carries one
+   meaning, and no new color is invented per screen — a failed task reads the same red in
+   the register, the banner and the steps. */
+.pill {
+  display: inline-block; padding: 1px 8px; border-radius: 20px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  background: var(--fill); color: var(--text-2); vertical-align: 1px;
+}
 .pill.delegated { background: var(--accent-soft); color: var(--accent); }
 .pill.bad { background: var(--late-soft); color: var(--late); }
+.pill.ok { background: color-mix(in srgb, #2f9e44 16%, transparent); color: #2f9e44; }
 .feed { display: flex; flex-direction: column; max-height: 62vh; overflow: auto; }
 dialog {
   border: 1px solid var(--line); border-radius: var(--radius); padding: 0;
@@ -493,6 +502,66 @@ details.issue > summary::after { position: absolute; right: 12px; top: 12px; }
 /* The reason, in the collapsed line. Warmer than the metadata above it, because it is the
    part that explains why the row exists. */
 details.issue .s.err { color: var(--warn, #a8712a); white-space: normal; }
+
+/* The task banner and the full-text sheet.
+   The banner reuses the card tones the tiles already use (`alarm`, `good`), so a failed
+   task reads as failed everywhere rather than inventing a fourth red. The sheet is the
+   existing `<dialog>`: centered, dimmed behind, and closable by its button and by Esc
+   (the Esc handler predates it and already closes it). A 10KB model output needs room,
+   so the sheet is wider than a tooltip and scrolls inside rather than growing the page. */
+.card.alarm { border-color: color-mix(in srgb, var(--warn, #c8912b) 45%, var(--line)); }
+.card.good { border-color: color-mix(in srgb, #2f9e44 40%, var(--line)); }
+.pill.ok { background: color-mix(in srgb, #2f9e44 16%, transparent); color: #2f9e44; }
+dialog#sheet {
+  border: 1px solid var(--line-strong); border-radius: 14px; padding: 0;
+  width: min(720px, 92vw); background: var(--surface); color: var(--text);
+}
+dialog#sheet::backdrop { background: rgba(0,0,0,.5); }
+dialog#sheet .dlg-body { padding: 16px 18px 6px; }
+dialog#sheet .dlg-body .reason { max-height: 60vh; }
+dialog#sheet .dlg-foot {
+  padding: 10px 18px 16px; display: flex; justify-content: flex-end;
+}
+
+/* Notifications: the bell, its panel, and toasts with actions.
+   The bell sits in the header so it is visible on every screen — a notification that only
+   exists on the screen it belongs to is one a person has to already be looking at. The
+   panel is a plain absolutely-positioned list under it, not a dialog: a dialog would take
+   focus and interrupt reading, which is the opposite of what "you missed this" should do.
+   An unread entry carries a dot; a read one does not. The toast keeps the single-message
+   shape it always had, extended with an optional action link rather than replaced. */
+.bellwrap { position: relative; display: inline-block; }
+.bellwrap .count {
+  position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px;
+  border-radius: 9px; background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; padding: 0 4px;
+}
+.bellwrap .count[hidden] { display: none; }
+.bellpanel {
+  position: absolute; right: 0; top: calc(100% + 8px); width: 340px; max-height: 56vh;
+  overflow: auto; background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.28); z-index: 60; padding: 6px;
+}
+.bellpanel[hidden] { display: none; }
+.bellhead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 8px; font-size: 12.5px;
+}
+.notif { display: flex; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer; }
+.notif:hover { background: var(--fill); }
+.notif .ndot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  flex: 0 0 auto; margin-top: 5px;
+}
+.notif.read .ndot { background: transparent; }
+.notif.read { color: var(--text-2); }
+.notif .nt { font-size: 12.5px; font-weight: 650; }
+.notif .ns { font-size: 11.5px; color: var(--text-2); line-height: 1.45; white-space: normal; }
+/* A toast with an action: the message on the left, the jump link on the right. The old
+   plain-text toast is unchanged — this is an extension for stream-raised events, where
+   "something happened" without "go look" is only half a notification. */
+.toast.action { display: flex; align-items: center; gap: 10px; }
+.toast.action a { color: #fff; font-weight: 700; white-space: nowrap; }
 
 /* The live feed: one line per event, newest first. Dense on purpose — this is a
    ticker, not a table, and a person reads it by scrolling once and looking for the
@@ -651,6 +720,26 @@ details.issue .s.err { color: var(--warn, #a8712a); white-space: normal; }
       <nav class="path" id="path" aria-label="Breadcrumb"></nav>
       <div class="hint">
         <span class="kbd"><kbd>Esc</kbd> back</span>
+        <!--
+          **The bell: what you missed, kept.** Toasts vanish; this does not. Every
+          notification the stream raises — a decision waiting, a task failed, a task
+          finished — is also listed here with its unread count, so a popup seen too late
+          is still reachable. Clicking an entry jumps to the approval or the task and
+          marks it read.
+        -->
+        <span class="bellwrap">
+          <button class="btn ghost sm" id="notifBtn" title="Notifications">🔔
+            <span class="count" id="notifCount" hidden></span></button>
+          <div class="bellpanel" id="notifPanel" hidden>
+            <div class="bellhead"><b>Notifications</b>
+              <button class="btn ghost sm" id="notifClear">Dismiss all</button></div>
+            <div class="list" id="notifList"></div>
+            <div class="empty" id="notifEmpty">
+              <div class="big">·</div> Nothing yet. When an approval waits or a task
+              finishes, it lands here as well as in a popup.
+            </div>
+          </div>
+        </span>
         <button class="btn ghost sm" id="tokenBtn" title="Re-enter the service token">Token</button>
       </div>
     </div>
@@ -842,29 +931,45 @@ details.issue .s.err { color: var(--warn, #a8712a); white-space: normal; }
         </div>
       </section>
 
+      <!--
+        Order answers the boss's questions in the order they are asked: what happened,
+        what do you need from me, what did they say and do, how was it organised, in
+        what order, what next. A page that leads with a graph answers none of those
+        first, so the graph moved down and the banner moved up.
+      -->
       <section class="view" id="view-task" hidden>
         <div class="stats" id="taskStats"></div>
+        <div id="taskBanner"></div>
         <div class="card">
-          <header><h2>Who did what</h2><span class="spacer"></span>
-            <span class="sub" id="taskGraphSub"></span></header>
-          <div class="body" id="taskGraph"></div>
-          <div class="empty" id="taskGraphEmpty" hidden>
-            Nothing has been delegated yet.
+          <header><h2>Decisions</h2><span class="spacer"></span>
+            <span class="sub" id="taskApprovalsSub"></span></header>
+          <div class="list" id="taskApprovals"></div>
+          <div class="empty" id="taskApprovalsEmpty" hidden>Nothing needs a decision.</div>
+        </div>
+        <div class="card">
+          <header><h2>Steps</h2><span class="spacer"></span>
+            <span class="sub" id="taskStepsSub"></span></header>
+          <div class="list" id="taskSteps"></div>
+          <div class="empty" id="taskStepsEmpty" hidden>
+            <div class="big">·</div> Nothing has run yet. Press <b>Run it</b> below and
+            each hand appears here as it works — click a step for its log and details.
           </div>
         </div>
         <div class="grid2">
+          <div class="card">
+            <header><h2>Who did what</h2><span class="spacer"></span>
+              <span class="sub" id="taskGraphSub"></span></header>
+            <div class="body" id="taskGraph"></div>
+            <div class="empty" id="taskGraphEmpty" hidden>
+              Nothing has been delegated yet.
+            </div>
+          </div>
           <div class="card">
             <header><h2 id="taskTitle">Task</h2><span class="spacer"></span>
               <span class="sub" id="taskSub"></span>
               <button class="btn sm" id="retryBtn" hidden
                 title="Tạo một task MỚI cùng việc này. Task đã fail được giữ nguyên làm bằng chứng — không mở lại, vì mở lại sẽ làm sai lịch sử.">Chạy lại</button></header>
             <div class="list" id="taskTree"></div>
-          </div>
-          <div class="card">
-            <header><h2>Decisions</h2><span class="spacer"></span>
-              <span class="sub" id="taskApprovalsSub"></span></header>
-            <div class="list" id="taskApprovals"></div>
-            <div class="empty" id="taskApprovalsEmpty" hidden>Nothing needs a decision.</div>
           </div>
         </div>
         <div class="card">
@@ -1020,7 +1125,7 @@ if (!AUTH_OFF && !token() && !ORG_RE.test(ORG)) askToken("");
 
 /* ---------------- state ---------------- */
 const state = {
-  es: null, paused: false, filter: "all", approvalFilter: "pending", giveFilter: "", decisionFilter: "",
+  es: null, paused: false, bootedAt: Date.now(), filter: "all", approvalFilter: "pending", giveFilter: "", decisionFilter: "",
   tasks: new Map(), agents: new Map(), events: [], selected: null, backfill: new Set(),
   portfolio: null, projects: [], project: null, workspace: null, inbox: [],
   // The task currently open in `#/task/...`. The retry button needs to know which one,
@@ -1135,6 +1240,171 @@ function toast(message, bad) {
   el.className = "toast show" + (bad ? " bad" : "");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.className = "toast"; }, bad ? 7000 : 4000);
+}
+
+/* ====================== notifications: popups that are kept ======================
+   A toast vanishes; the bell does not. Every stream-raised notification lives in both:
+   the popup for the moment, the bell list for later. The bell list survives a reload
+   (read ids in `localStorage`), because "you missed it and then reloaded" is exactly
+   when a memory-only list would lose the thing it exists to keep.
+
+   **Only fresh events notify.** `occurred_at` is compared against boot time, so the
+   backfill replay on connect — which can be hundreds of old events — populates state
+   without a hundred popups. A 60s tolerance covers clock skew between the server that
+   stamped the event and the browser reading it; anything older than that at boot is
+   history, and history does not pop up.
+   ================================================================== */
+const NOTIF_SEEN_KEY = "ao-notif-seen-v1";
+let notifs = [];
+try {
+  const seen = JSON.parse(localStorage.getItem(NOTIF_SEEN_KEY) || "[]");
+  if (Array.isArray(seen)) state._notifSeen = new Set(seen);
+} catch { state._notifSeen = new Set(); }
+if (!state._notifSeen) state._notifSeen = new Set();
+
+function notifSeenIds() {
+  // Bounded: the set only grows, and an unbounded list in localStorage is a slow leak.
+  // 300 ids is far more than any session produces; the oldest are forgotten first.
+  const ids = [...state._notifSeen].slice(-300);
+  try { localStorage.setItem(NOTIF_SEEN_KEY, JSON.stringify(ids)); } catch { /* private mode */ }
+}
+
+function unreadCount() { return notifs.filter((n) => !n.read).length; }
+
+function paintBell() {
+  const n = unreadCount();
+  const badge = $("notifCount");
+  if (badge) { badge.textContent = n ? String(n) : ""; badge.hidden = !n; }
+  document.title = n ? `(${n}) Orchestrator` : "Orchestrator";
+  const list = $("notifList");
+  if (list) {
+    setHTML("notifList", notifs.slice().reverse().map((nt) => `
+      <div class="notif${nt.read ? " read" : ""}" data-notif="${esc(nt.id)}">
+        <span class="ndot"></span>
+        <div class="grow"><div class="nt">${esc(nt.title)}</div>
+          <div class="ns">${esc(nt.body)}${nt.at ? " · " + esc(ago(nt.at)) : ""}</div></div>
+      </div>`).join(""));
+  }
+  const empty = $("notifEmpty");
+  if (empty) empty.hidden = notifs.length > 0;
+}
+
+/** A popup with a jump link, plus a bell entry. One call, both surfaces. */
+function notify({ id, kind, title, body, href, action }) {
+  if (!id || state.backfill.has("notified:" + id)) return;
+  state.backfill.add("notified:" + id);
+  const nt = {
+    id, kind, title, body: body || "", href: href || "", at: new Date().toISOString(),
+    read: state._notifSeen.has(id),
+  };
+  notifs.push(nt);
+  if (notifs.length > 60) notifs.splice(0, notifs.length - 60);
+  paintBell();
+  // The popup. Text plus one link — a popup with two actions is a dialog, and this is
+  // not the place for a decision, only for "go look".
+  const el = $("toast");
+  el.innerHTML = `<span>${esc(title)}${body ? " — " + esc(String(body).slice(0, 110)) : ""}</span>`
+    + (href ? `<a href="${esc(href)}">${esc(action || "Open")}</a>` : "");
+  el.className = "toast show" + (kind === "bad" ? " bad" : "") + (href ? " action" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = "toast"; }, 9000);
+}
+
+function markNotifRead(id) {
+  const nt = notifs.find((n) => n.id === id);
+  if (nt && !nt.read) {
+    nt.read = true;
+    state._notifSeen.add(id);
+    notifSeenIds();
+    paintBell();
+  }
+}
+
+$("notifBtn").onclick = (e) => {
+  e.stopPropagation();
+  const panel = $("notifPanel");
+  panel.hidden = !panel.hidden;
+};
+document.addEventListener("click", (e) => {
+  const panel = $("notifPanel");
+  if (panel && !panel.hidden && !e.target.closest(".bellwrap")) panel.hidden = true;
+  const row = e.target.closest("[data-notif]");
+  if (row && row.dataset.notif) {
+    const nt = notifs.find((n) => n.id === row.dataset.notif);
+    markNotifRead(row.dataset.notif);
+    if (nt && nt.href) go(nt.href.startsWith("#") ? nt.href : "#" + nt.href);
+  }
+});
+$("notifClear").onclick = () => {
+  for (const n of notifs) if (!n.read) { n.read = true; state._notifSeen.add(n.id); }
+  notifSeenIds();
+  paintBell();
+};
+
+/* Badges, refreshed on a trailing debounce rather than per frame. A burst of forty
+   events must not cause forty pairs of fetches; fifteen seconds stale is nothing against
+   a human reading speed, and a badge that lags the truth by seconds beats one that
+   costs the API a stampede. */
+let badgeTimer = null;
+function scheduleBadgeRefresh() {
+  if (badgeTimer) return;
+  badgeTimer = setTimeout(async () => {
+    badgeTimer = null;
+    try {
+      const [inbox, q] = await Promise.all([
+        apiGet("/approvals/inbox").catch(() => null),
+        apiGet("/ceo/work", { limit: 1 }).catch(() => null),
+      ]);
+      if (inbox) {
+        setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
+        $("navApprovalCount").hidden = !inbox.count;
+      }
+      if (q) {
+        const badge = $("navWorkCount");
+        if (badge) { badge.textContent = q.needs_you ? String(q.needs_you) : ""; badge.hidden = !q.needs_you; }
+      }
+    } catch { /* badges are advisory; a failed refresh is not an error to show */ }
+  }, 15000);
+}
+
+/** Classify one stream event into a notification, or nothing. Kept beside `eventLine`
+    (which describes) because this one *decides* — and a classifier mixed into a
+    renderer is how a new event type starts popping up where it should not. */
+function notifFor(ev) {
+  const type = String(ev.type || "");
+  const v = ev.view || {};
+  const when = ev.occurred_at ? Date.parse(ev.occurred_at) : NaN;
+  // History does not pop up: only events stamped after this page booted (with a 60s
+  // tolerance for clock skew) may notify. The backfill replay still populates state.
+  if (!Number.isNaN(when) && when < state.bootedAt - 60000) return null;
+  if (/approval\.requested/i.test(type)) {
+    return {
+      kind: "warn",
+      title: "A decision is waiting on you",
+      body: v.title || "an approval was requested",
+      href: "#/work",
+      action: "Review",
+    };
+  }
+  if (/task\.failed/i.test(type)) {
+    return {
+      kind: "bad",
+      title: "A task failed",
+      body: v.title || "see what went wrong",
+      href: v.task_id ? `#/give/${encodeURIComponent(v.task_id)}` : "#/give",
+      action: "Open",
+    };
+  }
+  if (/task\.completed/i.test(type)) {
+    return {
+      kind: "good",
+      title: "A task finished",
+      body: v.title || "see what came back",
+      href: v.task_id ? `#/give/${encodeURIComponent(v.task_id)}` : "#/give",
+      action: "Open",
+    };
+  }
+  return null;
 }
 
 /* ---------------- api ---------------- */
@@ -1409,7 +1679,7 @@ function renderIssues(q) {
     return `
     <details class="row issue" data-task="${esc(t.id)}">
       <summary class="grow">
-        <div class="t"><span class="pill del">${esc(t.status)}</span> ${esc(t.title)}</div>
+        <div class="t"><span class="pill bad">${esc(t.status)}</span> ${esc(t.title)}</div>
         <div class="s">${esc(t.task_type || "task")}${t.owner_name
           ? " · held by " + esc(t.owner_name) : " · nobody holds it"}
           ${t.children ? ` · ${t.children} subtask(s)` : ""}</div>
@@ -1555,6 +1825,18 @@ async function retryTask(id, button) {
 $("retryBtn").onclick = () => retryTask(state.taskId, $("retryBtn"));
 
 document.addEventListener("click", async (e) => {
+  const full = e.target.closest("button[data-fulltext]");
+  if (full) {
+    const i = Number(full.dataset.fulltext);
+    const text = stepTexts[i] ?? "";
+    openSheet(
+      "What the agent said",
+      text
+        ? `<pre class="reason" style="max-height:60vh">${esc(text.slice(0, 60000))}</pre>`
+        : '<div class="s">This run left no written output.</div>',
+    );
+    return;
+  }
   const retry = e.target.closest("button[data-retry]");
   if (retry) {
     // A `<details>` row must not also navigate: the click lands on the summary too.
@@ -2073,6 +2355,7 @@ async function renderGive(id) {
   // person reads one thing and believes another.
   setHTML("taskStats", ""); setHTML("taskTree", ""); setHTML("taskLog", "");
   setHTML("taskApprovals", ""); setHTML("taskNote", ""); setHTML("taskGraph", "");
+  setHTML("taskBanner", ""); setHTML("taskSteps", ""); stepTexts = [];
   $("taskTitle").textContent = "Task"; $("taskSub").textContent = "";
   $("runThisState").textContent = "";
 
@@ -2115,10 +2398,147 @@ async function renderGive(id) {
         ${t.last_error ? `<div class="s">refused: ${esc(String(t.last_error).slice(0, 120))}</div>` : ""}
       </div>
       <div class="r">
-        ${t.approvals_waiting ? `<span class="pill del">${t.approvals_waiting} to decide</span>` : ""}
+        ${t.approvals_waiting ? `<span class="pill bad">${t.approvals_waiting} to decide</span>` : ""}
         <span class="t-${waitingTone(t.waiting_on) || "muted"}">${esc(t.waiting_on === "you" ? "you" : t.waiting_on === "an_agent" ? "an agent" : "settled")}</span>
       </div>
     </div>`).join(""));
+}
+
+/* ================= task banner, steps, and the full-text sheet =================
+   Three things the task page was missing, in the order a boss asks: what happened (the
+   banner), what did each hand do (the steps), and what exactly did it say (the sheet).
+   ================================================================== */
+
+/** One status banner for the open task. The failure reason used to live only in a list
+    truncation and a button tooltip; here it is the first thing on the screen. */
+function renderBanner(t, s) {
+  const el = $("taskBanner");
+  if (!el) return;
+  const status = t.status || "unknown";
+  if (["failed", "blocked", "cancelled"].includes(status)) {
+    const kind = t.failure_category || "failed";
+    setHTML("taskBanner", `
+      <div class="card alarm">
+        <div class="body">
+          <div class="t"><span class="pill bad">${esc(status)}</span>
+            <span class="tag wait">${esc(kind)}</span>
+            <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
+          ${t.last_error ? reasonBlock(t.last_error) : ""}
+          <div class="s">What this means: the work stopped here and nothing below it ran
+            because of this. Fix the cause — or press <b>Run it again</b> to try the same
+            work as a new task — and the steps below stay as the record of what was tried.</div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn sm" data-retry="${esc(t.id)}">Run it again</button>
+            <a class="btn ghost sm" href="#/work">See all issues</a>
+          </div>
+        </div>
+      </div>`);
+    return;
+  }
+  if (status === "completed") {
+    const keys = t.output && typeof t.output === "object" ? Object.keys(t.output) : [];
+    setHTML("taskBanner", `
+      <div class="card good">
+        <div class="body">
+          <div class="t"><span class="pill ok">finished</span>
+            <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
+          <div class="s">${keys.length ? "Answered with: " + keys.map((k) => `<code>${esc(k)}</code>`).join(", ")
+            : "Finished. The steps below say what each hand did."}</div>
+        </div>
+      </div>`);
+    return;
+  }
+  setHTML("taskBanner", `
+    <div class="card">
+      <div class="body">
+        <div class="t"><span class="pill">${esc(status)}</span>
+          <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
+        <div class="s">${t.owner_name ? "Held by " + esc(t.owner_name) + ". " : ""}
+          ${(s.in_flight ?? 0) ? "Work is in flight — this page keeps watching. "
+          : "Nothing is running it right now. Press <b>Run it</b> below to start."}</div>
+      </div>
+    </div>`);
+}
+
+/** Full texts of step summaries, by index. Stored rather than embedded because a 10KB
+    summary inside an attribute is a quoting bug waiting to happen. */
+let stepTexts = [];
+
+/** Open the sub-screen popup with a full model output. Reuses the existing `<dialog>`,
+    which until now had no caller — a control with no path to it. */
+function openSheet(title, bodyHtml) {
+  setHTML("sheetBody", `<h3 style="margin:0 0 8px">${esc(title)}</h3>` + bodyHtml);
+  setHTML("sheetFoot", `<button class="btn sm" id="sheetClose">Close</button>`);
+  const dlg = $("sheet");
+  if (dlg && !dlg.open) dlg.showModal();
+  const c = $("sheetClose");
+  if (c) c.onclick = () => dlg.close();
+}
+
+/** One step's pointers: what was done, any issue, what it cost. Derived from the
+    execution record — never generated prose, so nothing here can hallucinate. */
+function stepPointers(x) {
+  const bits = [];
+  bits.push(x.status === "completed" ? "Done." : `Ended as ${x.status}.`);
+  if (x.error_message) bits.push(`Issue: ${String(x.error_message).slice(0, 160)}`);
+  else if (x.error_kind) bits.push(`Issue kind: ${x.error_kind}.`);
+  // **Sum numbers, then format.** `num()` returns a formatted *string*, so adding two
+  // of them concatenates ("120" + "80" = "12080"). The first version of this line did
+  // exactly that and the cost read ten times too high on every step.
+  const tokens = (x.input_tokens ?? 0) + (x.output_tokens ?? 0);
+  const cost = [
+    x.model_used ? String(x.model_used) : "",
+    x.input_tokens != null || x.output_tokens != null
+      ? `${fmtTokens(tokens)} tokens`
+      : "",
+    x.duration_ms != null ? `${Math.round(x.duration_ms / 1000)}s` : "",
+  ].filter(Boolean).join(" · ");
+  if (cost) bits.push(`Cost: ${cost}.`);
+  if (x.artifacts && x.artifacts.length) bits.push(`${x.artifacts.length} file(s) kept.`);
+  return bits;
+}
+
+function fmtTokens(n) {
+  if (n == null) return "—";
+  return Number(n).toLocaleString("en-US");
+}
+
+/** The steps: every execution under the task, in order, each expandable to its log and
+    details. A step is a `<details>` so it is keyboard-operable; the summary line is the
+    pointers and the body is the evidence. */
+function renderSteps(d) {
+  const steps = d.tree_executions || [];
+  stepTexts = steps.map((x) => String(x.summary || ""));
+  $("taskStepsSub").textContent = steps.length
+    ? `${steps.length} hand(s) · ${steps.filter((x) => x.status === "completed").length} finished`
+    : "";
+  $("taskStepsEmpty").hidden = steps.length > 0;
+  const events = d.events || [];
+  setHTML("taskSteps", steps.map((x, i) => {
+    const related = events.filter((e) =>
+      (e.view && e.view.task_id && e.view.task_id === x.task_id) || e.subject === x.task_id);
+    const when = x.started_at ? ago(x.started_at) : "";
+    return `
+    <details class="row issue" data-step="${esc(x.id)}">
+      <summary class="grow">
+        <div class="t"><span class="pill ${x.status === "completed" ? "ok" : x.status === "failed" ? "del" : ""}">${esc(x.status)}</span>
+          ${esc(x.agent_name || "an agent")} <span class="s">on ${esc(x.task_title || x.task_id)}</span></div>
+        <div class="s">${esc(stepPointers(x).join(" "))}</div>
+        <div class="s">${when ? esc(when) : ""}${x.duration_ms != null ? ` · ${Math.round(x.duration_ms / 1000)}s` : ""}${
+          x.input_tokens != null ? ` · ${fmtTokens((x.input_tokens ?? 0) + (x.output_tokens ?? 0))} tokens` : ""}</div>
+      </summary>
+      <div class="issue-body">
+        ${x.error_message ? reasonBlock("Stopped with: " + x.error_message) : ""}
+        ${x.summary ? `<div class="s">${esc(String(x.summary).slice(0, 400))}${String(x.summary).length > 400 ? "…" : ""}</div>
+          <div class="btn-row"><button class="btn sm" data-fulltext="${i}">Read the whole thing</button></div>`
+        : '<div class="s">This run left no written output.</div>'}
+        ${related.length ? `<div class="dept-tier" style="margin:8px 0 4px">Log for this step (${related.length})</div>`
+          + related.map((e) => `<div class="s" style="font-size:12px">· ${eventLine(e)}</div>`).join("") : ""}
+        <div class="s" style="margin-top:6px">Model: ${esc(x.model_used || x.model_profile || "—")}${
+          x.finished_at ? " · finished " + esc(ago(x.finished_at)) : ""}</div>
+      </div>
+    </details>`;
+  }).join(""));
 }
 
 async function renderOneTask(id) {
@@ -2158,6 +2578,13 @@ async function renderOneTask(id) {
   $("taskTitle").textContent = t.title || "Task";
   $("taskSub").textContent = [t.task_type, t.status, t.requester_type]
     .filter(Boolean).join(" · ");
+
+  // **Banner first, steps second: the order the questions are asked in.**
+  // What happened, then what each hand did. Both are rendered from the same report
+  // the rest of the page reads, so they cannot disagree with the tiles below.
+  const _s = d.summary || {};
+  renderBanner(t, _s);
+  renderSteps(d);
 
   /* The tree, parents before children, so the first row is the thing that was asked for
      and each delegation is visibly underneath it. A tree that lists children first makes
@@ -2588,6 +3015,26 @@ function handleFrame(payload) {
   // The tree **and** the feed, on every frame. Drawing only the tree is why the page
   // showed a delegation tree and nothing else: the events describing *how* work moved
   // were arriving on the same socket and being thrown away.
+  //
+  // **And the notifications, on the same frames.** A stream that only draws is a stream a
+  // person has to be watching: an approval that arrives while they are on another screen
+  // waits silently until they navigate. `notifFor` decides per event, `notify` pops up
+  // and files it in the bell, and the badges refresh on a debounce — so the header always
+  // knows, even when the screen does not.
+  // Fresh events only: the loop above already skipped anything in `state.backfill`,
+  // and `notify` dedupes on `"notified:" + id` regardless, so a reconnect can never
+  // pop up twice for one event.
+  let notable = false;
+  for (const ev of msg.events || [msg]) {
+    if (!ev || !ev.id || !state.backfill.has(ev.id)) continue;
+    const n = notifFor(ev);
+    if (n) {
+      n.id = ev.id;
+      notify(n);
+      notable = true;
+    }
+  }
+  if (notable) scheduleBadgeRefresh();
   if (!state.paused) { renderFlow(); renderActivity(); }
 }
 
@@ -2753,6 +3200,9 @@ async function loadOwners() {
   }
   await loadScenarios();
   await loadOwners();
+  // The bell restores its unread count from the last session, so a reload does not wipe
+  // what has not been seen. Painted before the first render, not after the first event.
+  paintBell();
   await route();
   if (state.es) state.es.abort();
   state.es = new AbortController();

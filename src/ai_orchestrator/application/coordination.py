@@ -199,6 +199,23 @@ WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.task_id = :id
 ORDER BY x.created_at
 """
 
+#: Every execution under the task, for the steps list. Separate from `_REPORT_EXECUTIONS`
+#: on purpose: that one feeds the summary counts, which are defined over the head task,
+#: and widening it would redefine what "3 ran" means on every report that ever rendered.
+#: This one answers a different question — "what did each hand do, in order" — and so it
+#: carries the task title with each row, so the page does not have to join them.
+_REPORT_TREE_EXECUTIONS = """
+SELECT x.id, x.task_id, t.title AS task_title, x.status, x.model_used, x.model_profile,
+       x.summary, x.error_kind, x.error_message, x.input_tokens, x.output_tokens,
+       x.duration_ms, x.cost_usd, x.started_at, x.finished_at, x.artifacts,
+       a.name AS agent_name
+FROM executions x
+JOIN tasks t ON t.id = x.task_id AND t.organization_id = x.organization_id
+LEFT JOIN agents a ON a.id = x.agent_id
+WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.task_id = ANY(:ids)
+ORDER BY x.created_at
+"""
+
 _REPORT_APPROVALS = """
 SELECT ap.id, ap.task_id, ap.action_type, ap.status, ap.decision, ap.decision_note,
        ap.effect_class, ap.risk_level, ap.reason, ap.requested_by, ap.requested_by_type,
@@ -405,6 +422,16 @@ async def task_report(
     )
 
     tree_ids = {str(r["id"]) for r in tree}
+    tree_executions = (
+        (
+            await conn.execute(
+                text(_REPORT_TREE_EXECUTIONS),
+                {"o": organization_id, "ids": sorted(tree_ids)},
+            )
+        )
+        .mappings()
+        .all()
+    )
 
     # **Resolved names, not raw ids.** `enrich` mutates the frames in place, exactly as
     # it does for the stream, so the report's `view` and the stream's `view` are the
@@ -526,6 +553,28 @@ async def task_report(
             for e, view in zip(events, enriched, strict=True)
         ],
         "tree_size": len(tree_ids),
+        "tree_executions": [
+            {
+                "id": x["id"],
+                "task_id": x["task_id"],
+                "task_title": x["task_title"],
+                "status": x["status"],
+                "agent_name": x["agent_name"],
+                "model_used": x["model_used"],
+                "model_profile": x["model_profile"],
+                "summary": x["summary"],
+                "error_kind": x["error_kind"],
+                "error_message": x["error_message"],
+                "input_tokens": x["input_tokens"],
+                "output_tokens": x["output_tokens"],
+                "duration_ms": x["duration_ms"],
+                "cost_usd": str(x["cost_usd"]) if x["cost_usd"] is not None else None,
+                "started_at": x["started_at"],
+                "finished_at": x["finished_at"],
+                "artifacts": x["artifacts"] or [],
+            }
+            for x in tree_executions
+        ],
     }
 
 
