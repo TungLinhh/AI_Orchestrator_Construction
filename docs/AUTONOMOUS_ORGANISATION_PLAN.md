@@ -128,15 +128,21 @@ that ends without hitting the clock.
 Each department is a different shape of work and each exposes a different way for the
 platform to be wrong about it.
 
-| Department | Owns | What makes it its own test |
-|---|---|---|
-| Procurement | tendering, supplier choice | Ranked criteria with a stated order; a defensible wrong answer to compare against |
-| HR | hiring, offers, headcount | A policy with a threshold, where the interesting output is *whether approval is required* |
-| Finance | policy bands, arithmetic | The only department where the answer is checkable mechanically |
-| QA | audit | Must **not** delegate (the auditor independence rule) — a negative test |
-| Design | technical risk | Judgment with no arithmetic; the hardest to verify and the most honest test |
-| Sales | pipeline, complaints | State that changes over time, so the contract needs a shape the others do not |
-| IT | access, backup, knowledge register | Holds the two SOPs nothing else could own; the simplest possible smoke test |
+| Department | Owns | What makes it its own test | Measured 2026-10-04, live free model |
+|---|---|---|---|
+| Procurement | tendering, supplier choice | Ranked criteria with a stated order; a defensible wrong answer to compare against | **47/47** full keys |
+| HR | hiring, offers, headcount | A policy with a threshold, where the interesting output is *whether approval is required* | **4/4** keys, both approvals named |
+| Finance | policy bands, arithmetic | The only department where the answer is checkable mechanically | **32/32** full keys |
+| QA | audit | Must **not** delegate (the auditor independence rule) — a negative test | **6/6** full keys |
+| Design | technical risk | Judgment with no arithmetic; the hardest to verify and the most honest test | **4/4** full keys, 1 failed on translated keys (prompt hardened after) |
+| Sales | pipeline, complaints | State that changes over time, so the contract needs a shape the others do not | **4/4** full keys |
+| IT | access, backup, knowledge register | Holds the two SOPs nothing else could own; the simplest possible smoke test | **9/9** full keys on its first scenario |
+
+**Zero partial completions anywhere**: every completed contract-bearing task in the
+window returned every key it declared. The failures observed were queue/throughput
+(tasks still `assigned` when the wall clock killed the run — drained afterwards with
+`--resume`), not capability.
+
 
 **IT first, deliberately.** It is the least interesting department and therefore the
 cheapest place to find out whether the chain works at all. If the pipeline cannot carry
