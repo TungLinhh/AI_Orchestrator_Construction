@@ -7898,3 +7898,19 @@ Two failures in one: the ordering bug, and a refusal message naming the wrong ca
 ("cannot express"), which is why this was found by reproducing the refusal against the
 real schema rather than by reading the warning. Required parameters are now sorted
 first (stably, so the signature stays deterministic).
+
+### F281
+
+**Two ways a console check reports the harness instead of the page.**
+
+While rebuilding the console around the boss's reading order, two new checks failed
+without the page being wrong. First, the answer-sentences check read `treeReport`
+above the line that fetches it and died in the temporal dead zone — the failure
+said "the give-work view did not throw" when nothing in the view had thrown. Second,
+the department filter assigned `box.style.display` on nodes the verification shim
+answers without a `style` object, so the render threw only under the harness.
+
+Both are the same shape as F266/F67: an assertion about the observer, not the
+observed. The check now sits after its data is fetched, and the filter guards
+`style` (hiding via an attribute under the harness, which is the correct degraded
+reading rather than a failed view).

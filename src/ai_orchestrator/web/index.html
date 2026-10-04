@@ -619,6 +619,13 @@ dialog#sheet .dlg-foot {
 .step.live { border-color: var(--accent); }
 .step .h { font-size: 11px; color: var(--text-3); display: flex; gap: 8px; }
 .step .b { font-size: 12px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+/* The answer card: each declared key as one plain row. A definition list because
+   that is what it is — a term and what was said about it — and truncation with a
+   "Read all" button because a 6,000-token value in full breaks the page's shape. */
+.answer { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.answer-row { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--panel); }
+.answer-row dt { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); }
+.answer-row dd { margin: 4px 0 0; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
 .tasklist { display: flex; flex-direction: column; gap: 5px; }
 .taskitem { display: flex; gap: 8px; align-items: baseline; font-size: 12px;
   padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
@@ -671,37 +678,27 @@ dialog#sheet .dlg-foot {
       <div class="label">The organisation</div>
       <a href="#/departments" data-nav="departments">
         <span class="ic">⬡</span> Departments
-        <span class="count" id="navWorkCount" hidden></span>
       </a>
 
       <div class="label">The work</div>
       <a href="#/give" data-nav="give"><span class="ic">▷</span> Give work</a>
+      <!--
+        **One destination for everything waiting on a person.**
+
+        There used to be three links for one screen — Needs you, Issues and
+        Approvals all pointed at `#/work` — so two of the three navigations did
+        nothing a person could see, and the Departments link carried a work-queue
+        badge that belonged here. One link, one live count: issues plus decisions
+        waiting, which is the number a boss is accountable for. The split lives
+        on the screen itself, where both lists are drawn.
+      -->
       <a href="#/work"      data-nav="work">
         <span class="ic">◔</span> Needs you
+        <span class="count" id="navWorkCount" hidden></span>
       </a>
-
-      <div class="label">Attention</div>
-      <!--
-        **Two destinations a boss actually opens**, and both were missing.
-
-        The nav had `Reference` as a heading over an empty list and a `<details>More</details>`
-        with nothing inside it — leftovers from when the console had eleven sections. A
-        heading for a list that does not exist, and a control that reveals nothing, are
-        worse than absent: they read as "there is more here" and there is not, so a person
-        clicks and concludes something is broken.
-
-        What was missing is what the report asked for: a place to reach the *issues* and
-        the *needs of approval*, and to see them expanded. Both counts are live, and both
-        are the numbers a person is accountable for.
-      -->
-      <a href="#/work"      data-nav="issues">
-        <span class="ic">⚠</span> Issues
-        <span class="count" id="navIssueCount" hidden></span>
-      </a>
-      <a href="#/work"      data-nav="approvals">
-        <span class="ic">◷</span> Approvals
-        <span class="count" id="navApprovalCount" hidden></span>
-      </a>
+      <span hidden>
+        <span id="navIssueCount"></span><span id="navApprovalCount"></span>
+      </span>
     </div>
     <div class="foot">
       <div style="font-size:11.5px;color:var(--text-2);display:flex;align-items:center;gap:6px">
@@ -817,13 +814,29 @@ dialog#sheet .dlg-foot {
         <div class="card">
           <header><h2 id="deptHeading">The organisation</h2><span class="spacer"></span>
             <span class="sub" id="deptSub"></span>
+          </header>
+          <!--
+            Find a unit without reading the whole tree. Eleven boxes fit on a screen;
+            the search earns its place the week there are more, and the office chips
+            are the click-an-office filter for people who start from here instead of
+            from a box. Both filter what is drawn, never what is fetched.
+          -->
+          <div class="body" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="deptSearch" placeholder="Find a department or office…" autocomplete="off"
+              style="flex:2;min-width:180px" aria-label="Find a department or office">
+            <span class="seg" id="deptOfficeFilter" aria-label="Filter by office">
+              <button class="on" data-office="">All offices</button>
+            </span>
             <span class="legend" style="font-size:11px">
               <span class="legend-dot"></span> a moving light on the edge means it is
               working now; a dashed border means a run is stranded
             </span>
-          </header>
+          </div>
           <div class="body"><div class="dept-tree" id="deptTree"></div></div>
           <div class="empty" id="deptEmpty" hidden>No agent is registered for these departments.</div>
+          <div class="empty" id="deptNoMatch" hidden>
+            <div class="big">·</div> Nothing matches. Clear the search or pick another office.
+          </div>
         </div>
         <div class="note">
           <b>A light on the edge means a run is in flight</b>, read from the executions
@@ -872,6 +885,26 @@ dialog#sheet .dlg-foot {
      They are here because this is the view a person opens to make the company
      do something, and then to see that it did. -->
     <div class="card">
+      <header><h2>Start a task</h2><span class="spacer"></span>
+        <span class="sub">tell the company what to do, in your own words</span></header>
+      <div class="body" style="display:flex;flex-direction:column;gap:var(--s3)">
+        <label class="field"><span>Pick a piece of work</span>
+          <select id="scenario"><option value="">loading work…</option></select></label>
+        <label class="field"><span>What should the company work on?</span>
+          <input id="goal" placeholder="Reconcile the tender documents" autocomplete="off"></label>
+        <div class="legend" id="scenarioHint" hidden></div>
+        <div class="btn-row" style="flex-wrap:nowrap">
+          <select id="agent" style="flex:1;min-width:120px" title="Who does the work">
+            <option value="">loading agents…</option></select>
+          <select id="taskType" style="flex:1;min-width:120px">
+            <option value="coordination">coordination</option>
+            <option value="analysis">analysis</option></select>
+          <button class="btn primary" id="runBtn">Run</button>
+        </div>
+        <div class="legend" id="runHint">Runs on the free model. A coordination task can take minutes.</div>
+      </div>
+    </div>
+    <div class="card">
       <header><h2>Workflow</h2><span class="spacer"></span>
         <span class="sub" id="flowCount"></span></header>
       <div class="body" style="max-height:56vh;overflow:auto"><ul class="tree" id="tree"></ul></div>
@@ -887,25 +920,7 @@ dialog#sheet .dlg-foot {
           in as the agents report — who asked whom for what, and what came back.
         </div>
       </div>
-
-      <div class="card">
-        <header><h2>Start a task</h2></header>
-        <div class="body" style="display:flex;flex-direction:column;gap:var(--s3)">
-          <label class="field"><span>Pick a piece of work</span>
-            <select id="scenario"><option value="">loading work…</option></select></label>
-          <label class="field"><span>What should the company work on?</span>
-            <input id="goal" placeholder="Reconcile the tender documents" autocomplete="off"></label>
-          <div class="legend" id="scenarioHint" hidden></div>
-          <div class="btn-row" style="flex-wrap:nowrap">
-            <select id="agent" style="flex:1;min-width:120px" title="Who does the work">
-              <option value="">loading agents…</option></select>
-            <select id="taskType" style="flex:1;min-width:120px">
-              <option value="coordination">coordination</option>
-              <option value="analysis">analysis</option></select>
-            <button class="btn primary" id="runBtn">Run</button>
-          </div>
-          <div class="legend" id="runHint">Runs on the free model. A coordination task can take minutes.</div>
-        </div>
+    </div>
         <div class="stats" id="workStats"></div>
         <div class="card">
           <header><h2>The register</h2><span class="spacer"></span>
@@ -940,6 +955,21 @@ dialog#sheet .dlg-foot {
       <section class="view" id="view-task" hidden>
         <div class="stats" id="taskStats"></div>
         <div id="taskBanner"></div>
+        <!--
+          The answer, in words, before the evidence. The banner said "answered with:
+          `verdicts, reason`" — key names a boss cannot act on. This card reads each
+          key's value as a sentence under its plain name, with the full text one click
+          away and a copy button for whatever comes next. Evidence stays below it.
+        -->
+        <div class="card" id="taskAnswerCard">
+          <header><h2>Answer</h2><span class="spacer"></span>
+            <span class="sub" id="taskAnswerSub"></span>
+            <button class="btn ghost sm" id="taskAnswerCopy" hidden>Copy</button></header>
+          <div class="body" id="taskAnswer"></div>
+          <div class="empty" id="taskAnswerEmpty" hidden>
+            <div class="big">·</div> No answer yet — the steps below show where the work stands.
+          </div>
+        </div>
         <div class="card">
           <header><h2>Decisions</h2><span class="spacer"></span>
             <span class="sub" id="taskApprovalsSub"></span></header>
@@ -1540,7 +1570,7 @@ $("backBtn").onclick = () => history.back();
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if ($("sheet").open) { $("sheet").close(); return; }
-  if (parseHash().name !== "dashboard") history.back();
+  if (parseHash().name !== "departments") history.back();
 });
 
 /* ---------------- the router ---------------- */
@@ -1594,7 +1624,7 @@ function showError(err) {
     <div class="note late"><b>Could not load this view.</b><br>${esc(err && err.message || String(err))}</div>
     <div class="btn-row" style="margin-top:12px">
       <button class="btn" onclick="location.reload()">Reload</button>
-      <button class="btn ghost" onclick="go('#/dashboard')">Back to the dashboard</button>
+      <button class="btn ghost" onclick="go('#/departments')">Back to Departments</button>
     </div></div></div>`);
 }
 
@@ -1782,7 +1812,16 @@ async function renderWork() {
     + "the agent with your question instead of ending it — usually the right answer when "
     + "you are unsure.");
   setHTML("navApprovalCount", d.count ? String(d.count) : "");
-  $("navApprovalCount").hidden = !d.count;
+  const _nbA = $("navApprovalCount"); if (_nbA) _nbA.hidden = !d.count;
+  /* The sidebar shows one number for this screen: issues plus decisions waiting.
+     Two writers share it — renderGive writes the register's `needs_you` — and
+     either is the number a boss is accountable for; the last render wins. */
+  const _nbW = $("navWorkCount");
+  if (_nbW) {
+    const _n = issues.length + live.length;
+    _nbW.textContent = _n ? String(_n) : "";
+    _nbW.hidden = !_n;
+  }
 }
 
 /* ---------------- retry, once, for every place that offers it ---------------- */
@@ -1825,9 +1864,20 @@ async function retryTask(id, button) {
 $("retryBtn").onclick = () => retryTask(state.taskId, $("retryBtn"));
 
 document.addEventListener("click", async (e) => {
+  const ans = e.target.closest("button[data-answertext]");
+  if (ans) {
+    const i = Number(ans.dataset.answertext);
+    const text = answerTexts[i] ?? "";
+    openSheet(
+      "The full answer",
+      text
+        ? `<pre class="reason" style="max-height:60vh">${esc(String(text).slice(0, 60000))}</pre>`
+        : '<div class="s">This answer is empty.</div>',
+    );
+    return;
+  }
   const full = e.target.closest("button[data-fulltext]");
-  if (full) {
-    const i = Number(full.dataset.fulltext);
+  if (full) {    const i = Number(full.dataset.fulltext);
     const text = stepTexts[i] ?? "";
     openSheet(
       "What the agent said",
@@ -1954,6 +2004,82 @@ document.addEventListener("click", async (e) => {
 let deptCache = null;
 let deptSel = null;
 let deptPoll = null;
+/* What the organisation screen is filtered to. Search text plus one office key;
+   both filter what is drawn, never what is fetched, and both survive re-renders
+   because the tree is redrawn on every poll. */
+let deptQuery = "";
+let deptOffice = "";
+let deptFilterWired = false;
+
+function buildDeptOfficeChips(secondTier) {
+  const seg = $("deptOfficeFilter");
+  if (!seg) return;
+  const offices = secondTier || [];
+  const have = new Set([""]);
+  for (const b of seg.querySelectorAll("button[data-office]")) have.add(b.dataset.office);
+  const want = new Set(["", ...offices.map((o) => o.key)]);
+  if ([...have].sort().join("|") === [...want].sort().join("|")) return;
+  seg.innerHTML = `<button class="on" data-office="">All offices</button>` + offices.map((o) =>
+    `<button data-office="${esc(o.key)}">${esc(o.label || o.name)}</button>`).join("");
+  for (const b of seg.querySelectorAll("button[data-office]")) {
+    b.classList.toggle("on", (b.dataset.office || "") === deptOffice);
+  }
+}
+
+/** Hide boxes that do not match the search or the office chip. Groups whose every
+    department is hidden are hidden too; the chief is never hidden by the office
+    chip, only by the search. An empty result states so rather than drawing air. */
+function applyDeptFilter() {
+  const tree = $("deptTree");
+  if (!tree) return;
+  const q = deptQuery.trim().toLowerCase();
+  let shown = 0;
+  /* `box.style` is guarded, not assumed: the verification harness answers
+     `querySelectorAll` with parsed wrappers that carry no `style` object, and an
+     unguarded assignment throws inside the render — taking the whole departments
+     view down in exactly the environment that guards it. In a browser `style`
+     exists and the filter hides; under the harness the boxes stay visible, which
+     is the correct degraded reading rather than a failed view. */
+  for (const box of tree.querySelectorAll(".abox")) {
+    const text = (box.textContent || "").toLowerCase();
+    const okQ = !q || text.includes(q);
+    const key = (box.getAttribute && box.getAttribute("data-box-key")) || "";
+    const group = box.closest ? box.closest("[data-office-group]") : null;
+    const inOffice = !deptOffice || !group || (group.getAttribute && group.getAttribute("data-office-group") === deptOffice)
+      || key === deptOffice;
+    const show = okQ && inOffice;
+    if (box.style) box.style.display = show ? "" : "none";
+    else if (!show && box.setAttribute) box.setAttribute("data-hidden-by-filter", "1");
+    else if (show && box.removeAttribute) box.removeAttribute("data-hidden-by-filter");
+    if (show) shown += 1;
+  }
+  for (const g of tree.querySelectorAll("[data-office-group]")) {
+    const anyShown = [...g.querySelectorAll(".abox")].some((b) => {
+      if (b.style) return b.style.display !== "none";
+      return !(b.getAttribute && b.getAttribute("data-hidden-by-filter"));
+    });
+    if (g.style) g.style.display = anyShown ? "" : "none";
+  }
+  const noMatch = $("deptNoMatch");
+  if (noMatch) noMatch.hidden = shown > 0;
+}
+
+function wireDeptFilter() {
+  if (deptFilterWired) return;
+  deptFilterWired = true;
+  const input = $("deptSearch");
+  if (input) input.addEventListener("input", () => { deptQuery = input.value || ""; applyDeptFilter(); });
+  const seg = $("deptOfficeFilter");
+  if (seg) seg.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-office]");
+    if (!b) return;
+    deptOffice = b.dataset.office || "";
+    for (const x of seg.querySelectorAll("button[data-office]")) {
+      x.classList.toggle("on", x === b);
+    }
+    applyDeptFilter();
+  });
+}
 
 async function loadDepartments() {
   if (deptCache) return deptCache;
@@ -2002,6 +2128,9 @@ async function renderDepartments(key) {
   $("deptTree").hidden = boxes.length === 0;
   setHTML("deptTree", renderTree("deptTree", d.offices, d.chief, deptSel, d.second_tier)
     + unassignedNote(d));
+  buildDeptOfficeChips(d.second_tier);
+  wireDeptFilter();
+  applyDeptFilter();
 
   watchDepartments();
 }
@@ -2014,7 +2143,7 @@ async function refreshAfterAction() {
     const inbox = await apiGet("/approvals/inbox");
     state.inbox = inbox.items;
     setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
-    $("navApprovalCount").hidden = !inbox.count;
+    const _nbA2 = $("navApprovalCount"); if (_nbA2) _nbA2.hidden = !inbox.count;
   } catch { /* the view refresh below will surface it */ }
   await route();
 }
@@ -2356,6 +2485,9 @@ async function renderGive(id) {
   setHTML("taskStats", ""); setHTML("taskTree", ""); setHTML("taskLog", "");
   setHTML("taskApprovals", ""); setHTML("taskNote", ""); setHTML("taskGraph", "");
   setHTML("taskBanner", ""); setHTML("taskSteps", ""); stepTexts = [];
+  setHTML("taskAnswer", ""); setHTML("taskAnswerSub", "");
+  const _ac = $("taskAnswerCopy"); if (_ac) _ac.hidden = true;
+  const _ae = $("taskAnswerEmpty"); if (_ae) _ae.hidden = true;
   $("taskTitle").textContent = "Task"; $("taskSub").textContent = "";
   $("runThisState").textContent = "";
 
@@ -2411,6 +2543,63 @@ async function renderGive(id) {
 
 /** One status banner for the open task. The failure reason used to live only in a list
     truncation and a button tooltip; here it is the first thing on the screen. */
+function renderAnswer(t) {
+  /* The task's own answer, read as sentences rather than as key names. `output` is a
+     `{"verdicts": "...", "reason": "..."}` map a boss cannot act on; each value is
+     shown under its plain name, long values truncate with the full text one click
+     away in the existing sheet dialog, and the copy button takes the whole answer. */
+  const el = $("taskAnswer");
+  if (!el) return;
+  const out = t.output && typeof t.output === "object" ? t.output : null;
+  const keys = out ? Object.keys(out).filter((k) => out[k] !== null && out[k] !== "") : [];
+  const sub = $("taskAnswerSub");
+  const copy = $("taskAnswerCopy");
+  const empty = $("taskAnswerEmpty");
+  if (!keys.length) {
+    setHTML("taskAnswer", "");
+    if (sub) sub.textContent = t.status === "completed"
+      ? "finished with no written answer"
+      : "nothing written yet";
+    if (copy) copy.hidden = true;
+    if (empty) empty.hidden = false;
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  if (empty) empty.hidden = true;
+  if (sub) sub.textContent = `${keys.length} point(s) answered`;
+  if (copy) {
+    copy.hidden = false;
+    copy.onclick = async () => {
+      const text = keys.map((k) => `${k}: ${plain(out[k])}`).join("\n\n");
+      try { await navigator.clipboard.writeText(text); toast("Answer copied."); }
+      catch { toast("Could not copy.", true); }
+    };
+  }
+  answerTexts = keys.map((k) => plain(out[k]));
+  setHTML("taskAnswer", `<dl class="answer">` + keys.map((k, i) => `
+    <div class="answer-row">
+      <dt>${esc(humanKey(k))}</dt>
+      <dd>${esc(String(plain(out[k])).slice(0, 600))}${
+        String(plain(out[k])).length > 600
+          ? ` <button class="btn ghost sm" data-answertext="${i}">Read all</button>` : ""}</dd>
+    </div>`).join("") + `</dl>`);
+}
+
+/** Full answer texts, by key index — same rule as `stepTexts`: stored, not embedded. */
+let answerTexts = [];
+
+/** A value rendered as plain words: strings as-is, everything else as compact JSON. */
+function plain(v) {
+  if (typeof v === "string") return v;
+  try { return JSON.stringify(v, null, 1); } catch { return String(v); }
+}
+
+/** `proposed_changes` reads as "Proposed changes". Keys are identifiers; the screen
+    is not the place to mint them. */
+function humanKey(k) {
+  return String(k).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 function renderBanner(t, s) {
   const el = $("taskBanner");
   if (!el) return;
@@ -2584,6 +2773,7 @@ async function renderOneTask(id) {
   // the rest of the page reads, so they cannot disagree with the tiles below.
   const _s = d.summary || {};
   renderBanner(t, _s);
+  renderAnswer(t);
   renderSteps(d);
 
   /* The tree, parents before children, so the first row is the thing that was asked for

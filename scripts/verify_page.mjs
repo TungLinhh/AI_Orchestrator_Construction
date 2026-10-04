@@ -607,9 +607,28 @@ check("nothing is coerced into markup by joining nodes",
   "no `innerHTML = nodes.join()` remains");
 check("every element the page writes to exists",
   ["giveList", "giveFilter", "giveEmpty", "activity", "unitWorkSub", "unitWorkEmpty",
-   "workList", "workFilter", "workSub", "workEmpty"]
+   "workList", "workFilter", "workSub", "workEmpty", "taskAnswer", "taskAnswerSub",
+   "taskAnswerCopy", "taskAnswerEmpty", "deptSearch", "deptOfficeFilter", "deptNoMatch"]
     .every((id) => idsInMarkup.includes(id)),
-  "give/work/unit ids all present");
+  "give/work/unit/answer/dept-filter ids all present");
+/* The end-product shape, asserted as structure rather than taste: one nav link per
+   screen, the work form before the workflow log, an answer card on the task view,
+   and a finder on the organisation view. */
+const navHrefs = [...html.matchAll(/<a[^>]*href="(#\/[a-z]*)"[^>]*data-nav="([a-z]+)"/g)]
+  .map((m) => `${m[2]}:${m[1]}`);
+const primaryHrefs = navHrefs.filter((s) => ["departments", "give", "work"].includes(s.split(":")[0]))
+  .map((s) => s.split(":")[1]);
+check("one nav link per screen, no two sharing a destination", new Set(primaryHrefs).size === primaryHrefs.length && primaryHrefs.length === 3,
+  navHrefs.join(", "));
+check("the work form comes before the workflow it explains",
+  html.indexOf('id="scenario"') > 0 && html.indexOf('id="scenario"') < html.indexOf('id="tree"'),
+  "Start a task precedes Workflow in the document");
+check("the task view has an answer card above the evidence",
+  html.indexOf('id="taskAnswer"') > 0 && html.indexOf('id="taskAnswer"') < html.indexOf('id="taskSteps"'),
+  "Answer precedes Steps");
+check("the organisation view has a finder and an office filter",
+  idsInMarkup.includes("deptSearch") && idsInMarkup.includes("deptOfficeFilter"),
+  "search + All-offices chips");
 console.log("runtime:");
 check("the script loaded without throwing", uncaught === null, uncaught?.message);
 check("requests were made", fetched > 0, `${fetched} fetches`);
@@ -850,6 +869,17 @@ try {
       `${edges} edge(s) for ${expectedEdges} parent-child pair(s) in a tree of ${treeSize}`);
     check("the graph is described for a screen reader", /aria-label=/.test(graph));
     check("edges name who handed off", /<title>/.test(graph));
+    /* The answer card: when the task carries an output map, its values are on the
+       screen as sentences — not just the key names in the banner. Conditional on
+       the data, like the edges check above: a task with no output honestly shows
+       the empty state instead. Placed after `treeReport` is fetched, because an
+       earlier draft read it above this line and died in the temporal dead zone —
+       the check then reported the harness's own crash rather than the page. */
+    const _out = (treeReport.task && treeReport.task.output) || {};
+    const _nKeys = _out && typeof _out === "object" ? Object.keys(_out).length : 0;
+    check("the answer is shown as sentences when there is one",
+      _nKeys === 0 ? $("taskAnswerEmpty").hidden === false : /answer-row/.test($("taskAnswer").innerHTML),
+      _nKeys ? `${_nKeys} key(s), ${($("taskAnswer").innerHTML.match(/answer-row/g) || []).length} row(s)` : "no output, empty state shown");
 
     /* The run, and its cost.
      *
