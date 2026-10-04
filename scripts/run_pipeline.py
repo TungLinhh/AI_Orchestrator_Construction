@@ -77,7 +77,13 @@ async def _create_root(
         return str(root.id)
 
 
-async def main(org_id: str, goal: str | None, key: str | None, max_exec: int) -> int:
+async def main(
+    org_id: str,
+    goal: str | None,
+    key: str | None,
+    max_exec: int,
+    resume: str | None = None,
+) -> int:
     scenario = next((s for s in SCENARIOS if s.key == key), None) if key else None
     if key and scenario is None:
         print(f"no scenario named {key!r}; try: {', '.join(s.key for s in SCENARIOS)}")
@@ -88,6 +94,34 @@ async def main(org_id: str, goal: str | None, key: str | None, max_exec: int) ->
     settings = get_settings()
     print(f"\nprovider: {settings.model_provider_default}")
     db = Database.from_settings()
+    if resume:
+        # **Continue where an interrupted run stopped, not from scratch.**
+        #
+        # A run killed by the wall clock leaves a `running` root with `assigned`
+        # children that never executed. Starting over duplicates the whole tree;
+        # resuming drains it. The driver loop picks the deepest runnable task, so a
+        # second run on the same root is a continuation by construction.
+        print(f"resuming: {resume}\n")
+        outcome = await run_pipeline(
+            db,
+            org_id,
+            resume,
+            max_executions=max_exec,
+            run_mode=RunMode.LIVE,
+        )
+        try:
+            for step in outcome.steps:
+                note = f"  [{step.review}]" if step.review else ""
+                line = (
+                    f"  {'  ' * step.depth}{step.owner:<20} "
+                    f"{step.status:<11} {step.title[:44]}{note}"
+                )
+                print(line)
+            print()
+            print(outcome.summary())
+            return 0 if outcome.finished else 1
+        finally:
+            await db.dispose()
     try:
         # `expected_output` in the catalogue is a *description* of each field
         # ("verdicts": "mỗi khoản: duyệt / duyệt có điều kiện / từ chối"), which is
@@ -170,5 +204,11 @@ if __name__ == "__main__":
     ap.add_argument("--goal")
     ap.add_argument("--key", help="a scenario from the catalogue")
     ap.add_argument("--max-executions", type=int, default=60)
+    ap.add_argument(
+        "--resume",
+        help="an existing root task id to continue draining instead of starting over",
+    )
     args = ap.parse_args()
-    raise SystemExit(asyncio.run(main(args.org, args.goal, args.key, args.max_executions)))
+    raise SystemExit(
+        asyncio.run(main(args.org, args.goal, args.key, args.max_executions, args.resume))
+    )
