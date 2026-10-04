@@ -742,3 +742,101 @@ class TestTheServerTellsThePageTheTruth:
         # The banner element is in the document, and only the script un-hides it, so
         # a failure to load the script leaves it hidden rather than lying.
         assert 'id="authwarn" hidden' in html
+
+
+class TestAnOwnerlessTaskGetsTheChief:
+    """**No owner means the chief, not an orphan.**
+
+    Measured on the live page: the agent picker shipped as "loading agents…" with no code
+    behind it (F266), so pressing Run created a task with `owner_agent_id: null`. Then
+    `POST /tasks/{id}/run` refused it with "this task has no agent, so there is nothing
+    to run it with. Assign one first" — a correct refusal of a task the platform itself
+    had created un-runnable.
+
+    A task with nobody to do it is a row the queue will never drain. The chief is the
+    root unit's head, not a name: a name is a second definition of who is on top.
+    """
+
+    async def test_creating_without_an_owner_assigns_the_chief(
+        self, client: Any, tenant: Any
+    ) -> None:
+        from sqlalchemy import select
+
+        from ai_orchestrator.persistence.models import Agent, Organization, OrgUnit
+        from ai_orchestrator.seed import seed
+
+        # A bare tenant has units but no agents; the chief has to exist to be defaulted to.
+        org = (
+            await tenant.session.execute(
+                select(Organization).where(Organization.id == tenant.organization_id)
+            )
+        ).scalar_one()
+        await seed(tenant.session, into=org)
+        await tenant.commit()
+
+        response = await _create(
+            client, tenant.organization_id, f"ownerless work {uuid.uuid4().hex}"
+        )
+        assert response.status_code in (200, 201), response.text
+        body = response.json()
+        assert body.get("owner_agent_id"), (
+            "the task was created with no owner, so nothing will ever run it"
+        )
+        assert body.get("owner_defaulted_to_chief") is True, (
+            "the owner was set but the caller was not told it was defaulted, so the "
+            "page cannot say who will do the work"
+        )
+
+        chief_unit = (
+            await tenant.session.execute(
+                select(OrgUnit).where(
+                    OrgUnit.organization_id == tenant.organization_id,
+                    OrgUnit.parent_id.is_(None),
+                )
+            )
+        ).scalar_one()
+        chief = (
+            await tenant.session.execute(select(Agent).where(Agent.id == chief_unit.head_agent_id))
+        ).scalar_one()
+        assert body["owner_agent_id"] == str(chief.id), (
+            f"the default owner is {body['owner_agent_id']}, not the chief {chief.name}"
+        )
+
+    async def test_an_explicit_owner_is_left_alone(self, client: Any, tenant: Any) -> None:
+        """The other direction. A default that overwrites a choice is not a default."""
+        from sqlalchemy import select
+
+        from ai_orchestrator.persistence.models import Agent, Organization
+        from ai_orchestrator.seed import seed
+
+        org = (
+            await tenant.session.execute(
+                select(Organization).where(Organization.id == tenant.organization_id)
+            )
+        ).scalar_one()
+        await seed(tenant.session, into=org)
+        await tenant.commit()
+        wanted = (
+            (
+                await tenant.session.execute(
+                    select(Agent).where(Agent.organization_id == tenant.organization_id)
+                )
+            )
+            .scalars()
+            .first()
+        )
+        response = await client.post(
+            "/api/v1/tasks",
+            headers={**_headers(tenant.organization_id), "Idempotency-Key": str(uuid.uuid4())},
+            json={
+                "title": f"owned work {uuid.uuid4().hex}"[:60],
+                "goal": f"owned work {uuid.uuid4().hex}",
+                "task_type": "analysis",
+                "start_workflow": False,
+                "owner_agent_id": str(wanted.id),
+            },
+        )
+        assert response.status_code in (200, 201), response.text
+        body = response.json()
+        assert body["owner_agent_id"] == str(wanted.id)
+        assert "owner_defaulted_to_chief" not in body

@@ -7811,3 +7811,47 @@ Three smaller things in the same script, each found by running it:
 And the delegation check, which required data only a real model produces, now asserts the
 **rendering** instead: with delegations it draws them, with none it says so rather than
 showing an empty rectangle. Both are real; neither needs a model call.
+
+### F275
+
+**The task log rendered type names and opaque ids for the same events the feed read as
+sentences.**
+
+`renderOneTask` drew `esc(e.event_type)` plus the raw `actor_id` — `task.delegation_accepted
+· agt_01m3…` — while the live feed, fed by the same log, read "Procurement Agent asked the
+Executive Agent to do the work". The report query did not even select the `data` column, so
+there was nothing to resolve: one log, two readings, and the refresh disagreed with the
+live view.
+
+`enrich` moved from `api/stream.py` to `application/event_view.py`, and the report runs it
+too. Everything display-only lives under `view` in both. The task log now calls the same
+`eventLine()` the feed uses.
+
+### F276
+
+**An ownerless task, created by the platform and refused by the platform.**
+
+The agent picker shipped as "loading agents…" with no code behind it (F266), so pressing
+Run created a task with `owner_agent_id: null`. Then `POST /tasks/{id}/run` refused it
+with "this task has no agent, so there is nothing to run it with. Assign one first" — a
+correct refusal of a task the platform itself had made un-runnable. Measured end to end on
+the live page, not inferred.
+
+`POST /tasks` now defaults the owner to the chief — the root unit's head, not a name — and
+says so in the response (`owner_defaulted_to_chief`), so the page can show who will do the
+work. A tenant mid-seed with no head still creates ownerless, and the run-time refusal
+still protects that case.
+
+### F277
+
+**The harness shim threw where a browser does not, twice, and both read as page defects.**
+
+`renderFlow` draws with `$("tree").replaceChildren(...)` — deliberately, because joining
+nodes into `innerHTML` printed `[object HTMLLIElement]` (F266). The shim had no
+`replaceChildren`, so every frame threw *after* recording the event: "38 delegation
+event(s), tree drawn=false", with the events real and the tree broken only in the harness.
+
+Then the replacement check read `$("tree").innerHTML` for `class="node` — but the page
+writes via `replaceChildren`, and the shim's `innerHTML` is a write-only string. It reads
+the children now. Each render path is observed the way it writes, or the check asserts the
+shim rather than the page.

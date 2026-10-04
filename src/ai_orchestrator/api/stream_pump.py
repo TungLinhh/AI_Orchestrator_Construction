@@ -46,7 +46,8 @@ async def publish_from_database(fanout: Any, organization_id: str) -> int:
     monotone in practice. `>` rather than `>=` so the last frame is not replayed on
     every tick, which would look like the platform repeating itself.
     """
-    from ai_orchestrator.api.stream import enrich, frame_of
+    from ai_orchestrator.api.stream import frame_of
+    from ai_orchestrator.application.event_view import enrich
     from ai_orchestrator.persistence.session import Database
 
     db: Database = fanout.db

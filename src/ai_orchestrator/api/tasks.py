@@ -191,13 +191,23 @@ async def create_task(
             msg = f"deadline_at is not an ISO 8601 timestamp: {body.deadline_at}"
             raise ValidationError(msg, details={"field": "deadline_at"}) from exc
 
+    # **No owner means the chief.** A task with nobody to do it is a row the queue
+    # will never drain: `POST /tasks/{id}/run` refuses it with "assign one first", and on
+    # the page that refusal arrived as "The task exists but nothing is running it" right
+    # after the person pressed Run with a roster that had failed to load. Measured, not
+    # hypothetical — the picker shipped as "loading agents…" with nothing behind it (F266),
+    # and every such press made an orphan.
+    #
+    # The chief is the root unit's head, not a name: a name is a second definition of who
+    # is on top, and two definitions of that is how the page and the platform disagree.
+    owner_agent_id = body.owner_agent_id or await _chief_agent_id(ctx)
     task = await repo.create(
         title=body.title,
         goal=body.goal,
         task_type=body.task_type,
         requester_id=await _requester_id(ctx),
         requester_type=ctx.actor.kind.value,
-        owner_agent_id=body.owner_agent_id,
+        owner_agent_id=owner_agent_id,
         org_unit_id=body.org_unit_id,
         parent_task_id=body.parent_task_id,
         priority=body.priority,
@@ -212,6 +222,8 @@ async def create_task(
     bump("tasks_created_total")
 
     response = _task_dict(task)
+    if not body.owner_agent_id:
+        response["owner_defaulted_to_chief"] = True
     await store_idempotency(
         ctx,
         key=key,
@@ -235,6 +247,48 @@ async def create_task(
         response["workflow"] = started
 
     return response
+
+
+async def _chief_agent_id(ctx: ApiContext) -> str | None:
+    """The root unit's head agent, or `None` when the tree has no head.
+
+    `None` is a real answer, not a failure: a tenant mid-seed has units without heads,
+    and the task is then created ownerless exactly as before. The refusal at run time
+    ("assign one first") is what protects that case, and it still does.
+    """
+    from sqlalchemy import select as _select
+
+    from ai_orchestrator.persistence.models import Agent as _Agent
+    from ai_orchestrator.persistence.models import OrgUnit as _OrgUnit
+
+    root = (
+        (
+            await ctx.session.execute(
+                _select(_OrgUnit).where(
+                    _OrgUnit.organization_id == ctx.organization_id,
+                    _OrgUnit.parent_id.is_(None),
+                )
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if root is None or not root.head_agent_id:
+        return None
+    agent = (
+        (
+            await ctx.session.execute(
+                _select(_Agent).where(
+                    _Agent.organization_id == ctx.organization_id,
+                    _Agent.id == root.head_agent_id,
+                    _Agent.lifecycle_status == "active",
+                )
+            )
+        )
+        .scalars()
+        .first()
+    )
+    return str(agent.id) if agent is not None else None
 
 
 async def _start_workflow_for(ctx: ApiContext, task: Any) -> dict[str, Any]:

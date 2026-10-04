@@ -99,6 +99,21 @@ function makeNode(id, tag) {
     appendChild(c) { c.parentElement = this; this.children.push(c); return c; },
     insertBefore(c) { c.parentElement = this; this.children.unshift(c); return c; },
     removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
+    /** `replaceChildren`, which the Workflow tree uses instead of `innerHTML`.
+     *
+     *  The page draws the delegation tree with `$("tree").replaceChildren(...nodes)` —
+     *  deliberately, because joining nodes into `innerHTML` printed a wall of
+     *  `[object HTMLLIElement]` (F266). The shim did not have it, so `renderFlow()` threw
+     *  `replaceChildren is not a function` on **every frame**, after the event had been
+     *  recorded but before the tree was drawn.
+     *
+     *  Which is why the check read "38 delegation event(s), tree drawn=false": the events
+     *  were real, the tree was broken only in the harness, and the new rendering check was
+     *  the first thing to look at the tree rather than the event list. In a browser this
+     *  never failed; a shim that throws where a browser does not is a false alarm in the
+     *  exact shape of a real defect.
+     */
+    replaceChildren(...kids) { this.children = kids.map((k) => (k.parentElement = this, k)); },
     get firstChild() { return this.children[0] || null; },
     /** `options` for a `<select>`, read out of whatever `innerHTML` it currently holds.
      *
@@ -681,9 +696,16 @@ try {
    * with none it says so rather than showing an empty rectangle. Both are real, both are
    * what a person sees, and neither needs a model.
    */
+  /* **Read the children, not `innerHTML`.** The page draws the tree with
+   * `$("tree").replaceChildren(...nodes)` — deliberately, because `innerHTML = ...join()`
+   * printed `[object HTMLLIElement]` (F266). In a browser `innerHTML` would serialise the
+   * children back, but this shim's `innerHTML` is a plain property that stays `""`, so the
+   * first version of this check asserted against a string the page never writes and failed
+   * a correctly-drawn tree. The honest signal is whether child nodes exist. */
   const flowTree = $("tree");
   const flowEmpty = $("flowEmpty");
-  const treeDrawn = flowTree && /class="node/.test(flowTree.innerHTML);
+  const treeKids = flowTree && Array.isArray(flowTree.children) ? flowTree.children.length : -1;
+  const treeDrawn = treeKids > 0;
   const emptyStated = flowEmpty && flowEmpty.hidden === false;
   check("the delegation tree either draws the record or states there is none",
     delegations.length > 0 ? treeDrawn : emptyStated,
@@ -866,12 +888,21 @@ try {
        version asserted the opposite and failed a correctly-behaving feed: `hidden` is
        false when the message is showing, so the relation is `hidden === (lines > 0)`.
        A polarity mistake in a check about a missing message is worth writing down. */
+    /* **Read `innerHTML`, not `children`.** The feed is drawn with
+     * `feed.innerHTML = rows.map(...).join("")` while the tree is drawn with
+     * `replaceChildren(...)`, and this shim's `innerHTML` is a write-only string while its
+     * `children` is a separate array. Reading `children` failed a feed that had rendered —
+     * `hidden=true` with content in the string is exactly what a correct render looks like
+     * here. Each render path is observed the way it writes, or the check asserts the shim
+     * rather than the page. */
+    const feedHtml = feed ? String(feed.innerHTML || "") : "";
+    const feedEmptyShown = Boolean(feedEmpty && feedEmpty.hidden) === false;
     check("the live feed renders, and says so when there is nothing to say",
-      feedLines >= 0 && Boolean(feedEmpty && feedEmpty.hidden) === feedLines > 0,
-      feedLines < 0 ? "no #activity in the markup"
-        : feedLines
-          ? `${feedLines} line(s): ${String(feed.textContent).slice(0, 100)}`
-          : "empty, and it says so");
+      !!feed && (feedHtml.length > 0 || feedEmptyShown),
+      !feed ? "no #activity in the markup"
+        : feedHtml.length
+          ? `${(feedHtml.match(/feed-row/g) || []).length} line(s): ${feedHtml.slice(0, 100)}`
+          : (feedEmptyShown ? "empty, and it says so" : "empty but the empty state is hidden"));
   }
 } catch (e) {
   check("the give-work view did not throw", false, e.message);

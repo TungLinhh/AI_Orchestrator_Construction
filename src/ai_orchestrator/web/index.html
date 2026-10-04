@@ -1277,6 +1277,14 @@ document.addEventListener("keydown", (e) => {
 let renderToken = 0;
 async function route() {
   const r = parseHash();
+  // Leaving a task stops watching it. The poller belongs to the detail screen, and a
+  // request every four seconds for a task nobody is looking at is the kind of quiet cost
+  // that shows up as load nobody can explain.
+  if (r.name !== "give" && r.name !== "task") {
+    if (typeof watchTimer !== "undefined" && watchTimer) {
+      clearInterval(watchTimer); watchTimer = null;
+    }
+  }
   const mine = ++renderToken;
   for (const name of Object.keys(ROUTES)) {
     const el = $("view-" + (name === "project" ? "projects" : name === "approval" ? "work" : name === "agent" ? "agents" : name));
@@ -2198,11 +2206,23 @@ async function renderOneTask(id) {
       </div>
     </div>`).join(""));
 
+  // **The same sentences as the live feed, not raw event types.**
+  //
+  // This rendered `esc(e.event_type)` plus the raw `actor_id` — `task.delegation_accepted
+  // · agt_01m3…` — a type name and an opaque id, for the same log the feed had already
+  // read as "Procurement Agent asked the Executive Agent to do the work". One log, two
+  // readings, and the refresh disagreed with the live view; the complaint was "I cannot
+  // see anything the agents are doing".
+  //
+  // `eventLine` reads `ev.view`, which the report now carries because it runs the same
+  // `enrich` projection as the stream. An event the report predates (no `view`) falls
+  // through to its type name, which is honest and still readable.
   $("taskLogSub").textContent = `${(d.events || []).length} event(s)`;
   setHTML("taskLog", (d.events || []).map((e) => `
-    <div class="row static">
-      <div class="grow"><div class="t">${esc(e.event_type)}</div>
-        <div class="s">${esc(ago(e.occurred_at))}${e.actor_id ? " · " + esc(e.actor_id) : ""}</div></div>
+    <div class="row static feed-row">
+      <span class="feed-dot"></span>
+      <div class="grow"><div class="s" style="font-size:12px">${eventLine(e)}</div></div>
+      <div class="r"><span class="s">${esc(ago(e.occurred_at))}</span></div>
     </div>`).join(""));
 
   /* The report, in words, at the end -- because "finish then report to me" is the last
@@ -2218,6 +2238,16 @@ async function renderOneTask(id) {
        ${s.failed} failed, ${s.approvals_total} decision(s) required of a person.
        <br><b>No model is named</b> because no execution recorded one — an account that
        cannot say which model acted is an account of a system nobody can audit.`;
+
+  // **Watch an unfinished task, however it was started.** Only the detail-page Run button
+  // started the watcher, so pressing Run on the *form* landed on a static page: the task
+  // ran in the background and nothing on screen moved. A person who pressed Run to watch
+  // something happen watched a page that never changed, which is the same complaint as
+  // "I cannot see anything the agents are doing" one screen later.
+  //
+  // Terminal statuses end the watch by omission: a task that cannot change needs no
+  // polling, and polling it would be requests spent proving nothing.
+  if (!["completed", "failed", "cancelled", "blocked"].includes(t.status)) watchRun(t.id);
 }
 
 $("runThisTask").onclick = async () => {

@@ -62,6 +62,7 @@ from typing import Any
 
 from sqlalchemy import text
 
+from ai_orchestrator.application.event_view import enrich
 from ai_orchestrator.application.ports import ReadConnection
 from ai_orchestrator.domain.errors import NotFoundError
 
@@ -216,7 +217,7 @@ _REPORT_EVENTS = """
 -- task". The first version filtered on `payload::text LIKE '%<id>%'`, which is a scan of
 -- the whole tenant's log and would match a task id that happened to appear inside
 -- somebody else's payload.
-SELECT id, type, actor_id, source AS actor_type, occurred_at, subject
+SELECT id, type, actor_id, source AS actor_type, occurred_at, subject, data
 FROM events
 WHERE organization_id = CAST(:o AS varchar(40))
   AND (subject = :id OR subject LIKE :like || '%')
@@ -405,6 +406,13 @@ async def task_report(
 
     tree_ids = {str(r["id"]) for r in tree}
 
+    # **Resolved names, not raw ids.** `enrich` mutates the frames in place, exactly as
+    # it does for the stream, so the report's `view` and the stream's `view` are the
+    # same projection of the same events.
+    frames = [{"type": str(e["type"]), "data": dict(e["data"] or {})} for e in events]
+    await enrich(frames, conn, organization_id)
+    enriched = [dict(f.get("view") or {}) for f in frames]
+
     return {
         "task": {
             "id": head["id"],
@@ -495,6 +503,14 @@ async def task_report(
             }
             for a in approvals
         ],
+        # **The same projection the live stream uses**, so a refresh and the feed agree.
+        #
+        # The report returned raw `event_type` + `actor_id` while the stream returned
+        # `view.from_agent` / `view.title`, so opening a task rendered
+        # `task.delegation_accepted · agt_01m3…` — a type name and an opaque id — for the
+        # same event the feed had already read as a sentence. `enrich` resolves the ids to
+        # names here too, and everything display-only lives under `view`, exactly as in
+        # the stream frames.
         "events": [
             {
                 "id": e["id"],
@@ -503,8 +519,11 @@ async def task_report(
                 "actor_type": e["actor_type"],
                 "subject": e["subject"],
                 "occurred_at": e["occurred_at"],
+                "data": e["data"] or {},
+                "view": view,
             }
-            for e in events
+            # Same length by construction: one frame per row, in order.
+            for e, view in zip(events, enriched, strict=True)
         ],
         "tree_size": len(tree_ids),
     }

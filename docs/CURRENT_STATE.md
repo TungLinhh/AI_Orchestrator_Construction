@@ -824,7 +824,7 @@ Two things about that were nearly wrong in a way that would have cost money:
   by the caller rather than guessed.
 
 **Gate** — see the eighth pass for the full gate. The numbers moved with these tests:
-the suite is 3184 unit and integration tests, 3 skipped, 1 deselected, 0 failed, and
+the suite is 3185 unit and integration tests, 8 skipped, 1 deselected, 0 failed, and
 `make lint` and `make typecheck` are clean.
 
 **Two existing tests caught a wrong fix in this pass, which is worth recording.** The
