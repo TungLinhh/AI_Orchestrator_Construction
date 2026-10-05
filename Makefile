@@ -25,6 +25,14 @@ LOGS := $(DEV)/logs
 #: already running, and so nothing else on the machine is assumed to be free.
 PAGE_PORT ?= 8099
 
+#: `make serve` binds this: the chairman's server, on a real model. A different
+#: port from `make page` on purpose — the page server answers with the scripted
+#: fake (fast, free, deterministic, and unable to genuinely finish anything),
+#: while this one spends the free-model quota and does the work. Two servers,
+#: two modes, and the console wears its provider on its sleeve so they cannot
+#: be confused.
+SERVE_PORT ?= 8100
+
 #: The tenant the page opens, resolved **once** and read by the sweep, the verifier and
 #: the printed URL.
 #:
@@ -468,6 +476,28 @@ page-stop: ## Stop the API started by `make page`
 		kill $$(cat $(RUN)/page.pid) 2>/dev/null || true; rm -f $(RUN)/page.pid; \
 		echo "stopped"; \
 	else echo "nothing started by \`make page\`"; fi
+
+serve: ## Start the chairman's server: the console on a real model (spends free-model quota)
+	@$(PY) scripts/pgctl.py start >/dev/null 2>&1 || true
+	@mkdir -p $(RUN) $(LOGS)
+	@if [ -f $(RUN)/serve.pid ] && kill -0 $$(cat $(RUN)/serve.pid) 2>/dev/null; then \
+		kill $$(cat $(RUN)/serve.pid) 2>/dev/null || true; sleep 1; fi
+	@AO_API_AUTH_DISABLED=true AO_MODEL_PROVIDER_DEFAULT=openrouter $(PY) -m uvicorn ai_orchestrator.main:app \
+		--host 127.0.0.1 --port $(SERVE_PORT) --log-level warning \
+		> $(LOGS)/serve.log 2>&1 & echo $$! > $(RUN)/serve.pid
+	@for i in $$(seq 1 30); do \
+		curl -sf -o /dev/null "http://127.0.0.1:$(SERVE_PORT)/health" && break; sleep 1; \
+	done; \
+	curl -sf -o /dev/null "http://127.0.0.1:$(SERVE_PORT)/health" || \
+		{ echo "the API did not come up. $(LOGS)/serve.log:"; tail -20 $(LOGS)/serve.log; exit 1; }
+	@echo ""; echo "  Open this (real work, real model):  http://127.0.0.1:$(SERVE_PORT)/api/v1/ui?org=$(PAGE_ORG)";
+	@echo "  Stop it:    make serve-stop"; echo ""
+
+serve-stop: ## Stop the API started by `make serve`
+	@if [ -f $(RUN)/serve.pid ]; then \
+		kill $$(cat $(RUN)/serve.pid) 2>/dev/null || true; rm -f $(RUN)/serve.pid; \
+		echo "stopped"; \
+	else echo "nothing started by \`make serve\`"; fi
 
 verify-page: ## Execute the served UI against the live API and check what it rendered
 	@echo "The API must already be running.  \`make page\` does that for you;"

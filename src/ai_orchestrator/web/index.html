@@ -350,6 +350,25 @@ table.sheet tr:hover td { background: var(--fill); }
 .pill.bad { background: var(--late-soft); color: var(--late); }
 .pill.ok { background: color-mix(in srgb, #2f9e44 16%, transparent); color: #2f9e44; }
 .feed { display: flex; flex-direction: column; max-height: 62vh; overflow: auto; }
+/* ====================== the workflow: a tree that reads as work ======================
+   The delegation tree used to be bare nested `<ul>`s with no CSS at all: browser
+   bullets, a raw `tsk_…` id slice and a lowercase status on every line. It was
+   accurate and unreadable — a diagnostic, not a workflow. Now each node is a
+   card on a rail: a status pill, the work in plain words, and one meta line
+   (how old, how many hands below). No ids on screen; ids are for endpoints. */
+.tree { list-style: none; margin: 0; padding: 0; }
+.tree ul { list-style: none; margin: 2px 0 2px 9px; padding: 0 0 0 14px;
+  border-left: 2px solid var(--line); }
+.tree > li > .node { margin-top: 2px; }
+.node { border: 1px solid var(--line); border-radius: 9px; background: var(--panel);
+  padding: 8px 11px; margin: 7px 0; font-size: 12.5px; line-height: 1.45; }
+.node .t { font-weight: 600; overflow-wrap: break-word; }
+.node .m { color: var(--text-2); font-size: 11.5px; margin-top: 3px; display: flex;
+  gap: 8px; flex-wrap: wrap; align-items: center; }
+.node.st-completed { border-left: 3px solid #2f9e44; }
+.node.st-failed { border-left: 3px solid var(--late); }
+.node.st-running, .node.st-delegated { border-left: 3px solid var(--accent); }
+.node.st-rejected { border-left: 3px solid var(--warn, #c8912b); }
 dialog {
   border: 1px solid var(--line); border-radius: var(--radius); padding: 0;
   background: var(--surface); color: var(--text); box-shadow: var(--shadow);
@@ -573,8 +592,13 @@ dialog#sheet .dlg-foot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
   flex: 0 0 auto; margin-top: 5px;
 }
+/* The dot carries the kind: a failure is red at a glance, a finish green, a
+   refusal amber — the sentence says it, the dot says it first. */
+.feed-dot.bad { background: var(--late); }
+.feed-dot.ok { background: #2f9e44; }
+.feed-dot.warn { background: var(--warn, #c8912b); }
 .feed-row .grow { min-width: 0; }
-.feed-row .s { white-space: normal; line-height: 1.45; }
+.feed-row .s { white-space: normal; line-height: 1.5; font-size: 12.5px; }
 
 /* **The node that turns an indent into a tree.** One pseudo-element per department,
    sitting on the group's own rule: a 5px dot plus a 10px stub reaching back to the
@@ -904,6 +928,7 @@ dialog#sheet .dlg-foot {
           <button class="btn primary" id="runBtn" data-i18n="give.run">Run</button>
         </div>
         <div class="legend" id="runHint" data-i18n="give.run_hint">Runs on the free model. A coordination task can take minutes.</div>
+        <div class="legend" id="providerPill"></div>
       </div>
     </div>
     <div class="card">
@@ -1022,6 +1047,7 @@ dialog#sheet .dlg-foot {
                 watches it.</span>
             </div>
             <div class="sub" id="runThisState" style="margin-top:8px"></div>
+            <div class="legend" id="runProvider" style="margin-top:6px"></div>
           </div>
         </div>
       </section>
@@ -1076,6 +1102,7 @@ const API = "/api/v1";
 const ORG = "__ORG_ID__";
 const AUTH_OFF = __AUTH_OFF__;
 const BUILD = "__BUILD__";
+const PROVIDER = "__PROVIDER__";
 const $ = (id) => document.getElementById(id);
 const ORG_RE = /^org_[0-9a-z]{20,}$/;
 
@@ -1454,6 +1481,8 @@ Object.assign(STR.vi, {
   "feed.review": "người kiểm tra đã xem kết quả và yêu cầu làm lại",
   "feed.learned": "agent đã ghi lại điều học được",
   "flow.count": "{n} task",
+  "flow.untitled": "việc chưa đặt tên",
+  "flow.hands": "{n} lượt làm bên dưới",
   "conn.connecting": "đang nối",
   "conn.live": "trực tiếp",
   "conn.retry": "đang nối lại",
@@ -1471,6 +1500,10 @@ Object.assign(STR.vi, {
   "auth.token_prompt": "Service token (gửi dạng `Authorization: Bearer …`)",
   "auth.need_token": "Chưa được phép. Bấm Token để nhập service token.",
   "misc.nosummary": "chưa có tóm tắt",
+  "prov.live": "Model thật",
+  "prov.demo": "Chạy mô phỏng",
+  "prov.live_sub": "lượt chạy dùng quota model miễn phí và làm việc thật; giữ server này chạy trong khi task thực hiện",
+  "prov.demo_sub": "server này trả lời bằng output có sẵn — không có gì bấm ở đây hoàn thành thật được; dùng server live để làm việc thật",
 });
 function tr(key, fallback) {
   if (state.lang === "vi" && Object.hasOwn(STR.vi, key)) return STR.vi[key];
@@ -1517,6 +1550,25 @@ function paintStatic() {  const vi = state.lang === "vi";
   paint("data-i18n-ph", (el) => el.getAttribute("placeholder") || "", (el, v) => { el.setAttribute("placeholder", v); });
   paint("data-i18n-aria", (el) => el.getAttribute("aria-label") || "", (el, v) => { el.setAttribute("aria-label", v); });
   paint("data-i18n-title", (el) => el.getAttribute("title") || "", (el, v) => { el.setAttribute("title", v); });
+}
+
+/* The provider pill: what actually runs when Run is pressed.
+
+   `fake` (the dev/verify server) answers with a scripted canned output, so no
+   task pressed there can ever genuinely finish — every one of them failed
+   `output_contract_unmet` producing `proposal_count, scripted`. `openrouter`
+   (the chairman's server) spends the free-model quota and does the work. The
+   mode is painted on both run controls because a button that promises a model
+   while the server runs a script is a lie the page must not tell. */
+function paintProvider() {
+  const live = (PROVIDER || "") !== "fake";
+  const pill = (extra) =>
+    `<span class="pill ${live ? "ok" : "bad"}">${live ? tr("prov.live", "Live model") : tr("prov.demo", "Simulated runs")}</span>`
+    + (extra || "");
+  setHTML("providerPill", pill(live
+    ? `<span> · ${tr("prov.live_sub", "runs spend the free-model quota and do the work; keep this server running while a task executes")}</span>`
+    : `<span> · ${tr("prov.demo_sub", "this server answers with canned outputs — nothing pressed here can genuinely finish; use the live server for real work")}</span>`));
+  setHTML("runProvider", pill(""));
 }
 
 /* ---------------- state ---------------- */
@@ -1952,6 +2004,13 @@ async function route() {
       clearInterval(watchTimer); watchTimer = null;
     }
   }
+  // The register poller belongs to the Give work list; anywhere else it is
+  // requests spent proving nothing.
+  if (r.name !== "give") {
+    if (typeof givePoll !== "undefined" && givePoll) {
+      clearInterval(givePoll); givePoll = null;
+    }
+  }
   const mine = ++renderToken;
   for (const name of Object.keys(ROUTES)) {
     const el = $("view-" + (name === "project" ? "projects" : name === "approval" ? "work" : name === "agent" ? "agents" : name));
@@ -1977,6 +2036,7 @@ async function route() {
   try {
     if (mine !== renderToken) return;   // a newer navigation won
     await render(r, mine);
+    paintProvider();
   } catch (err) {
     if (mine !== renderToken) return;
     showError(err);
@@ -2905,12 +2965,27 @@ async function renderGive(id) {
         <span class="t-${waitingTone(it.waiting_on) || "muted"}">${esc(it.waiting_on === "you" ? tr("row.you", "you") : it.waiting_on === "an_agent" ? tr("row.agent", "an agent") : tr("row.settled", "settled"))}</span>
       </div>
     </div>`).join(""));
+  // Keep watching while the list is on screen; route() stops it on leave.
+  watchGive();
 }
 
 /* ================= task banner, steps, and the full-text sheet =================
    Three things the task page was missing, in the order a boss asks: what happened (the
    banner), what did each hand do (the steps), and what exactly did it say (the sheet).
    ================================================================== */
+
+/* Poll the register while Give work is open, so progress arrives without a
+   reload. Ten seconds: runs are minutes long, and the stream already redraws
+   the tree and the feed on every frame — this covers the register and the
+   tiles, which only a fetch refreshes. Stops the moment the screen is left. */
+let givePoll = null;
+function watchGive() {
+  if (givePoll) clearInterval(givePoll);
+  givePoll = setInterval(async () => {
+    if (parseHash().name !== "give" || parseHash().arg) return;
+    try { await renderGive(); } catch { /* the next tick retries */ }
+  }, 10000);
+}
 
 /** One status banner for the open task. The failure reason used to live only in a list
     truncation and a button tooltip; here it is the first thing on the screen. */
@@ -3207,7 +3282,7 @@ async function renderOneTask(id) {
   $("taskLogSub").textContent = t_fmt("task.log_sub", "{n} event(s)", { n: (d.events || []).length });
   setHTML("taskLog", (d.events || []).map((e) => `
     <div class="row static feed-row">
-      <span class="feed-dot"></span>
+      <span class="feed-dot ${feedKind(e)}"></span>
       <div class="grow"><div class="s" style="font-size:12px">${eventLine(e)}</div></div>
       <div class="r"><span class="s">${esc(ago(e.occurred_at))}</span></div>
     </div>`).join(""));
@@ -3415,6 +3490,15 @@ const EVENT_LINES = [
   [/lesson|procedure|skill/i, () => tr("feed.learned", "the agent wrote down what it learned")],
 ];
 
+/** The dot color for a feed row: failure red, finish green, refusal amber. */
+function feedKind(ev) {
+  const type = String(ev.type || "");
+  if (/fail|error/i.test(type)) return "bad";
+  if (/complet/i.test(type)) return "ok";
+  if (/refus|reject|escalat/i.test(type)) return "warn";
+  return "";
+}
+
 function eventLine(ev) {
   const v = ev.view || {};
   const at = ev.occurred_at ? ago(ev.occurred_at) : "";
@@ -3437,7 +3521,7 @@ function renderActivity() {
     const at = ev.occurred_at ? ago(ev.occurred_at) : "";
     const v = ev.view || {};
     return `<div class="row static feed-row">
-      <span class="t-good feed-dot"></span>
+      <span class="feed-dot ${feedKind(ev)}"></span>
       <div class="grow"><div class="s" style="font-size:12px">${eventLine(ev)}</div></div>
       <div class="r"><span class="s">${esc(at)}</span>
         ${v.task_id ? `<span class="pill">${esc(String(v.task_id).slice(-6))}</span>` : ""}</div>
@@ -3470,16 +3554,21 @@ function renderFlow() {
 function nodeEl(n) {
   const el = document.createElement("li");
   const div = document.createElement("div");
-  div.className = "node";
-  div.innerHTML = `<span class="id">${esc((n.id || "").slice(0, 8))}</span>`
-    + `<span class="${n.lifecycle_status === "failed" ? "t-bad" : n.lifecycle_status === "delegated" ? "t-deleg" : ""}">`
-    + `${esc(n.lifecycle_status || "pending")}</span>`
-    + `<span style="color:var(--text-2)">${esc(n.goal || n.title || "")}</span>`;
+  const st = n.lifecycle_status || "pending";
+  div.className = "node st-" + st;
+  const pill = st === "completed" ? "ok" : st === "failed" ? "bad"
+    : st === "rejected" ? "wait" : st === "delegated" ? "delegated" : "";
+  const kids = (n.children || []).length;
+  div.innerHTML = `<div class="t">${esc(n.goal || n.title || tr("flow.untitled", "untitled work"))}</div>`
+    + `<div class="m"><span class="pill ${pill}">${esc(st)}</span>`
+    + (n.when ? `<span>${esc(ago(n.when))}</span>` : "")
+    + (kids ? `<span>${esc(tr_fmt("flow.hands", "{n} hand(s) below", { n: kids }))}</span>` : "")
+    + `</div>`;
   el.appendChild(div);
-  const kids = (n.children || []).map((c) => state.tasks.get(c)).filter(Boolean);
-  if (kids.length) {
+  const kidObjs = (n.children || []).map((c) => state.tasks.get(c)).filter(Boolean);
+  if (kidObjs.length) {
     const ul = document.createElement("ul");
-    kids.forEach((k) => ul.appendChild(nodeEl(k)));
+    kidObjs.forEach((k) => ul.appendChild(nodeEl(k)));
     el.appendChild(ul);
   }
   return el;
@@ -3560,17 +3649,20 @@ function handleFrame(payload) {
       const child = state.tasks.get(childId) || { id: childId, children: [] };
       child.parent_task_id = parentId;
       child.goal = v.title || child.goal || "";
+      child.when = ev.occurred_at || child.when || "";
       child.lifecycle_status = ev.type.includes("completed") ? "completed"
         : ev.type.includes("rejected") ? "rejected"
         : ev.type.includes("failed") ? "failed" : "delegated";
       state.tasks.set(childId, child);
       const parent = state.tasks.get(parentId)
         || { id: parentId, children: [], goal: v.parent_title || "", lifecycle_status: "running" };
+      parent.when = parent.when || ev.occurred_at || "";
       if (!parent.children.includes(childId)) parent.children.push(childId);
       state.tasks.set(parentId, parent);
     } else if (v.task_id) {
       const node = state.tasks.get(v.task_id) || { id: v.task_id, children: [] };
       node.goal = v.title || node.goal || "";
+      node.when = ev.occurred_at || node.when || "";
       node.lifecycle_status = ev.type.endsWith("completed") ? "completed"
         : ev.type.endsWith("failed") ? "failed" : "running";
       state.tasks.set(v.task_id, node);

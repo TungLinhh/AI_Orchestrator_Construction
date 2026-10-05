@@ -402,6 +402,13 @@ async def ui(org: str | None = Query(default=None, max_length=64)) -> HTMLRespon
         # migration head: the one thing that identifies this deployment against
         # another with the same code.
         .replace("__BUILD__", _build_stamp())
+        # The model provider behind Run. A console whose button promises "runs
+        # on the free model" while the server answers with a scripted fake is
+        # the exact lie this product exists to kill: every task the chairman
+        # ran ended `output_contract_unmet` producing `proposal_count,
+        # scripted`, and nothing could ever have succeeded. The page wears the
+        # provider on its sleeve so the mode is never in doubt.
+        .replace("__PROVIDER__", get_settings().model_provider_default)
     )
     return HTMLResponse(
         html,

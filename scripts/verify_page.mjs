@@ -608,9 +608,10 @@ check("nothing is coerced into markup by joining nodes",
 check("every element the page writes to exists",
   ["giveList", "giveFilter", "giveEmpty", "activity", "unitWorkSub", "unitWorkEmpty",
    "workList", "workFilter", "workSub", "workEmpty", "taskAnswer", "taskAnswerSub",
-   "taskAnswerCopy", "taskAnswerEmpty", "deptSearch", "deptOfficeFilter", "deptNoMatch"]
+   "taskAnswerCopy", "taskAnswerEmpty", "deptSearch", "deptOfficeFilter", "deptNoMatch",
+   "providerPill", "runProvider", "flowCount", "flowEmpty", "activityEmpty"]
     .every((id) => idsInMarkup.includes(id)),
-  "give/work/unit/answer/dept-filter ids all present");
+  "give/work/unit/answer/dept-filter/provider/flow ids all present");
 /* The end-product shape, asserted as structure rather than taste: one nav link per
    screen, the work form before the workflow log, an answer card on the task view,
    and a finder on the organisation view. */
@@ -647,6 +648,22 @@ check("every chrome string has a Vietnamese entry", i18nMissing.length === 0,
   i18nMissing.length ? `missing: ${i18nMissing.join(", ")}` : `${i18nUsed.size} keys, all translated`);
 check("the Vietnamese catalogue is substantial, not a stub",
   i18nDefined.size >= 150, `${i18nDefined.size} entries`);
+/* The provider is worn on the sleeve: the served document carries which runtime
+   answers Run, and both run controls have a pill for it. A console whose button
+   promises a model while the server runs a script is the lie this kills — every
+   chairman-run task failed `output_contract_unmet` producing `proposal_count,
+   scripted`, and nothing could ever have succeeded. */
+check("the served page names its provider", /const PROVIDER = "(fake|openrouter)"/.test(html),
+  (html.match(/const PROVIDER = "([^"]*)"/) || [])[1] || "no provider baked in");
+check("both run controls carry the provider pill",
+  idsInMarkup.includes("providerPill") && idsInMarkup.includes("runProvider"),
+  "give + task run cards");
+/* The workflow tree is cards on a rail, not bare bullets: the styles exist in
+   the served document and a node carries a status class, a title and a meta
+   line instead of a raw id slice. */
+check("the workflow tree has card styles, not browser bullets",
+  /\.tree\s*\{[^}]*list-style:\s*none/.test(html) && /\.node\.st-completed/.test(html),
+  ".tree reset + status rails");
 console.log("runtime:");
 check("the script loaded without throwing", uncaught === null, uncaught?.message);
 check("requests were made", fetched > 0, `${fetched} fetches`);

@@ -7959,3 +7959,20 @@ which replaced the parent view while the shim's flat nodes kept their old
 content, so the queue tiles still passed and only the empty list failed. The
 helper is now `tr()`; nothing in JS shares the name. Lesson: a render that
 throws must fail its own screen's checks, not just downstream ones.
+
+### F286
+
+**A Run button wired to a runtime that cannot do the work.**
+
+Every task the chairman ran from the console failed — `output_contract_unmet`
+producing `proposal_count, scripted`, or `no_delegation`, or `infrastructure`
+after a restart killed the background run. The serving API ran with
+`model_provider_default=fake`: the button promised "runs on the free model"
+while the server answered with a canned script. Nothing pressed there could
+ever have genuinely finished, and the failure reasons blamed the departments.
+
+Two fixes, both structural: `make serve` starts a second API on a real model
+(`openrouter`) on its own port, keeping `make page` on the fake for fast
+deterministic verification; and the served page carries `__PROVIDER__` with a
+pill on both run controls — "Live model" or "Simulated runs" with what that
+means — so the mode is never in doubt again.
