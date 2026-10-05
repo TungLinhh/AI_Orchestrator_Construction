@@ -256,6 +256,54 @@ RETURNING x.task_id
 """
 
 
+#: Executions that started long ago on a task that never moved since.
+#:
+#: The gap `_STALE_EXECUTIONS` and `_ABANDONED_TASKS` leave between them: a task
+#: still `running` with an execution still `running`, both untouched for a day.
+#: The execution cannot be genuinely working — no run this platform has ever
+#: measured lasted even an hour — and the task cannot be reaped while the
+#: execution claims it, nor abandoned while the execution started inside the
+#: window. Six identical complaint tasks sat `running` for a day on the live
+#: tenant in exactly this state, and the register showed them as work in flight.
+#:
+#: The window is deliberately wider than the stranded-box window: six hours,
+#: against a longest observed free-model run of ~22 minutes. Closing a run
+#: that is genuinely working throws away up to 67,000 tokens of work, so the
+#: margin is measured in multiples of the worst case, not in minutes past it.
+#: A live run started inside the window is untouched, whatever the task says.
+#:
+#: This closes the *execution* only, like its terminal-state sibling: the task
+#: stays `running` with no live execution, which is precisely the shape
+#: `_ABANDONED_TASKS` already fails as infrastructure on the same sweep. Two
+#: steps converging, each safe and idempotent on its own.
+STALE_EXECUTION_AFTER_SECONDS = 6 * 3_600
+
+_STALE_RUNNING_EXECUTIONS = """
+UPDATE executions e
+SET status = 'failed',
+    error_message = :reason,
+    error_kind = 'runtime_unavailable',
+    error_category = 'infrastructure',
+    finished_at = :now
+WHERE e.id IN (
+    SELECT x.id
+    FROM executions x
+    JOIN tasks t ON t.id = x.task_id AND t.organization_id = x.organization_id
+    WHERE x.organization_id = CAST(:o AS varchar(64))
+      AND x.status = 'running'
+      AND x.started_at < :since
+      AND t.status NOT IN ('completed', 'failed', 'cancelled', 'blocked')
+      AND t.updated_at < :since
+)
+RETURNING e.task_id
+"""
+
+STALE_RUNNING_EXECUTION_REASON = (
+    "the run started long ago and neither it nor its task has moved since: no worker "
+    "is working on it. Closed by the sweep rather than left to make the platform claim "
+    "somebody is working on it; the task itself is failed separately as infrastructure."
+)
+
 #: A task nobody is holding and nobody will hold.
 #:
 #: `created` / `assigned` / `running`, older than the window, with **no** execution
@@ -420,6 +468,45 @@ async def reap_stranded_executions(
                 "in flight; closed by the stranded-execution sweep rather than left to make "
                 "the platform claim somebody is working on it"
             ),
+        },
+    )
+    return [row[0] for row in result.fetchall()]
+
+
+async def fail_stale_running_executions(
+    conn: AsyncConnection,
+    *,
+    organization_id: str,
+    now: dt.datetime,
+    older_than_s: int = STALE_EXECUTION_AFTER_SECONDS,
+) -> list[str]:
+    """Close runs that started long ago on a task that never moved, and return task ids.
+
+    The sibling above needs a terminal task; this one needs old age on *both* sides.
+    A run that started inside the window is untouched whatever the task says, and a
+    task that moved inside the window keeps its run — a live long run updates
+    neither condition, so neither condition alone would be safe to act on.
+
+    Safe to run twice: the `UPDATE` matches only `running` rows, so a second sweep
+    finds nothing. Run before `abandon_unclaimed_tasks` on the same sweep: a task
+    left `running` with no live execution is precisely what that step fails as
+    infrastructure, so one sweep converges instead of two.
+    """
+    if now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError(
+            "fail_stale_running_executions(now=...) must be timezone-aware; "
+            "executions.started_at is timestamptz."
+        )
+    if older_than_s < 0:
+        raise ValueError(f"older_than_s must be >= 0, got {older_than_s}")
+    since = now - dt.timedelta(seconds=older_than_s)
+    result = await conn.execute(
+        text(_STALE_RUNNING_EXECUTIONS),
+        {
+            "o": organization_id,
+            "now": now,
+            "since": since,
+            "reason": STALE_RUNNING_EXECUTION_REASON,
         },
     )
     return [row[0] for row in result.fetchall()]
@@ -616,8 +703,10 @@ async def _audit(
 __all__ = [
     "ABANDONED_REASON",
     "REAPABLE_STATUSES",
+    "STALE_EXECUTION_AFTER_SECONDS",
     "ReapReport",
     "abandon_unclaimed_tasks",
+    "fail_stale_running_executions",
     "reap",
     "reap_stranded_executions",
 ]

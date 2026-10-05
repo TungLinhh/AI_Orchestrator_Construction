@@ -86,6 +86,7 @@ async def _task(
     status: str = "failed",
     last_error: str | None = "the agent exceeded its turn budget and was stopped",
     category: str | None = "budget_exhausted",
+    at: dt.datetime = NOW,
 ) -> str:
     suffix = _suffix(title)
     task_id = f"tsk_{tenant.organization_id[-8:]}_{suffix}"
@@ -102,14 +103,16 @@ async def _task(
             "dedup_key": f"fp{suffix}",
             "last_error": last_error,
             "category": category,
-            "now": NOW,
+            "now": at,
         },
     )
     await tenant.commit()
     return task_id
 
 
-async def _running_execution(tenant: Tenant, *, task_id: str, tag: str) -> str:
+async def _running_execution(
+    tenant: Tenant, *, task_id: str, tag: str, at: dt.datetime = NOW
+) -> str:
     agent_id = str(
         (
             await tenant.session.execute(
@@ -129,7 +132,7 @@ async def _running_execution(tenant: Tenant, *, task_id: str, tag: str) -> str:
             "org": tenant.organization_id,
             "task": task_id,
             "agent": agent_id,
-            "now": NOW,
+            "now": at,
         },
     )
     await tenant.commit()
@@ -231,6 +234,119 @@ class TestTheStrandedExecutionSweep:
     async def test_a_naive_clock_is_refused(self, tenant: Tenant) -> None:
         with pytest.raises(ValueError, match="timezone-aware"):
             await reap_stranded_executions(
+                tenant.session,
+                organization_id=tenant.organization_id,
+                now=dt.datetime(2026, 9, 28, 12, 0),
+            )
+
+
+class TestTheStaleRunningSweep:
+    """Runs that started long ago on a task that never moved.
+
+    Measured on the live tenant: identical complaint tasks sat `running` for a
+    day with `running` executions nobody owned — too old for a worker to hold,
+    too "live" for either of the other two steps. Three rules hold this from
+    being a blunt instrument: a run started inside the window survives whatever
+    the task says; a task that moved inside the window keeps its run; and a
+    second sweep finds nothing.
+    """
+
+    OLD = dt.datetime(2026, 9, 20, 12, 0, tzinfo=dt.UTC)
+
+    async def test_it_closes_a_run_nobody_owns(self, seeded: Tenant) -> None:
+        from ai_orchestrator.application.task_reaper import fail_stale_running_executions
+
+        task_id = await _task(
+            seeded,
+            title="Dead run, old task",
+            status="running",
+            last_error=None,
+            category=None,
+            at=self.OLD,
+        )
+        await _running_execution(seeded, task_id=task_id, tag="stale1", at=self.OLD)
+
+        failed = await fail_stale_running_executions(
+            seeded.session, organization_id=seeded.organization_id, now=NOW
+        )
+        await seeded.commit()
+        assert task_id in failed
+
+        status = (
+            await seeded.session.execute(
+                text("SELECT status FROM executions WHERE task_id = CAST(:t AS varchar(64))"),
+                {"t": task_id},
+            )
+        ).scalar_one()
+        assert status == "failed", "the run must not still claim to be in flight"
+
+    async def test_a_fresh_run_survives_whatever_the_task_says(self, seeded: Tenant) -> None:
+        from ai_orchestrator.application.task_reaper import fail_stale_running_executions
+
+        task_id = await _task(
+            seeded,
+            title="Fresh run, old task",
+            status="running",
+            last_error=None,
+            category=None,
+            at=self.OLD,
+        )
+        await _running_execution(seeded, task_id=task_id, tag="stale2", at=NOW)
+
+        failed = await fail_stale_running_executions(
+            seeded.session, organization_id=seeded.organization_id, now=NOW
+        )
+        await seeded.commit()
+        assert task_id not in failed
+
+    async def test_a_moved_task_keeps_its_run(self, seeded: Tenant) -> None:
+        from ai_orchestrator.application.task_reaper import fail_stale_running_executions
+
+        task_id = await _task(
+            seeded,
+            title="Old run, moved task",
+            status="running",
+            last_error=None,
+            category=None,
+            at=NOW,
+        )
+        await _running_execution(seeded, task_id=task_id, tag="stale3", at=self.OLD)
+
+        failed = await fail_stale_running_executions(
+            seeded.session, organization_id=seeded.organization_id, now=NOW
+        )
+        await seeded.commit()
+        assert task_id not in failed
+
+    async def test_running_it_twice_changes_nothing(self, seeded: Tenant) -> None:
+        from ai_orchestrator.application.task_reaper import fail_stale_running_executions
+
+        task_id = await _task(
+            seeded,
+            title="Swept twice stale",
+            status="running",
+            last_error=None,
+            category=None,
+            at=self.OLD,
+        )
+        await _running_execution(seeded, task_id=task_id, tag="stale4", at=self.OLD)
+
+        first = await fail_stale_running_executions(
+            seeded.session, organization_id=seeded.organization_id, now=NOW
+        )
+        await seeded.commit()
+        second = await fail_stale_running_executions(
+            seeded.session, organization_id=seeded.organization_id, now=NOW
+        )
+        await seeded.commit()
+        assert task_id in first
+        assert second == [], "idempotent by construction, not by bookkeeping"
+
+    async def test_a_naive_clock_is_refused(self, tenant: Tenant) -> None:
+        from ai_orchestrator.application.task_reaper import fail_stale_running_executions
+
+        with pytest.raises(ValueError, match="timezone-aware"):
+            await fail_stale_running_executions(
                 tenant.session,
                 organization_id=tenant.organization_id,
                 now=dt.datetime(2026, 9, 28, 12, 0),

@@ -840,6 +840,13 @@ try {
 
     check("the task detail rendered", $("taskTitle").textContent.length > 0,
       $("taskTitle").textContent);
+    /* Visibility, not just content. The detail wrote into a hidden section
+       while the router showed the list — every content check passed and no
+       person could reach their task. A task that is only in the DOM is not
+       on the screen. */
+    check("the detail screen is the one on screen, not the list",
+      $("view-task").hidden === false && $("view-give").hidden === true,
+      `task hidden=${$("view-task").hidden} give hidden=${$("view-give").hidden}`);
     check("the delegation tree is there", /class="row/.test($("taskTree").innerHTML),
       `${($("taskTree").innerHTML.match(/class="row/g) || []).length} rows`);
     check("the log is there", $("taskLog").innerHTML.length >= 0,
@@ -971,6 +978,9 @@ try {
     await new Promise((r) => setTimeout(r, 1500));
     check("leaving a task releases its detail", $("taskTree").innerHTML.length === 0,
       `${$("taskTree").innerHTML.length} chars still alive`);
+    check("and the list is the screen again",
+      $("view-give").hidden === false && $("view-task").hidden === true,
+      `give hidden=${$("view-give").hidden} task hidden=${$("view-task").hidden}`);
     check("and the queue is there to come back to", /class="row/.test($("giveList").innerHTML));
     /* The live feed, asserted **here** rather than in the structure block: it is drawn
        by `renderGive`, so on the Departments screen it is legitimately still empty and a

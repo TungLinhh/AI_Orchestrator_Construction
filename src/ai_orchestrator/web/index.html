@@ -2908,7 +2908,19 @@ function delegationGraph(root, tree, delegations) {
 }
 
 async function renderGive(id) {
-  if (id) return renderOneTask(id);
+  // **The detail screen is a screen, not a fill.** `renderOneTask` wrote into
+  // `view-task` while the router had shown `view-give`, so every task opened
+  // from the register showed the global list under a breadcrumb naming the
+  // task — the workflow tree full of unrelated work, the task itself nowhere.
+  // The checks read the nodes either way and stayed green; a person could not
+  // reach their task at all. Visibility is asserted now, not just content.
+  if (id) {
+    $("view-give").hidden = true;
+    $("view-task").hidden = false;
+    return renderOneTask(id);
+  }
+  $("view-task").hidden = true;
+  $("view-give").hidden = false;
 
   // Leaving a task releases its detail -- the same rule the project and document views
   // hold, and `verify-page` checks it on each. A stale panel under a fresh list is how a

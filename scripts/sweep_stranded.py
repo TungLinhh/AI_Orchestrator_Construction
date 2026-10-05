@@ -46,6 +46,7 @@ from sqlalchemy import text  # noqa: E402
 from ai_orchestrator.application.fleet_view import STUCK_AFTER_SECONDS  # noqa: E402
 from ai_orchestrator.application.task_reaper import (  # noqa: E402
     abandon_unclaimed_tasks,
+    fail_stale_running_executions,
     reap_stranded_executions,
 )
 from ai_orchestrator.approvals.service import ApprovalService  # noqa: E402
@@ -71,6 +72,18 @@ async def sweep(organization_id: str | None) -> int:
         async with db.tenant_session(organization_id) as session:
             now = dt.datetime.now(tz=dt.UTC)
             closed = await reap_stranded_executions(
+                session, organization_id=organization_id, now=now
+            )
+            # **Runs that started long ago on a task that never moved.**
+            #
+            # Measured on the live tenant: six identical complaint tasks sat
+            # `running` for a day with `running` executions nobody owned. Too old
+            # for a worker to still hold, too "live" for either of the other two
+            # steps: the terminal-state sibling needs a finished task, and the
+            # abandoned step needs no execution started inside its window. This
+            # closes the run; the abandoned step below then fails the task left
+            # with no live execution, so one sweep converges instead of two.
+            stale_runs = await fail_stale_running_executions(
                 session, organization_id=organization_id, now=now
             )
             # **Tasks nobody ever claimed.**
@@ -140,6 +153,7 @@ async def sweep(organization_id: str | None) -> int:
         ).scalar()
     print(
         f"  org {organization_id}: closed {len(closed)} stranded execution(s), "
+        f"failed {len(stale_runs)} stale running execution(s), "
         f"expired {len(expired)} unanswered approval(s), "
         f"abandoned {len(abandoned)} unclaimed task(s)"
     )

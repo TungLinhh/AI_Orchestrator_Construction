@@ -7976,3 +7976,28 @@ Two fixes, both structural: `make serve` starts a second API on a real model
 deterministic verification; and the served page carries `__PROVIDER__` with a
 pill on both run controls — "Live model" or "Simulated runs" with what that
 means — so the mode is never in doubt again.
+
+### F287
+
+**A task detail page nobody could ever see.**
+
+`renderOneTask` wrote into `view-task` while the router had shown `view-give`,
+so opening any task from the register showed the global workflow tree under a
+breadcrumb naming the task: unrelated work, the task itself nowhere. Every
+content check passed — they read the nodes either way — while no person could
+reach their task at all. A screenshot showed it, no test did. `renderGive`
+now swaps the sections, and two checks assert visibility (`hidden`), not just
+content. Lesson, third time: a thing only in the DOM is not on the screen.
+
+### F288
+
+**`running` tasks with `running` executions nobody owned.**
+
+Six identical tasks sat `running` for a day, each with a `running` execution
+from a dead worker. Too old for anyone to hold, too "live" for either sweep
+step: the terminal-state sibling needs a finished task, and the abandoned step
+needs no execution started inside its window. `fail_stale_running_executions`
+closes runs older than six hours on tasks untouched for six hours — a fresh
+run survives whatever the task says, a moved task keeps its run — and the
+abandoned step then fails the task left with no live execution, so one sweep
+converges instead of two.
