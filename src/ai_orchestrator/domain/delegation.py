@@ -272,6 +272,21 @@ def require_delegation_allowed(**kwargs: object) -> DelegationLimits:
     return verdict.effective_limits
 
 
+def goal_intent_refusal(*, issued: set[str], intent: str, limit: int) -> str:
+    """Bound distinct work across a whole goal without merging different requests.
+
+    Completed work still consumes its slot; a review retry uses the same identity.
+    A new goal has its own envelope, so history cannot exhaust the organisation.
+    """
+    if intent not in issued and len(issued) >= limit:
+        return (
+            f"goal distinct intents {len(issued)} reached the limit of {limit}. "
+            "No office can open another intent for this goal. Stop delegating and "
+            "finish the work already handed out."
+        )
+    return ""
+
+
 # -------------------------------------------------------- duplicate detection --
 #: How many leading normalised tokens identify an instruction. Migration `0026` carries the
 #: measurement.

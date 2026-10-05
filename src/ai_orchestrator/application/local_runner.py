@@ -201,22 +201,13 @@ async def _run(organization_id: str, task_id: str, agent_id: str) -> None:
     `tenant_session` wraps `session.begin()` (F102's third appearance: committing inside it
     ends it permanently).
     """
-    from ai_orchestrator.application.task_execution import TaskExecutionService
-    from ai_orchestrator.worker_runtime import build_runtime
+    from ai_orchestrator.application.pipeline import run_pipeline
 
     key = (organization_id, task_id)
     db = Database.from_settings()
     try:
-        async with db.tenant_session(organization_id) as session:
-            service = TaskExecutionService(session, organization_id, runtime=build_runtime())
-            outcome = await service.execute_task(task_id, agent_id=agent_id)
-            logger.info(
-                "local run finished task=%s status=%s tokens=%s ms=%s",
-                task_id,
-                outcome.status,
-                outcome.tokens,
-                outcome.duration_ms,
-            )
+        outcome = await run_pipeline(db, organization_id, task_id, root_agent_id=agent_id)
+        logger.info("local goal finished task=%s outcome=%s", task_id, outcome.summary())
     except Exception:
         logger.exception("local run failed task=%s", task_id)
     finally:
@@ -239,6 +230,32 @@ async def shutdown() -> None:
             await task
     _running.clear()
     _in_flight.clear()
+
+
+async def continue_goal(organization_id: str, task_id: str) -> RunHandle:
+    """After the decision commits, wake the whole goal through its real parent chain."""
+    db = Database.from_settings()
+    try:
+        async with db.tenant_session(organization_id) as session:
+            root_id: str = (
+                await session.execute(
+                    text("""
+                WITH RECURSIVE ancestors AS (
+                    SELECT id, parent_task_id FROM tasks
+                    WHERE organization_id = :org AND id = :task
+                    UNION
+                    SELECT t.id, t.parent_task_id FROM tasks t
+                    JOIN ancestors a ON a.parent_task_id = t.id
+                    WHERE t.organization_id = :org
+                )
+                SELECT id FROM ancestors WHERE parent_task_id IS NULL
+            """),
+                    {"org": organization_id, "task": task_id},
+                )
+            ).scalar_one()
+            return await start(session, organization_id=organization_id, task_id=str(root_id))
+    finally:
+        await db.dispose()
 
 
 async def is_running(organization_id: str, task_id: str) -> bool:

@@ -21,6 +21,7 @@ waiting task from a refused one.
 from __future__ import annotations
 
 import contextlib
+import copy
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -88,7 +89,7 @@ from ai_orchestrator.domain.output_contract import (
 )
 from ai_orchestrator.domain.procedure import describe
 from ai_orchestrator.domain.state_machines import Transition
-from ai_orchestrator.persistence.models import Agent, AgentDefinition, Role, Task
+from ai_orchestrator.persistence.models import Agent, AgentDefinition, Approval, Role, Task
 from ai_orchestrator.persistence.repositories.organization import (
     AgentCapabilityRepository,
     AgentDefinitionRepository,
@@ -433,6 +434,50 @@ class TaskExecutionService:
         started = time.monotonic()
         task = await self._tasks.get(task_id)
 
+        # Every entry point must honor the current review, including a direct
+        # activity retry. A previous approval cannot authorize a later stage.
+        if task.status == TaskStatus.WAITING_FOR_APPROVAL.value:
+            review = (
+                await self._session.execute(
+                    select(Approval)
+                    .where(
+                        Approval.organization_id == self._org,
+                        Approval.task_id == task_id,
+                        Approval.action_type == "task.continue",
+                    )
+                    .order_by(Approval.created_at.desc(), Approval.id.desc())
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            if review is not None and review.status == "approved":
+                from ai_orchestrator.approvals.service import ApprovalService
+
+                await ApprovalService(self._session, self._org).verify_payload(
+                    str(review.id),
+                    review.action_payload or {},
+                )
+                task = await self._tasks.transition(task_id, Transition.APPROVAL_GRANTED)
+            elif review is not None and review.status == "rejected":
+                task = await self._tasks.transition(
+                    task_id,
+                    Transition.APPROVAL_REJECTED,
+                    error=review.decision_note or "A human refused the requested review",
+                    failure_category="approval_rejected",
+                )
+                return ExecutionOutcome(
+                    task_id=task_id,
+                    status=TaskStatus.FAILED,
+                    summary=task.last_error or "",
+                    failure_category="approval_rejected",
+                )
+            else:
+                return ExecutionOutcome(
+                    task_id=task_id,
+                    status=TaskStatus.WAITING_FOR_APPROVAL,
+                    summary=review.reason if review else "Waiting for a human review",
+                    needs_approval=True,
+                )
+
         # --- dependencies -------------------------------------------------
         blocking = await self._tasks.unsatisfied_dependencies(task_id)
         if blocking:
@@ -524,6 +569,9 @@ class TaskExecutionService:
                 task, exc.message, exc.category.value, execution_id=execution.id
             )
 
+        execution.skill_versions = {
+            str(skill.skill_id): skill.version for skill in context.authorized_skills
+        }
         await self._audit.record(
             actor=context.actor,
             action="task.execute",
@@ -979,6 +1027,7 @@ class TaskExecutionService:
             action_payload={
                 "task_id": str(task.id),
                 "summary": what,
+                "output": copy.deepcopy(dict(result.output or {})),
                 "proposed_actions": list(result.follow_up_actions or []),
             },
             # The agent that asked, not the person who will answer. An approval
@@ -1829,6 +1878,42 @@ class TaskExecutionService:
 
         roster = await self._delegate_roster(resolved)
         delegate_options = await self._delegate_options(resolved)
+        approved_reviews = (
+            (
+                await self._session.execute(
+                    select(Approval)
+                    .where(
+                        Approval.organization_id == self._org,
+                        Approval.task_id == str(task.id),
+                        Approval.action_type == "task.continue",
+                        Approval.status == "approved",
+                    )
+                    .order_by(Approval.created_at, Approval.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        from ai_orchestrator.approvals.service import ApprovalService
+
+        for review in approved_reviews:
+            await ApprovalService(self._session, self._org).verify_payload(
+                str(review.id), review.action_payload or {}
+            )
+        task_input = {
+            **dict(task.input or {}),
+            # Always overwrite caller input: a model cannot forge a human receipt.
+            "approved_human_reviews": [
+                {
+                    "approval_id": str(review.id),
+                    "decision": "approved",
+                    "output": copy.deepcopy((review.action_payload or {}).get("output", {})),
+                    "summary": str((review.action_payload or {}).get("summary") or review.reason),
+                    "decided_at": review.decided_at.isoformat() if review.decided_at else None,
+                }
+                for review in approved_reviews
+            ],
+        }
         return ContextBuilder().build(
             ContextBuilderInput(
                 actor=actor_for_agent(
@@ -1838,7 +1923,7 @@ class TaskExecutionService:
                     role_id=resolved.role.id,
                     display_name=resolved.agent.name,
                 ),
-                task=self._to_agent_task(task),
+                task=self._to_agent_task(task, task_input),
                 system_instructions=resolved.definition.system_instructions,
                 role_name=resolved.role.name,
                 delegate_targets=roster,
@@ -2032,6 +2117,31 @@ class TaskExecutionService:
         # same reason.
         final_status = TaskStatus(task.status)
 
+        if result.status in {
+            AgentResultStatus.COMPLETED,
+            AgentResultStatus.NEEDS_APPROVAL,
+        } and not (context.delegate_options or context.delegate_targets):
+            from ai_orchestrator.domain.human_exceptions import pending_human_review
+
+            pending = pending_human_review(
+                output=dict(result.output or {}),
+                schema=task.expected_output_schema or {},
+                approved_outputs=tuple(
+                    receipt["output"]
+                    for receipt in context.task.input.get("approved_human_reviews", [])
+                    if isinstance(receipt.get("output"), dict)
+                ),
+            )
+            if pending:
+                reason, draft = pending
+                result = result.model_copy(
+                    update={
+                        "status": AgentResultStatus.NEEDS_APPROVAL,
+                        "summary": reason,
+                        "output": draft,
+                    }
+                )
+
         # Delegated work exists below this task, so the parent cannot be
         # `completed`: the state machine has no such transition, and inventing
         # one would let a goal close with its children still open.
@@ -2173,6 +2283,8 @@ class TaskExecutionService:
                         task,
                         describe_mismatch(repaired, task.expected_output_schema),
                         "output_contract_unmet",
+                        execution_id=execution_id,
+                        started=started,
                     )
             if result.output:
                 await self._tasks.set_output(task.id, result.output)
@@ -2196,6 +2308,8 @@ class TaskExecutionService:
                 task = await self._tasks.transition(task.id, Transition.COMPLETE)
                 final_status = TaskStatus(task.status)
         elif result.status is AgentResultStatus.NEEDS_APPROVAL:
+            if result.output:
+                await self._tasks.set_output(task.id, result.output)
             task = await self._tasks.transition(task.id, Transition.REQUEST_APPROVAL)
             final_status = TaskStatus(task.status)
             # The task pausing is not the same as a person being asked. Without
@@ -2239,6 +2353,9 @@ class TaskExecutionService:
         # branches below had set it -- so it compared the status the task *started*
         # in and never fired. A hook placed near the event it reacts to is not the
         # same thing as a hook placed before the event is decided.
+        from ai_orchestrator.application.learning_revert import revert_falsified_skills
+
+        await revert_falsified_skills(self._session, self._org, task, execution_id)
         if final_status is TaskStatus.COMPLETED:
             await self._learn_if_approved(task)
 
@@ -2370,6 +2487,9 @@ class TaskExecutionService:
         await self._tasks.transition(
             task.id, Transition.FAIL, error=message[:2000], failure_category=category
         )
+        from ai_orchestrator.application.learning_revert import revert_falsified_skills
+
+        await revert_falsified_skills(self._session, self._org, task, execution_id)
         # `exc_info` so an `internal_error` carries the frame that raised it. The
         # message alone named the symptom -- `AttributeError: 'AgentTask' object has
         # no attribute 'title'` -- and gave no way to find which of several hundred

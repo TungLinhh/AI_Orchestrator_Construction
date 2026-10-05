@@ -31,6 +31,7 @@ from ai_orchestrator.application.pipeline import run_pipeline
 from ai_orchestrator.application.scenarios import SCENARIOS, agent_for
 from ai_orchestrator.config.settings import get_settings
 from ai_orchestrator.domain.enums import RunMode
+from ai_orchestrator.domain.output_contract import schema_from_fields
 from ai_orchestrator.persistence.models import Agent
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.persistence.session import Database
@@ -58,14 +59,7 @@ async def _create_root(
             task_type="coordination",
             requester_type="human",
             owner_agent_id=chief.id,
-            expected_output_schema=(
-                {
-                    "required": sorted(contract),
-                    "field_meaning": contract,
-                }
-                if contract
-                else None
-            ),
+            expected_output_schema=schema_from_fields(contract),
             # The office is told which office and department own this, and each
             # tier passes it down. It is *not* a substitute for the model being
             # able to route: the roster still has to be read and the right
@@ -83,6 +77,7 @@ async def main(
     key: str | None,
     max_exec: int,
     resume: str | None = None,
+    concurrency: int | None = None,
 ) -> int:
     scenario = next((s for s in SCENARIOS if s.key == key), None) if key else None
     if key and scenario is None:
@@ -107,6 +102,7 @@ async def main(
             org_id,
             resume,
             max_executions=max_exec,
+            concurrency=concurrency,
             run_mode=RunMode.LIVE,
         )
         try:
@@ -185,6 +181,7 @@ async def main(
             org_id,
             root_id,
             max_executions=max_exec,
+            concurrency=concurrency,
             run_mode=RunMode.LIVE,
         )
     finally:
@@ -204,11 +201,14 @@ if __name__ == "__main__":
     ap.add_argument("--goal")
     ap.add_argument("--key", help="a scenario from the catalogue")
     ap.add_argument("--max-executions", type=int, default=60)
+    ap.add_argument("--concurrency", type=int, help="parallel tasks (default: settings)")
     ap.add_argument(
         "--resume",
         help="an existing root task id to continue draining instead of starting over",
     )
     args = ap.parse_args()
     raise SystemExit(
-        asyncio.run(main(args.org, args.goal, args.key, args.max_executions, args.resume))
+        asyncio.run(
+            main(args.org, args.goal, args.key, args.max_executions, args.resume, args.concurrency)
+        )
     )

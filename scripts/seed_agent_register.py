@@ -162,6 +162,10 @@ async def _discover_catalogue_org(db: Database, target: str) -> str | None:
             ).all()
     finally:
         await admin.dispose()
+    # Reconcile the target's own catalogue before considering another tenant.
+    # Otherwise an idempotent run invents an ambiguity among the copies it made.
+    if any(str(org) == target for org, _n in rows):
+        return target
     candidates = [str(org) for org, _n in rows if str(org) != target]
     if not candidates:
         return None
@@ -753,7 +757,7 @@ async def main() -> int:
         print(f"    = {item}")
     for item in tally.refused:
         print(f"    ! {item}", file=sys.stderr)
-    return 1 if tally.refused and not tally.written else 0
+    return 1 if tally.refused else 0
 
 
 if __name__ == "__main__":

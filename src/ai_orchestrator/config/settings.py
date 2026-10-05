@@ -182,6 +182,10 @@ class Settings(BaseSettings):
     global_max_delegation_depth: int = 4
     global_max_fanout_per_agent: int = 8
     global_max_active_descendants: int = 16
+    # Whole-goal envelope across every office. Rewording consumes another slot;
+    # review retries retain the original intent. F244/F272 rule out prefix merging.
+    max_distinct_intents_per_goal: int = Field(default=16, ge=1)
+    pipeline_concurrency: int = Field(default=4, ge=1, le=16)
     default_task_timeout_s: int = 900
     subagent_default_ttl_s: int = 600
     default_max_tokens_per_task: int = 200_000

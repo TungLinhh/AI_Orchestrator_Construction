@@ -46,6 +46,34 @@ def _page(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", body.group(1), flags=re.S)
 
 
+def _interpolations(script: str) -> list[str]:
+    """Keep balanced expressions; quoted translation braces cannot close them."""
+    expressions = []
+    for start in re.finditer(r"\$\{", script):
+        depth = 1
+        quote = ""
+        escaped = False
+        for position in range(start.end(), len(script)):
+            char = script[position]
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif quote:
+                if char == quote:
+                    quote = ""
+            elif char in "\"'`":
+                quote = char
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    expressions.append(script[start.end() : position])
+                    break
+    return expressions
+
+
 class TestThePageIsServed:
     async def test_it_serves_html(self, client: Any) -> None:
         response = await client.get("/api/v1/ui")
@@ -308,6 +336,7 @@ class TestThePageEscapesWhatItRenders:
         """
         js = _page((await client.get("/api/v1/ui")).text)
         construction = js.split("The construction product")[-1]
+        expressions = _interpolations(construction)
 
         # The fields that come out of the corpus, named explicitly. A blanket "every
         # interpolation is escaped" rule is wrong in both directions: it flags a
@@ -330,8 +359,18 @@ class TestThePageEscapesWhatItRenders:
             "a.requested_by",
             "a.assigned_approver_id",
         ):
-            for use in re.findall(rf"\$\{{([^}}]*?\b{re.escape(field)}\b[^}}]*?)\}}", construction):
+            for use in expressions:
+                if not re.search(rf"\b{re.escape(field)}\b", use):
+                    continue
                 assert "esc(" in use, f"{field} reaches innerHTML without esc(): ${{{use}}}"
+
+    def test_translation_braces_do_not_hide_an_unescaped_attribute(self) -> None:
+        expressions = _interpolations(
+            '`<div title="${a.requested_by}">${t_fmt("route", "to {n}", '
+            "{n: esc(a.assigned_approver_id)})}</div>`"
+        )
+        assert "a.requested_by" in expressions
+        assert any("esc(a.assigned_approver_id)" in expression for expression in expressions)
 
     async def test_the_escape_helper_covers_the_five_characters_that_matter(
         self, client: Any

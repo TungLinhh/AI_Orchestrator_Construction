@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ai_orchestrator.api.deps import ApiContext, get_context, paginate
 from ai_orchestrator.api.health import bump
 from ai_orchestrator.approvals import ApprovalService
+from ai_orchestrator.domain.human_exceptions import approval_class
 from ai_orchestrator.persistence.models import Approval
 from ai_orchestrator.security.auth import ensure_local_operator
 
@@ -41,6 +42,11 @@ def _approval_dict(approval: Approval) -> dict[str, Any]:
         "effect_class": approval.effect_class,
         "risk_level": approval.risk_level,
         "reason": approval.reason,
+        "exception_class": approval_class(
+            action_type=approval.action_type,
+            effect=approval.effect_class,
+            payload=approval.action_payload or {},
+        ).value,
         "requested_by": approval.requested_by,
         "requested_by_type": approval.requested_by_type,
         "required_approver_roles": approval.required_approver_roles,
@@ -161,13 +167,33 @@ async def _decide(
             decided_by=str(ctx.actor.id),
             note=body.note,
         )
-    return {
+    result: dict[str, Any] = {
         "approval_id": decision.approval_id,
         "status": decision.status.value,
         "decided_by": decision.decided_by,
         "workflow_id": approval.workflow_id,
         "workflow_signalled": signalled,
     }
+    if approval.task_id and approval.action_type == "task.continue" and not approval.workflow_id:
+        from ai_orchestrator.application.local_runner import continue_goal
+        from ai_orchestrator.domain.state_machines import Transition
+        from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+        if approve:
+            await service.verify_payload(approval_id, approval.action_payload or {})
+        elif not body.needs_information:
+            await TaskRepository(ctx.session, ctx.organization_id).transition(
+                str(approval.task_id),
+                Transition.APPROVAL_REJECTED,
+                error=body.note or "A human refused the requested review",
+                failure_category="approval_rejected",
+            )
+        if not body.needs_information:
+            # A worker must see the committed decision, not race this request.
+            task_id = str(approval.task_id)
+            await ctx.session.commit()
+            result["local_run"] = (await continue_goal(ctx.organization_id, task_id)).as_dict()
+    return result
 
 
 @router.post("/approvals/{approval_id}/approve")

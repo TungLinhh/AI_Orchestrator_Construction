@@ -351,3 +351,30 @@ class TestUsageRecording:
 
         result = await run_with_pydantic_ai(None, _context(), gateway=gateway)
         assert result.status.value == "completed"
+
+
+class TestAnExplicitHumanReview:
+    async def test_the_bridge_returns_a_pause_and_preserves_the_draft(self):
+        gateway = _ScriptedGateway(
+            GatewayResponse(
+                text=(
+                    '{"__approval_request__": "Review the JD salary before preparing the rubric", '
+                    '"output": {"jd": "Draft salary is 22 million VND"}}'
+                )
+            )
+        )
+        result = await run_with_pydantic_ai(None, _context(), gateway=gateway)
+        assert result.status.value == "needs_approval"
+        assert result.summary == "Review the JD salary before preparing the rubric"
+        assert result.output == {"jd": "Draft salary is 22 million VND"}
+
+    def test_a_recommendation_or_quoted_envelope_does_not_pause(self):
+        from ai_orchestrator.agent_runtime.pydanticai_agent import _human_approval_request
+
+        assert _human_approval_request('{"needs_exec_approval": true, "salary": 28000000}') is None
+        assert _human_approval_request('Quoted example: {"__approval_request__": "ask"}') is None
+        assert _human_approval_request('{"__approval_request__": ""}') is None
+        assert _human_approval_request('{"__approval_request__": "ask", "output": "bad"}') is None
+        assert _human_approval_request(
+            '```json\n{"__approval_request__": "Review this draft"}\n```'
+        ) == ("Review this draft", {})

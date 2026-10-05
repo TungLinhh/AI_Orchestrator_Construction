@@ -337,6 +337,7 @@ class GoLiveReadiness:
     #: holding or decaying.
     last_week_runs: int = 0
     last_week_agreements: int = 0
+    covered_weeks: int = 0
     missing: tuple[str, ...] = ()
 
     @property
@@ -360,6 +361,7 @@ class GoLiveReadiness:
             "last_week_runs": self.last_week_runs,
             "last_week_agreements": self.last_week_agreements,
             "last_week_agreement": round(self.last_week_agreement, 4),
+            "covered_weeks": self.covered_weeks,
             "observed_days": self.observed_days,
             "required_weeks": self.required_weeks,
             "required_agreement": self.required_agreement,
@@ -386,6 +388,10 @@ def readiness(
     So the span is checked first and named, and a run set too young is reported as too
     young however well it agreed.
     """
+    if required_weeks < GO_LIVE_MIN_WEEKS:
+        raise ValueError("the four-week go-live precondition cannot be shortened")
+    if not GO_LIVE_MIN_AGREEMENT <= required_agreement <= 1:
+        raise ValueError("go-live agreement must be at least 95% and at most 100%")
     # `now` is required, not defaulted: `domain/` may not read the clock, and
     # `tests/unit/test_domain_purity.py` asserts it. It also forces the caller to say
     # whose clock the span is measured against, which matters when replaying history.
@@ -400,7 +406,8 @@ def readiness(
         # path whose entire job is to survive odd inputs.
         if when.tzinfo is None:
             when = when.replace(tzinfo=UTC)
-        seen.append((when, ok))
+        if when <= moment:
+            seen.append((when, ok))
     seen.sort()
     runs = len(seen)
     agreements = sum(1 for _, ok in seen if ok)
@@ -435,6 +442,16 @@ def readiness(
 
     cutoff = moment - timedelta(days=RECONCILE_EVERY_DAYS)
     recent = [(when, ok) for when, ok in seen if when >= cutoff]
+    covered = {
+        (moment - when).days // 7
+        for when, _ in seen
+        if 0 <= (moment - when).days // 7 < required_weeks
+    }
+    if runs and len(covered) < required_weeks:
+        missing.append(
+            f"comparisons cover {len(covered)} of the last {required_weeks} weeks; "
+            "elapsed time alone does not demonstrate parallel running"
+        )
 
     return GoLiveReadiness(
         runs=runs,
@@ -444,6 +461,7 @@ def readiness(
         required_agreement=required_agreement,
         last_week_runs=len(recent),
         last_week_agreements=sum(1 for _, ok in recent if ok),
+        covered_weeks=len(covered),
         missing=tuple(missing),
     )
 

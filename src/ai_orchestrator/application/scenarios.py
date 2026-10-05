@@ -30,6 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ai_orchestrator.domain.output_contract import schema_from_fields
 from ai_orchestrator.seed import DEPARTMENTS as _SEED_DEPARTMENTS
 
 
@@ -80,6 +81,8 @@ class Scenario:
     #: to be given something it *cannot* answer alone, or the first tier of the
     #: organisation is decorative.
     objective: str = ""
+    #: The first draft that must stop for a human before later stages can run.
+    human_review_field: str = ""
 
 
 #: The catalogue. Ordered so the cheapest, most self-contained work comes first:
@@ -134,7 +137,11 @@ SCENARIOS: tuple[Scenario, ...] = (
         department="procurement",
         task_type="decision",
         expected_output={
-            "winner": "mã báo giá được chọn",
+            "winner": {
+                "description": "mã báo giá được chọn",
+                "type": "string",
+                "enum": ["A", "B", "C"],
+            },
             "reason": "lý do theo tiêu chí",
             "risk": "rủi ro thấy được",
         },
@@ -226,7 +233,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         department="design",
         task_type="report",
         expected_output={
-            "progress": "tiến độ theo từng khoản",
+            "progress": {
+                "description": "tiến độ theo từng khoản",
+                "x-source-summary": True,
+            },
             "decisions_needed": "vấn đề cần lãnh đạo quyết",
             "recommendation": "đề xuất cụ thể",
         },
@@ -262,6 +272,7 @@ SCENARIOS: tuple[Scenario, ...] = (
     ),
     Scenario(
         key="hiring-pipeline",
+        human_review_field="jd",
         objective=(
             "Soạn JD cho vị trí Kỹ sư Chất lượng, xây dựng rubric chấm điểm và rà soát "
             "hồ sơ ứng viên, theo thứ tự đó"
@@ -292,8 +303,8 @@ SCENARIOS: tuple[Scenario, ...] = (
         department="hr",
         task_type="coordination",
         expected_output={
-            "jd": "mô tả công việc đã soạn",
-            "rubric": "thang chấm điểm và trọng số",
+            "jd": {"description": "mô tả công việc đã soạn", "x-human-review-order": 1},
+            "rubric": {"description": "thang chấm điểm và trọng số", "x-human-review-order": 2},
             "shortlist": "kết luận mỗi ứng viên và ai đi phỏng vấn",
             "approvals_needed": "những phần đang chờ người duyệt",
         },
@@ -345,6 +356,29 @@ SCENARIOS: tuple[Scenario, ...] = (
         context={"project": "Bãi Trầm", "currency": "VND"},
     ),
     Scenario(
+        key="site-safety-review",
+        objective="Đánh giá rủi ro an toàn tại công trường và lập biện pháp khắc phục cụ thể.",
+        office="middle-office",
+        title="Đánh giá 3 phát hiện an toàn công trường",
+        goal=(
+            "Rà soát ba phát hiện tại công trường Bãi Trầm và đề xuất xử lý. "
+            "Đây là báo cáo đề xuất, chưa ra lệnh thi công hoặc gửi ra ngoài.\n\n"
+            "1. Giàn giáo cao 6 m thiếu lan can tầng trên, có 2 công nhân đang làm việc.\n"
+            "2. Cáp điện tạm đi qua lối xe nâng, vỏ cáp bị rách nhưng chưa ngắt điện.\n"
+            "3. Kho sơn 40 lít có bình chữa cháy còn hạn, "
+            "nhưng thiếu thông gió và biển cấm lửa.\n\n"
+            "Với từng phát hiện, phân loại mức độ rủi ro, nêu biện pháp tức thời, "
+            "người chịu trách nhiệm và bằng chứng cần có trước khi cho làm việc lại. "
+            "Ưu tiên xử lý theo nguy cơ gây thương tích nghiêm trọng."
+        ),
+        department="qa",
+        expected_output={
+            "hazards": "ba phát hiện kèm mức độ rủi ro và thứ tự ưu tiên",
+            "corrective_actions": "biện pháp tức thời, người phụ trách, bằng chứng xác nhận",
+        },
+        deliverable="Báo cáo rủi ro và biện pháp khắc phục cho ba phát hiện",
+    ),
+    Scenario(
         key="access-review",
         objective=(
             "Review three access requests against the access policy and report the "
@@ -370,7 +404,10 @@ SCENARIOS: tuple[Scenario, ...] = (
         expected_output={
             "decisions": "mỗi yêu cầu: duyệt / từ chối kèm lý do",
             "missing": "mục còn thiếu của yêu cầu bị từ chối",
-            "backup_status": "ngày kiểm thử phục hồi gần nhất và kết quả",
+            "backup_status": {
+                "description": "ngày kiểm thử phục hồi gần nhất và kết quả",
+                "x-source-summary": True,
+            },
         },
         deliverable="Quyết định 3 yêu cầu kèm lý do và tình trạng sao lưu",
         context={"policy": "đủ 4 mục mới duyệt; thiếu là từ chối"},
@@ -422,6 +459,7 @@ def catalogue() -> list[dict[str, object]]:
             "agent_name": agent_for(s.department),
             "task_type": s.task_type,
             "expected_output": s.expected_output,
+            "expected_output_schema": schema_from_fields(s.expected_output),
             "deliverable": s.deliverable,
         }
         for s in SCENARIOS

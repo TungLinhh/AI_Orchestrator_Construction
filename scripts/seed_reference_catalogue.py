@@ -122,11 +122,53 @@ async def _dsn_for(database: str) -> str:
 
 
 async def _source_org(conn: asyncpg.Connection) -> str | None:
+    from ai_orchestrator.domain.agent_register import REGISTER
+
     row = await conn.fetchrow(
-        "SELECT organization_id FROM sop_definitions "
-        " GROUP BY organization_id HAVING count(*) > 0 ORDER BY 1 LIMIT 1"
+        """
+        SELECT o.id AS organization_id FROM organizations o
+        WHERE o.id IN (SELECT DISTINCT organization_id FROM sop_definitions)
+          AND NOT EXISTS (
+            SELECT 1 FROM unnest($1::text[]) AS required(code)
+            WHERE NOT EXISTS (
+              SELECT 1 FROM sop_definitions s
+              WHERE s.organization_id = o.id AND s.code = required.code
+            )
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM unnest($2::text[]) AS required(action_class)
+            WHERE NOT EXISTS (
+              SELECT 1 FROM autonomy_policies p
+              WHERE p.organization_id = o.id AND p.action_class = required.action_class
+            )
+          )
+        ORDER BY o.id LIMIT 1
+        """,
+        sorted({code for spec in REGISTER for code in spec.sop_codes_prefixed}),
+        sorted({action for spec in REGISTER for action in spec.action_classes}),
     )
     return str(row["organization_id"]) if row else None
+
+
+async def _roles_org(conn: asyncpg.Connection, preferred: str) -> str | None:
+    """The dossier's roles can predate the tenant holding its process spine."""
+    from ai_orchestrator.domain.agent_register import REGISTER
+
+    return await conn.fetchval(
+        """
+        SELECT o.id FROM organizations o
+        WHERE o.id IN (SELECT DISTINCT organization_id FROM roles)
+          AND NOT EXISTS (
+            SELECT 1 FROM unnest($1::text[]) AS required(name)
+            WHERE NOT EXISTS (
+              SELECT 1 FROM roles r WHERE r.organization_id = o.id AND r.name = required.name
+            )
+          )
+        ORDER BY (o.id = $2) DESC, o.id LIMIT 1
+        """,
+        sorted({spec.role_name for spec in REGISTER}),
+        preferred,
+    )
 
 
 async def run(to_database: str, from_database: str) -> int:
@@ -137,11 +179,16 @@ async def run(to_database: str, from_database: str) -> int:
         src_org = await _source_org(source)
         if src_org is None:
             print(
-                f"  {from_database} holds no SOP catalogue, so there is nothing to copy. "
+                f"  {from_database} holds no complete register catalogue. "
                 f"Seed it first: this script copies, it does not create."
             )
             return 1
         print(f"  copying the reference catalogue from {from_database} ({src_org})")
+        roles_org = await _roles_org(source, src_org)
+        if roles_org is None:
+            print(f"  {from_database} holds no complete role catalogue for the register")
+            return 1
+        print(f"    role catalogue source: {roles_org}")
 
         # Reuse the target schema's existing catalogue holder rather than creating
         # another. This is the idempotence: the first version inserted a **new
@@ -149,12 +196,7 @@ async def run(to_database: str, from_database: str) -> int:
         # catalogue, and the agent seeder's discovery then found two and refused with
         # "2 organizations hold at least 16 SOPs. Pass --from-org to say which" -- a
         # provisioning step that breaks the thing it provisions on its second run.
-        needed = 16
-        dst_org = await target.fetchval(
-            "SELECT organization_id FROM sop_definitions "
-            " GROUP BY organization_id HAVING count(*) >= $1 ORDER BY 1 LIMIT 1",
-            needed,
-        )
+        dst_org = await _source_org(target)
         if dst_org is None:
             dst_org = f"org_{await target.fetchval('SELECT gen_random_uuid()')}"
             await target.execute(
@@ -173,18 +215,19 @@ async def run(to_database: str, from_database: str) -> int:
             rows = await source.fetch(
                 f"SELECT {', '.join(columns)} FROM {table} WHERE organization_id = $1 "
                 f" ORDER BY {key}",
-                src_org,
+                roles_org if table == "roles" else src_org,
             )
             already = {
-                str(r[key])
+                str(r[key]): str(r["id"])
                 for r in await target.fetch(
-                    f"SELECT {key} FROM {table} WHERE organization_id = $1", dst_org
+                    f"SELECT id, {key} FROM {table} WHERE organization_id = $1", dst_org
                 )
             }
             id_map[table] = {}
             for row in rows:
                 name = str(row[key])
                 if name in already:
+                    id_map[table][name] = already[name]
                     found += 1
                     continue
                 new_id = f"{table[:3]}_{await target.fetchval('SELECT gen_random_uuid()')}"
@@ -201,7 +244,7 @@ async def run(to_database: str, from_database: str) -> int:
 
         # Re-point the self-reference at the copies, not at the source rows.
         for row in await source.fetch(
-            "SELECT name, parent_role_id FROM roles WHERE organization_id = $1", src_org
+            "SELECT name, parent_role_id FROM roles WHERE organization_id = $1", roles_org
         ):
             parent = row["parent_role_id"]
             if parent is None:

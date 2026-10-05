@@ -263,3 +263,21 @@ class TestGoLiveReadiness:
         assert report["ready"] is True
         assert report["required_agreement"] == 0.95
         assert isinstance(report["agreement"], float)
+
+    def test_elapsed_time_without_weekly_comparisons_is_not_parallel_running(self) -> None:
+        report = readiness([(NOW - timedelta(days=30), True)], now=NOW)
+        assert report.observed_days == 30
+        assert not report.ready
+        assert report.covered_weeks == 0
+        assert any("elapsed time alone" in reason for reason in report.missing)
+
+    def test_future_observations_cannot_supply_evidence(self) -> None:
+        report = readiness([(NOW + timedelta(days=1), True)] * 30, now=NOW)
+        assert report.runs == 0
+        assert not report.ready
+
+    def test_the_go_live_floor_cannot_be_overridden(self) -> None:
+        with pytest.raises(ValueError, match="cannot be shortened"):
+            readiness([], now=NOW, required_weeks=1)
+        with pytest.raises(ValueError, match="at least 95%"):
+            readiness([], now=NOW, required_agreement=0.8)

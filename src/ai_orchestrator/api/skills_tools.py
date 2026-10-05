@@ -273,6 +273,9 @@ async def publish_skill(
         )
         raise ValidationError(msg, details={"skill_id": skill_id, "security_scan": scan})
 
+    from ai_orchestrator.application.learning_revert import prepare_publication
+
+    revert_receipt = await prepare_publication(ctx.session, ctx.organization_id, skill, version)
     version.test_results = tests
     version.security_scan = scan
     version.is_published = True
@@ -309,6 +312,7 @@ async def publish_skill(
     published = _skill_dict(skill, version)
     published["bound_to_agent"] = agent_id
     published["binding_id"] = bound
+    published["revert_receipt"] = revert_receipt
     return published
 
 

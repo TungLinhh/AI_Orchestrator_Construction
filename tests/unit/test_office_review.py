@@ -435,3 +435,79 @@ class TestTheRerunBriefCarriesTheShape:
         brief = self._brief(None)
         assert "ĐỊNH DẠNG BẮT BUỘC" not in brief
         assert "thiếu key reason" in brief
+
+
+class TestReviewUsesTheOriginalAsk:
+    def test_repaired_conclusions_are_not_part_of_the_echo_source(self):
+        from types import SimpleNamespace
+
+        from ai_orchestrator.application.work_review import _brief_of, _rerun_goal
+
+        original = SimpleNamespace(
+            goal="Compare the costs and produce a reasoned recommendation.",
+            title="Compare costs",
+            input={"brief": "A costs 100, B costs 120. Budget is 110."},
+            expected_output_schema={"required": ["recommendation"]},
+        )
+        source = _brief_of(original)
+        answer = "Select supplier A: it fits within budget and saves 20 over supplier B."
+        retry = SimpleNamespace(
+            goal=_rerun_goal(original, ReviewVerdict(ok=False, findings=("wrong shape",)), answer),
+            title="Compare costs (attempt 2)",
+            input={"review_source": source, "rerun_of": "original"},
+        )
+        assert answer in retry.goal
+        assert answer not in _brief_of(retry)
+        assert assess_output(
+            output={"recommendation": answer},
+            expected_output_schema=original.expected_output_schema,
+            source_text=_brief_of(retry),
+        ).ok
+        assert not assess_output(
+            output={"recommendation": source},
+            source_text=_brief_of(retry),
+        ).ok
+
+    def test_declared_enum_is_a_choice_even_when_short_and_in_the_source(self):
+        schema = {"required": ["winner"], "properties": {"winner": {"enum": ["A", "B", "C"]}}}
+        source = "Compare supplier A, supplier B and supplier C and choose one."
+        assert assess_output(
+            output={"winner": "C"}, expected_output_schema=schema, source_text=source
+        ).ok
+        assert not assess_output(
+            output={"winner": "D"}, expected_output_schema=schema, source_text=source
+        ).ok
+
+    def test_date_is_substantive_but_invalid_short_text_still_fails(self):
+        assert assess_output(output={"start_date": "2026-11-01"}).ok
+        assert not assess_output(output={"start_date": "2026-02-30"}).ok
+        assert not assess_output(output={"start_date": "ok"}).ok
+
+
+class TestRequestedSourceSummaries:
+    @pytest.mark.parametrize("key", ["progress", "backup_status"])
+    def test_supplied_facts_can_be_reported_beside_an_assessment(self, key):
+        source = "Last restore test: 2026-09-15, result: passed, scope: toàn bộ CSDL ERP"
+        schema = {
+            "required": [key, "decision"],
+            "properties": {key: {"x-source-summary": True}},
+        }
+        verdict = assess_output(
+            output={key: source, "decision": "Refuse the request with no revocation date."},
+            expected_output_schema=schema,
+            source_text=source,
+        )
+        assert verdict.ok, verdict.findings
+
+        repeated = assess_output(
+            output={key: source, "decision": source},
+            expected_output_schema=schema,
+            source_text=source,
+        )
+        assert not repeated.ok
+        assert any(check.name == "echo:decision" and not check.passed for check in repeated.checks)
+
+    def test_source_summaries_still_require_substantive_nonplaceholder_content(self):
+        schema = {"required": ["progress"], "properties": {"progress": {"x-source-summary": True}}}
+        for value in ("ok", "TBD", ""):
+            assert not assess_output(output={"progress": value}, expected_output_schema=schema).ok

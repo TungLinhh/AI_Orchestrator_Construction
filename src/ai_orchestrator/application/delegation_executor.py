@@ -36,6 +36,7 @@ from ai_orchestrator.domain.delegation import (
     DelegationPath,
     DelegationVerdict,
     authorize_delegation,
+    goal_intent_refusal,
     intent_fingerprint,
     task_fingerprint,
 )
@@ -126,6 +127,9 @@ class DelegationExecutor:
         self._audit = audit
         self._org = organization_id
         self._platform = platform_limits
+        from ai_orchestrator.config.settings import get_settings
+
+        self._goal_intent_limit = get_settings().max_distinct_intents_per_goal
         # Intent fingerprints already delegated from this run, so a model that
         # asks for the same work twice gets one child rather than two. Per
         # instance, which is per run: a *new* run of the same goal is allowed to
@@ -258,6 +262,19 @@ class DelegationExecutor:
             return
         self._issued_intents.add(intent_key)
 
+        # Across all offices, not just this parent. The repository holds a goal
+        # lock through the child/delegation commit, so parallel coordinators
+        # cannot both spend the last slot. Reworded work consumes a new slot.
+        issued = await self._delegations.goal_intents(str(parent.id))
+        reason = goal_intent_refusal(
+            issued=issued, intent=intent_key, limit=self._goal_intent_limit
+        )
+        if reason:
+            outcome.refused.append((str(target.id), reason))
+            outcome.closed = True
+            await self._record_refusal(parent, source_agent_id, target.id, reason)
+            return
+
         # Child limits can only ever be narrower. The verdict carries the clamped set, and the
         # child task is created with it, so a subagent cannot hand itself a larger envelope
         # than the parent had.
@@ -335,7 +352,7 @@ class DelegationExecutor:
             target_agent_id=target.id,
             objective=proposal.objective or parent.goal,
             path=path,
-            platform_limits=self._platform,
+            platform_limits=self._platform or path_limits(path, None),
             parent_limits=path_limits(path, self._platform),
         )
         outcome.accepted.append(target.id)

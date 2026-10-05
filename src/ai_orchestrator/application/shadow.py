@@ -225,8 +225,8 @@ async def go_live_readiness(
     """The dossier's precondition, measured on what is actually recorded.
 
     `required_weeks` and `required_agreement` default to the dossier's 4 weeks and
-    95%, and are overridable so a test can ask a smaller question. There is no way to
-    ask for a *laxer* one by accident, because the defaults are the strict ones.
+    95%. Overrides may make these stricter; the domain rule refuses a shorter
+    window or a lower rate. Future observations do not count as elapsed evidence.
     """
     from ai_orchestrator.domain.shadow import GO_LIVE_MIN_AGREEMENT
 

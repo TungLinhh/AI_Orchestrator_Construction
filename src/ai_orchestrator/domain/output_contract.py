@@ -59,6 +59,22 @@ PRODUCES = "produces"
 _VALUE_PATTERN = r'"(?:\\.|[^"\\])*"|\{[^{}]*\}|\[[^\[\]]*\]|-?\d[\d.]*|true|false|null'
 
 
+def schema_from_fields(fields: dict[str, Any]) -> dict[str, Any] | None:
+    """Preserve field descriptions and review metadata on every task creation path."""
+    if not fields:
+        return None
+    return {
+        "required": sorted(fields),
+        "field_meaning": {
+            key: value.get("description", key) if isinstance(value, dict) else value
+            for key, value in fields.items()
+        },
+        "properties": {
+            key: dict(value) for key, value in fields.items() if isinstance(value, dict)
+        },
+    }
+
+
 def required_keys(schema: dict[str, Any] | None) -> tuple[str, ...]:
     """Which output keys this task said it would produce.
 

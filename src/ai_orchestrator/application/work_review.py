@@ -230,15 +230,18 @@ async def _what_the_run_said(session: Any, organization_id: str, task_id: str) -
 
 
 def _brief_of(child: Task) -> str:
-    """Everything the department was told, as one block of text.
+    """The original ask, excluding answers and findings carried into a retry.
 
-    The echo check compares the answer against the ask, so it needs the whole ask:
-    the goal, the title, and the `brief` the delegation carried. A retry carries all
-    three *plus* the review findings, and the findings are the office's words rather
-    than the brief's -- including them would let a department hide a restatement
-    behind the very text it was sent back for not restating.
+    A repaired answer may reuse its previous conclusions. Comparing it against
+    the retry goal (which contains those conclusions) falsely calls that an echo.
     """
     payload = child.input or {}
+    original = payload.get("review_source")
+    if isinstance(original, str):
+        return original
+    # Older retries have no snapshot, but their inherited brief is original data.
+    if payload.get("rerun_of") and isinstance(payload.get("brief"), str):
+        return str(payload["brief"])
     parts = [str(child.goal or ""), str(child.title or "")]
     for key in ("brief", "objective"):
         value = payload.get(key)
@@ -427,7 +430,10 @@ async def review_office_work(
             continue
 
         child_failed = TaskStatus(child.status) in (TaskStatus.FAILED, TaskStatus.EXPIRED)
-        already_escalated = child_failed and child.failure_category == ESCALATION_CATEGORY
+        already_escalated = child_failed and child.failure_category in {
+            ESCALATION_CATEGORY,
+            "approval_rejected",
+        }
         if already_escalated:
             # **Never re-dispatch a task that already escalated.**
             #
@@ -450,6 +456,8 @@ async def review_office_work(
             )
         else:
             again, why = should_rerun(verdict, attempt=attempt, max_attempts=max_attempts)
+        if child_failed and child.failure_category == "approval_rejected":
+            again, why = False, "a human refused this step; do not retry work they rejected"
         await audit.record(
             actor=Actor(id=office_agent_id, kind=ActorType.AGENT),
             action=ACTION_REJECTED,
@@ -520,6 +528,7 @@ async def review_office_work(
                 "attempt": attempt + 1,
                 "review": list(verdict.findings),
                 "rerun_of": str(child.id),
+                "review_source": _brief_of(child),
             },
             allow_parallel=True,
         )

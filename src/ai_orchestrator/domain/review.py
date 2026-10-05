@@ -123,6 +123,14 @@ def _substantive(value: Any) -> tuple[bool, str]:
     """Whether a value carries enough to be worth reading."""
     if isinstance(value, str):
         stripped = value.strip()
+        if len(stripped) == 10:
+            from datetime import date
+
+            try:
+                date.fromisoformat(stripped)
+                return True, "valid ISO date"
+            except ValueError:
+                pass
         if len(stripped) < MIN_TEXT_LENGTH:
             return False, f"only {len(stripped)} characters"
         return True, ""
@@ -242,6 +250,13 @@ def assess_output(
     findings: list[str] = []
 
     wanted = required_keys(expected_output_schema)
+    properties = (
+        expected_output_schema.get("properties", {})
+        if isinstance(expected_output_schema, dict)
+        else {}
+    )
+    if not isinstance(properties, dict):
+        properties = {}
     source_words = _words(source_text) if len(source_text.strip()) >= ECHO_MIN_SOURCE else set()
     said_something = len(reported_text.strip()) >= MIN_TEXT_LENGTH
 
@@ -344,7 +359,20 @@ def assess_output(
                 f"Put the real finding there."
             )
             continue
-        if source_words and _echo(value, source_words):
+        field_schema = properties.get(key)
+        if isinstance(field_schema, dict) and isinstance(field_schema.get("enum"), list):
+            allowed = value in field_schema["enum"]
+            checks.append(Check(f"enum:{key}", allowed, "declared choice"))
+            if not allowed:
+                findings.append(f"'{key}' must be one of {field_schema['enum']!r}.")
+            # A selected identifier can be short and is expected to occur in the ask.
+            continue
+        # A source summary reports supplied facts, so shared wording is expected.
+        # Assessment fields still need a finding even beside a valid summary.
+        source_summary = (
+            isinstance(field_schema, dict) and field_schema.get("x-source-summary") is True
+        )
+        if source_words and not source_summary and _echo(value, source_words):
             checks.append(Check(f"echo:{key}", False, "restates the task it was given"))
             findings.append(
                 f"'{key}' repeats the task back rather than answering it: {str(value)[:80]!r}. "

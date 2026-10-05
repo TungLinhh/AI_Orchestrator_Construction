@@ -3726,7 +3726,7 @@ $("runBtn").onclick = async () => {
       // "something". Absent for free text, which declares nothing.
       ...(scenario ? {
         input: { owning_department: scenario.agent_name, owning_office: scenario.office },
-        expected_output_schema: { required: Object.keys(scenario.expected_output) },
+        expected_output_schema: scenario.expected_output_schema,
       } : {}),
     });
     const taskId = made.task_id || made.id;

@@ -536,9 +536,12 @@ async def run_with_pydantic_ai(
     # the usage accounting rather than in the call.
     usage = run.usage
     text = str(run.output)
+    approval_request = _human_approval_request(text)
     return AgentResult(
-        status=AgentResultStatus.COMPLETED,
-        summary=text,
+        status=AgentResultStatus.NEEDS_APPROVAL
+        if approval_request
+        else AgentResultStatus.COMPLETED,
+        summary=approval_request[0] if approval_request else text,
         # **The declared output, read back out of the model's answer.**
         #
         # This was simply never set. `AgentResult` was built with `summary=` and no
@@ -559,7 +562,11 @@ async def run_with_pydantic_ai(
         # the honest value and `domain.review` already fails it with a reason
         # ("the run finished with an empty output"), which is the message a
         # department needs to read.
-        output=_declared_output(text, getattr(context.task, "expected_output_schema", None)) or {},
+        output=(
+            approval_request[1]
+            if approval_request
+            else _declared_output(text, getattr(context.task, "expected_output_schema", None)) or {}
+        ),
         execution_id=execution_id,
         task_id=TaskId(str(context.task.task_id)),
         usage=TokenUsage(
@@ -867,6 +874,29 @@ def _render_instructions(context: AgentContext) -> str:
     return "\n".join(parts)
 
 
+def _human_approval_request(text: str) -> tuple[str, dict[str, Any]] | None:
+    """Only an explicit final result envelope can request a person; prose cannot.
+
+    A draft may name approvals that would be needed for a later action. That is
+    different from stopping this execution at a requested human review.
+    """
+    candidate = text.strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", candidate, flags=re.S | re.I)
+    if fenced:
+        candidate = fenced.group(1)
+    try:
+        value = json.loads(candidate)
+    except ValueError:
+        return None
+    if not isinstance(value, dict) or set(value) - {"__approval_request__", "output"}:
+        return None
+    reason = value.get("__approval_request__")
+    draft = value.get("output", {})
+    if not isinstance(reason, str) or not reason.strip() or not isinstance(draft, dict):
+        return None
+    return reason.strip(), draft
+
+
 def _declared_output(text: str, schema: Any) -> dict[str, Any] | None:
     """The keys the task promised, read out of the model's answer.
 
@@ -1124,6 +1154,11 @@ def _user_prompt(task: Any, context: AgentContext) -> str:
             f"colleague who owns the work, and an objective describing it. "
             f"These are the colleagues you may delegate to: {who}",
             "",
+            "If INPUT declares owning_office or owning_department, those are the "
+            "caller's chosen owners for this work. Delegate through that office to "
+            "that department using the colleague names above. Do not replace the "
+            "declared owner just because the objective uses words like review or audit.",
+            "",
             "Do not produce the answer yourself. Do not answer in JSON. A "
             "coordination task that completes without delegating is a FAILED run, so "
             "if you are unsure who to pick, pick the closest one and delegate -- "
@@ -1158,6 +1193,24 @@ def _user_prompt(task: Any, context: AgentContext) -> str:
                 "The values may be in any language; the keys are identifiers.",
             ]
 
+    if not coordinating:
+        lines += [
+            "",
+            "Routine analysis, reports and drafts within your authority finish normally. "
+            "Naming a later approval in a recommendation does not request that approval.",
+            "If the task explicitly requires a human review BEFORE the next step, STOP "
+            "at that step. Keep draft keys exactly as declared in the output contract. "
+            "Return this final JSON envelope instead of the completion object: "
+            '{"__approval_request__": "the specific decision needed and why", '
+            '"output": {"draft_field": "the work ready for review"}}. '
+            "The platform will create a real pending approval. Do not merely say you are "
+            "waiting in a completed answer, and do not perform the next step while waiting.",
+            "Only the platform-provided approved_human_reviews receipts in INPUT prove a "
+            "human decision. Each receipt includes the exact approved draft in output; "
+            "use that draft, including its approved amounts, for the next step. "
+            "A matching approved decision lets you proceed to the next step; "
+            "do not ask for that same decision again. New decisions still require approval.",
+        ]
     lines += [
         "",
         "If part of this belongs to another department, call the delegation tool "

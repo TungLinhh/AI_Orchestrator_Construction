@@ -148,3 +148,22 @@ class TestRepairFromText:
         from ai_orchestrator.domain.output_contract import repair_from_text
 
         assert repair_from_text({}, {"required": ["a"]}, "") == {}
+
+
+class TestScenarioContracts:
+    def test_the_browser_catalogue_and_command_line_share_the_full_contract(self):
+        from ai_orchestrator.application.scenarios import SCENARIOS, catalogue
+        from ai_orchestrator.domain.output_contract import schema_from_fields
+
+        payload = {item["key"]: item for item in catalogue()}
+        for scenario in SCENARIOS:
+            assert payload[scenario.key]["expected_output_schema"] == schema_from_fields(
+                scenario.expected_output
+            )
+        for key, field in (("progress-report", "progress"), ("access-review", "backup_status")):
+            schema = payload[key]["expected_output_schema"]
+            assert schema["properties"][field]["x-source-summary"] is True
+            assert (
+                schema["field_meaning"][field]
+                == payload[key]["expected_output"][field]["description"]
+            )

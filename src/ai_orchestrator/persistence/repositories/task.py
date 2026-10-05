@@ -20,6 +20,7 @@ Three things in here are load-bearing for correctness:
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import secrets
@@ -840,6 +841,73 @@ class DelegationRepository:
     def __init__(self, session: AsyncSession, organization_id: str) -> None:
         self._session = session
         self._org = organization_id
+
+    async def goal_intents(self, parent_task_id: str) -> set[str]:
+        """Lock one goal's envelope and read its issued intents, including history.
+
+        The transaction lock stays until the child and delegation commit together.
+        Try-lock polling avoids spending the SQL statement timeout waiting for a
+        coordinator's model calls. Independent goals use independent locks.
+
+        Only the control plane counts peer branches: restore the agent's unit
+        scope before returning, and never return peer work to the model.
+        """
+        scope: str | None = (
+            await self._session.execute(text("SELECT current_setting('app.agent_unit_ids', true)"))
+        ).scalar_one()
+        await self._session.execute(text("SELECT set_config('app.agent_unit_ids', '*', true)"))
+        try:
+            root_id: str = (
+                await self._session.execute(
+                    text("""
+                        WITH RECURSIVE ancestors AS (
+                            SELECT id, parent_task_id FROM tasks
+                            WHERE organization_id = :org AND id = :parent
+                            UNION
+                            SELECT t.id, t.parent_task_id FROM tasks t
+                            JOIN ancestors a ON a.parent_task_id = t.id
+                            WHERE t.organization_id = :org
+                        )
+                        SELECT id FROM ancestors WHERE parent_task_id IS NULL
+                    """),
+                    {"org": self._org, "parent": parent_task_id},
+                )
+            ).scalar_one()
+            while True:
+                acquired: bool = (
+                    await self._session.execute(
+                        text("SELECT pg_try_advisory_xact_lock(hashtextextended(:key, 0))"),
+                        {"key": f"goal-intents:{self._org}:{root_id}"},
+                    )
+                ).scalar_one()
+                if acquired:
+                    break
+                await asyncio.sleep(0.25)
+            rows = await self._session.execute(
+                text("""
+                    WITH RECURSIVE subtree AS (
+                        SELECT id FROM tasks WHERE organization_id = :org AND id = :root
+                        UNION
+                        SELECT t.id FROM tasks t JOIN subtree s ON t.parent_task_id = s.id
+                        WHERE t.organization_id = :org
+                    )
+                    SELECT DISTINCT COALESCE(original.intent_fingerprint,
+                                             t.intent_fingerprint,
+                                             t.input->>'work_key', t.id)
+                    FROM delegations d JOIN tasks t ON t.id = d.child_task_id
+                    JOIN subtree s ON s.id = t.id
+                    LEFT JOIN tasks original ON original.organization_id = :org
+                        AND original.id = t.input->>'work_key'
+                    WHERE d.organization_id = :org AND t.organization_id = :org
+                """),
+                {"org": self._org, "root": root_id},
+            )
+            return {str(row[0]) for row in rows}
+        finally:
+            await self._session.execute(
+                text("SELECT set_config('app.agent_unit_ids', :scope, true)"),
+                {"scope": "*" if scope is None else scope},
+            )
 
     async def record(
         self,
