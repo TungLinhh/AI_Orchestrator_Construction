@@ -629,6 +629,24 @@ check("the task view has an answer card above the evidence",
 check("the organisation view has a finder and an office filter",
   idsInMarkup.includes("deptSearch") && idsInMarkup.includes("deptOfficeFilter"),
   "search + All-offices chips");
+/* The bilingual toggle, asserted as coverage rather than taste. English is the
+   verified default, so every `data-i18n*` key and every `t("key", ...)` call
+   must have a Vietnamese entry — otherwise switching languages silently shows
+   English, which is a toggle that lies about what it does. Dynamic data (task
+   titles, answers, logs, reasons, names, ids) is deliberately never keyed, so
+   it is excluded by construction: only keyed chrome is counted. */
+const i18nUsed = new Set([
+  ...[...html.matchAll(/\bt(?:_fmt)?\("([^"]+)"/g)].map((m) => m[1]),
+  ...[...html.matchAll(/data-i18n(?:-html|-ph|-aria|-title)?="([^"]+)"/g)].map((m) => m[1]),
+].filter((k) => /^[a-z_]+\.[a-z_0-9]+$/.test(k) && k !== "key"));
+const i18nDefined = new Set(
+  [...html.matchAll(/^\s*"([a-z_]+\.[a-z_0-9]+)":/gm)].map((m) => m[1]));
+const i18nMissing = [...i18nUsed].filter((k) => !i18nDefined.has(k));
+check("the language switch exists", idsInMarkup.includes("langBtn"), "VI/EN toggle in the crumbs");
+check("every chrome string has a Vietnamese entry", i18nMissing.length === 0,
+  i18nMissing.length ? `missing: ${i18nMissing.join(", ")}` : `${i18nUsed.size} keys, all translated`);
+check("the Vietnamese catalogue is substantial, not a stub",
+  i18nDefined.size >= 150, `${i18nDefined.size} entries`);
 console.log("runtime:");
 check("the script loaded without throwing", uncaught === null, uncaught?.message);
 check("requests were made", fetched > 0, `${fetched} fetches`);

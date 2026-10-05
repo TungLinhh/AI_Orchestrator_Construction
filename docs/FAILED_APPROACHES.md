@@ -7914,3 +7914,48 @@ Both are the same shape as F266/F67: an assertion about the observer, not the
 observed. The check now sits after its data is fetched, and the filter guards
 `style` (hiding via an attribute under the harness, which is the correct degraded
 reading rather than a failed view).
+
+### F282
+
+**Failing a task whose answer exists in its own summary.**
+
+A department that answered in prose, or whose tail was truncated, failed
+`output_contract_unmet` with `tasks.output` persisted as `{}`. The work was
+thrown away and the review loop re-derived it at full model cost. `finish` now
+runs `repair_from_text` first: only keys found under their exact declared name
+count, anything still missing fails honestly, and the partial is persisted so
+the rerun brief keeps the keys that arrived. A translated key is deliberately
+not repaired — keys are identifiers, and guessing the mapping back is inventing.
+
+### F283
+
+**A `delegation_closed` verdict the loop never honored.**
+
+The tool result already said `delegation_closed: true` with a `next_step`, but
+every re-ask went back through the executor: 358 refusals on one measured run,
+ending `budget_error`. The per-run delegate closure now latches on the first
+closed refusal and answers the rest locally — no new child task, no new
+executor work. An open refusal (unknown name, duplicate) does not latch, so
+"adjust and try once more" still works.
+
+### F284
+
+**The rerun brief carried the complaint but not the shape.**
+
+Findings say what was wrong; without the key list the department fixed the tone
+and failed the same contract again. `_rerun_goal` now appends the required keys
+verbatim. What was not taken: holding a coordinator to the worker's contract —
+the tree exists so the office does not do the department's work, and an office
+that answered alone was already failed three times for exactly that.
+
+### F285
+
+**An i18n helper named `t` in a file where every task is already `t`.**
+
+Adding a global `t()` for translation shadowed it inside every `.map((t) => …)`
+and `renderBanner(t, s)` that also called `t("…")` — calling the row object as
+a function. The throw was invisible: the route caught it into `showError`,
+which replaced the parent view while the shim's flat nodes kept their old
+content, so the queue tiles still passed and only the empty list failed. The
+helper is now `tr()`; nothing in JS shares the name. Lesson: a render that
+throws must fail its own screen's checks, not just downstream ones.

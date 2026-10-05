@@ -402,3 +402,36 @@ class TestWorkThatWasDoneInTheWrongShape:
             reported_text="ok",
         )
         assert "produced nothing at all" in " ".join(verdict.findings)
+
+
+class TestTheRerunBriefCarriesTheShape:
+    """The retry is told the keys, not just the complaint.
+
+    Findings say what was wrong with the answer; without the key list the
+    department fixes the tone and fails the same contract again. Keys ride
+    verbatim — identifiers, never translated.
+    """
+
+    def _brief(self, schema: dict | None) -> str:
+        from types import SimpleNamespace
+
+        from ai_orchestrator.application.work_review import _rerun_goal
+        from ai_orchestrator.domain.review import ReviewVerdict
+
+        child = SimpleNamespace(
+            goal="Chấm 3 khoản chi",
+            input={"attempt": 1},
+            expected_output_schema=schema,
+        )
+        verdict = ReviewVerdict(ok=False, findings=("thiếu key reason",))
+        return _rerun_goal(child, verdict, "văn xuôi lần trước")
+
+    def test_the_required_keys_are_listed_verbatim(self) -> None:
+        brief = self._brief({"required": ["verdicts", "reason"]})
+        assert "verdicts" in brief and "reason" in brief
+        assert "ĐỊNH DẠNG BẮT BUỘC" in brief
+
+    def test_no_contract_means_no_shape_block(self) -> None:
+        brief = self._brief(None)
+        assert "ĐỊNH DẠNG BẮT BUỘC" not in brief
+        assert "thiếu key reason" in brief

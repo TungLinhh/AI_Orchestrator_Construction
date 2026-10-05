@@ -86,3 +86,65 @@ class TestTheMessage:
         assert "approved_headcount" in said, "what was required"
         assert "proposal_count" in said, "what arrived"
         assert "nothing" in describe_mismatch(None, {"produces": "approved_headcount"})
+
+
+class TestRepairFromText:
+    """The answer exists but the parsed map lost it — read before failing.
+
+    A department that did the work in prose, or whose tail was truncated, used
+    to fail `output_contract_unmet` with `tasks.output` persisted as `{}`. The
+    work was thrown away and the review loop re-derived it at full model cost.
+    The repair fills only keys found under their exact declared name; anything
+    still missing fails honestly.
+    """
+
+    def test_keys_found_in_the_summary_are_restored(self) -> None:
+        from ai_orchestrator.domain.output_contract import repair_from_text
+
+        schema = {"required": ["verdicts", "reason"]}
+        repaired = repair_from_text(
+            {},
+            schema,
+            'Kết luận: {"verdicts": "duyệt 2, từ chối 1", "reason": "thiếu ngày thu hồi"}',
+        )
+        assert repaired == {"verdicts": "duyệt 2, từ chối 1", "reason": "thiếu ngày thu hồi"}
+
+    def test_a_key_never_mentioned_stays_missing(self) -> None:
+        from ai_orchestrator.domain.output_contract import missing_keys, repair_from_text
+
+        schema = {"required": ["verdicts", "reason"]}
+        repaired = repair_from_text({}, schema, "Tôi đã xem xét và mọi thứ đều ổn.")
+        assert missing_keys(repaired, schema) == ("verdicts", "reason")
+
+    def test_present_keys_are_kept_and_only_the_gap_is_filled(self) -> None:
+        from ai_orchestrator.domain.output_contract import repair_from_text
+
+        schema = {"required": ["verdicts", "reason"]}
+        repaired = repair_from_text(
+            {"verdicts": "duyệt"},
+            schema,
+            'Báo cáo: {"reason": "đủ hồ sơ"}',
+        )
+        assert repaired == {"verdicts": "duyệt", "reason": "đủ hồ sơ"}
+
+    def test_a_translated_key_is_not_repaired(self) -> None:
+        """Keys are identifiers. `"phán_quyết"` is not `"verdicts"`, and
+        guessing the mapping back is inventing — the rerun brief, which carries
+        the verbatim key list, is what teaches the shape."""
+        from ai_orchestrator.domain.output_contract import missing_keys, repair_from_text
+
+        schema = {"required": ["verdicts"]}
+        repaired = repair_from_text({}, schema, '{"phán_quyết": "duyệt"}')
+        assert missing_keys(repaired, schema) == ("verdicts",)
+
+    def test_non_object_values_are_recovered_verbatim(self) -> None:
+        from ai_orchestrator.domain.output_contract import repair_from_text
+
+        schema = {"required": ["score", "approved", "count"]}
+        repaired = repair_from_text({}, schema, '{"score": 8.5, "approved": true, "count": 12}')
+        assert repaired == {"score": 8.5, "approved": True, "count": 12}
+
+    def test_empty_text_repairs_nothing(self) -> None:
+        from ai_orchestrator.domain.output_contract import repair_from_text
+
+        assert repair_from_text({}, {"required": ["a"]}, "") == {}

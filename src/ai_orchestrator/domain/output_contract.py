@@ -43,12 +43,20 @@ unrunnable.
 
 from __future__ import annotations
 
+import json
+import re
 from typing import Any
 
 #: The key that means "these keys are required", in its explicit form.
 REQUIRED = "required"
 #: ... and in the form the existing rows use.
 PRODUCES = "produces"
+
+#: A JSON value the repair pass understands: a string (with escapes), a small
+#: object or array without nesting, a number, or a literal. Deliberately not a
+#: full parser — the repair must be deterministic and must never invent a value,
+#: so anything shaped beyond this is left missing rather than guessed at.
+_VALUE_PATTERN = r'"(?:\\.|[^"\\])*"|\{[^{}]*\}|\[[^\[\]]*\]|-?\d[\d.]*|true|false|null'
 
 
 def required_keys(schema: dict[str, Any] | None) -> tuple[str, ...]:
@@ -131,4 +139,59 @@ def _is_truncated(value: Any) -> bool:
     return getattr(value, "truncated", False) is True
 
 
-__all__ = ["PRODUCES", "REQUIRED", "describe_mismatch", "missing_keys", "required_keys"]
+#: Marks "this text was searched and the key was not in it", distinct from a found
+#: `None` value. Without it a legitimately-null answer and an absent one merge,
+#: and the repair either drops a real answer or invents one.
+_ABSENT: Any = object()
+
+
+def _find_key_value(text: str, key: str) -> Any:
+    """The value stored under `key` in a prose/JSON-ish text, or `_ABSENT`.
+
+    Exact key-name match only, and the value must parse as JSON. A miss returns
+    `_ABSENT` rather than raising, because a summary that never mentions the key
+    is the normal case, not an error — most summaries are prose around a partial
+    object, not the object itself.
+    """
+    match = re.search(r'"' + re.escape(key) + r'"\s*:\s*(' + _VALUE_PATTERN + r")", text)
+    if match is None:
+        return _ABSENT
+    try:
+        return json.loads(match.group(1))
+    except json.JSONDecodeError, ValueError:
+        return _ABSENT
+
+
+def repair_from_text(
+    output: dict[str, Any] | None, schema: dict[str, Any] | None, text: str
+) -> dict[str, Any]:
+    """Fill missing contract keys from a free-text summary, deterministically.
+
+    The department did the work and the answer exists — in `executions.summary`,
+    in the previous attempt's prose the office carried into the rerun — but the
+    parsed `output` map lost it: prose instead of an object, a truncated tail,
+    keys translated into another language. Failing that task throws away work
+    that was done and sends the review loop to re-derive it at full model cost.
+
+    Only keys actually found under their exact declared name count. Anything not
+    found stays missing and the task still fails honestly. Nothing is invented,
+    translated back, or generated: the repair reads, it does not write prose.
+    """
+    repaired = dict(output or {})
+    if not text:
+        return repaired
+    for key in missing_keys(output, schema):
+        value = _find_key_value(text, key)
+        if value is not _ABSENT:
+            repaired[key] = value
+    return repaired
+
+
+__all__ = [
+    "PRODUCES",
+    "REQUIRED",
+    "describe_mismatch",
+    "missing_keys",
+    "repair_from_text",
+    "required_keys",
+]

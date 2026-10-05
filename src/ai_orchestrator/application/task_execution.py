@@ -81,7 +81,11 @@ from ai_orchestrator.domain.ids import (
     TaskId,
     ToolId,
 )
-from ai_orchestrator.domain.output_contract import describe_mismatch, missing_keys
+from ai_orchestrator.domain.output_contract import (
+    describe_mismatch,
+    missing_keys,
+    repair_from_text,
+)
 from ai_orchestrator.domain.procedure import describe
 from ai_orchestrator.domain.state_machines import Transition
 from ai_orchestrator.persistence.models import Agent, AgentDefinition, Role, Task
@@ -1363,10 +1367,39 @@ class TaskExecutionService:
         of them.
         """
 
+        delegation_closed_for_run: list[str] = []
+        """The reason, once a structural ceiling has fired in this run.
+
+        A closed ceiling is not a "try something else" answer — a different
+        agent or a reworded objective is refused the same way — but nothing
+        stopped the model re-asking until the request budget died: 358 refusals
+        on one measured run. The first refusal goes through the executor so the
+        reason is real; every later call in the same run is answered here, with
+        no new child task and no new executor work, so the remaining turns can
+        only go toward answering.
+        """
+
         async def _delegate(*, agent_name: str, objective: str) -> Any:
+            if delegation_closed_for_run:
+                return ToolResult(
+                    ok=False,
+                    output={
+                        "accepted": False,
+                        "agent": agent_name,
+                        "objective": objective,
+                        "child_task_ids": [],
+                        "reason": delegation_closed_for_run[0],
+                        "delegation_closed": True,
+                        "next_step": "Stop delegating. Answer this task now with what you have.",
+                    },
+                    error_kind="DELEGATION_REFUSED",
+                    error_message=delegation_closed_for_run[0],
+                )
             outcome, reason, closed = await self._delegate_once(
                 context=context, agent_name=agent_name, objective=objective
             )
+            if closed:
+                delegation_closed_for_run.append(reason)
             # `error_kind`/`error_message`, not `error_code`/`message`: those
             # are the field names on `ToolResult`, and a typo here is a TypeError
             # raised *inside* the agent loop, which reads as a tool failure rather
@@ -2120,12 +2153,27 @@ class TaskExecutionService:
                 [] if is_coordinator else missing_keys(result.output, task.expected_output_schema)
             )
             if missing:
-                await self._tasks.set_output(task.id, result.output or {})
-                return await self._fail(
-                    task,
-                    describe_mismatch(result.output, task.expected_output_schema),
-                    "output_contract_unmet",
+                # **Read the answer before failing it.** The department may have
+                # done the work while the parsed map lost it — prose instead of
+                # an object, a truncated tail, translated keys. Failing here
+                # throws that work away and the review loop re-derives it at
+                # full model cost. The repair only counts keys found under their
+                # exact declared name; anything still missing fails honestly
+                # below, and the partial is persisted so the record — and the
+                # rerun brief — keeps the keys that did arrive instead of `{}`.
+                repaired = repair_from_text(
+                    result.output, task.expected_output_schema, result.summary or ""
                 )
+                if not missing_keys(repaired, task.expected_output_schema):
+                    result = result.model_copy(update={"output": repaired})
+                    missing = []
+                else:
+                    await self._tasks.set_output(task.id, repaired)
+                    return await self._fail(
+                        task,
+                        describe_mismatch(repaired, task.expected_output_schema),
+                        "output_contract_unmet",
+                    )
             if result.output:
                 await self._tasks.set_output(task.id, result.output)
             if has_open_work_below:

@@ -675,13 +675,13 @@ dialog#sheet .dlg-foot {
         an obstacle to everyone else -- and a list written by hand goes stale the
         first time a department is added.
       -->
-      <div class="label">The organisation</div>
+      <div class="label" data-i18n="nav.org">The organisation</div>
       <a href="#/departments" data-nav="departments">
-        <span class="ic">⬡</span> Departments
+        <span class="ic">⬡</span> <span data-i18n="nav.departments">Departments</span>
       </a>
 
-      <div class="label">The work</div>
-      <a href="#/give" data-nav="give"><span class="ic">▷</span> Give work</a>
+      <div class="label" data-i18n="nav.work">The work</div>
+      <a href="#/give" data-nav="give"><span class="ic">▷</span> <span data-i18n="nav.give">Give work</span></a>
       <!--
         **One destination for everything waiting on a person.**
 
@@ -693,7 +693,7 @@ dialog#sheet .dlg-foot {
         on the screen itself, where both lists are drawn.
       -->
       <a href="#/work"      data-nav="work">
-        <span class="ic">◔</span> Needs you
+        <span class="ic">◔</span> <span data-i18n="nav.needs">Needs you</span>
         <span class="count" id="navWorkCount" hidden></span>
       </a>
       <span hidden>
@@ -713,7 +713,7 @@ dialog#sheet .dlg-foot {
     <div class="crumbs" id="crumbs">
       <!-- The back control. Shown whenever there is somewhere to go back to, and it
            calls history.back() so the browser's own history stays correct. -->
-      <button class="back" id="backBtn" title="Back (Esc)">‹ Back</button>
+      <button class="back" id="backBtn" title="Back (Esc)" data-i18n-title="crumb.back" data-i18n="crumb.back_btn">‹ Back</button>
       <nav class="path" id="path" aria-label="Breadcrumb"></nav>
       <div class="hint">
         <span class="kbd"><kbd>Esc</kbd> back</span>
@@ -728,15 +728,16 @@ dialog#sheet .dlg-foot {
           <button class="btn ghost sm" id="notifBtn" title="Notifications">🔔
             <span class="count" id="notifCount" hidden></span></button>
           <div class="bellpanel" id="notifPanel" hidden>
-            <div class="bellhead"><b>Notifications</b>
-              <button class="btn ghost sm" id="notifClear">Dismiss all</button></div>
+            <div class="bellhead"><b data-i18n="bell.title">Notifications</b>
+              <button class="btn ghost sm" id="notifClear" data-i18n="bell.clear">Dismiss all</button></div>
             <div class="list" id="notifList"></div>
             <div class="empty" id="notifEmpty">
-              <div class="big">·</div> Nothing yet. When an approval waits or a task
-              finishes, it lands here as well as in a popup.
+              <div class="big">·</div> <span data-i18n="bell.empty">Nothing yet. When an approval waits or a task
+              finishes, it lands here as well as in a popup.</span>
             </div>
           </div>
         </span>
+        <button class="btn ghost sm" id="langBtn" title="Chuyển sang tiếng Việt / Switch to English">VI</button>
         <button class="btn ghost sm" id="tokenBtn" title="Re-enter the service token">Token</button>
       </div>
     </div>
@@ -744,10 +745,10 @@ dialog#sheet .dlg-foot {
     <div class="content">
       <div class="banner" id="authwarn" hidden>
         <span>⚠</span>
-        <div><b>Authentication is off.</b> Every request is attributed to
+        <div><b data-i18n="auth.off">Authentication is off.</b> <span data-i18n-html="auth.off_sub">Every request is attributed to
           <code>dev:no-auth</code>. A local demo convenience — it cannot be enabled in
           production or in tests — and nothing here should be treated as an
-          authenticated session.</div>
+          authenticated session.</span></div>
       </div>
 
       <!-- ============================= dashboard ============================= -->
@@ -767,36 +768,36 @@ dialog#sheet .dlg-foot {
         <div class="stats" id="needStats"></div>
         <div class="card">
           <header>
-            <h2>Issues</h2>
+            <h2 data-i18n="need.issues">Issues</h2>
             <span class="sub" id="issueSub"></span>
             <span class="spacer"></span>
             <span class="seg" id="issueFilter">
-              <button class="on" data-i="">Everything</button>
-              <button data-i="failed">Failed</button>
-              <button data-i="blocked">Blocked</button>
-              <button data-i="waiting">No owner</button>
+              <button class="on" data-i="" data-i18n="flt.everything">Everything</button>
+              <button data-i="failed" data-i18n="flt.failed">Failed</button>
+              <button data-i="blocked" data-i18n="flt.blocked">Blocked</button>
+              <button data-i="waiting" data-i18n="flt.noowner">No owner</button>
             </span>
           </header>
           <div class="list" id="issueList"></div>
           <div class="empty" id="issueEmpty" hidden>
-            <div class="big">✓</div> Nothing has gone wrong. Every task either finished or
-            is still being worked on.
+            <div class="big">✓</div> <span data-i18n="need.issues_empty">Nothing has gone wrong. Every task either finished or
+            is still being worked on.</span>
           </div>
         </div>
         <div class="card">
           <header>
-            <h2>Approvals</h2>
+            <h2 data-i18n="need.approvals">Approvals</h2>
             <span class="sub" id="workSub"></span>
             <span class="spacer"></span>
             <span class="seg" id="workFilter">
-              <button class="on" data-f="pending">Needs a decision</button>
-              <button data-f="all">Everything pending</button>
+              <button class="on" data-f="pending" data-i18n="need.decide">Needs a decision</button>
+              <button data-f="all" data-i18n="need.allpending">Everything pending</button>
             </span>
           </header>
           <div class="list" id="workList"></div>
           <div class="empty" id="workEmpty" hidden>
             <div class="big">✓</div>
-            Nothing is waiting on a person.
+            <span data-i18n="need.approvals_empty">Nothing is waiting on a person.</span>
           </div>
         </div>
         <div class="note" id="workNote"></div>
@@ -823,19 +824,20 @@ dialog#sheet .dlg-foot {
           -->
           <div class="body" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input id="deptSearch" placeholder="Find a department or office…" autocomplete="off"
-              style="flex:2;min-width:180px" aria-label="Find a department or office">
-            <span class="seg" id="deptOfficeFilter" aria-label="Filter by office">
+              style="flex:2;min-width:180px" aria-label="Find a department or office"
+              data-i18n-ph="dept.search" data-i18n-aria="dept.search">
+            <span class="seg" id="deptOfficeFilter" aria-label="Filter by office" data-i18n-aria="dept.filter">
               <button class="on" data-office="">All offices</button>
             </span>
             <span class="legend" style="font-size:11px">
-              <span class="legend-dot"></span> a moving light on the edge means it is
-              working now; a dashed border means a run is stranded
+              <span class="legend-dot"></span> <span data-i18n="dept.legend">a moving light on the edge means it is
+              working now; a dashed border means a run is stranded</span>
             </span>
           </div>
           <div class="body"><div class="dept-tree" id="deptTree"></div></div>
-          <div class="empty" id="deptEmpty" hidden>No agent is registered for these departments.</div>
+          <div class="empty" id="deptEmpty" hidden><span data-i18n="dept.empty">No agent is registered for these departments.</span></div>
           <div class="empty" id="deptNoMatch" hidden>
-            <div class="big">·</div> Nothing matches. Clear the search or pick another office.
+            <div class="big">·</div> <span data-i18n="dept.nomatch">Nothing matches. Clear the search or pick another office.</span>
           </div>
         </div>
         <div class="note">
@@ -851,26 +853,26 @@ dialog#sheet .dlg-foot {
         <div class="card">
           <header><h2 id="deptTitle">Department</h2><span class="spacer"></span>
             <span class="sub" id="deptSub2"></span>
-            <button class="btn ghost sm" id="deptBack">Back to the organisation</button>
+            <button class="btn ghost sm" id="deptBack" data-i18n="dept.back">Back to the organisation</button>
           </header>
           <div class="body"><div class="dept-tree" id="deptOneTree"></div></div>
         </div>
         <div class="agent-split">
           <div class="card">
-            <header><h2>What it did</h2><span class="spacer"></span>
+            <header><h2 data-i18n="dept.did">What it did</h2><span class="spacer"></span>
               <span class="sub" id="runSub"></span></header>
             <div class="body"><div class="steps" id="runSteps"></div></div>
-            <div class="empty" id="runEmpty" hidden>It has not run yet.</div>
+            <div class="empty" id="runEmpty" hidden><span data-i18n="dept.neverran">It has not run yet.</span></div>
           </div>
           <div class="card">
-            <header><h2>Its work</h2><span class="spacer"></span>
+            <header><h2 data-i18n="dept.work">Its work</h2><span class="spacer"></span>
               <span class="sub" id="unitWorkSub"></span></header>
             <div class="body">
-              <div class="dept-tier">Open</div><div class="tasklist" id="workOpen"></div>
-              <div class="dept-tier">Needs attention</div><div class="tasklist" id="workAttn"></div>
-              <div class="dept-tier">Finished</div><div class="tasklist" id="workDone"></div>
+              <div class="dept-tier" data-i18n="dept.open">Open</div><div class="tasklist" id="workOpen"></div>
+              <div class="dept-tier" data-i18n="dept.attn">Needs attention</div><div class="tasklist" id="workAttn"></div>
+              <div class="dept-tier" data-i18n="dept.done">Finished</div><div class="tasklist" id="workDone"></div>
             </div>
-            <div class="empty" id="unitWorkEmpty" hidden>Nothing recorded yet.</div>
+            <div class="empty" id="unitWorkEmpty" hidden><span data-i18n="dept.nothing">Nothing recorded yet.</span></div>
           </div>
         </div>
         <div class="note" id="deptNote"></div>
@@ -885,64 +887,64 @@ dialog#sheet .dlg-foot {
      They are here because this is the view a person opens to make the company
      do something, and then to see that it did. -->
     <div class="card">
-      <header><h2>Start a task</h2><span class="spacer"></span>
-        <span class="sub">tell the company what to do, in your own words</span></header>
+      <header><h2 data-i18n="give.start">Start a task</h2><span class="spacer"></span>
+        <span class="sub" data-i18n="give.start_sub">tell the company what to do, in your own words</span></header>
       <div class="body" style="display:flex;flex-direction:column;gap:var(--s3)">
-        <label class="field"><span>Pick a piece of work</span>
+        <label class="field"><span data-i18n="give.pick">Pick a piece of work</span>
           <select id="scenario"><option value="">loading work…</option></select></label>
-        <label class="field"><span>What should the company work on?</span>
-          <input id="goal" placeholder="Reconcile the tender documents" autocomplete="off"></label>
+        <label class="field"><span data-i18n="give.what">What should the company work on?</span>
+          <input id="goal" placeholder="Reconcile the tender documents" autocomplete="off" data-i18n-ph="give.goal_ph"></label>
         <div class="legend" id="scenarioHint" hidden></div>
         <div class="btn-row" style="flex-wrap:nowrap">
-          <select id="agent" style="flex:1;min-width:120px" title="Who does the work">
+          <select id="agent" style="flex:1;min-width:120px" title="Who does the work" data-i18n-title="give.who">
             <option value="">loading agents…</option></select>
           <select id="taskType" style="flex:1;min-width:120px">
             <option value="coordination">coordination</option>
             <option value="analysis">analysis</option></select>
-          <button class="btn primary" id="runBtn">Run</button>
+          <button class="btn primary" id="runBtn" data-i18n="give.run">Run</button>
         </div>
-        <div class="legend" id="runHint">Runs on the free model. A coordination task can take minutes.</div>
+        <div class="legend" id="runHint" data-i18n="give.run_hint">Runs on the free model. A coordination task can take minutes.</div>
       </div>
     </div>
     <div class="card">
-      <header><h2>Workflow</h2><span class="spacer"></span>
+      <header><h2 data-i18n="give.workflow">Workflow</h2><span class="spacer"></span>
         <span class="sub" id="flowCount"></span></header>
       <div class="body" style="max-height:56vh;overflow:auto"><ul class="tree" id="tree"></ul></div>
       <div class="empty" id="flowEmpty" hidden>
-        <div class="big">◇</div> Nothing has run yet.
+        <div class="big">◇</div> <span data-i18n="give.norun">Nothing has run yet.</span>
       </div>
       <div class="body" style="border-top:1px solid var(--line);max-height:32vh;overflow:auto"
            id="activityBody">
-        <div class="dept-tier" style="margin-bottom:6px">Right now</div>
+        <div class="dept-tier" style="margin-bottom:6px" data-i18n="give.now">Right now</div>
         <div class="feed" id="activity"></div>
         <div class="empty" id="activityEmpty">
-          <div class="big">·</div> Nothing is happening. Press <b>Run</b> and this fills
-          in as the agents report — who asked whom for what, and what came back.
+          <div class="big">·</div> <span data-i18n-html="give.idle">Nothing is happening. Press <b>Run</b> and this fills
+          in as the agents report — who asked whom for what, and what came back.</span>
         </div>
       </div>
     </div>
         <div class="stats" id="workStats"></div>
         <div class="card">
-          <header><h2>The register</h2><span class="spacer"></span>
+          <header><h2 data-i18n="give.register">The register</h2><span class="spacer"></span>
             <span class="seg" id="giveFilter">
-              <button class="on" data-w="">Everything</button>
-              <button data-w="you">Waiting on me</button>
-              <button data-w="in_flight">With an agent</button>
-              <button data-w="settled">Settled</button>
+              <button class="on" data-w="" data-i18n="flt.everything">Everything</button>
+              <button data-w="you" data-i18n="flt.you">Waiting on me</button>
+              <button data-w="in_flight" data-i18n="flt.agent">With an agent</button>
+              <button data-w="settled" data-i18n="flt.settled">Settled</button>
             </span>
           </header>
           <div class="list" id="giveList"></div>
           <div class="empty" id="giveEmpty" hidden>
-            <div class="big">▷</div>Nothing on the register yet. Give the company
-            something above and it will appear here within seconds.
+            <div class="big">▷</div><span data-i18n="give.empty">Nothing on the register yet. Give the company
+            something above and it will appear here within seconds.</span>
           </div>
         </div>
         <div class="note">
-          <b>Pick a task, and the log is the point.</b> Every row says who holds it, how
+          <span data-i18n-html="give.note"><b>Pick a task, and the log is the point.</b> Every row says who holds it, how
           many departments it was handed to, and how many decisions are waiting on a
           person. A coordination task that does the work itself is <b>failed by the
           platform on purpose</b> — a fleet that answers everything itself is not a fleet —
-          so the delegation tree is the evidence, and it is on the detail view.
+          so the delegation tree is the evidence, and it is on the detail view.</span>
         </div>
       </section>
 
@@ -962,36 +964,36 @@ dialog#sheet .dlg-foot {
           away and a copy button for whatever comes next. Evidence stays below it.
         -->
         <div class="card" id="taskAnswerCard">
-          <header><h2>Answer</h2><span class="spacer"></span>
+          <header><h2 data-i18n="task.answer">Answer</h2><span class="spacer"></span>
             <span class="sub" id="taskAnswerSub"></span>
-            <button class="btn ghost sm" id="taskAnswerCopy" hidden>Copy</button></header>
+            <button class="btn ghost sm" id="taskAnswerCopy" hidden data-i18n="task.copy">Copy</button></header>
           <div class="body" id="taskAnswer"></div>
           <div class="empty" id="taskAnswerEmpty" hidden>
-            <div class="big">·</div> No answer yet — the steps below show where the work stands.
+            <div class="big">·</div> <span data-i18n="task.noanswer">No answer yet — the steps below show where the work stands.</span>
           </div>
         </div>
         <div class="card">
-          <header><h2>Decisions</h2><span class="spacer"></span>
+          <header><h2 data-i18n="task.decisions">Decisions</h2><span class="spacer"></span>
             <span class="sub" id="taskApprovalsSub"></span></header>
           <div class="list" id="taskApprovals"></div>
-          <div class="empty" id="taskApprovalsEmpty" hidden>Nothing needs a decision.</div>
+          <div class="empty" id="taskApprovalsEmpty" hidden><span data-i18n="task.nodecision">Nothing needs a decision.</span></div>
         </div>
         <div class="card">
-          <header><h2>Steps</h2><span class="spacer"></span>
+          <header><h2 data-i18n="task.steps">Steps</h2><span class="spacer"></span>
             <span class="sub" id="taskStepsSub"></span></header>
           <div class="list" id="taskSteps"></div>
           <div class="empty" id="taskStepsEmpty" hidden>
-            <div class="big">·</div> Nothing has run yet. Press <b>Run it</b> below and
-            each hand appears here as it works — click a step for its log and details.
+            <div class="big">·</div> <span data-i18n-html="task.nosteps">Nothing has run yet. Press <b>Run it</b> below and
+            each hand appears here as it works — click a step for its log and details.</span>
           </div>
         </div>
         <div class="grid2">
           <div class="card">
-            <header><h2>Who did what</h2><span class="spacer"></span>
+            <header><h2 data-i18n="task.who">Who did what</h2><span class="spacer"></span>
               <span class="sub" id="taskGraphSub"></span></header>
             <div class="body" id="taskGraph"></div>
             <div class="empty" id="taskGraphEmpty" hidden>
-              Nothing has been delegated yet.
+              <span data-i18n="task.nograph">Nothing has been delegated yet.</span>
             </div>
           </div>
           <div class="card">
@@ -1003,18 +1005,18 @@ dialog#sheet .dlg-foot {
           </div>
         </div>
         <div class="card">
-          <header><h2>The log</h2><span class="spacer"></span>
+          <header><h2 data-i18n="task.log">The log</h2><span class="spacer"></span>
             <span class="sub" id="taskLogSub"></span></header>
           <div class="list" id="taskLog"></div>
         </div>
         <div class="note" id="taskNote"></div>
         <div class="card">
-          <header><h2>Run it</h2><span class="spacer"></span>
+          <header><h2 data-i18n="task.runit">Run it</h2><span class="spacer"></span>
             <span class="sub" id="taskRunSub"></span></header>
           <div class="body">
             <div class="btn-row">
-              <button class="btn primary" id="runThisTask">Run this task now</button>
-              <span class="legend" id="runThisHint">Runs on the free model. A run that
+              <button class="btn primary" id="runThisTask" data-i18n="task.runnow">Run this task now</button>
+              <span class="legend" id="runThisHint" data-i18n-html="task.runhint">Runs on the free model. A run that
                 delegates to three agents has taken <b>10 minutes</b> and
                 <b>67,000 tokens</b> — it is started in the background and this page
                 watches it.</span>
@@ -1127,7 +1129,7 @@ function askToken(initial) {
      So the rule is: with auth off there is nothing to authenticate, a 401 means the
      deployment is misconfigured, and a 403 is an answer to show. */
   if (AUTH_OFF) return null;
-  const v = window.prompt("Service token (sent as `Authorization: Bearer …`)", initial || "");
+  const v = window.prompt(tr("auth.token_prompt", "Service token (sent as `Authorization: Bearer …`)"), initial || "");
   if (v === null) return null;
   /* One call, so there is no window in which an unnormalised token sits in
      sessionStorage -- and a token pasted with the word "Bearer" still works. */
@@ -1153,8 +1155,373 @@ function authHeaders(extra) {
 }
 if (!AUTH_OFF && !token() && !ORG_RE.test(ORG)) askToken("");
 
+/* ---------------- language ----------------
+   Bilingual chrome, English default. `tr(key, fallback)` renders the current
+   language and falls back to the English literal already at the call site, so
+   the default render is byte-identical to the page that 96 checks verify —
+   there is no second copy of English to drift. Vietnamese lives only in
+   `STR.vi`; dynamic data (task titles, answers, logs, reasons, names, ids) is
+   never translated, only the chrome around it.
+
+   Static markup carries `data-i18n="key"` (text), `data-i18n-ph` (placeholder),
+   `data-i18n-aria` (aria-label), `data-i18n-title` (title). The served document
+   keeps its English inline, so the static-markup checks keep passing; the
+   original is captured on first paint and restored when switching back.
+
+   `localStorage` is guarded: the verification harness provides `sessionStorage`
+   but no `localStorage`, and an unguarded read throws at boot — taking every
+   check after it down with it. */
+const STR = { vi: {} };
+/* Vietnamese chrome, batch 1: shell (nav, bell, crumbs). Dynamic data is never
+   translated — only the furniture around it. */
+Object.assign(STR.vi, {
+  "bell.title": "Thông báo",
+  "bell.clear": "Bỏ hết",
+  "bell.empty": "Chưa có gì. Khi có phê duyệt chờ hoặc task xong, sẽ hiện ở đây lẫn popup.",
+  "nav.org": "Tổ chức",
+  "nav.departments": "Phòng ban",
+  "nav.work": "Công việc",
+  "nav.give": "Giao việc",
+  "nav.needs": "Cần bạn",
+});
+/* Batch 2: departments screen (tiles, boxes, tiers, finder). */
+Object.assign(STR.vi, {
+  "dept.search": "Tìm phòng ban hoặc văn phòng…",
+  "dept.filter": "Lọc theo văn phòng",
+  "dept.legend": "đèn chạy ở viền nghĩa là đang làm; viền đứt nghĩa là tiến trình bị kẹt",
+  "dept.empty": "Chưa có agent nào cho các phòng ban này.",
+  "dept.nomatch": "Không có gì khớp. Xóa tìm kiếm hoặc chọn văn phòng khác.",
+  "dept.back": "Về toàn tổ chức",
+  "dept.did": "Việc đã làm",
+  "dept.neverran": "Chưa chạy lần nào.",
+  "dept.work": "Việc của đơn vị",
+  "dept.open": "Đang mở",
+  "dept.attn": "Cần chú ý",
+  "dept.done": "Đã xong",
+  "dept.nothing": "Chưa ghi nhận gì.",
+  "dept.alloffices": "Mọi văn phòng",
+  "dept.heading": "Trưởng, {o} văn phòng và {d} phòng ban",
+  "dept.sub": "{o} văn phòng · {d} phòng ban · {e} lượt giao việc đã ghi nhận",
+  "dept.noagent": "không có agent tên {n}",
+  "dept.unassigned": "<b>{n} phòng ban chưa thuộc văn phòng nào</b> nên không có trong cây trên: {who}. Chúng vẫn được tính vào tổng số.",
+  "tile.working": "Đang làm",
+  "tile.of_agents": "trên {n} agent",
+  "tile.open": "Việc đang mở",
+  "tile.across": "trên {n} phòng ban",
+  "tile.attention": "Cần chú ý",
+  "tile.attention_sub": "thất bại hoặc bị từ chối",
+  "tile.stranded": "Tiến trình kẹt",
+  "tile.stranded_sub": "đã bắt đầu, chưa bao giờ đóng",
+  "box.own_open": "tự mở",
+  "box.own_done": "tự xong",
+  "box.stuck": "kẹt",
+  "box.stranded": "kẹt cứng",
+  "box.roll": "{n} đơn vị dưới · mở <b>{o}</b> · xong <b>{d}</b>{att} · tổng <b>{n}</b> agent bên dưới",
+  "box.roll_att": " · cần chú ý <b>{a}</b>",
+  "tier.chief": "Trưởng",
+  "tier.offices": "Các văn phòng và phòng ban",
+  "tier.departments": "Phòng ban",
+});
+/* Batch 3: department panel. */
+Object.assign(STR.vi, {
+  "dept.nosuch": "Không có phòng ban này.",
+  "dept.noagent": "chưa đăng ký agent",
+  "dept.panel_sub": "{g} đã cấp, trần {c} · mô hình {m} · {r} lượt chạy",
+  "dept.runs": "{n} lượt chạy gần đây",
+  "dept.tok": "{n} tok",
+  "dept.secs": "{n}s",
+  "dept.stranded_flag": " · kẹt cứng",
+  "dept.roll_sub": "của mình: {co} mở · {ca} cần chú ý · {cd} xong — với {n} đơn vị dưới: {o} mở · {a} cần chú ý · {d} xong",
+  "dept.own_sub": "{co} mở · {ca} cần chú ý · {cd} xong",
+  "dept.last_run": "<b>Lượt chạy gần nhất:</b> {s} trên {m} — {n} token. Tóm tắt ở trên cũng là chuỗi mà workflow dùng để rẽ nhánh, nên panel không thể nói một đằng, máy chạy một nẻo.",
+  "dept.never_report": "Chưa chạy lần nào nên chưa có gì để báo cáo.",
+});
+/* Batch 4: give-work register rows, needs-you, approvals, shared filters. */
+Object.assign(STR.vi, {
+  "flt.everything": "Tất cả",
+  "flt.you": "Chờ tôi",
+  "flt.agent": "Agent đang làm",
+  "flt.settled": "Đã xong",
+  "flt.failed": "Thất bại",
+  "flt.blocked": "Bị chặn",
+  "flt.noowner": "Chưa có chủ",
+  "give.start": "Giao việc mới",
+  "give.start_sub": "bảo công ty làm gì, bằng lời của bạn",
+  "give.pick": "Chọn một đầu việc",
+  "give.what": "Công ty nên làm gì?",
+  "give.goal_ph": "Đối chiếu hồ sơ đấu thầu",
+  "give.who": "Ai làm việc này",
+  "give.run": "Chạy",
+  "give.run_hint": "Chạy trên mô hình miễn phí. Task điều phối có thể mất vài phút.",
+  "give.workflow": "Luồng việc",
+  "give.norun": "Chưa có gì chạy.",
+  "give.now": "Ngay lúc này",
+  "give.idle": "Chưa có gì diễn ra. Bấm <b>Chạy</b> và dòng này sẽ hiện dần khi các agent báo cáo — ai nhờ ai làm gì, và trả về gì.",
+  "give.register": "Sổ công việc",
+  "give.empty": "Sổ chưa có gì. Giao việc ở trên, vài giây sau sẽ hiện ở đây.",
+  "give.note": "<b>Chọn một task, và log mới là điều đáng đọc.</b> Mỗi dòng ghi ai giữ việc, đã giao cho bao nhiêu đơn vị, và bao nhiêu quyết định đang chờ người. Task điều phối mà tự làm hết sẽ bị <b>nền tảng đánh trượt có chủ ý</b> — một đội mà việc gì cũng tự trả lời thì không phải là đội — nên cây giao việc là bằng chứng, nằm ở trang chi tiết.",
+  "reg.waiting": "Chờ bạn",
+  "reg.waiting_sub": "cần quyết định hoặc cần chủ",
+  "reg.agent": "Agent đang làm",
+  "reg.agent_sub": "đang chạy hoặc đã giao",
+  "reg.settled": "Đã xong",
+  "reg.settled_sub": "đã hoàn thành và báo cáo",
+  "reg.total": "Tổng",
+  "reg.total_sub": "task trong sổ",
+  "row.held": " · {n} giữ",
+  "row.noowner": " · chưa ai giữ",
+  "row.handed": " · đã giao cho {n}",
+  "row.subs": " · {n} việc con",
+  "row.refused": "bị từ chối: {e}",
+  "row.todecide": "{n} việc cần quyết",
+  "row.you": "bạn",
+  "row.agent": "một agent",
+  "row.settled": "đã xong",
+  "need.issues": "Sự cố",
+  "need.issues_empty": "Không có gì hỏng. Mọi task hoặc đã xong hoặc vẫn đang được làm.",
+  "need.approvals": "Phê duyệt",
+  "need.decide": "Cần quyết định",
+  "need.allpending": "Mọi việc đang chờ",
+  "need.approvals_empty": "Không có gì chờ người.",
+  "need.you": "Cần bạn",
+  "need.you_sub": "một quyết định, một chủ, hoặc một phán xét",
+  "need.failed": "Thất bại",
+  "need.failed_sub": "công ty không hoàn thành được",
+  "need.blocked": "Bị chặn",
+  "need.blocked_sub": "đang chờ thứ gì đó",
+  "need.approvals_t": "Phê duyệt",
+  "need.approvals_sub": "đang chờ người",
+  "need.look": "{n} việc cần xem",
+  "need.noreason_short": "chưa ghi lý do",
+  "need.noreason": "Chưa ghi nhận lý do cho kết quả này.",
+  "need.task": "task",
+  "need.open": "Mở ra",
+  "need.retry": "Chạy lại",
+  "need.sub_all": "{c} đang chờ · {l} vẫn trả lời được",
+  "need.sub_live": "{l} việc chờ bạn trên {c} đang chờ",
+  "need.clear": "trống",
+  "need.note": "Việc cũ nhất trước, vì hàng đợi phê duyệt không có trường mức độ khẩn, ai làm theo thứ tự chèn là làm theo may rủi. <b>Hỏi</b> gửi task về cho agent kèm câu hỏi của bạn thay vì kết thúc nó — thường là đáp án đúng khi bạn chưa chắc.",
+  "appr.approve": "Duyệt",
+  "appr.ask": "Hỏi",
+  "appr.reject": "Từ chối",
+  "appr.expired": "hết hạn",
+  "appr.reraise": "cần nêu lại — giờ không ai trả lời được",
+  "appr.highrisk": "rủi ro cao",
+  "appr.asked": "{n} yêu cầu",
+  "appr.unknown": "không rõ",
+  "appr.routed": "· chuyển tới {n}",
+  "appr.queue": "· hàng chung",
+  "appr.waiting": "· chờ {n} ngày",
+});
+/* Batch 5: task detail, sheets, run/retry, feed, crumbs, shell. */
+Object.assign(STR.vi, {
+  "task.answer": "Trả lời",
+  "task.copy": "Chép",
+  "task.noanswer": "Chưa có trả lời — các bước dưới cho biết việc đang tới đâu.",
+  "task.decisions": "Quyết định",
+  "task.nodecision": "Không có gì cần quyết.",
+  "task.steps": "Các bước",
+  "task.nosteps": "Chưa có gì chạy. Bấm <b>Chạy</b> ở dưới, mỗi lượt làm sẽ hiện dần — bấm vào từng bước để xem log và chi tiết.",
+  "task.who": "Ai làm gì",
+  "task.nograph": "Chưa giao cho ai.",
+  "task.log": "Nhật ký",
+  "task.runit": "Chạy",
+  "task.runnow": "Chạy task này ngay",
+  "task.runhint": "Chạy trên mô hình miễn phí. Một lượt chạy giao cho ba agent đã tốn <b>10 phút</b> và <b>67.000 token</b> — chạy nền và trang này sẽ theo dõi.",
+  "task.finished_empty": "xong nhưng không có văn bản",
+  "task.nothing_yet": "chưa ghi gì",
+  "task.points": "{n} điểm đã trả lời",
+  "task.copied": "Đã chép câu trả lời.",
+  "task.copyfail": "Không chép được.",
+  "task.readall": "Đọc hết",
+  "task.answered_with": "Đã trả lời gồm: ",
+  "task.finished_steps": "Đã xong. Các bước dưới ghi ai đã làm gì.",
+  "task.held": "{n} giữ. ",
+  "task.inflight": "Việc đang chạy — trang này vẫn theo dõi. ",
+  "task.idle": "Chưa có gì chạy. Bấm <b>Chạy</b> ở dưới để bắt đầu.",
+  "task.failed_means": "Nghĩa là: việc dừng ở đây, mọi thứ bên dưới chưa chạy vì lý do này. Sửa nguyên nhân — hoặc bấm <b>Chạy lại</b> để thử cùng việc dưới dạng task mới — các bước dưới là biên bản những gì đã thử.",
+  "task.allissues": "Xem mọi sự cố",
+  "task.graph_sub": "{t} task, {d} lượt giao",
+  "task.appr_sub": "{n} việc trong task này",
+  "task.decided": "{d} bởi {who} · {when}",
+  "task.someone": "ai đó",
+  "task.refuse": "Từ chối",
+  "task.log_sub": "{n} sự kiện",
+  "task.reported": "<b>Báo cáo:</b> {ty} này đã giao cho {to} agent{ref}, {ex} đã chạy và {fa} thất bại, {ap} quyết định cần người. Mô hình đã dùng: <code>{mo}</code>.",
+  "task.reported_refused": ", {n} đã từ chối và nêu lý do",
+  "task.reported_nomodel": "<b>Báo cáo:</b> {ty} này đã giao cho {to} agent{ref}, {ex} đã chạy, {fa} thất bại, {ap} quyết định cần người. <br><b>Không ghi tên mô hình</b> vì không có lượt chạy nào ghi lại — một bản tường trình không nói rõ mô hình nào đã hành động là bản tường trình không ai kiểm chứng được.",
+  "task.reported_refused_short": ", {n} đã từ chối",
+  "task.outcome": "Kết quả",
+  "task.handed": "Đã giao cho",
+  "task.handed_sub": "đơn vị hoặc agent",
+  "task.ran": "Đã chạy",
+  "task.ran_sub": "{n} thất bại",
+  "task.inflight_t": "Đang chạy",
+  "task.inflight_sub": "trên {n} lượt thử",
+  "task.decisions_t": "Quyết định",
+  "task.decisions_sub": "{n} chờ người",
+  "step.done": "Xong.",
+  "step.ended": "Kết thúc ở trạng thái {s}.",
+  "step.issue": "Sự cố: {e}",
+  "step.issuekind": "Loại sự cố: {k}.",
+  "step.cost": "Chi phí: {c}.",
+  "step.files": "giữ lại {n} file.",
+  "step.sub": "{n} lượt làm · {f} đã xong",
+  "step.stopped": "Dừng với lý do: ",
+  "step.readall": "Đọc toàn bộ",
+  "step.nooutput": "Lượt này không để lại văn bản.",
+  "step.logfor": "Log của bước này ({n})",
+  "step.model": "Mô hình:",
+  "step.finished": " · xong ",
+  "sheet.close": "Đóng",
+  "sheet.full_answer": "Toàn văn câu trả lời",
+  "sheet.answer_empty": "Câu trả lời này trống.",
+  "sheet.agent_said": "Agent đã nói gì",
+  "run.openfirst": "Mở một task trước.",
+  "run.starting": "Đang bắt đầu…",
+  "run.notstarted": "Chưa bắt đầu.",
+  "run.notstarted_r": "Chưa bắt đầu: {r}",
+  "run.started": "<span class=\"t-ok\">Đã bắt đầu</span> chạy nền. Dự kiến khoảng <b>{m} phút</b> và <b>{tok} token</b> trên mô hình miễn phí. Trang này sẽ tiếp tục theo dõi.",
+  "run.started_t": "Đã bắt đầu. Việc này mất khoảng {m} phút.",
+  "run.couldnot": "Không bắt đầu được.",
+  "run.couldnot_r": "Không bắt đầu được: {e}",
+  "run.watching": "<span class=\"t-del\">đang chạy</span> · {ex} đã chạy, {fa} thất bại, {ap} quyết định đang chờ · đã kiểm tra {tk} lần",
+  "run.produced": "Lượt chạy đã ra kết quả. Báo cáo đã cập nhật.",
+  "run.lost": "Mất dấu lượt chạy.",
+  "retry.queued": "Đã xếp hàng thử lại.",
+  "retry.running": "Đang chạy lại cùng việc dưới dạng task mới.",
+  "retry.couldnot": "Không chạy lại được: {e}",
+  "retry.unknown": "không rõ",
+  "give.saywhat": "Hãy nói công ty nên làm gì.",
+  "give.running": "Đang chạy…",
+  "give.exists_not_running": "Task đã tạo nhưng chưa có gì chạy nó: {e}",
+  "give.already": "Đang chạy rồi — không bắt đầu cái thứ hai.",
+  "give.queued_not_running": "Đã xếp hàng nhưng chưa có gì chạy: {e}",
+  "give.running_here": "Đang chạy ở đây. Khoảng {s}s và {tok} token — panel này sẽ hiện dần khi họ báo cáo.",
+  "give.running_panel": "Đang chạy. Panel này sẽ hiện dần khi các agent báo cáo.",
+  "give.something": "Việc khác (gõ ở dưới)",
+  "give.shouldback": "Nên thu về: ",
+  "give.tier_company": "cả công ty",
+  "give.tier_office": "một văn phòng",
+  "give.tier_dept": "một phòng ban",
+  "give.noagents": "không tìm thấy agent",
+  "give.chief_default": "trưởng (mặc định)",
+  "appr.ask_q": "Agent nên trả lời gì trước khi bạn quyết?",
+  "appr.approve_v": "Duyệt",
+  "appr.reject_v": "Từ chối",
+  "appr.confirm": "{a} yêu cầu này?",
+  "appr.approved": "Đã duyệt.",
+  "appr.rejected": "Đã từ chối.",
+  "appr.sentback": "Đã gửi lại kèm câu hỏi của bạn.",
+  "appr.couldnot_action": "Không {a} được: {e}",
+  "appr.whyrefused": "Vì sao từ chối?\n\nLý do được giữ cùng quyết định để người đọc sau biết đã cân nhắc gì. Phê duyệt không có ghi chú chỉ là một dấu tick.",
+  "appr.decided": "Đã quyết, và đã ghi vào log.",
+  "appr.refused_note": "Đã từ chối, kèm lý do của bạn.",
+  "appr.couldnot": "Không ghi nhận được: {e}",
+  "agent.couldnot_read": "Không đọc được agent đó: {e}",
+  "agent.why_stop": "Vì sao dừng agent này?\n\nLý do là bắt buộc — database từ chối lệnh dừng không lý do, và lý do được ghi vào log quyết định.",
+  "agent.need_reason": "Bắt buộc có lý do. Lệnh dừng không lý do không khác gì tai nạn.",
+  "agent.stopped": "Đã dừng, và đã ghi quyết định.",
+  "agent.couldnot_stop": "Không dừng được agent đó: {e}",
+  "agent.revive_q": "Chạy lại? Nó quay lại ở L1 — quyền cũ không được phục hồi.",
+  "agent.running_l1": "Đang chạy lại, ở L1.",
+  "agent.couldnot_revive": "Không chạy lại được agent đó: {e}",
+  "agent.nopanel": "Agent đó không có panel.",
+  "ago.now": "vừa xong",
+  "ago.mins": "{n} phút trước",
+  "ago.hours": "{n} giờ trước",
+  "ago.days": "{n} ngày trước",
+  "notif.decision": "Một quyết định đang chờ bạn",
+  "notif.decision_sub": "có phê duyệt được yêu cầu",
+  "notif.review": "Xem",
+  "notif.failed": "Một task thất bại",
+  "notif.failed_sub": "xem đã hỏng ở đâu",
+  "notif.finished": "Một task đã xong",
+  "notif.finished_sub": "xem đã thu về gì",
+  "notif.open": "Mở",
+  "feed.delegated": "{a} nhờ {b} làm việc",
+  "feed.handed": "việc đã giao cho agent khác",
+  "feed.refused": "{a} bị từ chối{r}",
+  "feed.refused_r": ": {r}",
+  "feed.refused_bare": "một lượt giao việc bị từ chối",
+  "feed.decision": "một quyết định đang chờ người{a}",
+  "feed.decision_at": " tại {n}",
+  "feed.ran": "{n} đã chạy task",
+  "feed.ran_bare": "task đã chạy",
+  "feed.done": "{n} đã xong và báo cáo",
+  "feed.done_bare": "task đã xong",
+  "feed.failed": "{n} không hoàn thành được",
+  "feed.review": "người kiểm tra đã xem kết quả và yêu cầu làm lại",
+  "feed.learned": "agent đã ghi lại điều học được",
+  "flow.count": "{n} task",
+  "conn.connecting": "đang nối",
+  "conn.live": "trực tiếp",
+  "conn.retry": "đang nối lại",
+  "conn.none": "mất kết nối",
+  "err.load": "Không tải được màn này.",
+  "err.reload": "Tải lại",
+  "err.back": "Về Phòng ban",
+  "task.graph_aria": "Đồ thị giao việc: {t} task, {d} lượt giao",
+  "crumb.decide": "Quyết định",
+  "crumb.dept": "Phòng ban",
+  "crumb.back": "Quay lại",
+  "crumb.back_btn": "‹ Quay lại",
+  "auth.off": "Xác thực đang tắt.",
+  "auth.off_sub": "Mọi request đều gán cho <code>dev:no-auth</code>. Tiện cho demo local — không bật được ở production hay test — và đừng coi đây là phiên đăng nhập thật.",
+  "auth.token_prompt": "Service token (gửi dạng `Authorization: Bearer …`)",
+  "auth.need_token": "Chưa được phép. Bấm Token để nhập service token.",
+  "misc.nosummary": "chưa có tóm tắt",
+});
+function tr(key, fallback) {
+  if (state.lang === "vi" && Object.hasOwn(STR.vi, key)) return STR.vi[key];
+  return fallback;
+}
+function t_fmt(key, fallback, vars) {
+  let s = tr(key, fallback);
+  for (const [k, v] of Object.entries(vars || {})) s = s.split(`{${k}}`).join(String(v));
+  return s;
+}
+function langGet() {
+  try {
+    const v = window.localStorage && window.localStorage.getItem("ao-lang-v1");
+    return v === "vi" ? "vi" : "en";
+  } catch { return "en"; }
+}
+function langSet(v) {
+  state.lang = v === "vi" ? "vi" : "en";
+  try {
+    if (window.localStorage) window.localStorage.setItem("ao-lang-v1", state.lang);
+  } catch { /* a private window without storage still gets the session language */ }
+  try {
+    if (document.documentElement) document.documentElement.lang = state.lang;
+  } catch { /* the harness document has no element to label */ }
+  const b = $("langBtn");
+  if (b) b.textContent = state.lang === "vi" ? "EN" : "VI";
+  paintStatic();
+}
+function paintStatic() {  const vi = state.lang === "vi";
+  const paint = (attr, get, set) => {
+    for (const el of document.querySelectorAll(`[${attr}]`)) {
+      try {
+        const key = el.getAttribute(attr);
+        if (el.dataset.i18nOrig === undefined) el.dataset.i18nOrig = get(el);
+        set(el, vi && Object.hasOwn(STR.vi, key) ? STR.vi[key] : el.dataset.i18nOrig);
+      } catch { /* one unpaintable label must not break the screen */ }
+    }
+  };
+  paint("data-i18n", (el) => el.textContent, (el, v) => { el.textContent = v; });
+  /* `data-i18n-html` for labels whose English carries markup (`<b>Run</b>`).
+     A `textContent` paint would print the tags literally in Vietnamese, so the
+     HTML variant is painted through `innerHTML` — served English untouched. */
+  paint("data-i18n-html", (el) => el.innerHTML, (el, v) => { el.innerHTML = v; });
+  paint("data-i18n-ph", (el) => el.getAttribute("placeholder") || "", (el, v) => { el.setAttribute("placeholder", v); });
+  paint("data-i18n-aria", (el) => el.getAttribute("aria-label") || "", (el, v) => { el.setAttribute("aria-label", v); });
+  paint("data-i18n-title", (el) => el.getAttribute("title") || "", (el, v) => { el.setAttribute("title", v); });
+}
+
 /* ---------------- state ---------------- */
 const state = {
+  lang: langGet(),
   es: null, paused: false, bootedAt: Date.now(), filter: "all", approvalFilter: "pending", giveFilter: "", decisionFilter: "",
   tasks: new Map(), agents: new Map(), events: [], selected: null, backfill: new Set(),
   portfolio: null, projects: [], project: null, workspace: null, inbox: [],
@@ -1187,7 +1554,7 @@ function esc(s) {
  * machinery. */
 function readable(raw, limit = 900) {
   let t = String(raw == null ? "" : raw).trim();
-  if (!t) return "no summary";
+  if (!t) return tr("misc.nosummary", "no summary");
 
   // 2. Tool-call JSON, whole lines of it.
   t = t
@@ -1255,11 +1622,11 @@ function ago(iso) {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "—";
   const mins = Math.round((Date.now() - then) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return mins + "m ago";
+  if (mins < 1) return tr("ago.now", "just now");
+  if (mins < 60) return t_fmt("ago.mins", "{n}m ago", { n: mins });
   const hrs = Math.round(mins / 60);
-  if (hrs < 24) return hrs + "h ago";
-  return Math.round(hrs / 24) + "d ago";
+  if (hrs < 24) return t_fmt("ago.hours", "{n}h ago", { n: hrs });
+  return t_fmt("ago.days", "{n}d ago", { n: Math.round(hrs / 24) });
 }
 
 /* ---------------- toasts: honest about failure ---------------- */
@@ -1410,28 +1777,28 @@ function notifFor(ev) {
   if (/approval\.requested/i.test(type)) {
     return {
       kind: "warn",
-      title: "A decision is waiting on you",
-      body: v.title || "an approval was requested",
+      title: tr("notif.decision", "A decision is waiting on you"),
+      body: v.title || tr("notif.decision_sub", "an approval was requested"),
       href: "#/work",
-      action: "Review",
+      action: tr("notif.review", "Review"),
     };
   }
   if (/task\.failed/i.test(type)) {
     return {
       kind: "bad",
-      title: "A task failed",
-      body: v.title || "see what went wrong",
+      title: tr("notif.failed", "A task failed"),
+      body: v.title || tr("notif.failed_sub", "see what went wrong"),
       href: v.task_id ? `#/give/${encodeURIComponent(v.task_id)}` : "#/give",
-      action: "Open",
+      action: tr("notif.open", "Open"),
     };
   }
   if (/task\.completed/i.test(type)) {
     return {
       kind: "good",
-      title: "A task finished",
-      body: v.title || "see what came back",
+      title: tr("notif.finished", "A task finished"),
+      body: v.title || tr("notif.finished_sub", "see what came back"),
       href: v.task_id ? `#/give/${encodeURIComponent(v.task_id)}` : "#/give",
-      action: "Open",
+      action: tr("notif.open", "Open"),
     };
   }
   return null;
@@ -1532,26 +1899,26 @@ function renderCrumbs(route) {
     items.push(href ? `<a href="${href}">${esc(label)}</a>` : `<span class="here">${esc(label)}</span>`);
   switch (route.name) {
     case "approval":
-      add("Approvals", "#/work"); items.push('<span class="sep">/</span>');
-      add("Decide", null, true);
+      add(tr("nav.needs", "Needs you"), "#/work"); items.push('<span class="sep">/</span>');
+      add(tr("crumb.decide", "Decide"), null, true);
       break;
     case "dept":
-      add("Departments", "#/departments"); items.push('<span class="sep">/</span>');
-      add($("deptTitle").textContent || "Department", null, true);
+      add(tr("nav.departments", "Departments"), "#/departments"); items.push('<span class="sep">/</span>');
+      add($("deptTitle").textContent || tr("crumb.dept", "Department"), null, true);
       break;
     case "departments":
-      add("Departments", null, true);
+      add(tr("nav.departments", "Departments"), null, true);
       break;
     case "task":
-      add("Give work", "#/give"); items.push('<span class="sep">/</span>');
+      add(tr("nav.give", "Give work"), "#/give"); items.push('<span class="sep">/</span>');
       add(taskName(route.arg), null, true);
       break;
     case "give":
       if (route.arg) {
-        add("Give work", "#/give"); items.push('<span class="sep">/</span>');
+        add(tr("nav.give", "Give work"), "#/give"); items.push('<span class="sep">/</span>');
         add(taskName(route.arg), null, true);
       } else {
-        add("Give work", null, true);
+        add(tr("nav.give", "Give work"), null, true);
       }
       break;
     default: {
@@ -1621,10 +1988,10 @@ function showError(err) {
   const target = $("view-" + (parseHash().name === "project" ? "projects" : parseHash().name)) || $("view-give");
   target.hidden = false;
   setHTML(target.id, `<div class="card"><div class="body">
-    <div class="note late"><b>Could not load this view.</b><br>${esc(err && err.message || String(err))}</div>
+    <div class="note late"><b>${tr("err.load", "Could not load this view.")}</b><br>${esc(err && err.message || String(err))}</div>
     <div class="btn-row" style="margin-top:12px">
-      <button class="btn" onclick="location.reload()">Reload</button>
-      <button class="btn ghost" onclick="go('#/departments')">Back to Departments</button>
+      <button class="btn" onclick="location.reload()">${tr("err.reload", "Reload")}</button>
+      <button class="btn ghost" onclick="go('#/departments')">${tr("err.back", "Back to Departments")}</button>
     </div></div></div>`);
 }
 
@@ -1692,35 +2059,35 @@ function renderIssues(q) {
   const blocked = all.filter((t) => t.status === "blocked").length;
   const unowned = all.filter((t) => t.status === "created").length;
   setHTML("needStats",
-    statTile("Needs you", num(q.needs_you ?? 0),
-      "a decision, an owner, or a judgement", (q.needs_you ?? 0) ? "warn" : "good")
-    + statTile("Failed", num(failed), "the company could not finish them",
+    statTile(tr("need.you", "Needs you"), num(q.needs_you ?? 0),
+      tr("need.you_sub", "a decision, an owner, or a judgement"), (q.needs_you ?? 0) ? "warn" : "good")
+    + statTile(tr("need.failed", "Failed"), num(failed), tr("need.failed_sub", "the company could not finish them"),
       failed ? "alarm" : "good")
-    + statTile("Blocked", num(blocked), "waiting on something", blocked ? "warn" : "good")
-    + statTile("Approvals", num(state.inbox ? state.inbox.length : 0),
-      "pending a person", (state.inbox || []).length ? "warn" : "good"));
+    + statTile(tr("need.blocked", "Blocked"), num(blocked), tr("need.blocked_sub", "waiting on something"), blocked ? "warn" : "good")
+    + statTile(tr("need.approvals_t", "Approvals"), num(state.inbox ? state.inbox.length : 0),
+      tr("need.approvals_sub", "pending a person"), (state.inbox || []).length ? "warn" : "good"));
 
   $("issueSub").textContent = all.length
-    ? `${all.length} to look at`
-    : "nothing has gone wrong";
+    ? t_fmt("need.look", "{n} to look at", { n: all.length })
+    : tr("need.issues_empty", "Nothing has gone wrong. Every task either finished or is still being worked on.");
   $("issueEmpty").hidden = rows.length > 0;
-  setHTML("issueList", rows.map((t) => {
-    const short = t.last_error ? String(t.last_error).slice(0, 150) : "no reason recorded";
+  setHTML("issueList", rows.map((it) => {
+    const short = it.last_error ? String(it.last_error).slice(0, 150) : tr("need.noreason_short", "no reason recorded");
     return `
-    <details class="row issue" data-task="${esc(t.id)}">
+    <details class="row issue" data-task="${esc(it.id)}">
       <summary class="grow">
-        <div class="t"><span class="pill bad">${esc(t.status)}</span> ${esc(t.title)}</div>
-        <div class="s">${esc(t.task_type || "task")}${t.owner_name
-          ? " · held by " + esc(t.owner_name) : " · nobody holds it"}
-          ${t.children ? ` · ${t.children} subtask(s)` : ""}</div>
-        <div class="s err">${esc(short)}${String(t.last_error || "").length > 150 ? "…" : ""}</div>
+        <div class="t"><span class="pill bad">${esc(it.status)}</span> ${esc(it.title)}</div>
+        <div class="s">${esc(it.task_type || tr("need.task", "task"))}${it.owner_name
+          ? t_fmt("row.held", " · held by {n}", { n: esc(it.owner_name) }) : tr("row.noowner", " · nobody holds it")}
+          ${it.children ? t_fmt("row.subs", " · {n} subtask(s)", { n: it.children }) : ""}</div>
+        <div class="s err">${esc(short)}${String(it.last_error || "").length > 150 ? "…" : ""}</div>
       </summary>
       <div class="issue-body">
-        ${t.last_error ? reasonBlock(t.last_error)
-          : '<div class="s">No reason was recorded for this outcome.</div>'}
+        ${it.last_error ? reasonBlock(it.last_error)
+          : `<div class="s">${tr("need.noreason", "No reason was recorded for this outcome.")}</div>`}
         <div class="btn-row">
-          <a class="btn sm" href="#/give/${encodeURIComponent(t.id)}">Open it</a>
-          <button class="btn sm" data-retry="${esc(t.id)}">Run it again</button>
+          <a class="btn sm" href="#/give/${encodeURIComponent(it.id)}">${tr("need.open", "Open it")}</a>
+          <button class="btn sm" data-retry="${esc(it.id)}">${tr("need.retry", "Run it again")}</button>
         </div>
       </div>
     </details>`;
@@ -1757,9 +2124,9 @@ async function renderWork() {
   const shown = all ? d.items : live;
   $("workSub").textContent = d.count
     ? (all
-      ? `${d.count} pending · ${live.length} still answerable`
-      : `${live.length} waiting on you of ${d.count} pending`)
-    : "clear";
+      ? t_fmt("need.sub_all", "{c} pending · {l} still answerable", { c: d.count, l: live.length })
+      : t_fmt("need.sub_live", "{l} waiting on you of {c} pending", { l: live.length, c: d.count }))
+    : tr("need.clear", "clear");
   $("workEmpty").hidden = shown.length > 0;
   // An expired request gets **no buttons**.
   //
@@ -1776,24 +2143,24 @@ async function renderWork() {
     const live = a.actionable !== false && !a.expired;
     const buttons = live ? `
       <div class="btn-row" data-actions="${esc(a.approval_id)}">
-        <button class="btn primary sm" data-do="approve" data-id="${esc(a.approval_id)}">Approve</button>
-        <button class="btn sm" data-do="ask" data-id="${esc(a.approval_id)}">Ask</button>
-        <button class="btn danger sm" data-do="reject" data-id="${esc(a.approval_id)}">Reject</button>
+        <button class="btn primary sm" data-do="approve" data-id="${esc(a.approval_id)}">${tr("appr.approve", "Approve")}</button>
+        <button class="btn sm" data-do="ask" data-id="${esc(a.approval_id)}">${tr("appr.ask", "Ask")}</button>
+        <button class="btn danger sm" data-do="reject" data-id="${esc(a.approval_id)}">${tr("appr.reject", "Reject")}</button>
       </div>` : `
       <div class="btn-row">
-        <span class="tag wait">expired</span>
-        <span class="s">needs re-raising — nobody can answer it now</span>
+        <span class="tag wait">${tr("appr.expired", "expired")}</span>
+        <span class="s">${tr("appr.reraise", "needs re-raising — nobody can answer it now")}</span>
       </div>`;
     return `
     <div class="row static" data-approval="${esc(a.approval_id)}" style="flex-wrap:wrap">
       <div class="grow" style="min-width:240px">
         <div class="t">${esc(a.action_type)}
           <span class="tag ${a.risk_level === "high" ? "wait" : ""}">${esc(a.effect_class || "—")}</span>
-          ${a.risk_level === "high" ? '<span class="tag wait">high risk</span>' : ""}
+          ${a.risk_level === "high" ? `<span class="tag wait">${tr("appr.highrisk", "high risk")}</span>` : ""}
         </div>
-        <div class="s">${a.task_title ? esc(a.task_title) + " · " : ""}asked by ${esc(a.requested_by || "unknown")}
-          ${a.assigned_approver_id ? "· routed to " + esc(a.assigned_approver_id) : "· the queue"}
-          · waiting ${esc(a.waiting_days)}d</div>
+        <div class="s">${a.task_title ? esc(a.task_title) + " · " : ""}${t_fmt("appr.asked", "asked by {n}", { n: esc(a.requested_by || tr("appr.unknown", "unknown")) })}
+          ${a.assigned_approver_id ? t_fmt("appr.routed", "· routed to {n}", { n: esc(a.assigned_approver_id) }) : tr("appr.queue", "· the queue")}
+          ${t_fmt("appr.waiting", "· waiting {n}d", { n: esc(a.waiting_days) })}</div>
       </div>
       ${buttons}
     </div>`;
@@ -1806,11 +2173,11 @@ async function renderWork() {
     issueBadge.hidden = !issues.length;
   }
 
-  setHTML("workNote",
+  setHTML("workNote", tr("need.note",
     "Oldest first, because an approval queue has no urgency field and a person working "
     + "it by insertion order is working it by accident. <b>Ask</b> sends the task back to "
     + "the agent with your question instead of ending it — usually the right answer when "
-    + "you are unsure.");
+    + "you are unsure."));
   setHTML("navApprovalCount", d.count ? String(d.count) : "");
   const _nbA = $("navApprovalCount"); if (_nbA) _nbA.hidden = !d.count;
   /* The sidebar shows one number for this screen: issues plus decisions waiting.
@@ -1840,23 +2207,23 @@ async function renderWork() {
  */
 async function retryTask(id, button) {
   const label = button ? button.textContent : "";
-  if (button) { button.disabled = true; button.textContent = "Starting…"; }
+  if (button) { button.disabled = true; button.textContent = tr("run.starting", "Starting…"); }
   try {
     const made = await apiPost(`/tasks/${encodeURIComponent(id)}/retry`, {});
     const newId = made.task_id || made.id;
     if (newId) {
       toast(made.started === false
-        ? "Queued for another attempt."
-        : "Running the same work again as a new task.");
+        ? tr("retry.queued", "Queued for another attempt.")
+        : tr("retry.running", "Running the same work again as a new task."));
       go(`#/give/${encodeURIComponent(newId)}`);
       return;
     }
-    toast("Could not start it again: " + (made.reason || made.error || "unknown"), true);
+    toast(t_fmt("retry.couldnot", "Could not start it again: {e}", { e: made.reason || made.error || tr("retry.unknown", "unknown") }), true);
   } catch (err) {
     // A refusal here is usually "an equivalent task is already active" — the platform
     // protecting itself from doing the same work twice. Reported, not swallowed, because
     // the alternative is a button that appears to work.
-    toast("Could not start it again: " + err.message, true);
+    toast(t_fmt("retry.couldnot", "Could not start it again: {e}", { e: err.message }), true);
   } finally {
     if (button) { button.disabled = false; button.textContent = label; }
   }
@@ -1869,10 +2236,10 @@ document.addEventListener("click", async (e) => {
     const i = Number(ans.dataset.answertext);
     const text = answerTexts[i] ?? "";
     openSheet(
-      "The full answer",
+      tr("sheet.full_answer", "The full answer"),
       text
         ? `<pre class="reason" style="max-height:60vh">${esc(String(text).slice(0, 60000))}</pre>`
-        : '<div class="s">This answer is empty.</div>',
+        : `<div class="s">${tr("sheet.answer_empty", "This answer is empty.")}</div>`,
     );
     return;
   }
@@ -1880,10 +2247,10 @@ document.addEventListener("click", async (e) => {
   if (full) {    const i = Number(full.dataset.fulltext);
     const text = stepTexts[i] ?? "";
     openSheet(
-      "What the agent said",
+      tr("sheet.agent_said", "What the agent said"),
       text
         ? `<pre class="reason" style="max-height:60vh">${esc(text.slice(0, 60000))}</pre>`
-        : '<div class="s">This run left no written output.</div>',
+        : `<div class="s">${tr("step.nooutput", "This run left no written output.")}</div>`,
     );
     return;
   }
@@ -1899,26 +2266,26 @@ document.addEventListener("click", async (e) => {
   if (!btn) return;
   const { do: action, id } = btn.dataset;
   if (action === "ask") {
-    const question = window.prompt("What should the agent answer before you decide?");
+    const question = window.prompt(tr("appr.ask_q", "What should the agent answer before you decide?"));
     if (!question) return;
     await decide(id, "request-information", { needs_information: true, note: question });
     return;
   }
-  const label = action === "approve" ? "approve" : "reject";
-  if (!window.confirm(`${label[0].toUpperCase() + label.slice(1)} this request?`)) return;
+  const label = action === "approve" ? tr("appr.approve_v", "Approve") : tr("appr.reject_v", "Reject");
+  if (!window.confirm(t_fmt("appr.confirm", "{a} this request?", { a: label }))) return;
   await decide(id, action, {});
 });
 
 async function decide(approvalId, action, extra) {
   try {
     await apiPost(`/approvals/${encodeURIComponent(approvalId)}/${action}`, extra);
-    toast(action === "approve" ? "Approved."
-      : action === "reject" ? "Rejected." : "Sent back with your question.");
+    toast(action === "approve" ? tr("appr.approved", "Approved.")
+      : action === "reject" ? tr("appr.rejected", "Rejected.") : tr("appr.sentback", "Sent back with your question."));
     await refreshAfterAction();
   } catch (err) {
     /* Said plainly, in the page. An approval that silently does nothing is worse
        than one that says it failed. */
-    toast("Could not " + action + ": " + (err.message || err), true);
+    toast(t_fmt("appr.couldnot_action", "Could not {a}: {e}", { a: action, e: err.message || err }), true);
   }
 }
 
@@ -1931,35 +2298,35 @@ document.addEventListener("click", async (e) => {
   const { id } = btn.dataset;
   let control;
   try { control = await apiGet(`/agents/${encodeURIComponent(id)}/control`); } catch (err) {
-    toast("Could not read that agent: " + err.message, true); return;
+    toast(t_fmt("agent.couldnot_read", "Could not read that agent: {e}", { e: err.message }), true); return;
   }
   if (control.kill_switch) { await revive(id); return; }
   const reason = window.prompt(
-    "Why is this agent being stopped?\n\nThe reason is required — the database refuses a "
-    + "kill without one, and it is written to the decision log.");
+    tr("agent.why_stop", "Why is this agent being stopped?\n\nThe reason is required — the database refuses a "
+    + "kill without one, and it is written to the decision log."));
   if (reason === null) return;
   if (!reason || reason.trim().length < 3) {
-    toast("A reason is required. A kill with no reason is indistinguishable from an accident.",
+    toast(tr("agent.need_reason", "A reason is required. A kill with no reason is indistinguishable from an accident."),
           true);
     return;
   }
   try {
     await apiPost(`/agents/${encodeURIComponent(id)}/kill`, { reason: reason.trim() });
-    toast("Stopped, and the decision logged.");
+    toast(tr("agent.stopped", "Stopped, and the decision logged."));
     await refreshAfterAction();
   } catch (err) {
-    toast("Could not stop that agent: " + err.message, true);
+    toast(t_fmt("agent.couldnot_stop", "Could not stop that agent: {e}", { e: err.message }), true);
   }
 });
 
 async function revive(id) {
-  if (!window.confirm("Start it again? It comes back at L1 — the old grant is not restored.")) return;
+  if (!window.confirm(tr("agent.revive_q", "Start it again? It comes back at L1 — the old grant is not restored."))) return;
   try {
     await apiPost(`/agents/${encodeURIComponent(id)}/revive`, {});
-    toast("Running again, at L1.");
+    toast(tr("agent.running_l1", "Running again, at L1."));
     await refreshAfterAction();
   } catch (err) {
-    toast("Could not revive that agent: " + err.message, true);
+    toast(t_fmt("agent.couldnot_revive", "Could not revive that agent: {e}", { e: err.message }), true);
   }
 }
 
@@ -1975,7 +2342,7 @@ document.addEventListener("click", async (e) => {
     // the address it opens can no longer disagree.
     const all = [d.chief, ...(d.second_tier || []), ...d.offices].filter(Boolean);
     const o = all.find((x) => x.id === box.dataset.agentBox);
-    if (!o || !o.key) { toast("That agent has no panel.", true); return; }
+    if (!o || !o.key) { toast(tr("agent.nopanel", "That agent has no panel."), true); return; }
     go(`#/dept/${encodeURIComponent(o.key)}`);
     return;
   }
@@ -2019,7 +2386,7 @@ function buildDeptOfficeChips(secondTier) {
   for (const b of seg.querySelectorAll("button[data-office]")) have.add(b.dataset.office);
   const want = new Set(["", ...offices.map((o) => o.key)]);
   if ([...have].sort().join("|") === [...want].sort().join("|")) return;
-  seg.innerHTML = `<button class="on" data-office="">All offices</button>` + offices.map((o) =>
+  seg.innerHTML = `<button class="on" data-office="">${tr("dept.alloffices", "All offices")}</button>` + offices.map((o) =>
     `<button data-office="${esc(o.key)}">${esc(o.label || o.name)}</button>`).join("");
   for (const b of seg.querySelectorAll("button[data-office]")) {
     b.classList.toggle("on", (b.dataset.office || "") === deptOffice);
@@ -2112,18 +2479,18 @@ async function renderDepartments(key) {
   // **The heading counts, too.** It read "The six departments" while seven were
   // drawn underneath it. A heading is the most-read sentence on a screen and it was
   // the one number on the page no test could reach, because it is not in the payload.
-  $("deptHeading").textContent =
-    `The chief, ${nOffices} office(s) and ${d.offices.length} department(s)`;
+  $("deptHeading").textContent = t_fmt("dept.heading", "The chief, {o} office(s) and {d} department(s)",
+    { o: nOffices, d: d.offices.length });
   setHTML("deptStats",
-    statTile("Working now", num(running), "of " + num(boxes.length) + " agents",
+    statTile(tr("tile.working", "Working now"), num(running), t_fmt("tile.of_agents", "of {n} agents", { n: num(boxes.length) }),
       running ? "good" : "")
-    + statTile("Open work", num(openTasks),
-      `across ${num(d.offices.length)} department(s)`, openTasks ? "warn" : "good")
-    + statTile("Needs attention", num(attention), "failed or refused", attention ? "alarm" : "good")
-    + statTile("Stranded runs", num(stranded), "started, never closed", stranded ? "warn" : "good"));
+    + statTile(tr("tile.open", "Open work"), num(openTasks),
+      t_fmt("tile.across", "across {n} department(s)", { n: num(d.offices.length) }), openTasks ? "warn" : "good")
+    + statTile(tr("tile.attention", "Needs attention"), num(attention), tr("tile.attention_sub", "failed or refused"), attention ? "alarm" : "good")
+    + statTile(tr("tile.stranded", "Stranded runs"), num(stranded), tr("tile.stranded_sub", "started, never closed"), stranded ? "warn" : "good"));
 
-  $("deptSub").textContent = `${num(nOffices)} offices · ${num(d.offices.length)} departments`
-    + ` · ${num(d.edges.length)} delegation(s) on record`;
+  $("deptSub").textContent = t_fmt("dept.sub", "{o} offices · {d} departments · {e} delegation(s) on record",
+    { o: num(nOffices), d: num(d.offices.length), e: num(d.edges.length) });
   $("deptEmpty").hidden = boxes.length > 0;
   $("deptTree").hidden = boxes.length === 0;
   setHTML("deptTree", renderTree("deptTree", d.offices, d.chief, deptSel, d.second_tier)
@@ -2166,10 +2533,10 @@ function agentBox(a, sel) {
       (a.label && a.label !== a.name)
       ? `<div class="r">${esc(a.name)}${a.killed ? " · stopped" : ""}</div>` : ""}
     <div class="c">
-      <span>own open <b>${c.open ?? 0}</b></span>
-      <span>own done <b>${c.done ?? 0}</b></span>
-      ${c.attention ? `<span>stuck <b>${c.attention}</b></span>` : ""}
-      ${a.stuck ? `<span>stranded <b>${a.stuck}</b></span>` : ""}
+      <span>${tr("box.own_open", "own open")} <b>${c.open ?? 0}</b></span>
+      <span>${tr("box.own_done", "own done")} <b>${c.done ?? 0}</b></span>
+      ${c.attention ? `<span>${tr("box.stuck", "stuck")} <b>${c.attention}</b></span>` : ""}
+      ${a.stuck ? `<span>${tr("box.stranded", "stranded")} <b>${a.stuck}</b></span>` : ""}
       <span>${esc(a.granted || "L1")}/${esc(a.ceiling || "L1")}</span>
     </div>
     ${
@@ -2184,10 +2551,10 @@ function agentBox(a, sel) {
       // `r.agents - 1` is the number under it, and it is zero for a leaf, so a
       // department shows no roll-up line at all rather than a line about nothing.
       r && r.agents > 1
-      ? `<div class="roll">${num(r.agents - 1)} below · open <b>${num(r.open - (c.open ?? 0))}</b>
-          · done <b>${num(r.done - (c.done ?? 0))}</b>
-          ${r.attention > (c.attention ?? 0) ? `· needs attention <b>${num(r.attention - (c.attention ?? 0))}</b>` : ""}
-          · <b>${num(r.agents - 1)}</b> agent(s) in total under here</div>`
+      ? `<div class="roll">${t_fmt("box.roll", "{n} below · open <b>{o}</b> · done <b>{d}</b>{att} · <b>{n}</b> agent(s) in total under here",
+          { n: num(r.agents - 1), o: num(r.open - (c.open ?? 0)), d: num(r.done - (c.done ?? 0)),
+            att: r.attention > (c.attention ?? 0)
+              ? t_fmt("box.roll_att", " · needs attention <b>{a}</b>", { a: num(r.attention - (c.attention ?? 0)) }) : "" })}</div>`
       : ""}
   </div>`;
 }
@@ -2197,13 +2564,13 @@ function renderTree(target, offices, chief, selId, secondTier) {
   const parts = [];
   if (chief) {
     parts.push(`<div class="dept-tier">${esc(
-      chief.key === "chief" ? "Chief" : (chief.label || chief.name))}</div>`);
+      chief.key === "chief" ? tr("tier.chief", "Chief") : (chief.label || chief.name))}</div>`);
     parts.push(agentBox({ ...chief, label: chief.label || chief.name }, selId === chief.id));
   }
   const offices2 = secondTier || [];
   const depts = offices || [];
   if (offices2.length) {
-    parts.push(`<div class="dept-tier">Offices &amp; their departments</div>`);
+    parts.push(`<div class="dept-tier">${tr("tier.offices", "Offices & their departments")}</div>`);
     for (const o of offices2) {
       // Only departments this office actually owns. An empty group is still drawn --
       // an office with nothing under it is a real state, and hiding it would make a
@@ -2222,11 +2589,11 @@ function renderTree(target, offices, chief, selId, secondTier) {
     // No office tier in this payload: the departments still have to be drawn, or the
     // page loses them. Falling back to a flat list here is worse than the nested view,
     // but it is better than an empty panel.
-    parts.push(`<div class="dept-tier">Departments</div>`);
+    parts.push(`<div class="dept-tier">${tr("tier.departments", "Departments")}</div>`);
     for (const d of depts) {
       if (d.missing) {
         parts.push(`<div class="abox stuck"><div class="n">${esc(d.label)}</div>
-          <div class="r">no agent named ${esc(d.name)}</div></div>`);
+          <div class="r">${t_fmt("dept.noagent", "no agent named {n}", { n: esc(d.name) })}</div></div>`);
         continue;
       }
       parts.push(agentBox(d, selId === d.id));
@@ -2240,8 +2607,8 @@ function unassignedNote(d) {
   const extra = (d.tree && d.tree.unassigned) || [];
   if (!extra.length) return "";
   return `<div class="note" style="margin-top:10px">
-    <b>${num(extra.length)} department(s) name no office</b> and are not in the tree
-    above: ${esc(extra.map((x) => x.label).join(", "))}. They are counted in the totals.
+    ${t_fmt("dept.unassigned", "<b>{n} department(s) name no office</b> and are not in the tree above: {who}. They are counted in the totals.",
+      { n: num(extra.length), who: esc(extra.map((x) => x.label).join(", ")) })}
   </div>`;
 }
 
@@ -2263,17 +2630,18 @@ function tierOf(d, box) {
 
 async function renderOneDepartment(d, key) {
   const o = findByKey(d, key);
-  if (!o) { toast("No such department.", true); go("#/departments"); return; }
+  if (!o) { toast(tr("dept.nosuch", "No such department."), true); go("#/departments"); return; }
   const tier = tierOf(d, o);
   deptSel = o.id;
   $("deptTitle").textContent = o.missing ? o.label : o.label + " — " + o.name;
-  $("deptSub2").textContent = o.missing ? "no agent registered" :
-    `${o.granted} granted, ceiling ${o.ceiling} · model ${o.model} · ${o.run_count} run(s)`;
+  $("deptSub2").textContent = o.missing ? tr("dept.noagent", "no agent registered") :
+    t_fmt("dept.panel_sub", "{g} granted, ceiling {c} · model {m} · {r} run(s)",
+      { g: o.granted, c: o.ceiling, m: o.model, r: o.run_count });
   // One label for every tier, because it goes to the same place: the whole
   // organisation. It used to read "All six" on a page that shows seven, and a
   // tier-specific wording ("All offices") is wrong in a different way -- it suggests
   // an office-only view exists behind the button, and it does not.
-  $("deptBack").textContent = "Back to the organisation";
+  $("deptBack").textContent = tr("dept.back", "Back to the organisation");
 $("deptBack").onclick = () => go("#/departments");
   // Its own departments, drawn under it. An office is a group, so its panel shows
   // the group; showing a single box on a panel whose subject is a group of five
@@ -2286,15 +2654,15 @@ $("deptBack").onclick = () => go("#/departments");
     $("workOpen").innerHTML = $("workAttn").innerHTML = $("workDone").innerHTML = "";
     $("deptNote").textContent = ""; return; }
 
-  $("runSub").textContent = `${(o.runs || []).length} recent run(s)`;
+  $("runSub").textContent = t_fmt("dept.runs", "{n} recent run(s)", { n: (o.runs || []).length });
   $("runEmpty").hidden = (o.runs || []).length > 0;
   setHTML("runSteps", (o.runs || []).map((r) => `
     <div class="step${r.running ? " live" : ""}">
       <div class="h"><span>${esc(r.status)}</span>
         <span>${esc(r.model_used || "—")}</span>
-        <span>${num(r.tokens)} tok</span>
-        <span>${r.duration_ms != null ? Math.round(r.duration_ms / 1000) + "s" : ""}</span>
-        <span>${r.started_at ? esc(ago(r.started_at)) : ""}${r.stuck ? " · stranded" : ""}</span>
+        <span>${t_fmt("dept.tok", "{n} tok", { n: num(r.tokens) })}</span>
+        <span>${r.duration_ms != null ? t_fmt("dept.secs", "{n}s", { n: Math.round(r.duration_ms / 1000) }) : ""}</span>
+        <span>${r.started_at ? esc(ago(r.started_at)) : ""}${r.stuck ? tr("dept.stranded_flag", " · stranded") : ""}</span>
       </div>
       <div class="b">${readable(r.summary)}</div>
       ${r.error_message ? `<div class="b" style="color:var(--bad)">${esc(r.error_message.slice(0, 300))}</div>` : ""}
@@ -2307,9 +2675,12 @@ $("deptBack").onclick = () => go("#/departments");
   // work. Showing only `own` makes an office look idle; showing only `rollup` would
   // hide that the chief itself did nothing this hour. Both, labelled.
   $("unitWorkSub").textContent = r && r.agents > 1
-    ? `own: ${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`
-      + ` — with ${num(r.agents - 1)} below: ${num(r.open)} open · ${num(r.attention)} need attention · ${num(r.done)} done`
-    : `${c.open ?? 0} open · ${c.attention ?? 0} need attention · ${c.done ?? 0} done`;
+    ? t_fmt("dept.roll_sub",
+        "own: {co} open · {ca} need attention · {cd} done — with {n} below: {o} open · {a} need attention · {d} done",
+        { co: c.open ?? 0, ca: c.attention ?? 0, cd: c.done ?? 0, n: num(r.agents - 1),
+          o: num(r.open), a: num(r.attention), d: num(r.done) })
+    : t_fmt("dept.own_sub", "{co} open · {ca} need attention · {cd} done",
+        { co: c.open ?? 0, ca: c.attention ?? 0, cd: c.done ?? 0 });
   const row = (t, kind, who) => `<div class="taskitem ${kind}">
       <span class="st">${esc(t.status)}</span>
       <span class="grow">${who ? `${esc(who)} — ${esc(t.title)}` : esc(t.title)}</span>
@@ -2334,10 +2705,10 @@ $("deptBack").onclick = () => go("#/departments");
     + own.reduce((n, x) => n + (x.open_tasks || []).length + (x.attention || []).length
       + (x.done_tasks || []).length, 0)) > 0;
   $("deptNote").innerHTML = o.last_run
-    ? `<b>Last run:</b> ${esc(o.last_run.status)} on ${esc(o.last_run.model_used || "—")}
-       ${num(o.last_run.tokens)} tokens. The summary above is the same string a workflow
-       branches on, so the panel cannot say one thing and the engine another.`
-    : "It has not run yet, so there is nothing to report.";
+    ? t_fmt("dept.last_run",
+        "<b>Last run:</b> {s} on {m} — {n} tokens. The summary above is the same string a workflow branches on, so the panel cannot say one thing and the engine another.",
+        { s: esc(o.last_run.status), m: esc(o.last_run.model_used || "—"), n: num(o.last_run.tokens) })
+    : tr("dept.never_report", "It has not run yet, so there is nothing to report.");
 }
 
 
@@ -2467,7 +2838,7 @@ function delegationGraph(root, tree, delegations) {
 
   const h = 56 + placed.size * ROW;
   return `<svg viewBox="0 0 ${W} ${h}" width="100%" height="${h}" role="img"
-      aria-label="Delegation graph: ${placed.size} tasks, ${delegations.length} delegations">
+      aria-label="${t_fmt("task.graph_aria", "Delegation graph: {t} tasks, {d} delegations", { t: placed.size, d: delegations.length })}">
     <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
       markerWidth="6" markerHeight="6" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)" opacity="0.6"/></marker></defs>
@@ -2497,10 +2868,10 @@ async function renderGive(id) {
 
   const needsYou = q.needs_you ?? 0;
   setHTML("workStats",
-    statTile("Waiting on you", num(needsYou), "need a decision or an owner", needsYou ? "warn" : "good")
-    + statTile("With an agent", num(q.in_flight ?? 0), "running or assigned")
-    + statTile("Settled", num(q.settled ?? 0), "finished and reported")
-    + statTile("Total", num(q.total ?? 0), "tasks on the register"));
+    statTile(tr("reg.waiting", "Waiting on you"), num(needsYou), tr("reg.waiting_sub", "need a decision or an owner"), needsYou ? "warn" : "good")
+    + statTile(tr("reg.agent", "With an agent"), num(q.in_flight ?? 0), tr("reg.agent_sub", "running or assigned"))
+    + statTile(tr("reg.settled", "Settled"), num(q.settled ?? 0), tr("reg.settled_sub", "finished and reported"))
+    + statTile(tr("reg.total", "Total"), num(q.total ?? 0), tr("reg.total_sub", "tasks on the register")));
 
   const badge = $("navWorkCount");
   if (badge) { badge.textContent = needsYou ? String(needsYou) : ""; badge.hidden = !needsYou; }
@@ -2519,19 +2890,19 @@ async function renderGive(id) {
   // frame thì lúc đang có việc thì mới thấy, tức là feed chỉ hữu ích đúng lúc
   // không cần đến nó nhất.
   renderActivity();
-  setHTML("giveList", rows.map((t) => `
-    <div class="row" data-task="${esc(t.id)}">
+  setHTML("giveList", rows.map((it) => `
+    <div class="row" data-task="${esc(it.id)}">
       <div class="grow">
-        <div class="t">${esc(t.title)}</div>
-        <div class="s">${esc(t.task_type)} · ${esc(t.status)}
-          ${t.owner_name ? " · held by " + esc(t.owner_name) : " · nobody holds it"}
-          ${t.delegated ? ` · handed to ${t.delegated}` : ""}
-          ${t.children ? ` · ${t.children} subtask(s)` : ""}</div>
-        ${t.last_error ? `<div class="s">refused: ${esc(String(t.last_error).slice(0, 120))}</div>` : ""}
+        <div class="t">${esc(it.title)}</div>
+        <div class="s">${esc(it.task_type)} · ${esc(it.status)}
+          ${it.owner_name ? t_fmt("row.held", " · held by {n}", { n: esc(it.owner_name) }) : tr("row.noowner", " · nobody holds it")}
+          ${it.delegated ? t_fmt("row.handed", " · handed to {n}", { n: it.delegated }) : ""}
+          ${it.children ? t_fmt("row.subs", " · {n} subtask(s)", { n: it.children }) : ""}</div>
+        ${it.last_error ? `<div class="s">${t_fmt("row.refused", "refused: {e}", { e: esc(String(it.last_error).slice(0, 120)) })}</div>` : ""}
       </div>
       <div class="r">
-        ${t.approvals_waiting ? `<span class="pill bad">${t.approvals_waiting} to decide</span>` : ""}
-        <span class="t-${waitingTone(t.waiting_on) || "muted"}">${esc(t.waiting_on === "you" ? "you" : t.waiting_on === "an_agent" ? "an agent" : "settled")}</span>
+        ${it.approvals_waiting ? `<span class="pill bad">${t_fmt("row.todecide", "{n} to decide", { n: it.approvals_waiting })}</span>` : ""}
+        <span class="t-${waitingTone(it.waiting_on) || "muted"}">${esc(it.waiting_on === "you" ? tr("row.you", "you") : it.waiting_on === "an_agent" ? tr("row.agent", "an agent") : tr("row.settled", "settled"))}</span>
       </div>
     </div>`).join(""));
 }
@@ -2558,8 +2929,8 @@ function renderAnswer(t) {
   if (!keys.length) {
     setHTML("taskAnswer", "");
     if (sub) sub.textContent = t.status === "completed"
-      ? "finished with no written answer"
-      : "nothing written yet";
+      ? tr("task.finished_empty", "finished with no written answer")
+      : tr("task.nothing_yet", "nothing written yet");
     if (copy) copy.hidden = true;
     if (empty) empty.hidden = false;
     el.hidden = true;
@@ -2567,13 +2938,13 @@ function renderAnswer(t) {
   }
   el.hidden = false;
   if (empty) empty.hidden = true;
-  if (sub) sub.textContent = `${keys.length} point(s) answered`;
+  if (sub) sub.textContent = t_fmt("task.points", "{n} point(s) answered", { n: keys.length });
   if (copy) {
     copy.hidden = false;
     copy.onclick = async () => {
       const text = keys.map((k) => `${k}: ${plain(out[k])}`).join("\n\n");
-      try { await navigator.clipboard.writeText(text); toast("Answer copied."); }
-      catch { toast("Could not copy.", true); }
+      try { await navigator.clipboard.writeText(text); toast(tr("task.copied", "Answer copied.")); }
+      catch { toast(tr("task.copyfail", "Could not copy."), true); }
     };
   }
   answerTexts = keys.map((k) => plain(out[k]));
@@ -2582,7 +2953,7 @@ function renderAnswer(t) {
       <dt>${esc(humanKey(k))}</dt>
       <dd>${esc(String(plain(out[k])).slice(0, 600))}${
         String(plain(out[k])).length > 600
-          ? ` <button class="btn ghost sm" data-answertext="${i}">Read all</button>` : ""}</dd>
+          ? ` <button class="btn ghost sm" data-answertext="${i}">${tr("task.readall", "Read all")}</button>` : ""}</dd>
     </div>`).join("") + `</dl>`);
 }
 
@@ -2613,12 +2984,10 @@ function renderBanner(t, s) {
             <span class="tag wait">${esc(kind)}</span>
             <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
           ${t.last_error ? reasonBlock(t.last_error) : ""}
-          <div class="s">What this means: the work stopped here and nothing below it ran
-            because of this. Fix the cause — or press <b>Run it again</b> to try the same
-            work as a new task — and the steps below stay as the record of what was tried.</div>
+          <div class="s">${tr("task.failed_means", "What this means: the work stopped here and nothing below it ran because of this. Fix the cause — or press <b>Run it again</b> to try the same work as a new task — and the steps below stay as the record of what was tried.")}</div>
           <div class="btn-row" style="margin-top:8px">
-            <button class="btn sm" data-retry="${esc(t.id)}">Run it again</button>
-            <a class="btn ghost sm" href="#/work">See all issues</a>
+            <button class="btn sm" data-retry="${esc(t.id)}">${tr("need.retry", "Run it again")}</button>
+            <a class="btn ghost sm" href="#/work">${tr("task.allissues", "See all issues")}</a>
           </div>
         </div>
       </div>`);
@@ -2631,8 +3000,8 @@ function renderBanner(t, s) {
         <div class="body">
           <div class="t"><span class="pill ok">finished</span>
             <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
-          <div class="s">${keys.length ? "Answered with: " + keys.map((k) => `<code>${esc(k)}</code>`).join(", ")
-            : "Finished. The steps below say what each hand did."}</div>
+          <div class="s">${keys.length ? tr("task.answered_with", "Answered with: ") + keys.map((k) => `<code>${esc(k)}</code>`).join(", ")
+            : tr("task.finished_steps", "Finished. The steps below say what each hand did.")}</div>
         </div>
       </div>`);
     return;
@@ -2642,9 +3011,9 @@ function renderBanner(t, s) {
       <div class="body">
         <div class="t"><span class="pill">${esc(status)}</span>
           <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
-        <div class="s">${t.owner_name ? "Held by " + esc(t.owner_name) + ". " : ""}
-          ${(s.in_flight ?? 0) ? "Work is in flight — this page keeps watching. "
-          : "Nothing is running it right now. Press <b>Run it</b> below to start."}</div>
+        <div class="s">${t.owner_name ? t_fmt("task.held", "Held by {n}. ", { n: esc(t.owner_name) }) : ""}
+          ${(s.in_flight ?? 0) ? tr("task.inflight", "Work is in flight — this page keeps watching. ")
+          : tr("task.idle", "Nothing is running it right now. Press <b>Run it</b> below to start.")}</div>
       </div>
     </div>`);
 }
@@ -2657,7 +3026,7 @@ let stepTexts = [];
     which until now had no caller — a control with no path to it. */
 function openSheet(title, bodyHtml) {
   setHTML("sheetBody", `<h3 style="margin:0 0 8px">${esc(title)}</h3>` + bodyHtml);
-  setHTML("sheetFoot", `<button class="btn sm" id="sheetClose">Close</button>`);
+  setHTML("sheetFoot", `<button class="btn sm" id="sheetClose">${tr("sheet.close", "Close")}</button>`);
   const dlg = $("sheet");
   if (dlg && !dlg.open) dlg.showModal();
   const c = $("sheetClose");
@@ -2668,9 +3037,9 @@ function openSheet(title, bodyHtml) {
     execution record — never generated prose, so nothing here can hallucinate. */
 function stepPointers(x) {
   const bits = [];
-  bits.push(x.status === "completed" ? "Done." : `Ended as ${x.status}.`);
-  if (x.error_message) bits.push(`Issue: ${String(x.error_message).slice(0, 160)}`);
-  else if (x.error_kind) bits.push(`Issue kind: ${x.error_kind}.`);
+  bits.push(x.status === "completed" ? tr("step.done", "Done.") : t_fmt("step.ended", "Ended as {s}.", { s: x.status }));
+  if (x.error_message) bits.push(t_fmt("step.issue", "Issue: {e}", { e: String(x.error_message).slice(0, 160) }));
+  else if (x.error_kind) bits.push(t_fmt("step.issuekind", "Issue kind: {k}.", { k: x.error_kind }));
   // **Sum numbers, then format.** `num()` returns a formatted *string*, so adding two
   // of them concatenates ("120" + "80" = "12080"). The first version of this line did
   // exactly that and the cost read ten times too high on every step.
@@ -2682,8 +3051,8 @@ function stepPointers(x) {
       : "",
     x.duration_ms != null ? `${Math.round(x.duration_ms / 1000)}s` : "",
   ].filter(Boolean).join(" · ");
-  if (cost) bits.push(`Cost: ${cost}.`);
-  if (x.artifacts && x.artifacts.length) bits.push(`${x.artifacts.length} file(s) kept.`);
+  if (cost) bits.push(t_fmt("step.cost", "Cost: {c}.", { c: cost }));
+  if (x.artifacts && x.artifacts.length) bits.push(t_fmt("step.files", "{n} file(s) kept.", { n: x.artifacts.length }));
   return bits;
 }
 
@@ -2699,7 +3068,7 @@ function renderSteps(d) {
   const steps = d.tree_executions || [];
   stepTexts = steps.map((x) => String(x.summary || ""));
   $("taskStepsSub").textContent = steps.length
-    ? `${steps.length} hand(s) · ${steps.filter((x) => x.status === "completed").length} finished`
+    ? t_fmt("step.sub", "{n} hand(s) · {f} finished", { n: steps.length, f: steps.filter((x) => x.status === "completed").length })
     : "";
   $("taskStepsEmpty").hidden = steps.length > 0;
   const events = d.events || [];
@@ -2717,14 +3086,14 @@ function renderSteps(d) {
           x.input_tokens != null ? ` · ${fmtTokens((x.input_tokens ?? 0) + (x.output_tokens ?? 0))} tokens` : ""}</div>
       </summary>
       <div class="issue-body">
-        ${x.error_message ? reasonBlock("Stopped with: " + x.error_message) : ""}
+        ${x.error_message ? reasonBlock(tr("step.stopped", "Stopped with: ") + x.error_message) : ""}
         ${x.summary ? `<div class="s">${esc(String(x.summary).slice(0, 400))}${String(x.summary).length > 400 ? "…" : ""}</div>
-          <div class="btn-row"><button class="btn sm" data-fulltext="${i}">Read the whole thing</button></div>`
-        : '<div class="s">This run left no written output.</div>'}
-        ${related.length ? `<div class="dept-tier" style="margin:8px 0 4px">Log for this step (${related.length})</div>`
+          <div class="btn-row"><button class="btn sm" data-fulltext="${i}">${tr("step.readall", "Read the whole thing")}</button></div>`
+        : `<div class="s">${tr("step.nooutput", "This run left no written output.")}</div>`}
+        ${related.length ? `<div class="dept-tier" style="margin:8px 0 4px">${t_fmt("step.logfor", "Log for this step ({n})", { n: related.length })}</div>`
           + related.map((e) => `<div class="s" style="font-size:12px">· ${eventLine(e)}</div>`).join("") : ""}
-        <div class="s" style="margin-top:6px">Model: ${esc(x.model_used || x.model_profile || "—")}${
-          x.finished_at ? " · finished " + esc(ago(x.finished_at)) : ""}</div>
+        <div class="s" style="margin-top:6px">${tr("step.model", "Model:")} ${esc(x.model_used || x.model_profile || "—")}${
+          x.finished_at ? tr("step.finished", " · finished ") + esc(ago(x.finished_at)) : ""}</div>
       </div>
     </details>`;
   }).join(""));
@@ -2753,15 +3122,15 @@ async function renderOneTask(id) {
 
   const s = d.summary || {};
   setHTML("taskStats",
-    statTile("Outcome", t.status || "—", t.task_type || "", t.status === "completed" ? "good" : t.status === "failed" ? "alarm" : "")
-    + statTile("Handed to", num(s.delegated_to ?? 0), "departments or agents")
-    + statTile("Ran", num(s.executed ?? 0),
-        `${s.failed ?? 0} failed`, s.failed ? "alarm" : "good")
-    + statTile("In flight", num(s.in_flight ?? 0),
-        `of ${s.attempts ?? 0} attempt(s)`,
+    statTile(tr("task.outcome", "Outcome"), t.status || "—", t.task_type || "", t.status === "completed" ? "good" : t.status === "failed" ? "alarm" : "")
+    + statTile(tr("task.handed", "Handed to"), num(s.delegated_to ?? 0), tr("task.handed_sub", "departments or agents"))
+    + statTile(tr("task.ran", "Ran"), num(s.executed ?? 0),
+        t_fmt("task.ran_sub", "{n} failed", { n: s.failed ?? 0 }), s.failed ? "alarm" : "good")
+    + statTile(tr("task.inflight_t", "In flight"), num(s.in_flight ?? 0),
+        t_fmt("task.inflight_sub", "of {n} attempt(s)", { n: s.attempts ?? 0 }),
         (s.in_flight ?? 0) ? "warn" : "good")
-    + statTile("Decisions", num(s.approvals_total ?? 0),
-        `${s.approvals_pending ?? 0} waiting on a person`,
+    + statTile(tr("task.decisions_t", "Decisions"), num(s.approvals_total ?? 0),
+        t_fmt("task.decisions_sub", "{n} waiting on a person", { n: s.approvals_pending ?? 0 }),
         s.approvals_pending ? "warn" : "good"));
 
   $("taskTitle").textContent = t.title || "Task";
@@ -2799,13 +3168,13 @@ async function renderOneTask(id) {
      list of rows answers it only after you have read every one. */
   const tree = d.tree || [];
   $("taskGraphSub").textContent =
-    `${tree.length} task(s), ${(d.delegations || []).length} delegation(s)`;
+    t_fmt("task.graph_sub", "{t} task(s), {d} delegation(s)", { t: tree.length, d: (d.delegations || []).length });
   $("taskGraphEmpty").hidden = tree.length > 0;
   $("taskGraph").hidden = tree.length === 0;
   if (tree.length) setHTML("taskGraph", delegationGraph(t.id, tree, d.delegations || []));
 
   const appr = d.approvals || [];
-  $("taskApprovalsSub").textContent = `${appr.length} on this task`;
+  $("taskApprovalsSub").textContent = t_fmt("task.appr_sub", "{n} on this task", { n: appr.length });
   $("taskApprovalsEmpty").hidden = appr.length > 0;
   $("taskApprovals").hidden = appr.length === 0;
   setHTML("taskApprovals", appr.map((ap) => `
@@ -2813,12 +3182,13 @@ async function renderOneTask(id) {
       <div class="grow">
         <div class="t">${esc(ap.action_type)} <span class="pill">${esc(ap.risk_level || "")}</span></div>
         <div class="s">${esc(ap.reason || "")}</div>
-        ${ap.decided_at ? `<div class="s">${esc(ap.decision || ap.status)} by ${esc(ap.decided_by || "someone")} · ${esc(ago(ap.decided_at))}</div>` : ""}
+        ${ap.decided_at ? `<div class="s">${t_fmt("task.decided", "{d} by {who} · {when}",
+          { d: esc(ap.decision || ap.status), who: esc(ap.decided_by || tr("task.someone", "someone")), when: esc(ago(ap.decided_at)) })}</div>` : ""}
       </div>
       <div class="btn-row">
         ${ap.status === "pending"
-          ? `<button class="btn sm" data-appr="${esc(ap.id)}" data-do="approve">Approve</button>
-             <button class="btn ghost sm" data-appr="${esc(ap.id)}" data-do="reject">Refuse</button>`
+          ? `<button class="btn sm" data-appr="${esc(ap.id)}" data-do="approve">${tr("appr.approve", "Approve")}</button>
+             <button class="btn ghost sm" data-appr="${esc(ap.id)}" data-do="reject">${tr("task.refuse", "Refuse")}</button>`
           : `<span class="t-${ap.decision === "approved" ? "ok" : "bad"}">${esc(ap.decision || ap.status)}</span>`}
       </div>
     </div>`).join(""));
@@ -2834,7 +3204,7 @@ async function renderOneTask(id) {
   // `eventLine` reads `ev.view`, which the report now carries because it runs the same
   // `enrich` projection as the stream. An event the report predates (no `view`) falls
   // through to its type name, which is honest and still readable.
-  $("taskLogSub").textContent = `${(d.events || []).length} event(s)`;
+  $("taskLogSub").textContent = t_fmt("task.log_sub", "{n} event(s)", { n: (d.events || []).length });
   setHTML("taskLog", (d.events || []).map((e) => `
     <div class="row static feed-row">
       <span class="feed-dot"></span>
@@ -2846,15 +3216,16 @@ async function renderOneTask(id) {
      step of the flow and it should arrive as a sentence, not as a table to read. */
   const models = (s.models || []).filter(Boolean);
   $("taskNote").innerHTML = models.length
-    ? `<b>Reported:</b> this ${esc(t.task_type || "task")} was handed to ${s.delegated_to}
-       agent(s)${s.refused ? `, ${s.refused} refused it and said why` : ""},
-       ${s.executed} ran and ${s.failed} failed, and ${s.approvals_total} decision(s) were
-       required of a person. Model used: <code>${esc(models.join(", "))}</code>.`
-    : `<b>Reported:</b> this ${esc(t.task_type || "task")} was handed to ${s.delegated_to}
-       agent(s)${s.refused ? `, ${s.refused} refused it` : ""}, ${s.executed} ran,
-       ${s.failed} failed, ${s.approvals_total} decision(s) required of a person.
-       <br><b>No model is named</b> because no execution recorded one — an account that
-       cannot say which model acted is an account of a system nobody can audit.`;
+    ? t_fmt("task.reported",
+        "<b>Reported:</b> this {ty} was handed to {to} agent(s){ref}, {ex} ran and {fa} failed, and {ap} decision(s) were required of a person. Model used: <code>{mo}</code>.",
+        { ty: esc(t.task_type || tr("need.task", "task")), to: s.delegated_to,
+          ref: s.refused ? t_fmt("task.reported_refused", ", {n} refused it and said why", { n: s.refused }) : "",
+          ex: s.executed, fa: s.failed, ap: s.approvals_total, mo: esc(models.join(", ")) })
+    : t_fmt("task.reported_nomodel",
+        "<b>Reported:</b> this {ty} was handed to {to} agent(s){ref}, {ex} ran, {fa} failed, {ap} decision(s) required of a person. <br><b>No model is named</b> because no execution recorded one — an account that cannot say which model acted is an account of a system nobody can audit.",
+        { ty: esc(t.task_type || tr("need.task", "task")), to: s.delegated_to,
+          ref: s.refused ? t_fmt("task.reported_refused_short", ", {n} refused it", { n: s.refused }) : "",
+          ex: s.executed, fa: s.failed, ap: s.approvals_total });
 
   // **Watch an unfinished task, however it was started.** Only the detail-page Run button
   // started the watcher, so pressing Run on the *form* landed on a static page: the task
@@ -2869,30 +3240,31 @@ async function renderOneTask(id) {
 
 $("runThisTask").onclick = async () => {
   const id = parseHash().arg;
-  if (!id) { toast("Open a task first.", true); return; }
+  if (!id) { toast(tr("run.openfirst", "Open a task first."), true); return; }
   const btn = $("runThisTask");
-  btn.disabled = true; btn.textContent = "Starting…";
+  btn.disabled = true; btn.textContent = tr("run.starting", "Starting…");
   $("runThisState").textContent = "";
   try {
     const h = await apiPost(`/tasks/${encodeURIComponent(id)}/run`, {});
     if (!h.started) {
       // Refusals are the interesting case and get the whole line, not a generic failure.
-      $("runThisState").innerHTML = `<span class="t-bad">Not started.</span> ${esc(h.reason)}`;
-      toast("Not started: " + h.reason, true);
+      $("runThisState").innerHTML = `<span class="t-bad">${tr("run.notstarted", "Not started.")}</span> ${esc(h.reason)}`;
+      toast(t_fmt("run.notstarted_r", "Not started: {r}", { r: h.reason }), true);
       return;
     }
     const mins = Math.round(h.estimate_seconds / 60);
-    $("runThisState").innerHTML =
-      `<span class="t-ok">Started</span> in the background. Expect about <b>${mins} minutes</b> `
-      + `and <b>${Number(h.estimate_tokens).toLocaleString("en-US")} tokens</b> on the free model. `
-      + `This page will keep watching.`;
-    toast("Started. This one takes about " + mins + " minutes.");
+    $("runThisState").innerHTML = t_fmt("run.started",
+      `<span class="t-ok">Started</span> in the background. Expect about <b>{m} minutes</b> `
+      + `and <b>{tok} tokens</b> on the free model. `
+      + `This page will keep watching.`,
+      { m: mins, tok: Number(h.estimate_tokens).toLocaleString("en-US") });
+    toast(t_fmt("run.started_t", "Started. This one takes about {m} minutes.", { m: mins }));
     watchRun(id);
   } catch (err) {
-    $("runThisState").innerHTML = `<span class="t-bad">Could not start.</span> ${esc(err.message)}`;
-    toast("Could not start: " + err.message, true);
+    $("runThisState").innerHTML = `<span class="t-bad">${tr("run.couldnot", "Could not start.")}</span> ${esc(err.message)}`;
+    toast(t_fmt("run.couldnot_r", "Could not start: {e}", { e: err.message }), true);
   } finally {
-    btn.disabled = false; btn.textContent = "Run this task now";
+    btn.disabled = false; btn.textContent = tr("task.runnow", "Run this task now");
   }
 };
 
@@ -2908,17 +3280,17 @@ function watchRun(id) {
     try {
       const d = await apiGet(`/tasks/${encodeURIComponent(id)}/report`);
       const s = d.summary || {};
-      $("runThisState").innerHTML =
-        `<span class="t-del">running</span> · ${s.executed || 0} ran, ${s.failed || 0} failed, `
-        + `${s.approvals_pending || 0} decision(s) waiting · checked ${ticks} time(s)`;
+      $("runThisState").innerHTML = t_fmt("run.watching",
+        `<span class="t-del">running</span> · {ex} ran, {fa} failed, {ap} decision(s) waiting · checked {tk} time(s)`,
+        { ex: s.executed || 0, fa: s.failed || 0, ap: s.approvals_pending || 0, tk: ticks });
       if ((s.executed || 0) + (s.failed || 0) > 0 && ticks > 2) {
         clearInterval(watchTimer); watchTimer = null;
         await renderOneTask(id);
-        toast("The run has produced work. The report is updated.");
+        toast(tr("run.produced", "The run has produced work. The report is updated."));
       }
     } catch (err) {
       if (watchTimer) { clearInterval(watchTimer); watchTimer = null; }
-      $("runThisState").innerHTML = `<span class="t-bad">Lost the run.</span> ${esc(err.message)}`;
+      $("runThisState").innerHTML = `<span class="t-bad">${tr("run.lost", "Lost the run.")}</span> ${esc(err.message)}`;
     }
   }, 4000);
 }
@@ -2971,14 +3343,14 @@ document.addEventListener("click", async (e) => {
   if (!btn) return;
   const doing = btn.dataset.do;
   const note = doing === "approve" ? null : window.prompt(
-    "Why is this refused?\n\nThe reason is kept with the decision, so the next reader can "
-    + "see what was considered. An approval with no note is a tick in a box.");
+    tr("appr.whyrefused", "Why is this refused?\n\nThe reason is kept with the decision, so the next reader can "
+    + "see what was considered. An approval with no note is a tick in a box."));
   if (doing !== "approve" && (note === null || !note.trim())) return;
   btn.disabled = true;
   try {
     await apiPost(`/approvals/${encodeURIComponent(btn.dataset.appr)}/${doing}`,
       doing === "approve" ? {} : { note: note.trim() });
-    toast(doing === "approve" ? "Decided, and written to the log." : "Refused, with your reason.");
+    toast(doing === "approve" ? tr("appr.decided", "Decided, and written to the log.") : tr("appr.refused_note", "Refused, with your reason."));
     await renderOneTask(parseHash().arg);
     // The queue's count changes the moment a decision is made, so the badge must follow.
     try { const q = await apiGet("/ceo/work", { limit: 1 });
@@ -2987,7 +3359,7 @@ document.addEventListener("click", async (e) => {
     } catch { /* the badge is not worth a second error */ }
   } catch (err) {
     btn.disabled = false;
-    toast("Could not record that: " + err.message, true);
+    toast(t_fmt("appr.couldnot", "Could not record that: {e}", { e: err.message }), true);
   }
 });
 
@@ -3026,19 +3398,21 @@ document.addEventListener("click", async (e) => {
    through to its own name, which is honest and still readable, instead of being hidden. */
 const EVENT_LINES = [
   [/delegat/i, (v) => v.from_agent && v.to_agent
-    ? `${esc(v.from_agent)} asked ${esc(v.to_agent)} to do the work`
-    : "work was handed to another agent"],
+    ? t_fmt("feed.delegated", "{a} asked {b} to do the work", { a: esc(v.from_agent), b: esc(v.to_agent) })
+    : tr("feed.handed", "work was handed to another agent")],
   [/refus/i, (v) => v.from_agent
-    ? `${esc(v.from_agent)} was refused${v.reason ? `: ${esc(String(v.reason).slice(0, 120))}` : ""}`
-    : "a delegation was refused"],
-  [/approv/i, (v) => `a decision is waiting on a person${v.to_agent ? ` at ${esc(v.to_agent)}` : ""}`],
+    ? t_fmt("feed.refused", "{a} was refused{r}", { a: esc(v.from_agent),
+        r: v.reason ? t_fmt("feed.refused_r", ": {r}", { r: esc(String(v.reason).slice(0, 120)) }) : "" })
+    : tr("feed.refused_bare", "a delegation was refused")],
+  [/approv/i, (v) => t_fmt("feed.decision", "a decision is waiting on a person{a}",
+    { a: v.to_agent ? t_fmt("feed.decision_at", " at {n}", { n: esc(v.to_agent) }) : "" })],
   [/execut/i, (v) => v.to_agent || v.from_agent
-    ? `${esc(v.to_agent || v.from_agent)} ran the task` : "the task ran"],
+    ? t_fmt("feed.ran", "{n} ran the task", { n: esc(v.to_agent || v.from_agent) }) : tr("feed.ran_bare", "the task ran")],
   [/complet/i, (v) => v.to_agent || v.from_agent
-    ? `${esc(v.to_agent || v.from_agent)} finished and reported` : "the task finished"],
-  [/fail|error/i, (v) => `${esc(v.from_agent || v.to_agent || "the platform")} could not finish it`],
-  [/review|escalat/i, () => "a reviewer looked at the result and asked for another pass"],
-  [/lesson|procedure|skill/i, () => "the agent wrote down what it learned"],
+    ? t_fmt("feed.done", "{n} finished and reported", { n: esc(v.to_agent || v.from_agent) }) : tr("feed.done_bare", "the task finished")],
+  [/fail|error/i, (v) => t_fmt("feed.failed", "{n} could not finish it", { n: esc(v.from_agent || v.to_agent || "the platform") })],
+  [/review|escalat/i, () => tr("feed.review", "a reviewer looked at the result and asked for another pass")],
+  [/lesson|procedure|skill/i, () => tr("feed.learned", "the agent wrote down what it learned")],
 ];
 
 function eventLine(ev) {
@@ -3073,7 +3447,7 @@ function renderActivity() {
 
 function renderFlow() {
   const roots = [...state.tasks.values()].filter((n) => !n.parent_task_id);
-  $("flowCount").textContent = roots.length ? `${state.tasks.size} tasks` : "";
+  $("flowCount").textContent = roots.length ? t_fmt("flow.count", "{n} tasks", { n: state.tasks.size }) : "";
   $("flowEmpty").hidden = roots.length > 0;
   // **`replaceChildren`, not `innerHTML = ....join("")`.**
   //
@@ -3121,13 +3495,13 @@ function setConn(name, text) { $("dot").className = "dot " + name; $("connText")
 async function stream() {
   for (let attempt = 0; ; attempt++) {
     try {
-      setConn("wait", "connecting");
+      setConn("wait", tr("conn.connecting", "connecting"));
       const r = await fetch(API + "/stream", {
         headers: authHeaders({ Accept: "text/event-stream" }),
         signal: (state.es || new AbortController()).signal,
       });
       if (!r.ok || !r.body) throw new Error(String(r.status));
-      setConn("ok", "live");
+      setConn("ok", tr("conn.live", "live"));
       const reader = r.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
@@ -3147,7 +3521,7 @@ async function stream() {
       throw new Error("stream closed");
     } catch (err) {
       if (err && err.name === "AbortError") return;
-      setConn("bad", "reconnecting");
+      setConn("bad", tr("conn.retry", "reconnecting"));
       await new Promise((r) => setTimeout(r, Math.min(15000, 1000 * 2 ** Math.min(attempt, 4))));
     }
   }
@@ -3231,9 +3605,9 @@ function handleFrame(payload) {
 /* ---------------- start a task ---------------- */
 $("runBtn").onclick = async () => {
   const goal = $("goal").value.trim();
-  if (!goal) { toast("Say what the company should work on.", true); return; }
+  if (!goal) { toast(tr("give.saywhat", "Say what the company should work on."), true); return; }
   const btn = $("runBtn");
-  btn.disabled = true; btn.textContent = "Running…";
+  btn.disabled = true; btn.textContent = tr("give.running", "Running…");
   try {
     // The chosen agent is the task's owner. It was not sent, so the selector on
     // screen did nothing: the task was created with nobody to do it.
@@ -3273,33 +3647,48 @@ $("runBtn").onclick = async () => {
     try {
       started = await apiPost(`/tasks/${encodeURIComponent(taskId)}/run`, {});
     } catch (err) {
-      toast("The task exists but nothing is running it: " + err.message, true);
+      toast(t_fmt("give.exists_not_running", "The task exists but nothing is running it: {e}", { e: err.message }), true);
       if (taskId) go(`#/give/${encodeURIComponent(taskId)}`);
       return;
     }
     // The handle carries `started`, `already_running` and a cost estimate, and all three
     // change what a person should be told. "Running" on a refusal is the one that lies.
     if (started.already_running) {
-      toast("Already running — not starting a second one.", true);
+      toast(tr("give.already", "Already running — not starting a second one."), true);
     } else if (started.started === false) {
-      toast("Queued, but nothing is running it: " + (started.reason || "unknown"), true);
+      toast(t_fmt("give.queued_not_running", "Queued, but nothing is running it: {e}", { e: started.reason || tr("retry.unknown", "unknown") }), true);
     } else if (started.estimate_tokens) {
-      toast(`Running here. About ${num(started.estimate_seconds)}s and `
-        + `${num(started.estimate_tokens)} tokens — this panel fills in as they report.`);
+      toast(t_fmt("give.running_here", "Running here. About {s}s and {tok} tokens — this panel fills in as they report.",
+        { s: num(started.estimate_seconds), tok: num(started.estimate_tokens) }));
     } else {
-      toast("Running. This panel fills in as the agents report.");
+      toast(tr("give.running_panel", "Running. This panel fills in as the agents report."));
     }
     // **Straight to the task**, not to a list. The person pressed Run to watch something
     // happen; a list of rows is not the thing they asked to see.
     if (taskId) go(`#/give/${encodeURIComponent(taskId)}`);
     else go("#/give");
   } catch (err) {
-    toast("Could not start: " + err.message, true);
+    toast(t_fmt("run.couldnot_r", "Could not start: {e}", { e: err.message }), true);
   } finally {
-    btn.disabled = false; btn.textContent = "Run";
+    btn.disabled = false; btn.textContent = tr("give.run", "Run");
   }
 };
 $("tokenBtn").onclick = () => { if (askToken(token()) !== null) { forgetToken(); askToken(""); } };
+/* The language switch. English is the verified default, so the button offers
+   Vietnamese; after switching it offers the way back. Applied immediately to
+   the current screen by re-rendering the route — every renderer reads `t()`. */
+($("langBtn") || {}).onclick = () => {
+  langSet(state.lang === "vi" ? "en" : "vi");
+  route();
+};
+if (state.lang === "vi") {
+  const _lb = $("langBtn");
+  if (_lb) _lb.textContent = "EN";
+  try {
+    if (document.documentElement) document.documentElement.lang = "vi";
+  } catch { /* the harness document has no element to label */ }
+  paintStatic();
+}
 
 /* ---------------- the work catalogue ---------------- */
 // Filled from the server rather than written into the page, so the work on offer
@@ -3309,12 +3698,12 @@ async function loadScenarios() {
   try {
     const data = await apiGet("/scenarios");
     state.scenarios = data.scenarios || [];
-    sel.innerHTML = '<option value="">Something else (type it below)</option>'
+    sel.innerHTML = `<option value="">${tr("give.something", "Something else (type it below)")}</option>`
       + state.scenarios.map((sc) =>
           `<option value="${sc.key}">${sc.title}</option>`).join("");
   } catch (err) {
     // A catalogue that will not load must not block typing your own work.
-    sel.innerHTML = '<option value="">Something else (type it below)</option>';
+    sel.innerHTML = `<option value="">${tr("give.something", "Something else (type it below)")}</option>`;
   }
 }
 $("scenario").onchange = () => {
@@ -3327,7 +3716,7 @@ $("scenario").onchange = () => {
   const chief = $("agent");
   const match = [...chief.options].find((o) => /executive/i.test(o.textContent));
   if (match) chief.value = match.value;
-  hint.textContent = "Should come back: " + sc.deliverable;
+  hint.textContent = tr("give.shouldback", "Should come back: ") + sc.deliverable;
   hint.hidden = false;
 };
 
@@ -3358,16 +3747,21 @@ async function loadOwners() {
     const add = (n, tier) => {
       if (n && n.id && n.name) rows.push({ id: n.id, name: n.name, tier });
     };
-    add(d.chief, "the whole company");
-    (d.offices || []).forEach((n) => add(n, "an office"));
-    (d.second_tier || []).forEach((n) => add(n, "a department"));
+    // In the `/departments` payload `second_tier` is the offices and `offices`
+    // is the departments — a legacy naming that once had these two labels
+    // swapped, offering every department as "an office" and every office as "a
+    // department". Read the tier from which list the row came from, not from
+    // the list's name.
+    add(d.chief, tr("give.tier_company", "the whole company"));
+    (d.second_tier || []).forEach((n) => add(n, tr("give.tier_office", "an office")));
+    (d.offices || []).forEach((n) => add(n, tr("give.tier_dept", "a department")));
     if (!rows.length) {
-      sel.innerHTML = '<option value="">no agents found</option>';
+      sel.innerHTML = `<option value="">${tr("give.noagents", "no agents found")}</option>`;
       sel.disabled = true;
       return;
     }
     sel.disabled = false;
-    sel.innerHTML = '<option value="">the chief (default)</option>'
+    sel.innerHTML = `<option value="">${tr("give.chief_default", "the chief (default)")}</option>`
       + rows.map((r) => `<option value="${esc(r.id)}">${esc(r.name)} — ${esc(r.tier)}</option>`)
         .join("");
     // Default to the chief: a coordination goal belongs at the top, and the tiers below
@@ -3383,10 +3777,10 @@ async function loadOwners() {
 (async function boot() {
   try {
     await apiGet("/portfolio");
-    setConn("ok", "live");
+    setConn("ok", tr("conn.live", "live"));
   } catch (err) {
-    setConn("bad", "no connection");
-    if (err && err.auth) toast("Not authorised. Click Token to enter the service token.", true);
+    setConn("bad", tr("conn.none", "no connection"));
+    if (err && err.auth) toast(tr("auth.need_token", "Not authorised. Click Token to enter the service token."), true);
   }
   await loadScenarios();
   await loadOwners();

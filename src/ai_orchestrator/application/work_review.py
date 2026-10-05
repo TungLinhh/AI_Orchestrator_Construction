@@ -40,6 +40,7 @@ from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.domain.contracts import Actor
 from ai_orchestrator.domain.delegation import DelegationLimits
 from ai_orchestrator.domain.enums import ActorType, TaskStatus
+from ai_orchestrator.domain.output_contract import required_keys
 from ai_orchestrator.domain.review import (
     DEFAULT_MAX_ATTEMPTS,
     ReviewVerdict,
@@ -608,10 +609,22 @@ def _rerun_goal(child: Task, verdict: ReviewVerdict, reported_text: str = "") ->
             "lấy kết luận bạn đã có và trả về đúng các trường được yêu cầu.]\n"
             f"--- nội dung lần trước ---\n{substance[:1500]}\n--- hết ---"
         )
+    # **The retry is told the shape, not just the complaint.** Findings say what
+    # was wrong with the answer; without the key list the department fixes the
+    # tone and fails the same contract again. Keys are identifiers — used
+    # character-for-character, never translated — so they ride verbatim.
+    shape = ""
+    needed = required_keys(getattr(child, "expected_output_schema", None))
+    if needed:
+        shape = (
+            "\n\n[ĐỊNH DẠNG BẮT BUỘC — câu trả lời phải là một JSON object với đúng "
+            f"các key sau, từng ký tự một, không dịch, không đổi tên: {', '.join(needed)}. "
+            "Trả về JSON đó và không thêm gì khác.]"
+        )
     return (
         f"{child.goal}\n\n"
         f"[PHẢI LÀM LẠI — lần {attempt_of(child) + 1}] Bộ phận trưởng đã kiểm tra và "
-        f"không chấp nhận kết quả trước vì:\n{findings}{carried}\n\n"
+        f"không chấp nhận kết quả trước vì:\n{findings}{carried}{shape}\n\n"
         f"Phải sửa đúng các điểm trên. Không được trả lại cùng một câu trả lời."
     )
 
