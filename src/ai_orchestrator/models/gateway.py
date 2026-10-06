@@ -155,6 +155,9 @@ class ModelRequest:
     task_id: str | None = None
     agent_id: str | None = None
     attempt: int = 0
+    # A bounded artifact loop can reduce nested transport retries; never raises
+    # the adapter's configured retry limit and is not sent to the provider.
+    max_provider_retries: int | None = None
 
     def to_provider_payload(self, candidate: ModelCandidate) -> dict[str, Any]:
         """The OpenAI-compatible chat-completions shape.

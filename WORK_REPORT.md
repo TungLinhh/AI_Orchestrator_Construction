@@ -1,3 +1,82 @@
+# Durable workflow controls and handoff closure
+
+Reviewed the newest unfinished turn in **Continue autonomous AI organisation**,
+thread `01a10d25-f2e0-7d00-8b92-818679115e27`, against the working tree based on
+`5a02b4e`. Completed the existing dispatch, connector receipt, feedback and console
+changes, then closed the empty-shortlist failure exposed by the last model probe.
+Earlier sections below retain their original scope and measurements.
+
+## Delivered behavior
+
+- Requested workflow generations commit with human decisions and source submissions.
+  Startup dispatch recovers pending generations; PostgreSQL locks choose one driver.
+- SMTP self-tests persist input hashes and Message-IDs before writes. Ambiguous
+  outcomes require read-only reconciliation, never automatic resend.
+- Feedback pauses a campaign, creates a tracked model assessment, accepts answers
+  for reassessment and waits for confirmation. New revisions preserve prior evidence
+  and reviews. Skill lessons remain experimental, unpublished candidates.
+- Empty reviewed shortlists and candidates failing the interview requirements stop
+  before downstream model selection. The report exposes the reason and threshold;
+  repeat Run does not add model calls or executions. New sources need a new revision.
+- Campaign UI imports its select helper, so conditional interview, acceptance and
+  feedback forms render. Offer acceptance uses the server's actual artifact hash.
+  A new revision is linked from its original feedback discussion. Clearing a typed
+  feedback draft remains cleared across polling.
+- Language, theme, spacing, reduced motion and start screen are device preferences.
+  They cannot change agent instructions or business permissions.
+- Artifact loops constrain provider retries and adapt truncated output within their
+  budget. Invalid prose, stage order and unsupported candidate IDs remain failures.
+
+Design, operating boundaries and research sources are in
+[WORKFLOW_CONTROL.md](WORKFLOW_CONTROL.md). The next milestones are in
+[FUTURE_WORK.md](FUTURE_WORK.md) and [REFACTOR_PLAN.md](REFACTOR_PLAN.md).
+No tenant refactor or framework migration is included.
+
+## Verification
+
+| Gate | Observed result | Local evidence |
+| --- | --- | --- |
+| `make lint` | Passed, 390 Python files formatted | `.devdata/logs/handoff-lint.log` |
+| `make typecheck` | Passed, 172 source files | `.devdata/logs/handoff-typecheck.log` |
+| Focused workflow/control/provider checks | 69 passed | `.devdata/logs/handoff-targeted.log` |
+| `make test` | 3434 passed, 3 skipped, 1 deselected, 10 warnings | `.devdata/logs/handoff-full.log` |
+| `make test-e2e` | 34 passed; PostgreSQL, NATS and Temporal preflight passed | `.devdata/logs/handoff-e2e.log` |
+| Console execution against the live API | Passed; exact root/stage links and conditional forms checked | `.devdata/logs/handoff-page-final.log` |
+| Development and test schema read-back | Both at Alembic `0034 (head)` | `alembic -c migrations/alembic.ini current`, with `AO_MIGRATION_DB=ai_orchestrator_test` for test |
+| Latest real scoring snapshot through the new domain rule | Threshold 70, scores 68/31/19, correctly requires a new revision | `.devdata/reports/handoff-empty-shortlist.json` |
+
+Conditional UI probes use explicit fixture payloads and include the empty-shortlist
+explanation, disabled Resume, absence of irrelevant interview input, interview
+result choices, feedback questions, exact offer hash and device preference save.
+Other console probes call the live API. These checks are not screenshot review.
+
+## Real-provider evidence and limits
+
+No new model requests or emails were sent during this review. Existing reports
+were inspected directly rather than repeating external effects:
+
+- Earlier MEP probe `tsk_01m49d31w2w04q5fnhrpy7hjap` completed 21/21 stages and
+  passed 111 audit checks, recorded in `workflow-control-real-mep-initial.json`
+  and `workflow-control-real-mep-audit.json`. It used synthetic self-mail CVs;
+  reviews and onboarding were simulation/sandbox, not actual hiring.
+- The latest stricter MEP probe `tsk_01m49ec3k86kmgze9g0f10mw3e` remains failed
+  at 12/21 in `workflow-control-real-mep.json`. Its top score was 68 against 70;
+  selection could not legally succeed. The original report and failed attempts
+  were preserved. The new waiting behavior was verified with persisted controller
+  integration tests and read-only replay of that actual scoring snapshot.
+- The existing real feedback probe passed with eight recorded model calls, Dots,
+  Ling and Nemotron, and recorded cost USD 0. It remains paused for operator
+  confirmation and grants no human approval, as shown in
+  `workflow-control-real-feedback.json`. One probe is not a model-quality guarantee.
+
+A real hiring campaign still needs actual applicant sources, interview records,
+HR/Boss decisions, offer acceptance and onboarding evidence. Future 30/60/90
+milestones remain plans. A feedback lesson cannot publish itself or increase
+connector permissions. Pool/load measurement and expert-reviewed learning corpus
+remain future work, not implied by passing the software gates.
+
+---
+
 # General task attempt refactor — 2026-10-07
 
 Reviewed the handoff and committed source at `82a6c84`. Its native workflow

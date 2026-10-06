@@ -1,5 +1,10 @@
 # Kế hoạch refactor O-Nexus — 2026-10-07
 
+**Cập nhật đợt 3:** đã triển khai bảng dispatch bền vững, receipt/đối chiếu SMTP
+self-test, feedback có câu hỏi và revision, cùng cài đặt giao diện. Các đoạn mô tả
+đợt 1/2 dưới đây là lịch sử tại lúc bàn giao; trạng thái hiện tại nằm ở mục đợt 3
+và WORK_REPORT.md. Migration 0034 đã áp cả database development và test.
+
 Ưu tiên đầu tiên là vòng đời của controller workflow. Một quy trình tuyển dụng
 hoặc procurement phải giữ được bước đã hoàn thành, quyết định người duyệt và
 chứng cứ khi API dừng. Việc chia file chỉ có ích nếu quyền sở hữu trạng thái rõ
@@ -163,13 +168,23 @@ pool; cần đo pool wait và p95 dưới tải trước tăng concurrency. Cont
 connector chuyên biệt vẫn cần được rà theo contract ở đợt 3. Không mở quyền mới,
 không sửa dữ liệu của campaign đã được duyệt.
 
+## Dispatch/receipt đã triển khai trong đợt 3–4
+
+Migration 0034, workflow_commands và connector_actions giữ generation/intent ngoài
+state controller. Quyết định và lệnh tiếp tục commit cùng nhau. Startup xử lý lệnh
+đã yêu cầu; không tự chạy toàn bộ lịch sử. Khóa process, pause/feedback, read-back
+và giới hạn adapter được mô tả trong [WORKFLOW_CONTROL.md](WORKFLOW_CONTROL.md).
+Feedback có hỏi–đáp, xác nhận, revision và candidate skill chưa xuất bản. Console
+có campaign journey và tùy chọn giao diện. Gate cuối/model thật ghi ở WORK_REPORT.
+Template blueprint HR riêng và load test vẫn là các mốc tiếp theo.
+
 ## Thứ tự refactor tiếp theo
 
 | Thứ tự | Phạm vi | Vấn đề phải giải quyết | Điều kiện nghiệm thu |
 | --- | --- | --- | --- |
 | 2 — đã triển khai đường chạy chính | Transaction và attempt của `TaskExecutionService`, `local_runner`, worker runtime, Temporal activity | General lease có thể chưa nhìn thấy từ connection khác. Service còn trộn context, quyền, delegation, output, learning và persistence | Claim và heartbeat nhìn thấy trong khi model còn chạy. Kill và reaper không nhận nhầm worker sống. Không giữ transaction ghi qua network chậm. Cancellation không đợi khóa của model |
-| 3 | Contract và receipt của connector | SMTP, IMAP và các app tương lai có kết quả bên ngoài database. Retry theo task ID chưa chứng minh write không bị lặp | Action key ổn định, snapshot đầu vào, receipt, read-back, cursor, timeout và lỗi có kiểu. Test kill trước và sau external write. Có màn hình đối chiếu kết quả chưa rõ |
-| 4 | Dispatch bền vững cho business workflow | Lệnh native chờ chạy có thể mất khi process chết. Tín hiệu ở process khác chưa có đường bàn giao bền vững | Chọn một chủ sở hữu dispatch. Request ack gắn với lệnh đã lưu. Approval và Cancel không mất khi nhiều worker chạy. Worker restart tiếp tục đúng checkpoint với receipt đã đối chiếu |
+| 3 — SMTP self-test đã triển khai | Contract và receipt của connector | Adapter khác vẫn cần contract riêng trước khi ghi thật | Intent, hash, Message-ID và receipt lưu bền vững; read-back xác minh đúng mail/CV. Có test kill trước/sau write và UI đối chiếu; không tự resend khi chưa rõ |
+| 4 — đã triển khai | Dispatch bền vững cho business workflow | Lỗi handler được ghi rõ và cần lệnh retry; không khẳng định tự phục hồi mọi lỗi ngoài hệ thống | Lệnh có generation, chỉ chủ khóa database acknowledge; quyết định và continuation commit cùng transaction. Restart nhận lại lệnh pending. Test hai registry, generation mới, shutdown và process kill |
 | 5 | Template HR theo campaign | Một blueprint HR hiện có thể gom tuyển dụng, payroll, performance và offboarding vào một lượt | Template riêng, required inputs theo bước, source SOP rõ. Campaign giữ snapshot đã duyệt. Bản cũ và quyết định đã ghi không bị sửa ngầm. MEP tuyển dụng được nghiệm thu trước |
 | 6 | Tách trách nhiệm trong service thực thi và kiểm tra sản phẩm | `task_execution.py` còn khoảng 2.862 dòng. `_finish`, context, capability, consultation và delegation khó đọc độc lập | Acceptance và quyết định trạng thái thành hàm domain thuần. Adapter I/O có contract rõ. Giữ một owner của transaction và attempt. Negative cases cũ vẫn kiểm tra cùng lỗi |
 | 7 | State và projection của console | Frontend đã có source module và `page.py` lắp ghép. Work còn giữ state chung cần tách có chủ đích | Một state owner theo route, hủy polling khi rời trang, stale response không ghi đè. Deep link mở đúng task, stage, execution hoặc approval. UI hiển thị gián đoạn, nguồn và hành động phục hồi cụ thể |
@@ -196,7 +211,8 @@ catalogue test theo AGENTS.md trước khi chạy. Subprocess fixture từ chố
 development. Gate phát hành là `make lint`, `make typecheck`, `make test`,
 `make test-e2e` và `make page`. Kết quả gate của đợt này nằm trong WORK_REPORT.md.
 
-Không có schema migration. Rollback source dùng Git revert. Trước khi thay phiên
+Đợt 1/2 không có schema migration; đợt 3 bổ sung migration 0034. Rollback source
+dùng Git revert, giữ bảng command/receipt và lịch sử đối chiếu. Trước khi thay phiên
 bản controller, dừng dispatch mới và chờ hoặc tạm dừng driver đang chạy. Phiên bản
 cũ có thể đánh dấu bước đang phục hồi là lỗi, nên không chạy hai phiên bản controller
 khác quy tắc đồng thời trên cùng root.

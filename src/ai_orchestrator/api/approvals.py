@@ -243,15 +243,13 @@ async def _resume_controller(
     if result["status"] not in {"approved", "rejected"}:
         return
     if action_type == "agent.workflow.review":
-        await ctx.session.commit()
-        result["workflow_started"] = request.app.state.workflow_drivers.start(
-            ctx.organization_id, payload["root_id"], WorkflowKind.AGENT
+        result["workflow_started"] = await request.app.state.workflow_drivers.submit(
+            ctx.organization_id, payload["root_id"], WorkflowKind.AGENT, session=ctx.session
         )
     elif action_type == "workflow.review":
-        await ctx.session.commit()
         root = payload["workflow_root"]
-        started = request.app.state.workflow_drivers.start(
-            ctx.organization_id, root, WorkflowKind.BUSINESS
+        started = await request.app.state.workflow_drivers.submit(
+            ctx.organization_id, root, WorkflowKind.BUSINESS, session=ctx.session
         )
         result["workflow_run"] = {"id": root, "started": started, "already_running": not started}
 
@@ -273,16 +271,42 @@ async def reject(
 
 @router.post("/approvals/{approval_id}/request-information")
 async def request_information(
-    approval_id: str, body: ApprovalDecisionRequest, ctx: ApiContext = Depends(get_context)
+    approval_id: str,
+    body: ApprovalDecisionRequest,
+    request: Request,
+    ctx: ApiContext = Depends(get_context),
 ) -> dict[str, Any]:
     """Ask the agent a question instead of deciding.
 
     Usually the right answer when a human is unsure: a rejection ends the task,
     whereas a question lets the agent gather what is missing and come back.
     """
-    return await _decide(
+    approval = await ApprovalService(ctx.session, ctx.organization_id).get(approval_id)
+    action_type, payload = approval.action_type, dict(approval.action_payload or {})
+    result = await _decide(
         approval_id, body.model_copy(update={"needs_information": True}), ctx, approve=False
     )
+    if action_type in {"workflow.review", "agent.workflow.review"}:
+        from ai_orchestrator.application.workflow_feedback import request_feedback
+
+        root = payload.get("workflow_root") or payload.get("root_id")
+        if not isinstance(root, str):
+            from ai_orchestrator.domain.errors import ValidationError
+
+            raise ValidationError("Review payload does not identify its workflow root")
+        kind = await request_feedback(
+            ctx.session,
+            ctx.organization_id,
+            root,
+            body.note or "Please clarify the evidence and proposed workflow decision",
+            ctx.actor,
+        )
+        # Feedback and the human decision share the same transaction.
+        await ctx.session.commit()
+        await request.app.state.workflow_drivers.cancel(ctx.organization_id, root)
+        request.app.state.workflow_drivers.start(ctx.organization_id, root, kind, persist=False)
+        result["feedback_root"] = root
+    return result
 
 
 @router.get("/tasks/{task_id}/approvals")

@@ -763,3 +763,114 @@ async def test_cancel_interrupts_an_inflight_workflow_without_waiting_for_model(
         assert all(s["status"] in {"completed", "canceled"} for s in closed.json()["stages"])
     finally:
         await drivers.shutdown()
+
+
+@pytest.mark.parametrize("no_shortlist", [True, False])
+async def test_hiring_waits_for_a_revision_when_no_candidate_can_be_selected(
+    prepared, db, tmp_path, monkeypatch, no_shortlist
+):
+    from ai_orchestrator.application import business_workflow
+    from ai_orchestrator.integrations import recruitment_mail
+
+    monkeypatch.setattr(business_workflow, "DEV_DATA_DIR", tmp_path)
+    monkeypatch.setattr(recruitment_mail, "DEV_DATA_DIR", tmp_path)
+    records, calls = {}, []
+
+    class Mailbox:
+        def __init__(self, org):
+            self.org = org
+
+        def send_tests(self, root, cvs):
+            records[root] = [
+                {
+                    **recruitment_mail.store_cv(
+                        cv["text"].encode(), cv["filename"], self.org, root
+                    ),
+                    "synthetic": True,
+                }
+                for cv in cvs
+            ]
+            return {
+                "sent": [{"sha256": cv["sha256"]} for cv in records[root]],
+                "transport": "mock-file-drop",
+                "synthetic": True,
+            }
+
+        def read_cvs(self, root):
+            return {
+                "cvs": records[root],
+                "readonly": True,
+                "messages": [],
+                "rejected": [],
+                "protocol": "mock-file-drop",
+            }
+
+    class Runtime(HiringFixtureRuntime):
+        async def execute(self, task, context, **kwargs):
+            calls.append(self.stage.key)
+            if self.stage.key == "scoring" and no_shortlist:
+                original = self.validator
+
+                def validator(output):
+                    levels = {
+                        "mechanical": "average",
+                        "electrical": "good",
+                        "coordination": "average",
+                        "commissioning": "average",
+                        "hse": "average",
+                        "documentation": "poor",
+                    }
+                    for criterion in output["candidates"][0]["criteria"]:
+                        criterion["level"] = levels[criterion["key"]]
+                    original(output)
+
+                self.validator = validator
+            return await super().execute(task, context, **kwargs)
+
+    brief = hiring_fixture()
+    if not no_shortlist:
+        brief["interview_hr"]["transcripts"][0]["result"] = "fail"
+    root = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "simulation", brief
+    )
+    await prepared.commit()
+    service = BusinessWorkflowService(
+        db, prepared.organization_id, runtime_factory=Runtime, mailbox_factory=Mailbox
+    )
+    report = await service.run(root)
+    assert report["status"] == "blocked", report
+    assert report["waiting"]["code"] == (
+        "no_eligible_candidates" if no_shortlist else "no_interview_qualified_candidates"
+    )
+    assert report["waiting"]["highest_score"] == (68 if no_shortlist else 100)
+    assert report["waiting"]["threshold"] == 70
+    active = next(stage for stage in report["stages"] if stage["status"] != "completed")
+    assert active["key"] == ("interview_technical" if no_shortlist else "selection")
+    assert active["status"] == "waiting_for_input"
+    assert "selection" not in calls and "offer" not in calls
+    assert report["completed"] == (10 if no_shortlist else 12)
+    scores = next(stage["output"] for stage in report["stages"] if stage["key"] == "scoring")
+    before = list(calls)
+    async with db.tenant_session(prepared.organization_id) as session:
+        executions = await ExecutionRepository(session, prepared.organization_id).list_for_task(
+            root
+        )
+        execution_count = len(executions)
+    again = await service.run(root)
+    assert calls == before
+    assert again["waiting"] == report["waiting"]
+    assert next(stage["output"] for stage in again["stages"] if stage["key"] == "scoring") == scores
+    async with db.tenant_session(prepared.organization_id) as session:
+        assert (
+            len(await ExecutionRepository(session, prepared.organization_id).list_for_task(root))
+            == execution_count
+        )
+        audit = (
+            await session.scalars(
+                select(AuditLog).where(
+                    AuditLog.task_id == active["id"],
+                    AuditLog.action == "workflow.hiring.awaiting_candidates",
+                )
+            )
+        ).all()
+        assert len(audit) == 1

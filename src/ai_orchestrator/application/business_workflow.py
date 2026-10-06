@@ -13,8 +13,10 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ai_orchestrator.agent_runtime.workflow_evidence import WorkflowEvidenceRuntime
+from ai_orchestrator.application.connector_actions import ConnectorActions, ConnectorUnknown
 from ai_orchestrator.application.model_profiles import build_tenant_gateway
 from ai_orchestrator.application.task_execution import TaskExecutionService
+from ai_orchestrator.application.workflow_commands import command_for, command_view
 from ai_orchestrator.application.workflow_lifecycle import workflow_run
 from ai_orchestrator.application.workflow_schemas import artifact_schema, validate_shape
 from ai_orchestrator.approvals.service import ApprovalRequest, ApprovalService
@@ -25,6 +27,7 @@ from ai_orchestrator.domain.business_workflow import (
     RUBRIC_SPEC,
     WORKFLOWS,
     WorkflowStage,
+    hiring_blocker,
     score_cv,
     validate_match,
 )
@@ -34,9 +37,18 @@ from ai_orchestrator.domain.errors import PreconditionError, ValidationError
 from ai_orchestrator.domain.hiring_process import JD_SECTIONS
 from ai_orchestrator.domain.state_machines import Transition
 from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
+from ai_orchestrator.domain.workflow_text import validate_generated_text
 from ai_orchestrator.integrations.recruitment_mail import RecruitmentMailbox
 from ai_orchestrator.persistence.base import utcnow
-from ai_orchestrator.persistence.models import Agent, Approval, AuditLog, Event, ModelUsage, Task
+from ai_orchestrator.persistence.models import (
+    Agent,
+    Approval,
+    AuditLog,
+    ConnectorAction,
+    Event,
+    ModelUsage,
+    Task,
+)
 from ai_orchestrator.persistence.repositories.task import ExecutionRepository, TaskRepository
 from ai_orchestrator.persistence.session import Database
 from ai_orchestrator.telemetry.logging import get_logger
@@ -55,6 +67,12 @@ def validate_artifact(
     key: str, output: dict[str, Any], brief: dict[str, Any], prior: dict[str, Any]
 ) -> None:
     """Check actual business evidence as well as contract fields."""
+    validate_generated_text(
+        output,
+        {str(cv.get("candidate_name", "")) for cv in prior.get("cv_intake", {}).get("cvs", [])}
+        | {str(s.get("supplier_id", "")) for s in brief.get("suppliers", [])}
+        | {str(m.get("name", "")) for m in brief.get("boq", [])},
+    )
     if key == "jd":
         sections = output["sections"]
         names = set(sections) if isinstance(sections, dict) else {r.get("name") for r in sections}
@@ -95,7 +113,15 @@ def validate_artifact(
         candidate = output["recommended_candidate_id"]
         scored = {c["candidate_id"]: c for c in prior["scoring"]["candidates"]}
         if candidate not in scored or scored[candidate]["score"] < prior["rubric"]["threshold"]:
-            raise ValueError("Selection must reference a candidate above the reviewed threshold")
+            eligible = [
+                ident
+                for ident, row in scored.items()
+                if row["score"] >= prior["rubric"]["threshold"]
+            ]
+            raise ValueError(
+                "Selection candidate_id must equal an eligible reviewed SHA-256 ID above the"
+                " threshold. Allowed IDs: " + json.dumps(eligible)
+            )
         cv = next(c for c in prior["cv_intake"]["cvs"] if c["candidate_id"] == candidate)
         for interview in ("interview_technical", "interview_hr"):
             if not any(
@@ -365,7 +391,44 @@ class BusinessWorkflowService:
             fake = sum(
                 u.provider in {"fake", "scripted", "deterministic", "unit-fake"} for u in usage
             )
+            actions = (
+                await session.scalars(
+                    select(ConnectorAction)
+                    .where(
+                        ConnectorAction.organization_id == self.org,
+                        ConnectorAction.root_task_id == root_id,
+                    )
+                    .order_by(ConnectorAction.created_at)
+                )
+            ).all()
+            command = await command_for(session, self.org, root_id)
+            active = next((row for row in rows if row.status != "completed"), None)
+            prior = {
+                row.input["stage_key"]: row.output or {}
+                for row in rows
+                if row.status == "completed"
+            }
+            waiting = (
+                hiring_blocker(active.input["stage_key"], prior)
+                if active
+                and root.status not in {"completed", "failed", "canceled", "expired"}
+                and root.input["business_workflow"] == "mep_hiring"
+                else None
+            )
             return {
+                "waiting": waiting,
+                "connector_actions": [
+                    {
+                        "id": a.id,
+                        "state": a.state,
+                        "snapshot": a.snapshot,
+                        "receipt": a.receipt,
+                        "last_error": a.last_error,
+                    }
+                    for a in actions
+                ],
+                "control": command_view(command),
+                "revision_of": root.input.get("revision_of"),
                 "id": root.id,
                 "kind": root.input["business_workflow"],
                 "mode": root.input["mode"],
@@ -401,6 +464,7 @@ class BusinessWorkflowService:
                         "owner_agent_id": t.owner_agent_id,
                         "status": t.status,
                         "output": t.output or {},
+                        "artifact_hash": payload_hash(t.output) if t.output is not None else None,
                         "error": t.last_error,
                         "reused_from": t.constraints.get("reused_artifact_source"),
                     }
@@ -421,6 +485,8 @@ class BusinessWorkflowService:
     async def _run_steps(self, root_id: str) -> dict[str, Any]:
         report = await self.report(root_id)
         if report["status"] in {"completed", "failed", "canceled", "expired"}:
+            return report
+        if report["status"] == "blocked" and report["waiting"]:
             return report
         async with self.db.tenant_session(self.org) as session:
             repo = TaskRepository(session, self.org)
@@ -462,6 +528,21 @@ class BusinessWorkflowService:
                 for predecessor in prior:
                     if (await repo.get(stage_ids[predecessor])).status != "completed":
                         raise ValueError("A prerequisite is no longer completed")
+                blocker = hiring_blocker(stage.key, prior) if kind == "mep_hiring" else None
+                if blocker:
+                    if task.status == "assigned":
+                        await repo.transition(task.id, Transition.REQUEST_INPUT)
+                    await AuditService(session, self.org).record(
+                        actor=SYSTEM,
+                        action="workflow.hiring.awaiting_candidates",
+                        resource_type="task",
+                        resource_id=task.id,
+                        task_id=task.id,
+                        context={"root": root_id, **blocker},
+                    )
+                    await session.commit()
+                    await self._pause(root_id, execution_id, blocker["message"])
+                    return await self.report(root_id)
                 stage_brief = brief
                 if stage.kind == "model":
                     stage_brief = {
@@ -479,6 +560,7 @@ class BusinessWorkflowService:
                     }
                 task.input = {
                     **task.input,
+                    "operator_feedback": current_root.input.get("feedback_context", {}),
                     "brief": stage_brief,
                     "prior": copy.deepcopy(prior),
                 }
@@ -696,6 +778,13 @@ class BusinessWorkflowService:
                     await self.db.bind_tenant(session, self.org)
                     try:
                         output = await self._mechanical(root_id, stage, mode, brief, prior)
+                    except ConnectorUnknown as exc:
+                        await repo.transition(task.id, Transition.BLOCK)
+                        task.last_error = str(exc)
+                        task.constraints = {**task.constraints, "controller_interrupted": True}
+                        await session.commit()
+                        await self._pause(root_id, execution_id, str(exc))
+                        return await self.report(root_id)
                     except Exception as exc:
                         await repo.transition(
                             task.id,
@@ -917,8 +1006,17 @@ class BusinessWorkflowService:
                 "synthetic": brief.get("synthetic", False),
             }
         if stage.kind == "mail_send":
-            return await asyncio.to_thread(
-                self.mailbox_factory(self.org).send_tests, root, brief["test_cvs"]
+            async with self.db.tenant_session(self.org) as action_session:
+                stage_task = await action_session.scalar(
+                    select(Task.id).where(
+                        Task.organization_id == self.org,
+                        Task.parent_task_id == root,
+                        Task.input["stage_key"].astext == stage.key,
+                    )
+                )
+            assert stage_task is not None
+            return await ConnectorActions(self.db, self.org).send_tests(
+                root, stage_task, self.mailbox_factory(self.org), brief["test_cvs"]
             )
         if stage.kind == "mail_read":
             mailbox = self.mailbox_factory(self.org)

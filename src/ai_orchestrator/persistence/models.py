@@ -3046,3 +3046,88 @@ class EvaluationRun(Base):
 
 
 __all__ = [name for name in dir() if name[0].isupper()]
+
+
+class WorkflowCommand(Base):
+    """Coalesced command generation; the database owns the acknowledgement."""
+
+    __tablename__ = "workflow_commands"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "root_task_id"],
+            ["tasks.organization_id", "tasks.id"],
+            name="fk_workflow_commands_organization_id_tasks",
+        ),
+        Index(
+            "ix_workflow_commands_organization_id_state",
+            "organization_id",
+            "state",
+        ),
+        UniqueConstraint("organization_id", "root_task_id", name="uq_workflow_commands_org_root"),
+        CheckConstraint(
+            "(((requested_seq >= settled_seq) AND (settled_seq >= 0)))",
+            name="sequence_valid",
+        ),
+        CheckConstraint(
+            "(((kind)::text = ANY ((ARRAY['business_workflow'::character varying, "
+            "'agent_workflow'::character varying])::text[])))",
+            name="kind_known",
+        ),
+    )
+    id: Mapped[str] = mapped_column(ID, primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ID, ForeignKey("organizations.id"), nullable=False)
+    root_task_id: Mapped[str] = mapped_column(ID, nullable=False)
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    requested_seq: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    settled_seq: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    paused: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    state: Mapped[str] = mapped_column(String(40), nullable=False, server_default=text("'pending'"))
+    feedback: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[dt.datetime] = created_at_col()
+    updated_at: Mapped[dt.datetime] = updated_at_col()
+
+
+class ConnectorAction(Base):
+    """Prepared input and observed outcome of one bounded external write."""
+
+    __tablename__ = "connector_actions"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "root_task_id"],
+            ["tasks.organization_id", "tasks.id"],
+            name="fk_connector_actions_organization_id_tasks",
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "stage_task_id"],
+            ["tasks.organization_id", "tasks.id"],
+            name="fk_connector_actions_stage_task",
+        ),
+        UniqueConstraint("organization_id", "action_key", name="uq_connector_actions_org_key"),
+        CheckConstraint(
+            "(((state)::text = ANY ((ARRAY['prepared'::character varying, "
+            "'sending'::character varying, 'confirmed'::character varying, "
+            "'unknown'::character varying])::text[])))",
+            name="state_known",
+        ),
+    )
+    id: Mapped[str] = mapped_column(ID, primary_key=True)
+    organization_id: Mapped[str] = mapped_column(ID, ForeignKey("organizations.id"), nullable=False)
+    root_task_id: Mapped[str] = mapped_column(ID, nullable=False)
+    stage_task_id: Mapped[str] = mapped_column(ID, nullable=False)
+    action_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    state: Mapped[str] = mapped_column(
+        String(40), nullable=False, server_default=text("'prepared'")
+    )
+    receipt: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[dt.datetime] = created_at_col()
+    updated_at: Mapped[dt.datetime] = updated_at_col()

@@ -45,7 +45,7 @@
   --font-mono: var(--mono);
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #101a23;
     --surface: #17252f;
     --surface-2: #1c2d39;
@@ -1283,3 +1283,37 @@ dialog::backdrop {
 .bar.unmeasured .fillbar {
   display: none;
 }
+
+:root[data-theme="dark"] {
+    --bg: #101a23;
+    --surface: #17252f;
+    --surface-2: #1c2d39;
+    --nav-bg: #14232b;
+    --text: #e4edf4;
+    --text-2: #b5c6d3;
+    --text-3: #92a9ba;
+    --line: #2e4353;
+    --line-strong: #4c6476;
+    --accent: #65d8c7;
+    --accent-2: #8be6d8;
+    --accent-soft: #193b3a;
+    --late: #ff929c;
+    --late-soft: #40262c;
+    --ok: #83d8a6;
+    --ok-soft: #213d31;
+    --warn: #edc57e;
+    --warn-soft: #3c3321;
+    --fill: #213442;
+    --fill-hover: #2a4050;
+    --sunken: #12212b;
+}
+
+:root[data-density="compact"] .card { padding: 14px; margin-bottom: 12px; }
+:root[data-density="compact"] td, :root[data-density="compact"] th { padding-top: 6px; padding-bottom: 6px; }
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+.campaign-journey { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.campaign-journey a { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); }
+.campaign-journey a[aria-current="step"] { border-color: var(--accent); background: var(--accent-soft); }
+.campaign-progress { height: 8px; background: var(--fill); border-radius: 8px; overflow: hidden; margin: 10px 0; }
+.campaign-progress span { display: block; height: 100%; background: var(--accent); }
+.feedback-discussion textarea { min-height: 110px; }

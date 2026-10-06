@@ -53,7 +53,9 @@ class WorkflowMailMonitor:
                 for root in await pending_mail_intakes(
                     self.drivers.db, settings.recruitment_mail_org
                 ):
-                    self.drivers.start(settings.recruitment_mail_org, root, WorkflowKind.BUSINESS)
+                    await self.drivers.submit(
+                        settings.recruitment_mail_org, root, WorkflowKind.BUSINESS
+                    )
             except asyncio.CancelledError:
                 raise
             except Exception:

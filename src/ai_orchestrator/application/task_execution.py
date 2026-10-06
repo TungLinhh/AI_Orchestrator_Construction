@@ -447,6 +447,9 @@ class TaskExecutionService:
         started = time.monotonic()
         task = await self._tasks.get(task_id)
 
+        if task.input.get("workflow_feedback_for") and self._runtime.name != "workflow_evidence":
+            raise PreconditionError("Run feedback through its workflow discussion controller")
+
         if task.input.get("agent_blueprint_draft") and self._runtime.name != "agent_blueprint":
             raise PreconditionError("Generate this draft through its agent blueprint controller")
         if task.input.get("agent_workflow") and (

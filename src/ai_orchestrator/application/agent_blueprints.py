@@ -726,6 +726,7 @@ class AgentBlueprintService:
                         )
                         for key in step.input_keys
                     },
+                    "operator_feedback": root.input.get("feedback_context", {}),
                     "prior": copy.deepcopy(prior),
                     "acceptance_criteria": step.acceptance_criteria,
                     "source_sop_codes": step.source_sop_codes,

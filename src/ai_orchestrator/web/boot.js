@@ -27,6 +27,7 @@ $("skipContent").onclick = (event) => {
   paintBell();
   await refreshNotificationInbox();
   setInterval(refreshNotificationInbox, 5000);
+  if (!window.location.hash && UIPreferences.get().home === "campaigns") window.location.hash = "#/processes/workflows";
   await route();
   if (state.es) state.es.abort();
   state.es = new AbortController();

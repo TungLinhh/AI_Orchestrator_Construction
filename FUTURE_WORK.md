@@ -1,5 +1,50 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
+## Điều khiển, feedback và campaign — 2026-10-07
+
+Đợt mới triển khai receipt SMTP self-test và dispatch native bền vững. Lệnh
+Run/duyệt/bổ sung chứng cứ có generation lưu trong PostgreSQL trước khi trả lời.
+Startup nhận lại lệnh chưa xử lý; khóa database chọn một process owner. SMTP lưu
+intent và Message-ID trước write. Timeout/kill không được kết luận là chưa gửi;
+read-only read-back phải tìm đúng Message-ID và hash CV để đối chiếu thành công.
+
+Boss có thể tạm dừng campaign, nhập feedback, nhận câu hỏi/plan từ model, gửi câu
+trả lời để model xem lại rồi xác nhận. Tiếp tục áp dụng vào phần chưa xong; sửa
+sản phẩm đã xong dùng revision mới và cổng duyệt mới. Bài học được lưu thành
+SkillVersion candidate chưa xuất bản, có task nguồn để đánh giá sau.
+
+Console dẫn brief → campaign → việc cần duyệt → onboarding. Hồ sơ MEP dùng field
+nguồn, kết quả phỏng vấn và nội dung bàn giao thay cho JSON tự viết. Task mail và
+onboarding mới thuộc HR. Cài đặt thiết bị có ngôn ngữ, theme, độ gọn, giảm chuyển
+động và màn hình bắt đầu; không thay quyền nghiệp vụ. Chi tiết vận hành nằm trong
+[WORKFLOW_CONTROL.md](WORKFLOW_CONTROL.md); kết quả cuối ghi tại WORK_REPORT.md.
+
+Bổ sung khi nhận bàn giao: shortlist rỗng hoặc không ai đạt cả hai vòng phỏng
+vấn đưa campaign sang chờ, không gọi model chọn người lặp lại. UI hiển thị ngưỡng,
+điểm và hướng xử lý bằng feedback/revision với nguồn mới. Điểm và quyết định cũ
+không đổi. Form feedback/phỏng vấn và hash offer đã được kiểm tra theo nhánh UI.
+
+Sau bản này, thứ tự còn lại là:
+
+1. Bổ sung editor thay đổi brief có cấu trúc và diff trước khi duyệt revision;
+   mapping sang đúng stage, nguồn cần nhận và mode phải do người vận hành xác nhận.
+   Feedback hiện là context cho phần chưa xong, không tự thay schema hay quyền.
+   Đo câu hỏi lặp, thứ tự plan, chất lượng văn bản và số retry trên tập tình huống
+   có đáp án chuẩn; model free vẫn có thể chậm hoặc trả sai dù format hợp lệ.
+2. Tách blueprint HR thành tuyển dụng, performance, payroll và offboarding; không
+   chuyển ngầm plan cũ đã được duyệt. MEP hiện có workflow tuyển dụng riêng.
+3. Nối skill candidate từ feedback vào corpus baseline/holdout thật và publication
+   gate. Chỉ bind version đã qua đánh giá vào agent.
+4. Nghiệm thu campaign MEP thật với CV, phỏng vấn, quyết định HR/Boss, acceptance
+   và onboarding thật. Cần nguồn người vận hành; 30/60/90 chưa được ghi là đã xong.
+5. Procurement live intake có BOQ, báo giá và đánh giá của người vật tư. Write
+   PO/delivery/payment cần adapter và receipt riêng trước khi triển khai thật.
+6. Đo p95/pool wait với nhiều campaign, giảm context theo bằng chứng và tiếp tục
+   chia executor/state console khi ranh giới vận hành đã được chứng minh.
+
+Model thiếu nguồn phải hỏi/chờ; output sai phải được validator báo và yêu cầu sửa.
+Không cam kết mọi model luôn đúng hoặc không retry. Không làm IT riêng/Bãi Tràm.
+
 ## Tiếp tục triển khai — 2026-10-07
 
 Đã đọc và rà bàn giao `82a6c84`, giữ nguyên lifecycle đã nghiệm thu. Đợt tiếp

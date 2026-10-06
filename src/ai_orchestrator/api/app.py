@@ -76,6 +76,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.workflow_drivers = WorkflowDrivers(
         database, concurrency=settings.native_workflow_concurrency
     )
+    app.state.workflow_drivers.start_monitor()
     app.state.workflow_mail_monitor = WorkflowMailMonitor(app.state.workflow_drivers)
     app.state.workflow_mail_monitor.start()
     try:

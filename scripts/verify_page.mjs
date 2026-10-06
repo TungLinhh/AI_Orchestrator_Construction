@@ -1303,10 +1303,13 @@ try {
     /could not finish/.test(reportLine) && /&lt;img/.test(reportLine) && !/<img/.test(reportLine), reportLine);
   check("approval handlers cannot also consume a task-decision button",
     html.includes('button[data-do][data-id]'));
-  const retryable = ["failed", "cancelled", "blocked"].includes(status);
+  const workflowStage = report.task.workflow_id && report.task.workflow_id !== taskId;
+  const retryable = !workflowStage && ["failed", "cancelled", "blocked"].includes(status);
   check("the retry button appears for exactly the work that stopped",
     $("retryBtn").hidden === !retryable,
     `status=${status}, button hidden=${$("retryBtn").hidden}`);
+  if (workflowStage) check("a failed workflow stage links its controller instead of a detached retry",
+    $("runThisHint").innerHTML.includes(`#/processes/workflows/${report.task.workflow_id}`));
   // The tooltip is asserted on the *markup*, not through the shim: the shim builds nodes
   // from a parser and does not copy the title attribute across, so reading it would assert
   // on the harness rather than on the page.
@@ -1332,8 +1335,10 @@ try {
   const created = twice.status === 200 && body.retried_from;
   const alreadyRetried = twice.status === 409 && said.includes("already active");
   const notFailed = twice.status === 409 && said.includes("only failed work is retried");
+  const controlledStage = workflowStage && twice.status === 409 &&
+    said.includes("Retry requires a failed business workflow");
   check("retrying failed work either makes a task or says precisely why not",
-    created || alreadyRetried || notFailed,
+    created || alreadyRetried || notFailed || controlledStage,
     `${twice.status} ${said.slice(0, 76)}`);
 
   if (created) {
@@ -1481,6 +1486,53 @@ try {
   check("business workflow exposes execution evidence and refresh controls", !!$("workflow-refresh") && /Recorded events|Sự kiện \/ audit/.test(content));
   if(evidence.status === "completed" && evidence.kind === "mep_hiring") check("completed hiring shows every CV and grounded score", evidence.stages.find(s=>s.key==="scoring").output.candidates.every(c=>content.includes(String(c.score)) && content.includes(c.candidate_id)));
 } catch(err) {check("business workflow detail did not throw",false,err.message);}
+
+// Exercise conditional forms with explicit fixture payloads. Live checks above
+// remain live; these probes isolate branches that depend on a human stopping point.
+{
+  const liveFetch = sandbox.fetch;
+  const root = "tsk_ui_conditional_hiring";
+  const probe = {id: root, title: "Conditional hiring UI probe", kind: "mep_hiring", mode: "live", status: "blocked", completed: 10, total: 20, sources: [], summary: {}, evidence: {real_model_calls: 0, fake_model_calls: 0, events: 0, audits: 0}, control: {state: "waiting", paused: false, feedback: {}}, stages: [{id: "tsk_ui_interview", key: "interview_technical", title: "Technical interview", status: "waiting_for_input", output: {}}]};
+  sandbox.fetch = async (url, options) => {
+    if (String(url).endsWith("/workflows/" + root)) return {ok: true, json: async () => probe};
+    return liveFetch(url, options);
+  };
+  try {
+    sandbox.__hash = "#/processes/workflows/" + root;
+    const childCount = $("managementBody").children.length;
+    await vm.runInContext("route()", sandbox);
+    const interviewForm = $("managementBody").children.at(-1)?.innerHTML || "";
+    check("waiting interview renders its evidence form and result choices", $("managementBody").children.length > childCount && /id="workflow-evidence"/.test(interviewForm) && /name="result"/.test(interviewForm));
+    const interviewStage = probe.stages;
+    const offerHash = "a".repeat(64);
+    probe.stages = [{id: "tsk_ui_offer", key: "offer", title: "Reviewed offer", status: "completed", output: {}, artifact_hash: offerHash}, {id: "tsk_ui_acceptance", key: "offer_acceptance", title: "Offer acceptance", status: "waiting_for_input", output: {}}];
+    await vm.runInContext("route()", sandbox);
+    const acceptanceForm = $("managementBody").children.at(-1)?.innerHTML || "";
+    check("acceptance form uses the exact reviewed offer hash", /name="offer_hash"/.test(acceptanceForm) && acceptanceForm.includes('value="' + offerHash + '"'));
+    probe.stages = interviewStage;
+    probe.waiting = {code: "no_eligible_candidates", message: "No eligible candidates", threshold: 70, highest_score: 68, candidate_count: 3, requires_revision: true};
+    await vm.runInContext("route()", sandbox);
+    check("empty shortlist explains the recorded score and disables resume", /No eligible candidates/.test($("managementBody").innerHTML) && /68/.test($("managementBody").innerHTML) && /id="workflow-run"[^>]*disabled/.test($("managementBody").innerHTML));
+    check("empty shortlist does not request irrelevant interview evidence", !/id="workflow-evidence"/.test($("managementBody").innerHTML));
+    probe.control = {state: "paused", paused: true, feedback: {state: "awaiting_confirmation", revision: 1, message: "Review the shortlist", assessment: {understanding: "Need more evidence", questions: ["Which source should HR use?"], plan: [{action: "Review sources", owner: "HR", acceptance: "Verified CVs"}], skill_lesson: "Use verified sources"}}};
+    await vm.runInContext("route()", sandbox);
+    check("feedback questions render an answer form with revision choices", /id="workflow-feedback-answer"/.test($("managementBody").innerHTML) && /name="new_revision"/.test($("managementBody").innerHTML));
+  } catch (error) { check("conditional hiring controls do not throw", false, error.message); }
+  finally { sandbox.fetch = liveFetch; }
+}
+
+try {
+  sandbox.__hash = "#/settings/appearance";
+  await vm.runInContext("route()", sandbox);
+  const appearance = $("managementBody").innerHTML;
+  check("appearance settings expose language, theme, spacing, motion and start screen", ["language", "theme", "density", "motion", "home"].every(name => appearance.includes('name="' + name + '"')));
+  const saved = new Map();
+  sandbox.localStorage = {getItem: key => saved.get(key) ?? null, setItem: (key, value) => saved.set(key, String(value))};
+  vm.runInContext('UIPreferences.save({theme: "dark", density: "compact", motion: "reduced", home: "organization"})', sandbox);
+  check("preferences apply and persist the selected device presentation", sandbox.document.documentElement.dataset.theme === "dark" && sandbox.document.documentElement.dataset.density === "compact" && JSON.parse(saved.get("onx-ui-preferences-v1")).motion === "reduced");
+  vm.runInContext('UIPreferences.save({theme: "auto", density: "comfortable", motion: "auto", home: "campaigns"})', sandbox);
+  delete sandbox.localStorage;
+} catch (error) { check("appearance settings do not throw", false, error.message); }
 
 check("management navigation produced no unhandled error",uncaught === null,uncaught?.message);
 process.exit(problems.length ? 1 : 0);

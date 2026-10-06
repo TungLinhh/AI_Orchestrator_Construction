@@ -28,6 +28,7 @@
   MANAGEMENT_VIEWS.set("settings", async (r, guard) => {
     const active = r.arg || "organization",
       tabs = [
+        ["appearance", L("Language & appearance", "Ngôn ngữ & giao diện"), "#/settings/appearance"],
         [
           "organization",
           L("Organization", "Tổ chức"),
@@ -48,6 +49,19 @@
       ),
       guard,
     );
+    if (active === "appearance") {
+      const prefs = UIPreferences.get();
+      body(card(L("Your workspace", "Không gian làm việc của bạn"), form("ui-preferences",
+        select("language", L("Language", "Ngôn ngữ"), [["vi", "Tiếng Việt"], ["en", "English"]], state.lang) +
+        select("theme", L("Color theme", "Màu giao diện"), [["auto", L("Follow system", "Theo hệ thống")], ["light", L("Light", "Sáng")], ["dark", L("Dark", "Tối")]], prefs.theme) +
+        select("density", L("Spacing", "Khoảng cách"), [["comfortable", L("Comfortable", "Thoáng")], ["compact", L("Compact", "Gọn")]], prefs.density) +
+        select("motion", L("Motion", "Chuyển động"), [["auto", L("Follow system", "Theo hệ thống")], ["reduced", L("Reduced", "Giảm chuyển động")]], prefs.motion) +
+        select("home", L("Start screen", "Màn hình bắt đầu"), [["campaigns", L("Recruitment & workflows", "Đợt tuyển & quy trình")], ["organization", L("Organization", "Tổ chức")]], prefs.home),
+        L("Save preferences", "Lưu tùy chọn"), false, L("Saved on this browser. Business permissions and agent instructions are managed separately.", "Lưu trên trình duyệt này. Quyền nghiệp vụ và hướng dẫn agent được quản lý riêng."))), guard);
+      wireForm("ui-preferences", async values => { UIPreferences.save(values); langSet(values.language); }, guard,
+        () => esc(L("Preferences saved on this browser.", "Đã lưu tùy chọn trên trình duyệt này.")));
+      return;
+    }
     const ctx = await apiGet("/console/context");
     if (active === "organization") {
       const [org, profiles] = await Promise.all([

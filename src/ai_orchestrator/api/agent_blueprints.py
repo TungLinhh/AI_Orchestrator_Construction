@@ -203,9 +203,8 @@ async def run(
 ) -> dict[str, Any]:
     ctx.require_admin()
     await workflow(root_id, ctx)
-    await ctx.session.commit()
-    started = request.app.state.workflow_drivers.start(
-        ctx.organization_id, root_id, WorkflowKind.AGENT
+    started = await request.app.state.workflow_drivers.submit(
+        ctx.organization_id, root_id, WorkflowKind.AGENT, session=ctx.session
     )
     return {"id": root_id, "started": started}
 

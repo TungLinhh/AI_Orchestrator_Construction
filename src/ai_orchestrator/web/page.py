@@ -4,6 +4,7 @@ from pathlib import Path
 
 SCRIPTS = (
     "core.js",
+    "preferences.js",
     "navigation.js",
     "work.js",
     "stream.js",

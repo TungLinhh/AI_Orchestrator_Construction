@@ -22,9 +22,9 @@ from typing import Any
 
 import httpx
 from tenacity import (
+    RetryCallState,
     retry,
     retry_if_exception,
-    stop_after_attempt,
     wait_exponential_jitter,
 )
 
@@ -61,6 +61,15 @@ def _should_retry(exc: BaseException) -> bool:
         | httpx.TransportError
         | httpx.HTTPStatusError,
     )
+
+
+def _retry_limit_reached(state: RetryCallState) -> bool:
+    provider = state.args[0]
+    request = state.kwargs.get("request") or state.args[2]
+    retries = provider._max_retries
+    if request.max_provider_retries is not None:
+        retries = min(retries, max(0, request.max_provider_retries))
+    return bool(state.attempt_number >= max(0, retries) + 1)
 
 
 class OpenAICompatibleProvider(ModelProvider):
@@ -113,7 +122,7 @@ class OpenAICompatibleProvider(ModelProvider):
             self._client = None
 
     @retry(
-        stop=stop_after_attempt(3),
+        stop=_retry_limit_reached,
         wait=wait_exponential_jitter(initial=0.5, max=8.0),
         retry=retry_if_exception(_should_retry),
         reraise=True,

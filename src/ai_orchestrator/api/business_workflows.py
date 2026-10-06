@@ -136,16 +136,28 @@ async def run(
         raise ValidationError("Run requires a workflow root")
     if root.status in {"completed", "failed", "canceled", "expired"}:
         raise PreconditionError("This workflow is terminal; create a new run for changed inputs")
-    await ctx.session.commit()
-    started = request.app.state.workflow_drivers.start(
-        ctx.organization_id, root_id, WorkflowKind.BUSINESS
+    report = await BusinessWorkflowService(request.app.state.db, ctx.organization_id).report(
+        root_id
+    )
+    if report["waiting"]:
+        raise PreconditionError(
+            "Recruitment needs new source evidence in a reviewed revision",
+            details=report["waiting"],
+        )
+    from ai_orchestrator.application.workflow_commands import command_for
+
+    command = await command_for(ctx.session, ctx.organization_id, root_id)
+    if command and command.paused:
+        raise PreconditionError("Confirm the feedback plan before resuming")
+    started = await request.app.state.workflow_drivers.submit(
+        ctx.organization_id, root_id, WorkflowKind.BUSINESS, session=ctx.session
     )
     return {"id": root_id, "started": started, "already_running": not started}
 
 
 @router.post("/workflows/{root_id}/evidence")
 async def evidence(
-    root_id: str, body: EvidenceRequest, ctx: ApiContext = Depends(get_context)
+    root_id: str, body: EvidenceRequest, request: Request, ctx: ApiContext = Depends(get_context)
 ) -> dict[str, Any]:
     ctx.require_human()
     root = await TaskRepository(ctx.session, ctx.organization_id).get(root_id)
@@ -177,7 +189,15 @@ async def evidence(
         task_id=stage.id,
         context={"stage": body.stage_key, "evidence_hash": payload_hash(body.evidence)},
     )
-    return {"id": root_id, "stage_key": body.stage_key, "recorded": True}
+    await request.app.state.workflow_drivers.submit(
+        ctx.organization_id, root_id, WorkflowKind.BUSINESS, session=ctx.session
+    )
+    return {
+        "id": root_id,
+        "stage_key": body.stage_key,
+        "recorded": True,
+        "continuation_requested": True,
+    }
 
 
 @router.post("/workflows/{root_id}/retry", status_code=201)
@@ -225,3 +245,111 @@ async def retry(root_id: str, ctx: ApiContext = Depends(get_context)) -> dict[st
         reuse_source=root_id,
     )
     return {"id": root, "mode": source.input["mode"], "source_root": root_id, "started": False}
+
+
+class FeedbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    message: str = Field(min_length=10, max_length=10000)
+
+
+class FeedbackConfirmation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    revision: int = Field(ge=1)
+    answers: str = Field(default="", max_length=10000)
+    new_revision: bool = False
+
+
+@router.post("/workflows/{root_id}/feedback", status_code=202)
+async def feedback(
+    root_id: str, body: FeedbackRequest, request: Request, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    from ai_orchestrator.application.workflow_feedback import request_feedback
+
+    ctx.require_admin()
+    kind = await request_feedback(
+        ctx.session, ctx.organization_id, root_id, body.message, ctx.actor
+    )
+    await ctx.session.commit()
+    await request.app.state.workflow_drivers.cancel(ctx.organization_id, root_id)
+    request.app.state.workflow_drivers.start(ctx.organization_id, root_id, kind, persist=False)
+    return {"id": root_id, "paused": True, "feedback_recorded": True}
+
+
+@router.post("/workflows/{root_id}/feedback/confirm")
+async def confirm_feedback(
+    root_id: str,
+    body: FeedbackConfirmation,
+    request: Request,
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
+    from ai_orchestrator.application.workflow_feedback import WorkflowFeedbackService
+
+    ctx.require_admin()
+    destination, kind = await WorkflowFeedbackService(
+        request.app.state.db, ctx.organization_id
+    ).confirm(
+        root_id,
+        ctx.actor,
+        revision=body.revision,
+        answers=body.answers,
+        new_revision=body.new_revision,
+    )
+    request.app.state.workflow_drivers.start(ctx.organization_id, destination, kind, persist=False)
+    return {
+        "id": destination,
+        "started": True,
+        "revision_of": root_id if destination != root_id else None,
+    }
+
+
+@router.post("/workflows/{root_id}/actions/{action_id}/reconcile")
+async def reconcile_action(
+    root_id: str, action_id: str, request: Request, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    from ai_orchestrator.application.connector_actions import ConnectorActions
+    from ai_orchestrator.domain.state_machines import Transition
+    from ai_orchestrator.integrations.recruitment_mail import RecruitmentMailbox
+    from ai_orchestrator.persistence.models import ConnectorAction
+
+    ctx.require_human()
+    row = await ctx.session.get(ConnectorAction, action_id)
+    if not row or row.root_task_id != root_id:
+        raise ValidationError("Connector action does not belong to this workflow")
+    root = await TaskRepository(ctx.session, ctx.organization_id).get(root_id)
+    if root.status in {"completed", "failed", "canceled", "expired"}:
+        raise PreconditionError("Reconciliation requires an open workflow")
+    await ctx.session.commit()
+    result = await ConnectorActions(request.app.state.db, ctx.organization_id).reconcile(
+        action_id, RecruitmentMailbox(ctx.organization_id), ctx.actor
+    )
+    await request.app.state.db.bind_tenant(ctx.session, ctx.organization_id)
+    if result["state"] == "confirmed" or result.get("not_attempted"):
+        task = await TaskRepository(ctx.session, ctx.organization_id).get(result["stage_task_id"])
+        if task.status == "blocked":
+            await TaskRepository(ctx.session, ctx.organization_id).transition(
+                task.id, Transition.ASSIGN
+            )
+            task.constraints = {
+                k: v for k, v in task.constraints.items() if k != "controller_interrupted"
+            }
+    return result
+
+
+class FeedbackAnswer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    revision: int = Field(ge=1)
+    answers: str = Field(min_length=5, max_length=10000)
+
+
+@router.post("/workflows/{root_id}/feedback/answer", status_code=202)
+async def answer_feedback(
+    root_id: str, body: FeedbackAnswer, request: Request, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    from ai_orchestrator.application.workflow_feedback import WorkflowFeedbackService
+
+    ctx.require_admin()
+    kind = await WorkflowFeedbackService(request.app.state.db, ctx.organization_id).answer(
+        root_id, ctx.actor, revision=body.revision, answers=body.answers
+    )
+    request.app.state.workflow_drivers.start(ctx.organization_id, root_id, kind, persist=False)
+    return {"id": root_id, "answers_recorded": True}

@@ -51,11 +51,11 @@ HIRING = (
     WorkflowStage(
         "test_mail",
         "Gửi CV thử về chính hộp thư tuyển dụng",
-        "IT Agent",
+        "HR Agent",
         "mail_send",
         simulation_only=True,
     ),
-    WorkflowStage("cv_intake", "Lọc email và tải CV read-only", "IT Agent", "mail_read"),
+    WorkflowStage("cv_intake", "Lọc email và tải CV read-only", "HR Agent", "mail_read"),
     WorkflowStage(
         "scoring",
         "Đánh giá kỹ từng CV theo rubric đã duyệt",
@@ -113,7 +113,7 @@ HIRING = (
         ),
     ),
     WorkflowStage(
-        "onboarding_setup", "Thực hiện onboarding trong môi trường thử", "IT Agent", "onboard"
+        "onboarding_setup", "Thực hiện onboarding trong môi trường thử", "HR Agent", "onboard"
     ),
     WorkflowStage("onboarding_review", "HR xác nhận bàn giao onboarding", "HR Agent", "gate"),
     WorkflowStage("close", "Kiểm tra toàn bộ hồ sơ và đóng đợt tuyển", "Executive Agent", "close"),
@@ -306,3 +306,39 @@ def validate_match(
             raise ValueError("Invalid PO amount")
         total += line["quantity"] * line["unit_price"]
     return round(total, 2)
+
+
+def hiring_blocker(stage_key: str, prior: dict[str, Any]) -> dict[str, Any] | None:
+    """Detect an empty reviewed shortlist before invoking impossible downstream work."""
+    if stage_key not in {"interview_technical", "selection"} or "scoring" not in prior:
+        return None
+    threshold = prior["rubric"]["threshold"]
+    candidates = prior["scoring"]["candidates"]
+    eligible = {row["candidate_id"] for row in candidates if row["score"] >= threshold}
+    code = "no_eligible_candidates"
+    message = "Không có CV đạt ngưỡng đã duyệt. Cần bổ sung nguồn ứng viên trong revision mới."
+    if eligible and stage_key == "selection":
+        cvs = {cv["candidate_id"]: cv for cv in prior["cv_intake"]["cvs"]}
+        for interview in ("interview_technical", "interview_hr"):
+            passed = {
+                row["filename"]
+                for row in prior[interview]["transcripts"]
+                if row.get("result") == "pass"
+            }
+            eligible = {ident for ident in eligible if cvs[ident]["filename"] in passed}
+        code = "no_interview_qualified_candidates"
+        message = (
+            "Không có ứng viên đạt ngưỡng và cả hai vòng phỏng vấn. "
+            "Cần người phụ trách xem lại nguồn trong revision mới."
+        )
+    if eligible:
+        return None
+    return {
+        "code": code,
+        "message": message,
+        "stage_key": stage_key,
+        "threshold": threshold,
+        "highest_score": max((row["score"] for row in candidates), default=None),
+        "candidate_count": len(candidates),
+        "requires_revision": True,
+    }

@@ -152,7 +152,9 @@ class RecruitmentMailbox:
             raise ValueError("Invalid recruitment run identifier")
         return "[ONX-MEP " + run_id + "]"
 
-    def send_tests(self, run_id: str, cvs: list[dict[str, str]]) -> dict[str, Any]:
+    def send_tests(
+        self, run_id: str, cvs: list[dict[str, str]], message_ids: list[str] | None = None
+    ) -> dict[str, Any]:
         sent = []
         address = self.settings.recruitment_mail_address
         with smtplib.SMTP_SSL(
@@ -162,12 +164,12 @@ class RecruitmentMailbox:
             context=ssl.create_default_context(),
         ) as smtp:
             smtp.login(address, self.settings.recruitment_mail_password.get_secret_value())
-            for cv in cvs:
+            for index, cv in enumerate(cvs):
                 message = EmailMessage()
                 message["From"] = address
                 message["To"] = address
                 message["Subject"] = self.subject(run_id) + " SYNTHETIC CV " + cv["name"]
-                message["Message-ID"] = make_msgid()
+                message["Message-ID"] = message_ids[index] if message_ids else make_msgid()
                 message["X-ONX-Synthetic"] = "true"
                 message.set_content(
                     (
@@ -198,6 +200,48 @@ class RecruitmentMailbox:
             "synthetic": True,
             "protocol": "SMTP_SSL",
             "count": len(sent),
+        }
+
+    def send_prepared(
+        self, run_id: str, cvs: list[dict[str, str]], message_ids: list[str]
+    ) -> dict[str, Any]:
+        if len(message_ids) != len(cvs) or any(
+            not re.fullmatch(r"<onx\.[a-f0-9]{64}\.\d+@o-nexus\.invalid>", value)
+            for value in message_ids
+        ):
+            raise ValueError("Invalid prepared SMTP message identity")
+        return self.send_tests(run_id, cvs, message_ids)
+
+    def reconcile_tests(self, run_id: str, snapshot: dict[str, Any]) -> dict[str, Any]:
+        if (
+            snapshot.get("recipient") != self.settings.recruitment_mail_address
+            or snapshot.get("synthetic") is not True
+        ):
+            raise ValueError("Only prepared self-test actions can be reconciled")
+        intake = self.read_cvs(run_id)
+        observed = []
+        for expected in snapshot["messages"]:
+            for cv in intake["cvs"]:
+                refs = [cv["mail"], *cv.get("duplicate_sources", [])]
+                match = next(
+                    (ref for ref in refs if ref["message_id"] == expected["message_id"]), None
+                )
+                if cv["sha256"] == expected["sha256"] and match:
+                    observed.append({**expected, **match})
+                    break
+        confirmed = len(observed) == len(snapshot["messages"]) and bool(observed)
+        return {
+            "confirmed": confirmed,
+            "observed": observed,
+            "receipt": {
+                "sent": observed,
+                "recipient": snapshot["recipient"],
+                "synthetic": True,
+                "protocol": "IMAP_SSL_BODY_PEEK",
+                "readonly": True,
+                "reconciled": True,
+                "count": len(observed),
+            },
         }
 
     def read_cvs(self, run_id: str) -> dict[str, Any]:
