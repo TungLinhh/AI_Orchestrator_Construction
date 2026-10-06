@@ -64,3 +64,10 @@ def test_a_model_cannot_assign_a_human_review_to_an_agent():
         validate_feedback(output, {"HR Agent", "HR"}, ["jd_review"], {"jd_review"})
     output["plan"][0]["owner"] = "HR"
     validate_feedback(output, {"HR Agent", "HR"}, ["jd_review"], {"jd_review"})
+
+
+def test_repeated_question_with_different_case_or_punctuation_is_refused():
+    output = proposal()
+    output["questions"] = ["Nguồn tài liệu ở đâu?", "  NGUỒN tài liệu ở đâu ! "]
+    with pytest.raises(ValueError, match="repeat the same question"):
+        validate_feedback(output, {"HR"})

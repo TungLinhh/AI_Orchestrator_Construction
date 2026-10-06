@@ -1,0 +1,272 @@
+{
+  "synthetic": true,
+  "boss_brief": "Chuẩn bị đủ vật tư và NCC cho gói thử độc lập; chưa phát hành PO thật. Duyệt chất lượng và DOA mô phỏng, kiểm tra đủ BOQ, NCC không đỏ và 3-way match.",
+  "boq": [
+    {
+      "material_id": "PIPE-01",
+      "name": "Ống cấp nước",
+      "quantity": 100,
+      "unit": "m",
+      "technical_spec": "Ống PPR PN20, chứng chỉ vật liệu",
+      "long_lead": false
+    },
+    {
+      "material_id": "CABLE-01",
+      "name": "Cáp điện",
+      "quantity": 200,
+      "unit": "m",
+      "technical_spec": "Cáp đồng 4x16mm2, chứng chỉ kiểm tra xuất xưởng",
+      "long_lead": false
+    },
+    {
+      "material_id": "PUMP-01",
+      "name": "Bơm nước",
+      "quantity": 2,
+      "unit": "bộ",
+      "technical_spec": "Bơm 10m3/h, 30m cột áp, chứng chỉ và bảo hành 24 tháng",
+      "long_lead": true
+    }
+  ],
+  "suppliers": [
+    {
+      "supplier_id": "NCC-TEST-A",
+      "synthetic": true,
+      "legal_valid": true,
+      "legal_ref": "fixture:packet-v1:procurement/NCC-TEST-A/legal_ref.json",
+      "financial_ref": "fixture:packet-v1:procurement/NCC-TEST-A/financial_ref.json",
+      "hse_ref": "fixture:packet-v1:procurement/NCC-TEST-A/hse_ref.json",
+      "financial_health": "positive working capital",
+      "hse": "training and incident register supplied",
+      "quotes": [
+        {
+          "material_id": "PIPE-01",
+          "unit_price": 60000,
+          "quantity": 100,
+          "currency": "VND",
+          "delivery_days": 10,
+          "warranty_months": 24,
+          "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-A/PIPE-01-certificate.json",
+          "spec_compliant": true
+        },
+        {
+          "material_id": "CABLE-01",
+          "unit_price": 180000,
+          "quantity": 200,
+          "currency": "VND",
+          "delivery_days": 10,
+          "warranty_months": 24,
+          "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-A/CABLE-01-certificate.json",
+          "spec_compliant": true
+        },
+        {
+          "material_id": "PUMP-01",
+          "unit_price": 18000000,
+          "quantity": 2,
+          "currency": "VND",
+          "delivery_days": 30,
+          "warranty_months": 24,
+          "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-A/PUMP-01-certificate.json",
+          "spec_compliant": true
+        }
+      ],
+      "quote_source": "fixture:packet-v1:procurement/NCC-TEST-A/quote_source.json"
+    },
+    {
+      "supplier_id": "NCC-TEST-B",
+      "synthetic": true,
+      "legal_valid": true,
+      "legal_ref": "fixture:packet-v1:procurement/NCC-TEST-B/legal_ref.json",
+      "financial_ref": "fixture:packet-v1:procurement/NCC-TEST-B/financial_ref.json",
+      "hse_ref": "fixture:packet-v1:procurement/NCC-TEST-B/hse_ref.json",
+      "financial_health": "positive working capital",
+      "hse": "training and incident register supplied",
+      "quotes": [
+        {
+          "material_id": "PIPE-01",
+          "unit_price": 65000,
+          "quantity": 100,
+          "currency": "VND",
+          "delivery_days": 10,
+          "warranty_months": 24,
+          "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-B/PIPE-01-certificate.json",
+          "spec_compliant": true
+        },
+        {
+          "material_id": "CABLE-01",
+          "unit_price": 175000,
+          "quantity": 200,
+          "currency": "VND",
+          "delivery_days": 10,
+          "warranty_months": 24,
+          "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-B/CABLE-01-certificate.json",
+          "spec_compliant": true
+        },
+        {
+          "material_id": "PUMP-01",
+          "unit_price": 18500000,
+          "quantity": 2,
+          "currency": "VND",
+          "delivery_days": 30,
+          "warranty_months": 24,
+          "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-B/PUMP-01-certificate.json",
+          "spec_compliant": true
+        }
+      ],
+      "quote_source": "fixture:packet-v1:procurement/NCC-TEST-B/quote_source.json"
+    },
+    {
+      "supplier_id": "NCC-TEST-C",
+      "synthetic": true,
+      "legal_valid": false,
+      "legal_ref": "fixture:packet-v1:procurement/NCC-TEST-C/legal_ref.json",
+      "financial_ref": "fixture:packet-v1:procurement/NCC-TEST-C/financial_ref.json",
+      "hse_ref": "fixture:packet-v1:procurement/NCC-TEST-C/hse_ref.json",
+      "financial_health": "positive working capital",
+      "hse": "training and incident register supplied",
+      "quotes": [
+        {
+          "material_id": "PIPE-01",
+          "unit_price": 40000,
+          "quantity": 100,
+          "currency": "VND",
+          "delivery_days": 10,
+          "warranty_months": 24,
+          "certificate_ref": "",
+          "spec_compliant": false
+        },
+        {
+          "material_id": "CABLE-01",
+          "unit_price": 140000,
+          "quantity": 200,
+          "currency": "VND",
+          "delivery_days": 10,
+          "warranty_months": 24,
+          "certificate_ref": "",
+          "spec_compliant": false
+        },
+        {
+          "material_id": "PUMP-01",
+          "unit_price": 14000000,
+          "quantity": 2,
+          "currency": "VND",
+          "delivery_days": 30,
+          "warranty_months": 24,
+          "certificate_ref": "",
+          "spec_compliant": false
+        }
+      ],
+      "quote_source": "fixture:packet-v1:procurement/NCC-TEST-C/quote_source.json"
+    }
+  ],
+  "g3_date": "2026-12-01",
+  "need_date": "2026-11-20",
+  "delivery": {
+    "synthetic": true,
+    "source": "fixture:packet-v1:procurement/delivery-and-invoice.json",
+    "grn_lines": [
+      {
+        "supplier_id": "NCC-TEST-A",
+        "material_id": "PIPE-01",
+        "quantity": 100
+      },
+      {
+        "supplier_id": "NCC-TEST-A",
+        "material_id": "CABLE-01",
+        "quantity": 200
+      },
+      {
+        "supplier_id": "NCC-TEST-A",
+        "material_id": "PUMP-01",
+        "quantity": 2
+      },
+      {
+        "supplier_id": "NCC-TEST-B",
+        "material_id": "PIPE-01",
+        "quantity": 100
+      },
+      {
+        "supplier_id": "NCC-TEST-B",
+        "material_id": "CABLE-01",
+        "quantity": 200
+      },
+      {
+        "supplier_id": "NCC-TEST-B",
+        "material_id": "PUMP-01",
+        "quantity": 2
+      },
+      {
+        "supplier_id": "NCC-TEST-C",
+        "material_id": "PIPE-01",
+        "quantity": 100
+      },
+      {
+        "supplier_id": "NCC-TEST-C",
+        "material_id": "CABLE-01",
+        "quantity": 200
+      },
+      {
+        "supplier_id": "NCC-TEST-C",
+        "material_id": "PUMP-01",
+        "quantity": 2
+      }
+    ],
+    "invoice_lines": [
+      {
+        "supplier_id": "NCC-TEST-A",
+        "material_id": "PIPE-01",
+        "quantity": 100,
+        "unit_price": 60000
+      },
+      {
+        "supplier_id": "NCC-TEST-A",
+        "material_id": "CABLE-01",
+        "quantity": 200,
+        "unit_price": 180000
+      },
+      {
+        "supplier_id": "NCC-TEST-A",
+        "material_id": "PUMP-01",
+        "quantity": 2,
+        "unit_price": 18000000
+      },
+      {
+        "supplier_id": "NCC-TEST-B",
+        "material_id": "PIPE-01",
+        "quantity": 100,
+        "unit_price": 65000
+      },
+      {
+        "supplier_id": "NCC-TEST-B",
+        "material_id": "CABLE-01",
+        "quantity": 200,
+        "unit_price": 175000
+      },
+      {
+        "supplier_id": "NCC-TEST-B",
+        "material_id": "PUMP-01",
+        "quantity": 2,
+        "unit_price": 18500000
+      },
+      {
+        "supplier_id": "NCC-TEST-C",
+        "material_id": "PIPE-01",
+        "quantity": 100,
+        "unit_price": 40000
+      },
+      {
+        "supplier_id": "NCC-TEST-C",
+        "material_id": "CABLE-01",
+        "quantity": 200,
+        "unit_price": 140000
+      },
+      {
+        "supplier_id": "NCC-TEST-C",
+        "material_id": "PUMP-01",
+        "quantity": 2,
+        "unit_price": 14000000
+      }
+    ],
+    "note": "Delivery and invoice records exist only in the acceptance sandbox."
+  },
+  "boq_source": "fixture:packet-v1:procurement/boq.json"
+}

@@ -236,6 +236,22 @@ class AgentBlueprintService:
         )
         if not sources:
             raise PreconditionError("This department has no source SOP catalogue")
+        cycle = config.get("cycle")
+        selected = None
+        if cycle:
+            from ai_orchestrator.domain.hr_templates import hr_template
+
+            if department != "hr":
+                raise ValidationError("HR cycles require the HR department")
+            selected = hr_template(cycle)
+            sources = [sop for sop in sources if sop.code in dict(selected.sources)]
+            if {sop.code for sop in sources} != set(dict(selected.sources)):
+                raise PreconditionError("The selected HR cycle is missing its source SOP")
+            config["cycle_snapshot"] = {
+                "key": selected.key,
+                "trigger": selected.trigger,
+                "source_inputs": list(selected.inputs),
+            }
         config["source_agent_id"] = owner.id
         # Only the source agent's enabled, published skills and read-only tools.
         skill_rows = (
@@ -290,6 +306,18 @@ class AgentBlueprintService:
             }
             for s in sources
         ]
+        if selected:
+            scoped = dict(selected.sources)
+            for sop in config["source_sops"]:
+                sop["source_steps"] = [
+                    step
+                    for step in sop.get("source_steps", [])
+                    if int(step["ref"].rsplit("#", 1)[1]) in scoped[sop["code"]]
+                ]
+                # Full-SOP artifact lists mix unrelated HR cycles; the scoped steps
+                # and control point remain authoritative for this template.
+                sop.pop("required_artifacts", None)
+            config["mandate"] = selected.title + ": " + config["mandate"]
         task = await self.tasks.create(
             title="Agent blueprint: " + config["name"][:150],
             goal="Soạn đầy đủ trách nhiệm và các bước vận hành của phòng ban theo TẤT CẢ SOP "

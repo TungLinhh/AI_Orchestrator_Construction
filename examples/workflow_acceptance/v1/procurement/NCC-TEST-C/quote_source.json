@@ -1,0 +1,36 @@
+{
+  "synthetic": true,
+  "supplier_id": "NCC-TEST-C",
+  "quotes": [
+    {
+      "material_id": "PIPE-01",
+      "unit_price": 40000,
+      "quantity": 100,
+      "currency": "VND",
+      "delivery_days": 10,
+      "warranty_months": 24,
+      "certificate_ref": "",
+      "spec_compliant": false
+    },
+    {
+      "material_id": "CABLE-01",
+      "unit_price": 140000,
+      "quantity": 200,
+      "currency": "VND",
+      "delivery_days": 10,
+      "warranty_months": 24,
+      "certificate_ref": "",
+      "spec_compliant": false
+    },
+    {
+      "material_id": "PUMP-01",
+      "unit_price": 14000000,
+      "quantity": 2,
+      "currency": "VND",
+      "delivery_days": 30,
+      "warranty_months": 24,
+      "certificate_ref": "",
+      "spec_compliant": false
+    }
+  ]
+}

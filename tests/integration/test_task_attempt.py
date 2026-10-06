@@ -377,3 +377,51 @@ async def test_claim_commit_failure_does_not_mask_the_original_error(db, prepare
     assert not runtime.started.is_set()
     assert task.status in {"created", "assigned"}
     assert not executions and not usages
+
+
+async def test_settlement_refreshes_a_coordinator_finalized_after_tree_read(
+    db, prepared, monkeypatch
+):
+    """Final commit can land between the tree snapshot and execution lookup."""
+    from ai_orchestrator.application import pipeline
+    from ai_orchestrator.persistence.repositories.task import ExecutionRepository
+
+    org, root_id = prepared
+    async with db.tenant_session(org) as session:
+        repo = TaskRepository(session, org)
+        root = await repo.transition(root_id, Transition.BEGIN_WORK)
+        attempt = await ExecutionRepository(session, org).start(
+            task_id=root_id,
+            agent_id=root.owner_agent_id,
+            runtime_adapter="settlement-race-fixture",
+            model_profile="fixture",
+        )
+        execution_id = attempt.id
+        child = await repo.create(
+            title="Completed fixture child",
+            goal="No external action; deterministic race fixture",
+            parent_task_id=root_id,
+            owner_agent_id=root.owner_agent_id,
+        )
+        await repo.transition(child.id, Transition.BEGIN_WORK)
+        child.output = {"finding": "Fixture evidence only"}
+        await repo.transition(child.id, Transition.COMPLETE)
+    original_tree = pipeline._tree
+
+    async def finalize_after_read(session, organization_id, task_id):
+        tree = await original_tree(session, organization_id, task_id)
+        async with db.tenant_session(org) as writer:
+            await TaskRepository(writer, org).transition(
+                root_id, Transition.FAIL, error="Runtime failure committed independently"
+            )
+            await ExecutionRepository(writer, org).finish(execution_id, status="failed")
+        assert next(t for t in tree if t.id == root_id).status == "running"
+        return tree
+
+    monkeypatch.setattr(pipeline, "_tree", finalize_after_read)
+    async with db.tenant_session(org) as session:
+        result = await pipeline.settle_finished(session, org, root_id)
+        assert not result.completed and not result.failed
+    root, executions, _ = await rows(db, org, root_id)
+    assert root.status == "failed" and root.last_error == "Runtime failure committed independently"
+    assert executions[0].status == "failed"

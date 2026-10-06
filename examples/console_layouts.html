@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="vi">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>O-Nexus — so sánh bố cục</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font: 14px/1.6 system-ui;
+      background: #f4f6f9;
+      color: #1b293b;
+      padding: 24px;
+      margin: 0;
+    }
+    h1 {
+      font-size: 24px;
+    }
+    h2 {
+      font-size: 17px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+    article {
+      background: white;
+      padding: 20px;
+      border: 1px solid #dbe2eb;
+      border-radius: 12px;
+    }
+    .preview {
+      height: 360px;
+      display: flex;
+      background: #f4f6f9;
+      border: 1px solid #dbe2eb;
+      border-radius: 8px;
+      padding: 8px;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .nav {
+      width: 55px;
+      background: #e3eaf2;
+      padding: 8px;
+    }
+    .content {
+      flex: 1;
+      min-width: 0;
+    }
+    .box {
+      padding: 12px;
+      margin: 8px 0;
+      background: white;
+      border: 1px solid #dbe2eb;
+      border-radius: 6px;
+    }
+    .action {
+      background: #eaf1f8;
+      color: #275781;
+    }
+    .rail {
+      width: 36%;
+      padding: 4px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+    .board .box {
+      padding: 8px;
+    }
+    .decision {
+      border-top: 3px solid #275781;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <h1>Ba phương án bố cục campaign</h1>
+  <p>
+    Dữ liệu minh họa. So sánh vị trí quyết định, khả năng đọc log, thứ tự quy
+    trình và màn hình hẹp.
+  </p>
+  <main>
+    <article>
+      <h2>A · Một cột tuần tự</h2>
+      <div class="preview">
+        <div class="nav">Menu</div>
+        <div class="content">
+          <div class="box">Brief và trạng thái</div>
+          <div class="box action">Việc cần quyết định</div>
+          <div class="box">Feedback / chứng cứ</div>
+          <div class="box">Điểm CV</div>
+          <div class="box">Log 21 bước</div>
+        </div>
+      </div>
+      <p>
+        Dễ đọc trên điện thoại; log nằm xa quyết định và nguồn. Quá nhiều cuộn ở
+        màn hình rộng.
+      </p>
+    </article>
+    <article>
+      <h2>B · Bảng công việc ba cột</h2>
+      <div class="preview">
+        <div class="nav">Menu</div>
+        <div class="content">
+          <div class="box">Tổng quan</div>
+          <div class="board">
+            <div>
+              <div class="box">Chưa chạy</div>
+              <div class="box">JD</div>
+            </div>
+            <div>
+              <div class="box action">Đang chờ</div>
+              <div class="box">Duyệt</div>
+            </div>
+            <div>
+              <div class="box">Đã xong</div>
+              <div class="box">Brief</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p>
+        Quét trạng thái nhanh nhưng chia cắt thứ tự SOP. Khó đặt log chi tiết và
+        biểu mẫu dài vào thẻ hẹp.
+      </p>
+    </article>
+    <article class="decision">
+      <h2>C · Hồ sơ + vùng điều khiển (chọn)</h2>
+      <div class="preview">
+        <div class="nav">Menu</div>
+        <div class="content">
+          <div class="box">Brief và tiến độ</div>
+          <div class="box">Điểm / hồ sơ</div>
+          <div class="box">Log theo thứ tự</div>
+          <div class="box">Nguồn / sự kiện</div>
+        </div>
+        <aside class="rail">
+          <div class="box action">Bước tiếp theo</div>
+          <div class="box">Chờ nguồn</div>
+          <div class="box">Feedback</div>
+          <div class="box">Revision</div>
+        </aside>
+      </div>
+      <p>
+        Giữ log đúng thứ tự và quyết định ở vị trí cố định trong cấu trúc. Màn
+        hình nhỏ đặt điều khiển trước hồ sơ. Không dùng rail sticky dài gây kẹt
+        cuộn.
+      </p>
+    </article>
+  </main>
+</html>

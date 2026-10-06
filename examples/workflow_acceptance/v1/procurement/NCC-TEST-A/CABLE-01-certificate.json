@@ -1,0 +1,7 @@
+{
+  "synthetic": true,
+  "supplier_id": "NCC-TEST-A",
+  "material_id": "CABLE-01",
+  "spec_compliant": true,
+  "note": "Mock quality reviewer exercised compliance; no real certificate."
+}

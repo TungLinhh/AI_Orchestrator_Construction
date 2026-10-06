@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "source": "fixture:packet-v1:hiring/interview_technical.json",
+  "transcripts": [
+    {
+      "filename": "mep-test-a.txt",
+      "result": "pass",
+      "notes": "SIMULATED technical panel: candidate explained 420 kW cooling load and 35 m3/h pump sizing, voltage-drop/derating checks, clash escalation, TAB measurement and LOTO. Panel reviewed fictional TR-M01/E01/B01/C01/H01/D01. Result pass for the exercise; not an actual interview or verified credential."
+    },
+    {
+      "filename": "mep-test-b.txt",
+      "result": "needs_development",
+      "notes": "Candidate needs supervised engineering practice; missing independent design evidence."
+    },
+    {
+      "filename": "mep-test-c.txt",
+      "result": "needs_development",
+      "notes": "Candidate needs supervised engineering practice; missing independent design evidence."
+    }
+  ]
+}

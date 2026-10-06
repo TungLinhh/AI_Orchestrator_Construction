@@ -753,21 +753,31 @@ async def settle_finished(
     tasks_repo = TaskRepository(session, organization_id)
     result = Settled()
     tree = await _tree(session, organization_id, root_id)
-    active_attempts = set(
-        (
-            await session.scalars(
-                select(Execution.task_id).where(
-                    Execution.organization_id == organization_id,
-                    Execution.task_id.in_([t.id for t in tree]),
-                    Execution.status == "running",
-                )
-            )
-        ).all()
-    )
+    coordinators = {task.parent_task_id for task in tree if task.parent_task_id}
     for task in tree:
-        # `!=`, not `is not`: two equal strings are usually two objects, and
-        # `is not` on strings answers "same object?" not "same value?".
-        if str(task.status) != TaskStatus.RUNNING.value or task.id in active_attempts:
+        if task.id not in coordinators or task.status != TaskStatus.RUNNING.value:
+            continue
+        # Tree and execution reads can straddle another attempt's final commit.
+        # Refresh under a short row lock before reviewing or transitioning;
+        # skip a busy finalizer instead of judging its stale running snapshot.
+        task = await session.scalar(
+            select(Task)
+            .where(Task.organization_id == organization_id, Task.id == task.id)
+            .with_for_update(skip_locked=True)
+            .execution_options(populate_existing=True)
+        )
+        if task is None or task.status != TaskStatus.RUNNING.value:
+            continue
+        active_attempt = await session.scalar(
+            select(Execution.id)
+            .where(
+                Execution.organization_id == organization_id,
+                Execution.task_id == task.id,
+                Execution.status == "running",
+            )
+            .limit(1)
+        )
+        if active_attempt:
             continue
         if await tasks_repo.live_descendant_count(str(task.id)) > 0:
             continue

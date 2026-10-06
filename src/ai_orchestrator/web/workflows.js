@@ -102,6 +102,7 @@ const BusinessWorkflows = (() => {
             ),
           ),
         ) +
+          ProcurementIntake.panel(ctx) +
           card(
             L(
               "Create an acceptance exercise",
@@ -128,6 +129,7 @@ const BusinessWorkflows = (() => {
           ),
         guard,
       );
+      ProcurementIntake.wire(ctx, guard);
       wireForm(
         "hiring-brief",
         async (values) => {
@@ -158,16 +160,52 @@ const BusinessWorkflows = (() => {
       }
       return;
     }
-    let refreshTimer = null, feedbackDraft = "";
+    let refreshTimer = null,
+      feedbackDraft = "",
+      revisionDraft = null;
+    const formDrafts = new Map();
+    function deferForEditing() {
+      if (
+        !document.activeElement?.closest("form") ||
+        !document
+          .getElementById("managementBody")
+          ?.contains(document.activeElement)
+      )
+        return false;
+      refreshTimer = setTimeout(() => {
+        if (guard.current()) refresh().catch((err) => toast(err.message, true));
+      }, 10000);
+      return true;
+    }
     async function refresh() {
       if (refreshTimer) clearTimeout(refreshTimer);
-      const draftInput = document.getElementById("workflow-feedback")?.querySelector("textarea");
+      const revisionForm = document.getElementById("workflow-revision");
+      if (deferForEditing()) return;
+      if (revisionForm)
+        revisionDraft = Object.fromEntries(new FormData(revisionForm));
+      for (const id of [
+        "workflow-evidence",
+        "workflow-feedback-answer",
+        "workflow-feedback-confirm",
+      ]) {
+        const form = document.getElementById(id);
+        if (form)
+          formDrafts.set(id, {
+            scope: form.dataset.draftScope,
+            values: Object.fromEntries(new FormData(form)),
+          });
+      }
+      const draftInput = document
+        .getElementById("workflow-feedback")
+        ?.querySelector("textarea");
       if (draftInput) feedbackDraft = draftInput.value;
       const h = await apiGet(`/workflows/${encodeURIComponent(selectedId)}`);
       if (!guard.current()) return;
-      const canRun = !h.waiting && !h.control?.paused && !["completed", "failed", "canceled", "expired"].includes(
-        h.status,
-      );
+      if (deferForEditing()) return;
+      const canRun =
+        !h.waiting &&
+        !h.control?.paused &&
+        !["completed", "failed", "canceled", "expired"].includes(h.status);
       const intake = h.stages.find((s) => s.key === "cv_intake");
       const candidates = h.stages.find((s) => s.key === "scoring");
       const names = new Map(
@@ -195,16 +233,45 @@ const BusinessWorkflows = (() => {
                 .join(""),
           )
         : "";
-      const active = h.stages.find(stage => stage.status !== "completed");
-      const journey = `<nav class="campaign-journey" aria-label="${esc(L("Campaign journey", "Luồng đợt tuyển"))}">${[
+      const active = h.stages.find((stage) => stage.status !== "completed");
+      const isHiring = h.kind === "mep_hiring";
+      const handoverStage = isHiring ? "onboarding_plan" : "delivery";
+      const journeyStep =
+        active?.key === "brief"
+          ? "brief"
+          : !active ||
+              (isHiring
+                ? active.key.startsWith("onboarding")
+                : ["delivery", "three_way_match", "close"].includes(active.key))
+            ? "handover"
+            : active.status === "waiting_for_approval"
+              ? "reviews"
+              : "campaign";
+      const journey = `<nav class="campaign-journey" aria-label="${esc(L("Workflow journey", "Luồng công việc"))}">${[
         ["brief", L("1 · Boss brief", "1 · Brief của Boss"), "brief"],
-        ["campaign", L("2 · Follow campaign", "2 · Theo dõi đợt tuyển"), "stages"],
+        [
+          "campaign",
+          L("2 · Follow progress", "2 · Theo dõi tiến độ"),
+          "stages",
+        ],
         ["reviews", L("3 · Decisions", "3 · Việc cần duyệt"), "decisions"],
-        ["onboarding", L("4 · Onboarding", "4 · Hồ sơ onboarding"), "onboarding"]
-      ].map(([key, label, anchor]) => `<a href="#/processes/workflows/${h.id}" data-campaign-anchor="${anchor}" ${key === (active?.key === "brief" ? "brief" : active?.key?.startsWith("onboarding") ? "onboarding" : active?.status === "waiting_for_approval" ? "reviews" : "campaign") ? 'aria-current="step"' : ""}>${esc(label)}</a>`).join("")}</nav>`;
+        [
+          "handover",
+          isHiring
+            ? L("4 · Onboarding", "4 · Hồ sơ onboarding")
+            : L("4 · Delivery & matching", "4 · Giao nhận & đối chiếu"),
+          handoverStage,
+        ],
+      ]
+        .map(
+          ([key, label, anchor]) =>
+            `<a href="#/processes/workflows/${h.id}" data-campaign-anchor="${anchor}" ${key === journeyStep ? 'aria-current="step"' : ""}>${esc(label)}</a>`,
+        )
+        .join("")}</nav>`;
       body(
-        journey + `<div class="campaign-progress" aria-label="${h.completed} / ${h.total}"><span style="width:${Math.round(h.completed / Math.max(h.total, 1) * 100)}%"></span></div>` +
-        `<div class="btn-row">${link("#/processes/workflows", L("All workflows", "Tất cả workflow"))}${link("#/give/" + h.id, L("Open task tree and events", "Mở cây task và sự kiện"))}${link("#/work/approvals", L("Human approval inbox", "Hộp thư cần người duyệt"))}<button class="btn" id="workflow-run" ${ctx.can_administer && canRun ? "" : "disabled"}>${esc(L("Run / resume workflow", "Chạy / tiếp tục workflow"))}</button><button class="btn sm" id="workflow-refresh">${esc(L("Refresh evidence", "Cập nhật chứng cứ"))}</button></div>` +
+        journey +
+          `<div class="campaign-progress" aria-label="${h.completed} / ${h.total}"><span style="width:${Math.round((h.completed / Math.max(h.total, 1)) * 100)}%"></span></div>` +
+          `<div class="btn-row">${link("#/processes/workflows", L("All workflows", "Tất cả workflow"))}${link("#/give/" + h.id, L("Open task tree and events", "Mở cây task và sự kiện"))}${link("#/work/approvals", L("Human approval inbox", "Hộp thư cần người duyệt"))}<button class="btn" id="workflow-run" ${ctx.can_administer && canRun ? "" : "disabled"}>${esc(L("Run / resume workflow", "Chạy / tiếp tục workflow"))}</button><button class="btn sm" id="workflow-refresh">${esc(L("Refresh evidence", "Cập nhật chứng cứ"))}</button></div>` +
           card(
             h.title,
             fields([
@@ -236,8 +303,16 @@ const BusinessWorkflows = (() => {
                 h.sources,
               ),
           ) +
-          card(L("Next step", "Bước tiếp theo"), `<div id="campaign-decisions">${active ? `<p><b>${esc(active.title)}</b> ${badge(active.status)}</p>${link("#/give/" + active.id, L("Open the work and evidence", "Mở công việc và chứng cứ"))}` : `<p>${esc(L("Campaign complete; review the recorded onboarding handover below.", "Đợt tuyển hoàn thành; xem hồ sơ bàn giao onboarding bên dưới."))}</p>`}</div>`) +
-          waitingPanel(h) + feedbackPanel(h, ctx) + receiptPanel(h, ctx) +
+          `<div class="campaign-workspace"><aside class="campaign-controls" aria-label="${esc(L("Campaign controls", "Điều khiển campaign"))}">` +
+          card(
+            L("Next step", "Bước tiếp theo"),
+            `<div id="campaign-decisions">${active ? `<p><b>${esc(active.title)}</b> ${badge(active.status)}</p>${link("#/give/" + active.id, L("Open the work and evidence", "Mở công việc và chứng cứ"))}` : `<p>${esc(isHiring ? L("Campaign complete; review the recorded onboarding handover below.", "Đợt tuyển hoàn thành; xem hồ sơ bàn giao onboarding bên dưới.") : L("Procurement complete; review delivery records and the three-way match below.", "Quy trình mua sắm hoàn thành; xem hồ sơ giao nhận và đối chiếu ba bên bên dưới."))}</p>`}</div>`,
+          ) +
+          waitingPanel(h) +
+          feedbackPanel(h, ctx) +
+          receiptPanel(h, ctx) +
+          revisionPanel(h, ctx, revisionDraft) +
+          `</aside><div class="campaign-main">` +
           scoreTable +
           (h.mail_intake
             ? card(
@@ -260,10 +335,11 @@ const BusinessWorkflows = (() => {
             h.stages
               .map(
                 (s, n) =>
-                  `<div class="card" id="campaign-stage-${esc(s.key)}"><h3>${n + 1}. ${esc(s.title)} ${badge(s.status)}</h3><div class="btn-row">${link("#/give/" + s.id, L("Task and execution evidence", "Task và chứng cứ thực thi"))}${s.owner_agent_id ? link("#/agent/" + s.owner_agent_id, L("Responsible agent", "Agent phụ trách")) : ""}${s.reused_from ? link("#/give/" + s.reused_from, L("Verified artifact reused from this task", "Sản phẩm đã kiểm chứng được dùng lại từ task này")) : ""}</div>${s.error ? `<p class="error">${esc(s.error)}</p>` : ""}${details(L("Produced artifact", "Sản phẩm đã tạo"), s.output)}</div>`,
+                  `<div class="campaign-stage ${s.status === "completed" ? "is-complete" : s.id === active?.id ? "is-current" : ""}" id="campaign-stage-${esc(s.key)}"><h3>${n + 1}. ${esc(s.title)} ${badge(s.status)}</h3><div class="btn-row">${link("#/give/" + s.id, L("Task and execution evidence", "Task và chứng cứ thực thi"))}${s.owner_agent_id ? link("#/agent/" + s.owner_agent_id, L("Responsible agent", "Agent phụ trách")) : ""}${s.reused_from ? link("#/give/" + s.reused_from, L("Verified artifact reused from this task", "Sản phẩm đã kiểm chứng được dùng lại từ task này")) : ""}</div>${s.error ? `<details class="stage-error"><summary>${esc(L("Failure details", "Chi tiết lỗi"))} · ${esc(String(s.error).split("\n")[0].slice(0, 160))}</summary><pre class="readable-text">${esc(s.error)}</pre></details>` : ""}${details(L("Produced artifact", "Sản phẩm đã tạo"), s.output)}</div>`,
               )
               .join(""),
-          ),
+          ) +
+          `</div></div>`,
         guard,
       );
       const evidenceStage =
@@ -285,10 +361,95 @@ const BusinessWorkflows = (() => {
           L("Supply the missing evidence", "Bổ sung chứng cứ đang chờ"),
           form(
             "workflow-evidence",
-            input("source", L("Source document or record link", "Tài liệu nguồn hoặc đường dẫn hồ sơ"), "", "text", "required minlength=5") +
-            (evidenceStage.key.startsWith("interview_") ? input("filename", L("CV filename", "Tên file CV"), "", "text", "required") + select("result", L("Interview result", "Kết quả phỏng vấn"), [["pass", L("Pass", "Đạt")], ["fail", L("Fail", "Chưa đạt")]]) + area("notes", L("Interview notes and evidence", "Ghi nhận phỏng vấn và căn cứ"), "", "required minlength=10") :
-            evidenceStage.key === "offer_acceptance" ? input("offer_hash", L("Reviewed offer hash", "Hash offer đã duyệt"), h.stages.find(stage => stage.key === "offer")?.artifact_hash || "", "text", "required") + select("accepted", L("Candidate acceptance", "Ứng viên chấp nhận"), [["false", L("Not yet", "Chưa chấp nhận")], ["true", L("Accepted", "Đã chấp nhận")]]) :
-            evidenceStage.key === "onboarding_setup" ? ["hr_documents", "safety_induction", "role_briefing", "access_verified", "mentor_handover"].map(key => area(key, {hr_documents: L("HR documents", "Hồ sơ HR"), safety_induction: L("Safety induction", "Đào tạo an toàn"), role_briefing: L("Role briefing", "Bàn giao vai trò"), access_verified: L("Verified access", "Quyền truy cập đã kiểm tra"), mentor_handover: L("Mentor handover", "Bàn giao người hướng dẫn")}[key], "", "required minlength=5")).join("") : area("evidence", L("Delivery record (JSON)", "Hồ sơ giao hàng (JSON)"), "", "required")),
+            input(
+              "source",
+              L(
+                "Source document or record link",
+                "Tài liệu nguồn hoặc đường dẫn hồ sơ",
+              ),
+              "",
+              "text",
+              "required minlength=5",
+            ) +
+              (evidenceStage.key.startsWith("interview_")
+                ? input(
+                    "filename",
+                    L("CV filename", "Tên file CV"),
+                    "",
+                    "text",
+                    "required",
+                  ) +
+                  select("result", L("Interview result", "Kết quả phỏng vấn"), [
+                    ["pass", L("Pass", "Đạt")],
+                    ["fail", L("Fail", "Chưa đạt")],
+                  ]) +
+                  area(
+                    "notes",
+                    L(
+                      "Interview notes and evidence",
+                      "Ghi nhận phỏng vấn và căn cứ",
+                    ),
+                    "",
+                    "required minlength=10",
+                  )
+                : evidenceStage.key === "offer_acceptance"
+                  ? input(
+                      "offer_hash",
+                      L("Reviewed offer hash", "Hash offer đã duyệt"),
+                      h.stages.find((stage) => stage.key === "offer")
+                        ?.artifact_hash || "",
+                      "text",
+                      "required",
+                    ) +
+                    select(
+                      "accepted",
+                      L("Candidate acceptance", "Ứng viên chấp nhận"),
+                      [
+                        ["false", L("Not yet", "Chưa chấp nhận")],
+                        ["true", L("Accepted", "Đã chấp nhận")],
+                      ],
+                    )
+                  : evidenceStage.key === "onboarding_setup"
+                    ? [
+                        "hr_documents",
+                        "safety_induction",
+                        "role_briefing",
+                        "access_verified",
+                        "mentor_handover",
+                      ]
+                        .map((key) =>
+                          area(
+                            key,
+                            {
+                              hr_documents: L("HR documents", "Hồ sơ HR"),
+                              safety_induction: L(
+                                "Safety induction",
+                                "Đào tạo an toàn",
+                              ),
+                              role_briefing: L(
+                                "Role briefing",
+                                "Bàn giao vai trò",
+                              ),
+                              access_verified: L(
+                                "Verified access",
+                                "Quyền truy cập đã kiểm tra",
+                              ),
+                              mentor_handover: L(
+                                "Mentor handover",
+                                "Bàn giao người hướng dẫn",
+                              ),
+                            }[key],
+                            "",
+                            "required minlength=5",
+                          ),
+                        )
+                        .join("")
+                    : area(
+                        "evidence",
+                        L("Delivery record (JSON)", "Hồ sơ giao hàng (JSON)"),
+                        "",
+                        "required",
+                      )),
             L("Record evidence", "Ghi nhận chứng cứ"),
             false,
             L(
@@ -306,9 +467,28 @@ const BusinessWorkflows = (() => {
                 evidenceStage.key === "onboarding_setup"
                   ? "onboarding_evidence"
                   : evidenceStage.key,
-              evidence: evidenceStage.key.startsWith("interview_") ? {source: values.source, synthetic: false, transcripts: [{filename: values.filename, result: values.result, notes: values.notes}]} :
-                evidenceStage.key === "offer_acceptance" ? {source: values.source, synthetic: false, accepted: values.accepted === "true", offer_hash: values.offer_hash} :
-                evidenceStage.key === "onboarding_setup" ? {...values, synthetic: false} : JSON.parse(values.evidence),
+              evidence: evidenceStage.key.startsWith("interview_")
+                ? {
+                    source: values.source,
+                    synthetic: false,
+                    transcripts: [
+                      {
+                        filename: values.filename,
+                        result: values.result,
+                        notes: values.notes,
+                      },
+                    ],
+                  }
+                : evidenceStage.key === "offer_acceptance"
+                  ? {
+                      source: values.source,
+                      synthetic: false,
+                      accepted: values.accepted === "true",
+                      offer_hash: values.offer_hash,
+                    }
+                  : evidenceStage.key === "onboarding_setup"
+                    ? { ...values, synthetic: false }
+                    : JSON.parse(values.evidence),
             });
             return result;
           },
@@ -348,18 +528,101 @@ const BusinessWorkflows = (() => {
         }
       };
       wireFeedback(h, ctx, guard);
-      const feedbackInput = document.getElementById("workflow-feedback")?.querySelector("textarea");
-      if (feedbackInput) feedbackInput.value = feedbackDraft;
-      document.querySelectorAll("[data-campaign-anchor]").forEach(anchor => anchor.onclick = event => {
-        event.preventDefault();
-        const target = anchor.dataset.campaignAnchor;
-        document.getElementById(target === "onboarding" ? "campaign-stage-onboarding_plan" : target === "brief" ? "campaign-stage-brief" : target === "decisions" ? "campaign-decisions" : "campaign-stage-" + (active?.key || "brief"))?.scrollIntoView({behavior: "smooth"});
-      });
-      if (active?.status === "waiting_for_approval") {
-        const approvals = await apiGet(`/tasks/${encodeURIComponent(active.id)}/approvals`);
-        if (guard.current() && approvals.items?.length) document.getElementById("campaign-decisions").insertAdjacentHTML("beforeend", link("#/work/approvals/" + approvals.items[0].id, L("Review this decision", "Duyệt quyết định này")));
+      // A refreshed stage or feedback revision must not inherit another form's
+      // draft. The reviewed offer hash is part of the scope as well.
+      const draftScopes = {
+        "workflow-evidence": evidenceStage
+          ? evidenceStage.id +
+            ":" +
+            (h.stages.find((stage) => stage.key === "offer")?.artifact_hash ||
+              "")
+          : null,
+        "workflow-feedback-answer": String(h.control?.feedback?.revision),
+        "workflow-feedback-confirm": String(h.control?.feedback?.revision),
+      };
+      for (const [id, scope] of Object.entries(draftScopes)) {
+        const form = document.getElementById(id);
+        if (!form) continue;
+        form.dataset.draftScope = scope;
+        const draft = formDrafts.get(id);
+        if (draft?.scope !== scope) continue;
+        for (const field of form.querySelectorAll("input,select,textarea")) {
+          if (Object.hasOwn(draft.values, field.name))
+            field.value = draft.values[field.name];
+        }
       }
-      if (["running", "assigned"].includes(h.status) || ["pending", "running", "suspended"].includes(h.control?.state) || ["requested", "thinking"].includes(h.control?.feedback?.state))
+      wireForm(
+        "workflow-revision",
+        (values) =>
+          apiPost("/workflows/" + h.id + "/revisions", {
+            brief: {
+              position: values.position,
+              boss_brief: values.boss_brief,
+              salary_min: Number(values.salary_min),
+              salary_max: Number(values.salary_max),
+              start_date: values.start_date,
+            },
+            expected_hash: values.expected_hash,
+            reason: values.reason,
+          }),
+        guard,
+        (result) =>
+          table(
+            [L("Field", "Trường"), L("Before", "Trước"), L("After", "Sau")],
+            result.snapshot.diff.map((d) => [
+              esc(d.field),
+              esc(d.before),
+              esc(d.after),
+            ]),
+          ) +
+          link(
+            "#/work/approvals/" + result.approval_id,
+            L(
+              "Review and approve this exact revision",
+              "Xem và duyệt đúng revision này",
+            ),
+          ),
+      );
+
+      const feedbackInput = document
+        .getElementById("workflow-feedback")
+        ?.querySelector("textarea");
+      if (feedbackInput) feedbackInput.value = feedbackDraft;
+      document.querySelectorAll("[data-campaign-anchor]").forEach(
+        (anchor) =>
+          (anchor.onclick = (event) => {
+            event.preventDefault();
+            const target = anchor.dataset.campaignAnchor;
+            document
+              .getElementById(
+                target === "decisions"
+                  ? "campaign-decisions"
+                  : "campaign-stage-" +
+                      (target === "stages" ? active?.key || "brief" : target),
+              )
+              ?.scrollIntoView({ behavior: "auto", block: "start" });
+          }),
+      );
+      if (active?.status === "waiting_for_approval") {
+        const approvals = await apiGet(
+          `/tasks/${encodeURIComponent(active.id)}/approvals`,
+        );
+        if (guard.current() && approvals.items?.length)
+          document
+            .getElementById("campaign-decisions")
+            .insertAdjacentHTML(
+              "beforeend",
+              link(
+                "#/work/approvals/" + approvals.items[0].id,
+                L("Review this decision", "Duyệt quyết định này"),
+              ),
+            );
+      }
+      if (
+        ["running", "assigned"].includes(h.status) ||
+        ["pending", "running", "suspended"].includes(h.control?.state) ||
+        ["requested", "thinking"].includes(h.control?.feedback?.state)
+      )
         refreshTimer = setTimeout(() => {
           if (guard.current())
             refresh().catch((err) => toast(err.message, true));
@@ -367,42 +630,242 @@ const BusinessWorkflows = (() => {
     }
     await refresh();
   }
+  function revisionPanel(h, ctx, draft) {
+    if (h.kind !== "mep_hiring" || !h.brief || !ctx.can_administer) return "";
+    const v = { ...h.brief, ...draft };
+    return card(
+      L("Revise the hiring brief", "Điều chỉnh brief tuyển dụng"),
+      `<details><summary>${esc(L("Create a revision for review", "Tạo revision để duyệt"))}</summary>` +
+        form(
+          "workflow-revision",
+          `<input type="hidden" name="expected_hash" value="${esc(v.expected_hash || h.brief_hash)}">` +
+            input(
+              "position",
+              L("Position", "Vị trí"),
+              v.position,
+              "text",
+              "required minlength=3 maxlength=200",
+            ) +
+            area(
+              "boss_brief",
+              L("Boss brief", "Yêu cầu của Boss"),
+              v.boss_brief,
+              "required minlength=20 maxlength=10000",
+            ) +
+            input(
+              "salary_min",
+              L("Minimum salary (VND)", "Lương tối thiểu (VND)"),
+              v.salary_min,
+              "number",
+              "required min=1 step=1",
+            ) +
+            input(
+              "salary_max",
+              L("Maximum salary (VND)", "Lương tối đa (VND)"),
+              v.salary_max,
+              "number",
+              "required min=1 step=1",
+            ) +
+            input(
+              "start_date",
+              L("Start date", "Ngày bắt đầu"),
+              v.start_date,
+              "date",
+              "required",
+            ) +
+            area(
+              "reason",
+              L("Reason and new sources needed", "Lý do và nguồn cần bổ sung"),
+              v.reason || "",
+              "required minlength=10 maxlength=10000",
+            ),
+          L("Compare and request review", "So sánh và gửi duyệt"),
+          false,
+          L(
+            "A different privileged human reviews the exact diff. Approval creates a fresh campaign with the same mode and gates. New interviews, acceptance and onboarding records are required. The current campaign remains unchanged and can be paused separately.",
+            "Một người có quyền khác người đề xuất sẽ duyệt đúng diff. Duyệt tạo campaign mới cùng chế độ và cổng duyệt. Cần hồ sơ phỏng vấn, acceptance và onboarding mới. Campaign hiện tại giữ nguyên; có thể tạm dừng riêng.",
+          ),
+        ) +
+        `</details>`,
+    );
+  }
   function waitingPanel(h) {
     if (!h.waiting) return "";
-    return card(L("Recruitment needs a decision", "Đợt tuyển cần người phụ trách xử lý"),
+    return card(
+      L("Recruitment needs a decision", "Đợt tuyển cần người phụ trách xử lý"),
       `<div role="status"><p>${esc(h.waiting.message)}</p>${fields([
         [L("Approved threshold", "Ngưỡng đã duyệt"), h.waiting.threshold],
-        [L("Highest recorded score", "Điểm cao nhất đã ghi"), h.waiting.highest_score ?? "—"],
+        [
+          L("Highest recorded score", "Điểm cao nhất đã ghi"),
+          h.waiting.highest_score ?? "—",
+        ],
         [L("Assessed CVs", "CV đã đánh giá"), h.waiting.candidate_count],
-      ])}<p>${esc(L("Use feedback below to plan a new revision with new source evidence, or cancel from the task tree. Resuming this campaign cannot change completed scores, interviews or approvals.", "Dùng feedback bên dưới để lên kế hoạch revision mới với nguồn bổ sung, hoặc hủy từ cây task. Tiếp tục đợt này không thay điểm, phỏng vấn hay quyết định đã ghi."))}</p></div>`);
+      ])}<p>${esc(L("Use feedback below to plan a new revision with new source evidence, or cancel from the task tree. Resuming this campaign cannot change completed scores, interviews or approvals.", "Dùng feedback bên dưới để lên kế hoạch revision mới với nguồn bổ sung, hoặc hủy từ cây task. Tiếp tục đợt này không thay điểm, phỏng vấn hay quyết định đã ghi."))}</p></div>`,
+    );
   }
   function feedbackPanel(h, ctx) {
-    if (!["completed", "failed", "canceled", "expired"].includes(h.status) && (!h.control?.paused || h.control?.feedback?.state === "failed"))
-      return card(L("Adjust the work", "Điều chỉnh công việc"), `<div class="feedback-discussion">${form("workflow-feedback", area("message", L("Feedback or a change in direction", "Feedback hoặc thay đổi yêu cầu"), "", "required minlength=10 maxlength=10000"), L("Pause and ask the agent to reconsider", "Tạm dừng và yêu cầu agent xem lại"), !ctx.can_administer, L("Pauses at a safe boundary. Completed evidence and reviews remain recorded.", "Dừng tại ranh giới an toàn. Chứng cứ và quyết định đã hoàn thành vẫn được giữ."))}</div>`);
+    if (
+      !["completed", "failed", "canceled", "expired"].includes(h.status) &&
+      (!h.control?.paused || h.control?.feedback?.state === "failed")
+    )
+      return card(
+        L("Adjust the work", "Điều chỉnh công việc"),
+        `<div class="feedback-discussion">${form("workflow-feedback", area("message", L("Feedback or a change in direction", "Feedback hoặc thay đổi yêu cầu"), "", "required minlength=10 maxlength=10000"), L("Pause and ask the agent to reconsider", "Tạm dừng và yêu cầu agent xem lại"), !ctx.can_administer, L("Pauses at a safe boundary. Completed evidence and reviews remain recorded.", "Dừng tại ranh giới an toàn. Chứng cứ và quyết định đã hoàn thành vẫn được giữ."))}</div>`,
+      );
     const feedback = h.control?.feedback;
     if (!feedback?.state) return "";
     const assessment = feedback.assessment;
-    return card(L("Feedback discussion", "Trao đổi feedback"), `<p>${esc(feedback.message)}</p>${badge(feedback.state)}${feedback.destination_root_id && feedback.destination_root_id !== h.id ? link("#/processes/workflows/" + feedback.destination_root_id, L("Open the new campaign revision", "Mở revision mới của đợt tuyển")) : ""}${feedback.error ? `<p class="error">${esc(feedback.error)}</p>` : ""}` +
-      (assessment ? `<p>${esc(assessment.understanding)}</p>${assessment.questions?.length ? `<ul>${assessment.questions.map(q => `<li>${esc(q)}</li>`).join("")}</ul>` : ""}${table([L("Action", "Công việc"), L("Owner", "Phụ trách"), L("Acceptance", "Điều kiện hoàn thành")], assessment.plan.map(step => [esc(step.action), esc(step.owner), esc(step.acceptance)]))}<p><b>${esc(L("Proposed skill lesson", "Bài học skill đề xuất"))}:</b> ${esc(assessment.skill_lesson)}</p>` : `<p>${esc(L("The agent is reviewing the feedback. This page will refresh.", "Agent đang xem lại feedback. Trang sẽ tự cập nhật."))}</p>`) +
-      (feedback.state === "awaiting_confirmation" ? form(assessment?.questions?.length ? "workflow-feedback-answer" : "workflow-feedback-confirm", area("answers", L("Answers and corrections to the plan", "Trả lời câu hỏi và bổ sung kế hoạch"), "", assessment?.questions?.length ? "required minlength=5" : "") + select("new_revision", L("Apply to", "Áp dụng cho"), [["false", L("Remaining work in this campaign", "Phần việc còn lại của đợt này")], ["true", L("A new revision; review completed work again", "Revision mới; duyệt lại phần đã hoàn thành")]], "false"), assessment?.questions?.length ? L("Send answers for model review", "Gửi câu trả lời để model xem lại") : L("Confirm plan and continue", "Xác nhận kế hoạch và tiếp tục"), !ctx.can_administer, L("New corrections go back to the model. Leave the box empty to confirm the reviewed plan. A new revision requests fresh reviews.", "Nhập bổ sung sẽ gửi model xem lại. Để trống để xác nhận kế hoạch đã xem. Revision mới yêu cầu các quyết định duyệt mới.")) : ""));
+    return card(
+      L("Feedback discussion", "Trao đổi feedback"),
+      `<p>${esc(feedback.message)}</p>${badge(feedback.state)}${feedback.destination_root_id && feedback.destination_root_id !== h.id ? link("#/processes/workflows/" + feedback.destination_root_id, L("Open the new campaign revision", "Mở revision mới của đợt tuyển")) : ""}${feedback.error ? `<p class="error">${esc(feedback.error)}</p>` : ""}` +
+        (assessment
+          ? `<p>${esc(assessment.understanding)}</p>${assessment.questions?.length ? `<ul>${assessment.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>` : ""}${table(
+              [
+                L("Action", "Công việc"),
+                L("Owner", "Phụ trách"),
+                L("Acceptance", "Điều kiện hoàn thành"),
+              ],
+              assessment.plan.map((step) => [
+                esc(step.action),
+                esc(step.owner),
+                esc(step.acceptance),
+              ]),
+            )}<p><b>${esc(L("Proposed skill lesson", "Bài học skill đề xuất"))}:</b> ${esc(assessment.skill_lesson)}</p>`
+          : `<p>${esc(L("The agent is reviewing the feedback. This page will refresh.", "Agent đang xem lại feedback. Trang sẽ tự cập nhật."))}</p>`) +
+        (feedback.state === "awaiting_confirmation"
+          ? form(
+              assessment?.questions?.length
+                ? "workflow-feedback-answer"
+                : "workflow-feedback-confirm",
+              area(
+                "answers",
+                L(
+                  "Answers and corrections to the plan",
+                  "Trả lời câu hỏi và bổ sung kế hoạch",
+                ),
+                "",
+                assessment?.questions?.length ? "required minlength=5" : "",
+              ) +
+                select(
+                  "new_revision",
+                  L("Apply to", "Áp dụng cho"),
+                  [
+                    [
+                      "false",
+                      L(
+                        "Remaining work in this campaign",
+                        "Phần việc còn lại của đợt này",
+                      ),
+                    ],
+                    [
+                      "true",
+                      L(
+                        "A new revision; review completed work again",
+                        "Revision mới; duyệt lại phần đã hoàn thành",
+                      ),
+                    ],
+                  ],
+                  "false",
+                ),
+              assessment?.questions?.length
+                ? L(
+                    "Send answers for model review",
+                    "Gửi câu trả lời để model xem lại",
+                  )
+                : L(
+                    "Confirm plan and continue",
+                    "Xác nhận kế hoạch và tiếp tục",
+                  ),
+              !ctx.can_administer,
+              L(
+                "New corrections go back to the model. Leave the box empty to confirm the reviewed plan. A new revision requests fresh reviews.",
+                "Nhập bổ sung sẽ gửi model xem lại. Để trống để xác nhận kế hoạch đã xem. Revision mới yêu cầu các quyết định duyệt mới.",
+              ),
+            )
+          : ""),
+    );
   }
   function receiptPanel(h, ctx) {
     if (!h.connector_actions?.length) return "";
-    return card(L("External-action receipts", "Receipt hành động bên ngoài"), h.connector_actions.map(action => `<div><p>${badge(action.state)} ${esc(action.id)}</p>${details(L("Prepared input and observed receipt", "Đầu vào đã lưu và receipt quan sát"), {input: action.snapshot, receipt: action.receipt, error: action.last_error})}${["unknown", "sending", "prepared"].includes(action.state) ? `<button class="btn" data-reconcile="${esc(action.id)}" ${ctx.can_approve ? "" : "disabled"}>${esc(L("Read back mailbox to reconcile", "Đọc lại hộp thư để đối chiếu"))}</button>` : ""}</div>`).join(""));
+    return card(
+      L("External-action receipts", "Receipt hành động bên ngoài"),
+      h.connector_actions
+        .map(
+          (action) =>
+            `<div><p>${badge(action.state)} ${esc(action.id)}</p>${details(L("Prepared input and observed receipt", "Đầu vào đã lưu và receipt quan sát"), { input: action.snapshot, receipt: action.receipt, error: action.last_error })}${["unknown", "sending", "prepared"].includes(action.state) ? `<button class="btn" data-reconcile="${esc(action.id)}" ${ctx.can_approve ? "" : "disabled"}>${esc(L("Read back mailbox to reconcile", "Đọc lại hộp thư để đối chiếu"))}</button>` : ""}</div>`,
+        )
+        .join(""),
+    );
   }
   function wireFeedback(h, ctx, guard) {
-    if (document.getElementById("workflow-feedback")) wireForm("workflow-feedback", values => apiPost("/workflows/" + h.id + "/feedback", values), guard);
-    if (document.getElementById("workflow-feedback-answer")) wireForm("workflow-feedback-answer", values => apiPost("/workflows/" + h.id + "/feedback/answer", {revision: h.control.feedback.revision, answers: values.answers}), guard);
-    if (document.getElementById("workflow-feedback-confirm")) wireForm("workflow-feedback-confirm", async values => {
-      if (values.answers?.trim()) return apiPost("/workflows/" + h.id + "/feedback/answer", {revision: h.control.feedback.revision, answers: values.answers});
-      const result = await apiPost("/workflows/" + h.id + "/feedback/confirm", {revision: h.control.feedback.revision, answers: values.answers, new_revision: values.new_revision === "true"});
-      if (guard.current()) go("#/processes/workflows/" + result.id);
-    }, guard);
-    document.querySelectorAll("[data-reconcile]").forEach(button => button.onclick = async () => {
-      button.disabled = true;
-      try { const result = await apiPost("/workflows/" + h.id + "/actions/" + button.dataset.reconcile + "/reconcile", {}); toast(result.state === "confirmed" || result.not_attempted ? L("Evidence reconciled. Resume the workflow when ready.", "Đã đối chiếu. Tiếp tục workflow khi sẵn sàng.") : L("Still uncertain; no message was resent.", "Kết quả chưa rõ; chưa gửi lại mail.")); if (guard.current()) route(); }
-      catch (error) { toast(error.message, true); button.disabled = false; }
-    });
+    if (document.getElementById("workflow-feedback"))
+      wireForm(
+        "workflow-feedback",
+        (values) => apiPost("/workflows/" + h.id + "/feedback", values),
+        guard,
+      );
+    if (document.getElementById("workflow-feedback-answer"))
+      wireForm(
+        "workflow-feedback-answer",
+        (values) =>
+          apiPost("/workflows/" + h.id + "/feedback/answer", {
+            revision: h.control.feedback.revision,
+            answers: values.answers,
+          }),
+        guard,
+      );
+    if (document.getElementById("workflow-feedback-confirm"))
+      wireForm(
+        "workflow-feedback-confirm",
+        async (values) => {
+          if (values.answers?.trim())
+            return apiPost("/workflows/" + h.id + "/feedback/answer", {
+              revision: h.control.feedback.revision,
+              answers: values.answers,
+            });
+          const result = await apiPost(
+            "/workflows/" + h.id + "/feedback/confirm",
+            {
+              revision: h.control.feedback.revision,
+              answers: values.answers,
+              new_revision: values.new_revision === "true",
+            },
+          );
+          if (guard.current()) go("#/processes/workflows/" + result.id);
+        },
+        guard,
+      );
+    document.querySelectorAll("[data-reconcile]").forEach(
+      (button) =>
+        (button.onclick = async () => {
+          button.disabled = true;
+          try {
+            const result = await apiPost(
+              "/workflows/" +
+                h.id +
+                "/actions/" +
+                button.dataset.reconcile +
+                "/reconcile",
+              {},
+            );
+            toast(
+              result.state === "confirmed" || result.not_attempted
+                ? L(
+                    "Evidence reconciled. Resume the workflow when ready.",
+                    "Đã đối chiếu. Tiếp tục workflow khi sẵn sàng.",
+                  )
+                : L(
+                    "Still uncertain; no message was resent.",
+                    "Kết quả chưa rõ; chưa gửi lại mail.",
+                  ),
+            );
+            if (guard.current()) route();
+          } catch (error) {
+            toast(error.message, true);
+            button.disabled = false;
+          }
+        }),
+    );
   }
   return { render };
 })();

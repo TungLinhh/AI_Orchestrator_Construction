@@ -670,3 +670,54 @@ async def test_agent_shutdown_resumes_at_checkpoint_and_preserves_real_review(
             == 1
         )
     await restarted.shutdown()
+
+
+@pytest.mark.parametrize(
+    "cycle,refs", [("recruitment", {1, 2, 3, 4, 5}), ("performance", {6}), ("offboarding", {7})]
+)
+async def test_hr_cycles_snapshot_only_their_own_sop_steps(prepared, cycle, refs):
+    tenant, _headers, _actor, config = prepared
+    config["cycle"] = cycle
+    service = AgentBlueprintService(tenant.session, tenant.organization_id, tenant.db)
+    draft = await service.draft(config)
+    snapshot = draft.input["config"]
+    assert snapshot["cycle_snapshot"]["key"] == cycle
+    assert {
+        int(step["ref"].rsplit("#", 1)[1])
+        for sop in snapshot["source_sops"]
+        for step in sop["source_steps"]
+    } == refs
+    assert len(snapshot["source_sops"]) == 1
+    assert "required_artifacts" not in snapshot["source_sops"][0]
+    assert draft.output["plan"], draft.last_error
+
+
+async def test_payroll_template_uses_only_payroll_source_and_preserves_final_review(prepared):
+    tenant, _headers, _actor, config = prepared
+    from ai_orchestrator.domain.ids import new_ulid
+
+    tenant.session.add(
+        SopDefinition(
+            id="sop_" + new_ulid(),
+            organization_id=tenant.organization_id,
+            code="ONX-BO-HR-SOP-005",
+            name_vi="Payroll fixture source",
+            block="BO",
+            department="HR",
+            owner_role_key="hr_lead",
+            source="human",
+        )
+    )
+    await tenant.commit()
+    config["cycle"] = "payroll"
+    draft = await AgentBlueprintService(tenant.session, tenant.organization_id, tenant.db).draft(
+        config
+    )
+    source = draft.input["config"]["source_sops"]
+    assert [s["code"] for s in source] == ["ONX-BO-HR-SOP-005"]
+    assert len(source[0]["source_steps"]) == 7
+    assert draft.input["config"]["cycle_snapshot"]["source_inputs"] == [
+        "timesheets",
+        "approved_salary_policy",
+    ]
+    assert draft.output["plan"]["steps"][-1]["human_review"] is True

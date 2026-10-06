@@ -1,0 +1,28 @@
+SYNTHETIC CV — MEP Test A. All people, employers and projects below are fictional.
+Position: MEP engineer. Independent training exercise; not a real job application.
+2018–2026: Senior MEP engineer at Training Engineering Studio (fictional).
+Mechanical: Personally designed HVAC and plumbing for four training buildings. Calculated
+cooling loads room by room (total 420 kW), sized chilled-water pumps at 35 m3/h and 28 m head,
+checked friction loss and equipment schedules, and signed the internal design review record.
+Authored TR-M01 load calculation workbook and TR-M02 pump sizing sheet; peer review closed
+all 12 comments. Performed duct sizing and PPR PN20 pressure-loss checks.
+Electrical: Personally calculated electrical demand, cable ampacity, voltage drop and protective
+device coordination for a 400 kVA training distribution board. Selected copper 4x16mm2 feeders
+only after checking installation method, derating and voltage drop; produced TR-E01 calculations,
+single-line diagrams, lighting and earthing layouts reviewed by the electrical lead.
+BIM coordination: Owned the Revit MEP federated model and Navisworks clash register TR-B01.
+Chaired six weekly multidisciplinary coordination meetings; assigned owners and deadlines,
+resolved 85 of 90 clashes and recorded the five remaining issues with escalation dates.
+Commissioning: Led testing, adjusting and balancing of two training HVAC installations;
+measured air/water flows, reconciled measured flows against design tolerances, witnessed plumbing
+pressure tests and electrical insulation tests, closed punch lists and authored TR-C01 signed
+mock commissioning and handover records. These were sandbox tests, not real-site certification.
+HSE: Completed mock electrical isolation/LOTO and working-at-height training. Led pre-task
+risk assessments, checked permit-to-work and verified absence of voltage before mock inspection.
+Stopped an unsafe mock activity, recorded the near miss and verified corrective action in TR-H01.
+Documentation: Independently authored coordinated shop drawings, as-built drawings, RFIs,
+inspection/test plans and O&M manuals in Vietnamese and English. Maintained TR-D01 revision
+register, linked each RFI to its drawing revision and closed 18 handover-document review comments.
+Availability: 2026-10-15. Salary expectation: 28000000 VND/month.
+All evidence references are authored simulation records; none has been independently verified
+as a real professional qualification. Original documents can be requested in a real recruitment.

@@ -447,6 +447,9 @@ class TaskExecutionService:
         started = time.monotonic()
         task = await self._tasks.get(task_id)
 
+        if task.input.get("workflow_revision_for"):
+            raise PreconditionError("Apply campaign revisions through their human review")
+
         if task.input.get("workflow_feedback_for") and self._runtime.name != "workflow_evidence":
             raise PreconditionError("Run feedback through its workflow discussion controller")
 

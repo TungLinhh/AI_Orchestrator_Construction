@@ -44,3 +44,30 @@ through the same tenant catalogue as task execution. Provider failures remain fa
 Future features get a route only when an API and meaningful action exist. Empty corpus
 views explain the missing input. Integrations, authentication products and speculative
 project writers are not invented by the frontend.
+
+
+## Campaign layout and colors — 2026-10-06
+
+Three structurally different layouts are preserved in
+`examples/console_layouts.html`: a sequential column, a status board, and a
+stage log with a control rail. The rail keeps source artifacts beside actions
+without splitting SOP order into status columns. Below 1100 px, controls precede
+the log. Long rail content scrolls with the document. Exact task and approval
+links remain authoritative.
+
+`palettes.js` owns six palettes and shared light/dark semantic tokens. Preferences
+normalize saved values, follow system changes, and save per browser. Primary
+buttons use an explicit foreground token; color never conveys status alone.
+`verify_console_browser.py` checks all twelve combinations for text contrast,
+persistence, real computed button styles, system changes, route errors, and mobile
+overflow. The reference is WCAG 2.2 contrast-minimum (4.5:1 for normal text):
+https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html.
+This probe is not a complete accessibility audit.
+
+Campaign polling waits while a form has focus, including edits begun during a
+pending request. Evidence and feedback drafts survive blur/refresh within their
+stage, offer hash and feedback revision; a changed scope clears them.
+A structured revision carries the
+source brief hash and shows a server-generated diff in its approval record.
+Approval creates a fresh campaign with independent human evidence and the same
+mode. Existing scores, decisions and logs remain attached to the original run.

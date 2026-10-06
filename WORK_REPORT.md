@@ -1,3 +1,197 @@
+# Console, reviewed revisions and evaluation gates — 2026-10-06
+
+Continued from `b5c9e82` and the next milestones at the top of FUTURE_WORK.md.
+The sections below this report are historical snapshots with their original
+measurements. This release adds no database migration or framework/tenant change.
+
+## Delivered behavior
+
+- Six professional palettes with light/dark/system mode, live preview, saved
+  browser preferences and tested text contrast. Reviewed three distinct layout
+  prototypes in `examples/console_layouts.html`; selected ordered stage logs with
+  a separate control rail. Mobile puts controls first. Long errors expand on
+  demand; links open the exact task, agent, artifact or approval.
+- Structured hiring brief revisions show a server-generated diff and affected
+  stages. A different privileged human reviews the exact snapshot/hash. Approval
+  creates one fresh unstarted campaign with the same mode; prior scores, reviews
+  and logs remain unchanged. Interview, acceptance and onboarding evidence is
+  not inherited. Repeated application returns the original destination.
+- Four HR blueprint cycles scope authoring to recruitment/onboarding, performance,
+  payroll or offboarding SOP steps. Each snapshots its trigger and source names.
+  Historical approved plans are unchanged; model-authored content still needs
+  expert and Boss review. Scope coverage alone does not prove product quality.
+- Procurement intake accepts BOQ and quotations for each material from at least
+  three suppliers. It validates source declarations, unique IDs, quantities,
+  integer VND prices and dates, then creates an unstarted live campaign. Existing
+  QA/material review, DOA and receipt controls still apply. The form does not
+  fetch/verify source documents, issue POs or authorize payment.
+- A feedback evaluator compares baseline/candidate using independent task records,
+  alternating arm order over repeated train/holdout runs. Instructions, corpus,
+  outputs and tasks have hashes and a persisted audit receipt. Feedback publication
+  verifies this ledger and actual free-model responses plus human expert review
+  attestation. Client PASS flags cannot replace it. Synthetic development proposals
+  cannot publish; direct API binding accepts published versions only.
+- Evidence and answer drafts survive blur/refresh in the same stage/offer hash/
+  feedback revision. A changed scope clears them. Polling defers even if editing
+  starts during a request; it cannot erase a focused form.
+- Full-suite verification exposed a settlement race: the tree could retain
+  `running` after an independent executor committed failure. Settlement now checks
+  coordinators only and refreshes under a short row lock before deciding. Busy
+  finalizers are skipped. A two-session regression fixes the race window in place;
+  it does not suppress transition conflicts. The failing SOP fixture also now
+  copies its frozen result and produces bad content only at the department.
+- OpenRouter completion usage already includes reasoning. The adapter now splits
+  completion into visible output and reasoning before internal additive budget
+  accounting; task/fleet displays include both. Provider cost and raw usage remain
+  unchanged. Impossible reasoning counts are refused, never clamped to success.
+
+The usage boundary follows [OpenRouter's response schema](https://openrouter.ai/docs/api_reference/overview):
+reasoning is a completion breakdown. Color checks follow
+[WCAG contrast-minimum](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html).
+Neither browser probes nor a passing synthetic corpus certify production hiring.
+
+## Verification and reproducibility
+
+The final backend source passed a fresh seeded test run. The subsequently added
+source-packet runner/validator passed its eight focused integrity tests; no further
+backend change followed collection. Browser checks used the latest served assets. The API was restarted with the final
+source and the Node/API verifier passed again after restart.
+
+| Gate | Result |
+| --- | --- |
+| `make lint` | Ruff and format passed |
+| `make typecheck` | 177 source files passed |
+| `make test-fresh` | 3,468 passed, 3 skipped, 1 deselected; 479.15 s |
+| Source packet tests | 8 passed; deterministic reproduction, tamper/escape/source-drift rejection |
+| `make test-e2e` | 34 passed; 383.85 s |
+| Served API + Node console | Passed; requested Dots primary profile and exact definition links included |
+| Chromium | 12 palette pairs, 14 desktop/mobile route checks, zero JS errors or horizontal overflow; form payloads, draft preservation/reset, toast visibility and exact procurement handover link passed |
+
+The probes and tests remain rerunnable from this repository:
+
+```sh
+make lint
+make typecheck
+make test
+make test-e2e
+make verify-page BASE=http://127.0.0.1:8100 ORG=<org_id>
+uv run --with playwright python scripts/verify_console_browser.py \
+  --base http://127.0.0.1:8100 --org <org_id> --chromium <existing_chromium_executable>
+uv run -m scripts.measure_console_load --base http://127.0.0.1:8100 --org <org_id>
+AO_MODEL_PROVIDER_DEFAULT=openrouter uv run -m scripts.evaluate_feedback_skill \
+  --org <org_id> --version <unpublished_feedback_version_id> --runtime live --rounds 2
+```
+
+Run full suite and E2E sequentially: they share PostgreSQL/NATS/Temporal. An
+overlapping verification attempt hit a NATS consumer timeout in the relay test;
+that run was interrupted and retained in `.devdata/logs/release-full-overlap.log`.
+This is not accepted as a passing release gate. No relay/tenant optimization was
+introduced to mask it.
+
+Chromium checks all twelve palette/mode pairs, actual computed primary button
+colors, normal/secondary/muted/status text contrast (minimum observed 4.909:1),
+save/reload persistence and system theme changes. It visits six routes at 1440px
+and 390px with no horizontal overflow or page errors. Procurement and revision
+POSTs are intercepted at the browser network boundary and their typed payloads
+checked without creating fictional production records. Conditional human-stop
+GET fixtures test draft preservation and clearing after stage/hash/revision changes.
+These are labeled fixtures, not real interviews or decisions. Screenshots and
+report: `.devdata/ui/appearance/`; Node/API checks: `.devdata/ui/node-verification-release.log`.
+This is not a complete accessibility audit or a production load test.
+
+The read-only load probe used 24 samples, three existing campaigns, concurrency
+four: API p50 89.938 ms, p95 289.148 ms, p99 293.263 ms; separate pool checkout
+p50 1.722 ms, p95 79.086 ms, p99 79.996 ms, no observed errors. Checkout includes
+pre-ping/new connections and uses a separate application-role pool; it is not
+internal API queue wait, concurrent model throughput or a certified SLA.
+Evidence: `.devdata/reports/console-load.json`.
+
+## Actual model activity and acceptance limits
+
+The live paired HR probe created twelve independent tasks: two rounds, three
+synthetic cases, baseline and candidate. Candidate passed 6/6; baseline passed
+4/6 with two terminal HTTP 400 provider rejections. Three additional responses
+reported `finish_reason=error`; they were recorded and rejected, then a declared
+free fallback answered. There were thirteen recorded model responses from Dots
+and Ling and USD 0 recorded cost. Unknown 400 rejections were not blindly retried
+or routed around policy. This follows [OpenRouter's error contract](https://openrouter.ai/docs/api_reference/errors-and-debugging).
+No email, real interview, approval, onboarding or procurement write occurred in
+this probe. The earlier no-adapter invocation failed before model calls; its
+report is retained separately, and the CLI now refuses that configuration before
+creating tasks.
+
+Probe receipt: `.devdata/reports/feedback-skill-live-paired.json`; database read-back:
+`.devdata/reports/release-feedback-readback.json`. Candidate
+`sklv_01m49pe2wk5ap17d2shmq63mmf` is explicitly development-only, unpublished and
+has zero bindings. Read-back verified the saved receipt and each candidate task's
+version stamp/instructions presence. The original arm reports incorrectly say
+`candidate_lessons_used=false`; their per-task count and database inputs show
+the candidate was applied. The aggregate flag is fixed for subsequent runs;
+original probe artifacts have not been rewritten.
+
+The original report sums 46,996 tokens because of the pre-fix reasoning duplication.
+Its provider input-plus-completion counts total 32,943, including 14,053 reasoning
+tokens. These are different accounting conventions, not extra model calls.
+Historical ledger rows remain unchanged and must not be compared blindly with
+new normalized token totals. Cache-read accounting and historical usage migration
+need a separate contract review before enabling cached providers broadly.
+
+Six passing synthetic cases do not prove the lesson improved content: the sample
+is small, provider availability differs, and gold is not expert-approved. Failed
+baseline tasks also mean this ledger cannot satisfy the publication gate.
+Expert corpus review is an attestation/source record, not automatic verification
+of an external signature. Real hiring still needs applicants, two interviews,
+HR/Boss decisions, offer acceptance and onboarding evidence. Real procurement
+needs source documents, material review and separately authorized adapters for
+PO/delivery/payment. Future 30/60/90 reviews and 28 days of real shadow remain
+future work; no simulated approval is counted toward them.
+
+
+## Researched synthetic workflow acceptance
+
+The user explicitly authorized public form research plus self-authored fictional
+records. `examples/workflow_acceptance/README.md` cites the Acas recruitment/offer/
+induction pages and World Bank February 2025 evaluation guidance. These inform
+form structure only; seeded O-Nexus SOPs remain the workflow authority. The
+versioned packet contains 34 files, including manifest hashes, CVs, interview and
+acceptance records, BOQ, three supplier dossiers, quotations, mock certificates,
+GRN/invoice sources and separate expectations. It contains no real applicant or
+Bãi Tràm data. Runner validation happens before task creation; independent audit
+also compares the persisted root brief with the verified packet.
+
+| Run | Result | Independent audit |
+| --- | --- | --- |
+| MEP `tsk_01m49qxzw9479yd9bdpt3rnmay` | Failed at selection, 12/21, provider content-filter refusal; original scores 100/42/13 preserved | Correctly refused root completion |
+| One MEP recovery `tsk_01m49rbvz150bgarv6zaetx28m` | Completed 21/21; new independent scores 90/50/3, threshold unchanged at 70 | PASS 112 checks, including real self-mail CV hashes and five sandbox onboarding file read-backs |
+| Procurement `tsk_01m49qyv1fv2naxt39acw0rz7j` | Completed 13/13, all three materials, no red supplier; 77,000,000 VND draft total | PASS 76 checks, including exact PO/GRN/invoice source match |
+
+The single operator recovery used identical brief/mode and normal controller
+reuse checks. JD/rubric were reused with provenance; changed mail-intake sources
+correctly forced scoring to run again. Dots answered selection on recovery.
+No filter, gold, score, threshold or human gate was changed to obtain completion.
+The failed run and rejected submissions remain visible. Both completed runs have
+zero human Approval rows; seven HR gates and two material/award gates are openly
+simulated. Future 30/60/90 reviews remain scheduled, production access false,
+PO unissued and payment false.
+
+Across all three runs, 24 recorded responses include one provider error response;
+seven invalid submissions were refused. All recorded models are OpenRouter free
+Dots/Ling/Nemotron. Ledger read-back records 170,977 input + completion tokens,
+including error-response usage, and USD 0. Cache-read 6,336 is a subset of input;
+it is not added again here. Refusals/transport failures without response usage
+are not a measurable part of that token total. Broader cache budget accounting
+still needs the contract review already listed in REFACTOR_PLAN/FUTURE_WORK.
+
+Content quality still needs human domain review: the generated selection suggests
+a three-month probation condition without an approved HR policy source. This
+unsigned sandbox proposal is not authorized as a real contract term. Passing
+structural/source checks does not certify all prose as correct company policy.
+These observations feed the next expert-reviewed corpus, not automatic skill
+publication. Detailed outcomes and rerun commands are in
+[examples/workflow_acceptance/RESULTS.md](examples/workflow_acceptance/RESULTS.md).
+
+---
+
 # Durable workflow controls and handoff closure
 
 Reviewed the newest unfinished turn in **Continue autonomous AI organisation**,

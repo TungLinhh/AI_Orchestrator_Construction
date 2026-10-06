@@ -874,3 +874,175 @@ async def test_hiring_waits_for_a_revision_when_no_candidate_can_be_selected(
             )
         ).all()
         assert len(audit) == 1
+
+
+async def test_structured_revision_requires_approval_and_keeps_old_evidence(prepared, db):
+    import copy
+
+    from ai_orchestrator.application.business_workflow import payload_hash
+    from ai_orchestrator.application.workflow_revisions import WorkflowRevisions
+    from ai_orchestrator.domain.workflow_revision import HiringBrief
+    from tests.integration.test_console_management import _human_headers
+
+    await _human_headers(prepared)
+    user = (
+        await prepared.session.execute(
+            select(User).where(
+                User.organization_id == prepared.organization_id,
+                User.email == "console-review@example.test",
+            )
+        )
+    ).scalar_one()
+    actor = Actor(id=user.id, kind=ActorType.HUMAN, is_privileged_human=True)
+    brief = hiring_fixture()
+    root = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "simulation", brief
+    )
+    service = WorkflowRevisions(prepared.session, prepared.organization_id)
+    edited = HiringBrief.model_validate({k: brief[k] for k in HiringBrief.model_fields})
+    edited.salary_max = 40000000
+    before = copy.deepcopy(brief)
+    proposal = await service.propose(
+        root, edited, payload_hash(brief), "Boss raised the salary ceiling", actor
+    )
+    assert proposal["snapshot"]["diff"] == [
+        {"field": "salary_max", "before": 35000000, "after": 40000000}
+    ]
+    assert "offer_acceptance" in proposal["snapshot"]["affected_stages"]
+    with pytest.raises(PreconditionError, match="human must approve"):
+        await service.apply(proposal["approval_id"], actor)
+    checker = (
+        (
+            await prepared.session.execute(
+                select(User).where(
+                    User.organization_id == prepared.organization_id,
+                    User.id != user.id,
+                    User.is_privileged.is_(True),
+                )
+            )
+        )
+        .scalars()
+        .first()
+    )
+    reviewer = Actor(id=checker.id, kind=ActorType.HUMAN, is_privileged_human=True)
+    await ApprovalService(prepared.session, prepared.organization_id).decide(
+        proposal["approval_id"], approve=True, approver=reviewer
+    )
+    replacement = await service.apply(proposal["approval_id"], actor)
+    assert (await service.apply(proposal["approval_id"], actor)) == replacement
+    source = await prepared.session.get(Task, root)
+    new = await prepared.session.get(Task, replacement["id"])
+    assert source.input["brief"] == before
+    assert new.input["brief"]["salary_max"] == 40000000
+    assert (
+        not {"interview_technical", "interview_hr", "offer_acceptance", "onboarding_evidence"}
+        & new.input["brief"].keys()
+    )
+    assert new.input["mode"] == "simulation" and new.input["revision_of"] == root
+    assert new.status == "assigned" and replacement["started"] is False
+    with pytest.raises(PreconditionError, match="reload"):
+        await service.propose(root, edited, "a" * 64, "Stale source should fail", actor)
+
+
+async def test_revision_api_approval_routes_to_fresh_live_campaign(client, prepared):
+    from ai_orchestrator.application.business_workflow import payload_hash
+    from tests.integration.test_console_management import _human_headers
+
+    headers = await _human_headers(prepared)
+    brief = hiring_fixture()
+    for key in list(brief):
+        if key.startswith("test_") or key in {
+            "interview_technical",
+            "interview_hr",
+            "offer_acceptance",
+            "onboarding_evidence",
+        }:
+            brief.pop(key)
+    brief["synthetic"] = False
+    root = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "live", brief
+    )
+    await prepared.commit()
+    edited = {
+        key: brief[key]
+        for key in ("position", "boss_brief", "salary_min", "salary_max", "start_date")
+    }
+    edited["position"] = "Kỹ sư trưởng MEP"
+    response = await client.post(
+        f"/api/v1/workflows/{root}/revisions",
+        headers=headers,
+        json={
+            "brief": edited,
+            "expected_hash": payload_hash(brief),
+            "reason": "Boss changed the requested seniority",
+        },
+    )
+    assert response.status_code == 201, response.text
+    proposal = response.json()
+    review = await client.get("/api/v1/approvals/" + proposal["approval_id"], headers=headers)
+    assert review.json()["action_payload"]["revision"]["diff"][0]["after"] == edited["position"]
+    from ai_orchestrator.security.auth import issue_access_token
+
+    checker = (
+        (
+            await prepared.session.execute(
+                select(User).where(
+                    User.organization_id == prepared.organization_id,
+                    User.email != "console-review@example.test",
+                    User.is_privileged.is_(True),
+                )
+            )
+        )
+        .scalars()
+        .first()
+    )
+    checker_headers = {
+        "Authorization": "Bearer "
+        + issue_access_token(
+            user_id=checker.id,
+            organization_id=prepared.organization_id,
+            role="admin",
+            is_org_admin=True,
+            is_privileged=True,
+            token_version=checker.token_version,
+        ),
+        "x-organization-id": prepared.organization_id,
+    }
+    await prepared.commit()
+    self_review = await client.post(
+        "/api/v1/approvals/" + proposal["approval_id"] + "/approve", headers=headers, json={}
+    )
+    assert self_review.status_code == 403
+    response = await client.post(
+        "/api/v1/approvals/" + proposal["approval_id"] + "/approve",
+        headers=checker_headers,
+        json={},
+    )
+    assert response.status_code == 200, response.text
+    revised = await client.get(
+        "/api/v1/workflows/" + response.json()["revision"]["id"], headers=headers
+    )
+    assert revised.json()["mode"] == "live"
+    assert revised.json()["brief"]["position"] == edited["position"]
+    assert revised.json()["completed"] == 0
+
+
+async def test_procurement_live_intake_creates_unstarted_source_campaign(client, prepared):
+    from tests.integration.test_console_management import _human_headers
+    from tests.unit.test_procurement_intake import source_intake
+
+    headers = await _human_headers(prepared)
+    response = await client.post(
+        "/api/v1/workflows/procurement", headers=headers, json=source_intake()
+    )
+    assert response.status_code == 201, response.text
+    report = (
+        await client.get("/api/v1/workflows/" + response.json()["id"], headers=headers)
+    ).json()
+    assert report["mode"] == "live" and report["completed"] == 0 and report["total"] == 13
+    assert report["evidence"]["real_model_calls"] == 0
+    malformed = source_intake()
+    malformed["suppliers"][0]["quote_ref"] = "fixture:fake"
+    assert (
+        await client.post("/api/v1/workflows/procurement", headers=headers, json=malformed)
+    ).status_code == 422

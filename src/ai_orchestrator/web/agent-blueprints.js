@@ -31,13 +31,15 @@ const AgentBlueprints = (() => {
     if (r.section === "workflow" && r.focus)
       return renderWorkflow(r.focus, ctx, guard);
     if (r.section !== "overview") return renderDraft(r.section, ctx, guard);
-    const [defs, agents, units, profiles, drafts] = await Promise.all([
-      Management.catalogue("definitions"),
-      apiGet("/agents", { limit: 200 }),
-      apiGet("/org-units", { limit: 200 }),
-      apiGet("/model-profiles"),
-      apiGet("/agent-blueprints"),
-    ]);
+    const [defs, agents, units, profiles, drafts, templates] =
+      await Promise.all([
+        Management.catalogue("definitions"),
+        apiGet("/agents", { limit: 200 }),
+        apiGet("/org-units", { limit: 200 }),
+        apiGet("/model-profiles"),
+        apiGet("/agent-blueprints"),
+        apiGet("/agent-blueprints/templates"),
+      ]);
     const departments = [
       ["hr", "HR"],
       ["procurement", L("Procurement", "Mua sắm")],
@@ -72,6 +74,12 @@ const AgentBlueprints = (() => {
                 L("Department", "Phòng ban"),
                 departments,
                 "hr",
+              ) +
+              select(
+                "cycle",
+                L("HR operating cycle", "Chu kỳ vận hành HR"),
+                templates.items.map((t) => [t.key, t.title]),
+                "recruitment",
               ) +
               select(
                 "definition_id",
@@ -123,6 +131,9 @@ const AgentBlueprints = (() => {
       '#blueprint-draft [name="definition_id"]',
     );
     function chooseRole() {
+      const cycle = document.querySelector('#blueprint-draft [name="cycle"]');
+      cycle.disabled = dept.value !== "hr";
+      cycle.parentElement.hidden = dept.value !== "hr";
       const unit = units.items.find((u) => u.slug === dept.value);
       const definitions = new Set(
         agents.items
@@ -141,7 +152,11 @@ const AgentBlueprints = (() => {
     chooseRole();
     wireForm(
       "blueprint-draft",
-      (v) => apiPost("/agent-blueprints", v),
+      (v) =>
+        apiPost("/agent-blueprints", {
+          ...v,
+          cycle: v.department === "hr" ? v.cycle : null,
+        }),
       guard,
       (result) =>
         link(

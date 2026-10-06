@@ -1,0 +1,31 @@
+{
+  "synthetic": true,
+  "lines": [
+    {
+      "material_id": "PIPE-01",
+      "name": "Ống cấp nước",
+      "quantity": 100,
+      "unit": "m",
+      "technical_spec": "Ống PPR PN20, chứng chỉ vật liệu",
+      "long_lead": false
+    },
+    {
+      "material_id": "CABLE-01",
+      "name": "Cáp điện",
+      "quantity": 200,
+      "unit": "m",
+      "technical_spec": "Cáp đồng 4x16mm2, chứng chỉ kiểm tra xuất xưởng",
+      "long_lead": false
+    },
+    {
+      "material_id": "PUMP-01",
+      "name": "Bơm nước",
+      "quantity": 2,
+      "unit": "bộ",
+      "technical_spec": "Bơm 10m3/h, 30m cột áp, chứng chỉ và bảo hành 24 tháng",
+      "long_lead": true
+    }
+  ],
+  "need_date": "2026-11-20",
+  "g3_date": "2026-12-01"
+}

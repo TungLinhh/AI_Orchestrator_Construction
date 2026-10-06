@@ -1,0 +1,36 @@
+{
+  "synthetic": true,
+  "supplier_id": "NCC-TEST-A",
+  "quotes": [
+    {
+      "material_id": "PIPE-01",
+      "unit_price": 60000,
+      "quantity": 100,
+      "currency": "VND",
+      "delivery_days": 10,
+      "warranty_months": 24,
+      "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-A/PIPE-01-certificate.json",
+      "spec_compliant": true
+    },
+    {
+      "material_id": "CABLE-01",
+      "unit_price": 180000,
+      "quantity": 200,
+      "currency": "VND",
+      "delivery_days": 10,
+      "warranty_months": 24,
+      "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-A/CABLE-01-certificate.json",
+      "spec_compliant": true
+    },
+    {
+      "material_id": "PUMP-01",
+      "unit_price": 18000000,
+      "quantity": 2,
+      "currency": "VND",
+      "delivery_days": 30,
+      "warranty_months": 24,
+      "certificate_ref": "fixture:packet-v1:procurement/NCC-TEST-A/PUMP-01-certificate.json",
+      "spec_compliant": true
+    }
+  ]
+}

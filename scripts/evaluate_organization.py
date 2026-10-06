@@ -72,6 +72,7 @@ async def run_cases(
     lessons: bool = False,
     candidate_lessons: bool = False,
     dataset_digest: str | None = None,
+    feedback_candidate: tuple[str, str] | None = None,
 ) -> dict:
     digest = dataset_digest or corpus_hash(cases)
     results = []
@@ -111,6 +112,12 @@ async def run_cases(
             else:
                 engine = ReferenceRuntime(case)
             task_input = case.task_input()
+            if feedback_candidate:
+                version_id, instructions = feedback_candidate
+                task_input["feedback_candidate_version"] = version_id
+                task_input["sandbox_candidate_lessons"] = [
+                    {"version_id": version_id, "instructions": instructions}
+                ]
             if candidate_lessons:
                 proposals = (
                     (
@@ -193,6 +200,7 @@ async def run_cases(
                     "duration_s": round(time.monotonic() - started, 3),
                     "output": task.output,
                     "candidate_lesson_count": len(task_input.get("sandbox_candidate_lessons", [])),
+                    "agent_id": agent.id,
                 }
                 await AuditService(session, org).record(
                     actor=Actor(id="organization-evaluator", kind=ActorType.SYSTEM),
@@ -311,7 +319,7 @@ async def run_cases(
             "p50_task_s": durations[math.ceil(len(durations) * 0.50) - 1],
             "p95_task_s": durations[math.ceil(len(durations) * 0.95) - 1],
         },
-        "candidate_lessons_used": candidate_lessons,
+        "candidate_lessons_used": candidate_lessons or feedback_candidate is not None,
         "production_ready": False,
         "external_actions_executed": False,
         "passed": sum(r["passed"] for r in results),

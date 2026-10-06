@@ -1,5 +1,85 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
+## Trạng thái sau đợt 4 — 2026-10-06
+
+Đợt này tiếp nối commit `b5c9e82`. Các phần lịch sử bên dưới giữ nguyên phạm vi
+nghiệm thu tại thời điểm viết. Ưu tiên vẫn là tuyển MEP đến onboarding, procurement,
+rồi các phòng ban khác. Không mở Bãi Tràm, tối ưu tenant hoặc đổi framework.
+
+| Hạng mục kế tiếp | Đã triển khai | Bằng chứng và điều kiện còn lại |
+| --- | --- | --- |
+| Editor revision tuyển dụng | Form brief có kiểu dữ liệu, hash nguồn, diff và danh sách stage chịu ảnh hưởng. Người có quyền khác người đề xuất duyệt đúng snapshot. Tạo campaign mới cùng mode, chưa tự chạy; không kế thừa chứng cứ phỏng vấn, acceptance/onboarding. | Integration kiểm tra API, maker-checker, nguồn bất biến, hash cũ, áp dụng lặp và gate mới. Revision hiện hỗ trợ tuyển dụng; sửa BOQ của campaign procurement đã chạy là mốc riêng. |
+| Tách chu kỳ HR | Catalogue tuyển dụng/onboarding, performance, payroll và offboarding; blueprint chỉ nhận đúng SOP/step của chu kỳ đã chọn. Giữ snapshot trigger/nguồn và cổng người duyệt. | Kiểm tra cả bốn chu kỳ, không sửa plan 26 bước đã duyệt trước đây. Nội dung bản nháp mới vẫn cần chuyên gia kiểm tra và Boss duyệt. Chưa có chứng cứ vận hành payroll/offboarding thật. |
+| Đánh giá bài học feedback | Runner baseline/candidate hai lượt đổi thứ tự, cùng corpus train/holdout, task độc lập, hash bài học/output và receipt audit lưu PostgreSQL. API chỉ bind version đã xuất bản. | Publication của feedback kiểm tra ledger, model usage thật từng task và nguồn xác nhận chuyên gia; checkbox PASS không thay thế bằng chứng. Development-only luôn bị từ chối xuất bản. |
+| Procurement live intake | Form BOQ, tối thiểu ba NCC, báo giá từng dòng, nguồn pháp lý/tài chính/HSE/chứng chỉ và người duyệt chất lượng. Server kiểm tra ID, số lượng, tiền VND nguyên và ngày giao. | Tạo campaign live chưa chạy, chưa gửi RFQ/PO/thanh toán. Nguồn là khai báo của người nhập, chưa phải tài liệu đã được connector tải và xác minh. Phải bổ sung nguồn thật và duyệt chất lượng thật trước khi nghiệm thu. |
+| Giao diện và màu | Sáu bảng màu Navy, Teal, Indigo, Forest, Copper, Graphite; sáng/tối/theo hệ thống, xem trước và lưu theo trình duyệt. Campaign có vùng sản phẩm/log và vùng điều khiển, mobile đưa điều khiển lên trước. | Chromium kiểm tra 12 tổ hợp màu, tương phản chữ tối thiểu 4,5:1 ở các cặp token được kiểm tra, lưu/reload, trang desktop/mobile và form gửi đúng payload. Đây chưa phải kiểm toán accessibility toàn diện. |
+| Bộ hồ sơ nghiệm thu tổng hợp | Theo xác nhận mới của người dùng: tự nghiên cứu mẫu công khai và tạo hồ sơ hư cấu. Packet có manifest/hash, CV mạnh/yếu/injection, phỏng vấn/acceptance, BOQ/ba NCC/chứng chỉ/GRN/invoice mô phỏng; loader kiểm tra nguồn trước tạo task. | Nguồn Acas và World Bank chỉ gợi ý cấu trúc; SOP O-Nexus điều khiển quy trình. Runner tạo lượt simulation mới, auditor đối chiếu brief với cả packet và kiểm tra ledger. Xem [hồ sơ và lệnh chạy lại](examples/workflow_acceptance/README.md); kết quả thực chạy ở WORK_REPORT.md. |
+| Đo tải | Công cụ chỉ đọc 24 mẫu trên ba campaign, đồng thời bốn request; API p95 289 ms, pool checkout riêng p95 79 ms, không lỗi trong phép đo. | Pool riêng gồm pre-ping/tạo connection, không phải queue wait nội bộ API. Chưa nghiệm thu throughput model/campaign đồng thời hoặc SLA production. |
+
+**Lượt model thật:** hai lượt × ba ca HR × hai nhánh = 12 task trên corpus tổng
+hợp v1. Candidate đạt 6/6, baseline 4/6 với hai HTTP 400 từ provider. Có ba phản
+hồi `finish_reason=error`, được giữ lại rồi fallback qua model free; không lấy
+phản hồi lỗi làm artifact. Tổng 13 phản hồi có usage, USD 0 được ghi nhận. Báo cáo
+cũ cộng reasoning hai lần thành 46.996; tổng input + completion thực tế là 32.943
+token. Adapter đã sửa cho lượt mới, ledger lịch sử giữ nguyên; không so tổng
+token khác quy ước như cùng một phép đo. Candidate thử nghiệm
+`sklv_01m49pe2wk5ap17d2shmq63mmf` mang cờ
+development-only, chưa xuất bản/bind. Kết quả này không chứng minh bài học tốt
+hơn về nội dung: corpus nhỏ, provider không ổn định và chưa có chuyên gia duyệt.
+Hai baseline thất bại còn khiến ledger hiện tại không đủ điều kiện publication.
+Giữ nguyên báo cáo lỗi; không đổi gold hay lặp đến khi xanh để thay kết quả cũ.
+
+**Phạm vi nghiệm thu được người dùng xác nhận:** tự tìm form/tài liệu công khai,
+tự tạo dữ liệu và nghiệm thu. Đây là nghiệm thu kỹ thuật/nghiệp vụ trên hồ sơ
+hư cấu có model/mail thật, các quyết định và hoạt động ngoài đời được ghi rõ mô
+phỏng. Nghiệm thu mock đã đạt: MEP phục hồi 21/21 và 112 kiểm tra, procurement 13/13
+và 76 kiểm tra. Lượt MEP đầu thất bại do content filter được giữ nguyên; một lượt
+phục hồi dùng controller và nguồn không đổi, chấm lại khi nguồn intake thay đổi.
+Xem [kết quả đầy đủ](examples/workflow_acceptance/RESULTS.md), gồm biến thiên điểm
+và đề xuất điều kiện thử việc chưa có nguồn policy. Nghiệm thu production với
+người/NCC thật vẫn là mốc riêng bên dưới.
+
+### Thứ tự tiếp theo và điều kiện chốt
+
+1. **Chốt chuẩn nội dung và xử lý provider refusal.** Phân biệt lỗi upstream,
+   content-filter của provider và quyết định policy của nền tảng trong log/metrics.
+   Provider refusal hiện dừng task, không tự đổi model để vượt refusal. Chọn quy
+   tắc người vận hành xét lại hoặc tiếp nhận nguồn thay thế trước production;
+   không biến lỗi provider thành đánh giá sai ứng viên. Bộ mock có kiểm tra nguồn
+   công khai/hư cấu đã được tạo theo yêu cầu, nhưng chưa thay corpus chuyên gia.
+   **Xác nhận nguồn và chuẩn nội dung HR/procurement:** Người phụ trách ký phiên
+   bản corpus có hồ sơ khó, phản ví dụ và căn cứ SOP độc lập. Chạy lại nhiều lượt
+   baseline/candidate, ghi cả lỗi provider, token, chi phí và p50/p95. Chỉ xem xét
+   xuất bản candidate đã được người vận hành xác nhận, đủ ledger và chuyên gia
+   duyệt; thử rollback trước khi canary. Nguồn xác nhận phải được người duyệt kiểm
+   tra, API hiện lưu attestation chứ không tự xác minh chữ ký tài liệu ngoài.
+2. **Nghiệm thu MEP live đến onboarding.** Cần CV thật, hai vòng phỏng vấn,
+   quyết định HR/Boss, offer/acceptance và chứng cứ onboarding thực tế. Mọi bước
+   có nguồn, artifact, execution và quyết định đúng hash; thiếu nguồn phải chờ.
+   Các mốc 30/60/90 chỉ được hoàn thành khi tới kỳ và có bằng chứng, không ghi
+   log giả để chốt. Phân biệt hoàn thành onboarding ban đầu với review tương lai.
+3. **Nghiệm thu procurement live.** BOQ, ba báo giá, hồ sơ NCC, chứng chỉ và
+   quyết định người vật tư phải có thật. Chạy controller và audit từng vật tư,
+   chặn nguồn thiếu/không phù hợp/lệch PO–GRN–Invoice. PO, nhận hàng và thanh toán
+   thực tế cần adapter có scope, intent, idempotency, receipt/read-back và xử lý
+   timeout chưa rõ kết quả; chưa được mở quyền từ form tạo campaign.
+4. **Đo và refactor theo nghẽn thực tế.** Instrument queue wait trong pool API,
+   chạy nhiều campaign model đồng thời có giới hạn và đo độ trễ thông báo trên
+   browser. Tách context builder/provider evidence/settlement khỏi executor khi
+   có contract test; chuyển state console theo từng campaign, giữ một chủ sở
+   hữu polling và draft form. Đo token/context trước khi cắt bớt nguồn; review
+   contract cache accounting và migration usage lịch sử trước khi mở cached
+   provider rộng. Luồng live hiện có 20 bước; simulation có thêm self-mail test
+   thành 21, không yêu cầu chạy self-mail giả trong nghiệp vụ thật.
+5. **Mở Design → QA/QC-HSE → Finance → Sales.** Mỗi phòng có controller/nguồn,
+   corpus chuyên gia, negative cases, gates và audit. Shadow thực tế đủ 28 ngày
+   theo tiêu chí đã ký trước khi tăng quyền. Mock không được tính vào shadow.
+
+**Điều kiện chốt bản kỹ thuật:** lint/format, mypy, unit/integration, E2E và console
+trên API thật đều đạt; diff không có secret, các cổng người duyệt giữ hiệu lực.
+Kết quả cuối và lệnh chạy lại ở [WORK_REPORT.md](WORK_REPORT.md). Chốt bản kỹ thuật
+không thay thế nghiệm thu nghiệp vụ thật tại các mục 1–3.
+
 ## Điều khiển, feedback và campaign — 2026-10-07
 
 Đợt mới triển khai receipt SMTP self-test và dispatch native bền vững. Lệnh

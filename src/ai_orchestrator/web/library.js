@@ -170,6 +170,9 @@
         });
     if (id) {
       const item = d.items[0];
+      const feedbackCandidate =
+        item.derived_from?.lesson_scope === "proposal_only";
+      const developmentOnly = item.derived_from?.development_only === true;
       let html = card(
         item.name,
         `<code>${esc(item.id)}</code><p>${esc(item.description)}</p>` +
@@ -216,23 +219,41 @@
               `<p>${esc(L("This registry tool has no handler in the diagnostic gateway. Bindings do not install a handler.", "Công cụ trong danh mục chưa có handler ở cổng chẩn đoán. Việc cấp quyền không cài đặt handler."))}</p>`,
             );
       }
-      if (active === "skills" && !item.is_published) {
+      if (active === "skills" && !item.is_published && developmentOnly) {
+        html += card(
+          L("Sandbox proposal", "Đề xuất trong sandbox"),
+          `<p>${esc(L("Synthetic training proposals remain unpublished. Evaluate an operator-confirmed feedback candidate before requesting publication.", "Đề xuất huấn luyện tổng hợp giữ trạng thái chưa xuất bản. Cần đánh giá candidate từ feedback đã được người vận hành xác nhận trước khi xin xuất bản."))}</p>`,
+        );
+      }
+      if (active === "skills" && !item.is_published && !developmentOnly) {
         html += card(
           L("Publish after review", "Xuất bản sau kiểm tra"),
           form(
             "skill-publish",
-            select("tests_passed", L("Tests passed", "Kiểm thử đã đạt"), [
-              ["", L("Select measured result…", "Chọn kết quả đã đo…")],
-              ["yes", L("Yes", "Có")],
-              ["no", L("No", "Không")],
-            ]) +
-              input(
-                "test_reference",
-                L("Test report reference", "Tham chiếu báo cáo kiểm thử"),
-                "",
-                "text",
-                "required",
-              ) +
+            (feedbackCandidate
+              ? `<p class="wide form-notice">${esc(L("The server verifies repeated live baseline/holdout tasks and the exact lesson hash. A manual test checkbox cannot replace this evidence.", "Server kiểm tra task baseline/holdout qua model thật nhiều lượt và hash bài học. Tự đánh dấu test đạt không thay được bằng chứng này."))}</p>` +
+                input(
+                  "expert_review_source",
+                  L(
+                    "Expert corpus review source",
+                    "Nguồn xác nhận corpus của chuyên gia",
+                  ),
+                  "",
+                  "text",
+                  "required minlength=5 maxlength=1000",
+                )
+              : select("tests_passed", L("Tests passed", "Kiểm thử đã đạt"), [
+                  ["", L("Select measured result…", "Chọn kết quả đã đo…")],
+                  ["yes", L("Yes", "Có")],
+                  ["no", L("No", "Không")],
+                ]) +
+                input(
+                  "test_reference",
+                  L("Test report reference", "Tham chiếu báo cáo kiểm thử"),
+                  "",
+                  "text",
+                  "required",
+                )) +
               select(
                 "scan_clean",
                 L("Security scan clean", "Kiểm tra bảo mật sạch"),
@@ -264,7 +285,7 @@
       wireForm(
         "skill-publish",
         (v) => {
-          if (!v.tests_passed || !v.scan_clean)
+          if ((!feedbackCandidate && !v.tests_passed) || !v.scan_clean)
             throw new Error(
               L(
                 "Select the recorded test and scan results.",
@@ -273,10 +294,15 @@
             );
           return apiPost(`/skills/${id}/publish`, {
             skill_version_id: item.version_id,
-            test_results: {
-              passed: v.tests_passed === "yes",
-              reference: v.test_reference,
-            },
+            expert_review_source: feedbackCandidate
+              ? v.expert_review_source
+              : null,
+            test_results: feedbackCandidate
+              ? {}
+              : {
+                  passed: v.tests_passed === "yes",
+                  reference: v.test_reference,
+                },
             security_scan: {
               clean: v.scan_clean === "yes",
               reference: v.scan_reference,

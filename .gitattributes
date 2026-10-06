@@ -1,0 +1,4 @@
+# Packet hashes cover exact bytes, including on checkouts with core.autocrlf enabled.
+examples/workflow_acceptance/v1/** -text
+# This original CV fixture retains a source trailing space covered by its live receipt.
+examples/workflow_acceptance/v1/hiring/mep-test-c.txt whitespace=-blank-at-eol

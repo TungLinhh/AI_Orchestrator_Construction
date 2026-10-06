@@ -24,7 +24,7 @@ from ai_orchestrator.persistence.models import (
 from ai_orchestrator.persistence.session import Database
 
 
-async def audit(org: str, root_id: str, output: Path) -> None:
+async def audit(org: str, root_id: str, output: Path, packet: Path | None = None) -> None:
     db = Database.from_settings()
     checks: list[str] = []
 
@@ -44,6 +44,13 @@ async def audit(org: str, root_id: str, output: Path) -> None:
         async with db.tenant_session(org) as session:
             root = await session.get(Task, root_id)
             brief = root.input["brief"]
+            if packet:
+                from scripts.workflow_acceptance_packet import load_brief
+
+                require(
+                    brief == load_brief(packet, report["kind"]),
+                    "root brief equals verified synthetic source packet",
+                )
             for stage in expected:
                 row = stages[stage.key]
                 executions = (
@@ -252,7 +259,13 @@ async def audit(org: str, root_id: str, output: Path) -> None:
         await asyncio.to_thread(
             output.write_text,
             json.dumps(
-                {"root": root_id, "mode": "simulation", "passed": True, "checks": checks},
+                {
+                    "root": root_id,
+                    "mode": "simulation",
+                    "passed": True,
+                    "checks": checks,
+                    "acceptance_packet": brief.get("acceptance_packet"),
+                },
                 ensure_ascii=False,
                 indent=2,
             ),
@@ -267,5 +280,6 @@ if __name__ == "__main__":
     parser.add_argument("--org", required=True)
     parser.add_argument("--root", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--packet", type=Path)
     args = parser.parse_args()
-    asyncio.run(audit(args.org, args.root, args.output))
+    asyncio.run(audit(args.org, args.root, args.output, args.packet))

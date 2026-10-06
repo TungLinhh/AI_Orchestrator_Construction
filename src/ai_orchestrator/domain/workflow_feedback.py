@@ -56,3 +56,7 @@ def validate_feedback(
             raise ValueError("Use Vietnamese consistently for this feedback discussion")
         if "\ufffd" in value:
             raise ValueError("Replace damaged Unicode text with readable Vietnamese")
+
+    normalized = [re.sub(r"[\W_]+", " ", question.casefold()).strip() for question in questions]
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("Do not repeat the same question within a feedback assessment")

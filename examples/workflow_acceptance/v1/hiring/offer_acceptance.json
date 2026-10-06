@@ -1,0 +1,6 @@
+{
+  "synthetic": true,
+  "accepted": true,
+  "source": "fixture:packet-v1:hiring/offer_acceptance.json",
+  "note": "Fictional selected candidate accepts offer in this exercise; no real offer was sent."
+}

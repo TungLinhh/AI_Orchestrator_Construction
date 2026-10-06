@@ -429,6 +429,12 @@ class BusinessWorkflowService:
                 ],
                 "control": command_view(command),
                 "revision_of": root.input.get("revision_of"),
+                "brief": {
+                    key: value
+                    for key, value in root.input["brief"].items()
+                    if key in {"position", "boss_brief", "salary_min", "salary_max", "start_date"}
+                },
+                "brief_hash": payload_hash(root.input["brief"]),
                 "id": root.id,
                 "kind": root.input["business_workflow"],
                 "mode": root.input["mode"],

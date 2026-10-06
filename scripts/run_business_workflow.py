@@ -14,7 +14,12 @@ from ai_orchestrator.persistence.session import Database
 
 
 async def main(
-    org: str, kind: str, output: Path, resume: str | None, retry: str | None = None
+    org: str,
+    kind: str,
+    output: Path,
+    resume: str | None,
+    retry: str | None = None,
+    packet: Path | None = None,
 ) -> int:
     if get_settings().model_provider_default in {"fake", "scripted", "deterministic"}:
         raise SystemExit(
@@ -22,12 +27,21 @@ async def main(
             "AO_MODEL_PROVIDER_DEFAULT=openrouter uv run python "
             "scripts/run_business_workflow.py ..."
         )
+    if packet and (resume or retry):
+        raise ValueError("A source packet creates a fresh run; it cannot change an existing run")
+    source_brief = None
+    if packet:
+        from scripts.workflow_acceptance_packet import load_brief
+
+        source_brief = load_brief(packet, kind)
     db = Database.from_settings()
     try:
         root = resume
         if not root:
             async with db.tenant_session(org) as session:
-                brief = hiring_fixture() if kind == "mep_hiring" else procurement_fixture()
+                brief = source_brief or (
+                    hiring_fixture() if kind == "mep_hiring" else procurement_fixture()
+                )
                 if retry:
                     from ai_orchestrator.persistence.repositories.task import TaskRepository
 
@@ -72,7 +86,13 @@ if __name__ == "__main__":
     parser.add_argument("--org", required=True)
     parser.add_argument("--kind", choices=["mep_hiring", "procurement"], required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--resume")
-    parser.add_argument("--retry")
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--resume")
+    source.add_argument("--retry")
+    source.add_argument(
+        "--packet", type=Path, help="Verified synthetic source manifest; fresh run only"
+    )
     args = parser.parse_args()
-    raise SystemExit(asyncio.run(main(args.org, args.kind, args.output, args.resume, args.retry)))
+    raise SystemExit(
+        asyncio.run(main(args.org, args.kind, args.output, args.resume, args.retry, args.packet))
+    )

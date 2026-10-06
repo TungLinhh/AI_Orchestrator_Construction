@@ -18,7 +18,9 @@ from ai_orchestrator.application.workflow_fixtures import hiring_fixture, procur
 from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.domain.business_workflow import RUBRIC_SPEC
 from ai_orchestrator.domain.errors import PreconditionError, ValidationError
+from ai_orchestrator.domain.procurement_intake import ProcurementIntake
 from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
+from ai_orchestrator.domain.workflow_revision import HiringBrief
 from ai_orchestrator.persistence.models import Task
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 
@@ -56,6 +58,35 @@ async def hiring(body: HiringRequest, ctx: ApiContext = Depends(get_context)) ->
     }
     root = await create_workflow(ctx.session, ctx.organization_id, "mep_hiring", "live", brief)
     return {"id": root, "mode": "live", "synthetic": False, "started": False}
+
+
+@router.post("/workflows/procurement", status_code=201)
+async def procurement(
+    body: ProcurementIntake, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    ctx.require_admin()
+    brief = {**body.model_dump(mode="json"), "synthetic": False}
+    root = await create_workflow(ctx.session, ctx.organization_id, "procurement", "live", brief)
+    return {"id": root, "mode": "live", "synthetic": False, "started": False}
+
+
+class RevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    brief: HiringBrief
+    expected_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    reason: str = Field(min_length=10, max_length=10000)
+
+
+@router.post("/workflows/{root_id}/revisions", status_code=201)
+async def propose_revision(
+    root_id: str, body: RevisionRequest, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    from ai_orchestrator.application.workflow_revisions import WorkflowRevisions
+
+    ctx.require_admin()
+    return await WorkflowRevisions(ctx.session, ctx.organization_id).propose(
+        root_id, body.brief, body.expected_hash, body.reason, ctx.actor
+    )
 
 
 class EvidenceRequest(BaseModel):

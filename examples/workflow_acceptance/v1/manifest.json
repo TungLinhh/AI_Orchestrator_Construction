@@ -1,0 +1,65 @@
+{
+  "format_version": 1,
+  "packet_id": "onexus-synthetic-acceptance-v1",
+  "synthetic": true,
+  "retrieved_on": "2026-10-06",
+  "sources": [
+    {
+      "title": "Acas recruitment checklist and job description templates",
+      "url": "https://www.acas.org.uk/job-description-templates",
+      "used_for": "Role purpose, reporting line, duties and person specification fields"
+    },
+    {
+      "title": "Acas job offer templates",
+      "url": "https://www.acas.org.uk/job-offer-templates",
+      "used_for": "Offer conditions, start date and acceptance fields"
+    },
+    {
+      "title": "Acas planning an induction programme",
+      "url": "https://www.acas.org.uk/inductions/planning-an-induction-programme",
+      "used_for": "Buddy, equipment, HSE induction, role training and later review fields"
+    },
+    {
+      "title": "World Bank Evaluating Bids and Proposals, February 2025",
+      "url": "https://thedocs.worldbank.org/en/doc/9dcb7971706bf29b2732779c39922b77-0290012025/original/Evaluating-Bids-and-Proposals-with-Rated-Criteria-Feb-4-2025.pdf",
+      "used_for": "Predeclared qualification, technical checks, price comparison and audit trail"
+    }
+  ],
+  "source_authority": "O-Nexus seeded SOPs; external sources inform form structure only",
+  "human_approved": false,
+  "files": {
+    "hiring/mep-test-a.txt": "4ca7d3fddfeb983ac5deb54c933810f5138e6b6a4060b361125d36982d3d9658",
+    "hiring/mep-test-b.txt": "b456118d53c5552f9f30343b8ce493b25b9e31f1f53dabb600b60a90114fdb6e",
+    "hiring/mep-test-c.txt": "43afb403bc2a25f3bd293051d66415e4b3eaaae250e264fa52ca14b44be57e4f",
+    "hiring/headcount.json": "bb6ae4afc7df940058c430db1ffd3ce58b257458a0f533badba418c50c16e0b9",
+    "hiring/role-and-induction.md": "742f63c9b1b900f53a1b24dd165116c822006f70e64d3e9461d62ebcd7a5554c",
+    "hiring/interview_technical.json": "7e2a49a6328a73af63d7b6a87c4d350ccf1a4c285e26b4c0e6db8bad8adbd427",
+    "hiring/interview_hr.json": "a25b40a04fbcba3f54e7f29b799d14e8e85ae54a67ff77dfeb4ef506e8c89824",
+    "hiring/offer_acceptance.json": "cb8b18a4bb458a2d83e62d8866fad2ba7b72e0d596cebfb4020ad23531eb5d85",
+    "hiring/review-policy.json": "af8fa59b41d9862e3f073ca704c7476ba19f502f56a98fa82f8f311d7aba00e9",
+    "procurement/boq.json": "e3e51a1da34e2e58f32c394da868c7598b825ef3bd69b0fdb84d64845165f72d",
+    "procurement/NCC-TEST-A/legal_ref.json": "a0996988be7002a9de19b398cca9f6f3f09295c27d52111b9ed29f99698ce92d",
+    "procurement/NCC-TEST-A/financial_ref.json": "8ab442dd90df1e7faab30dda7d84f1f980dc5b848c7aad1aba889a5c0af7d4cd",
+    "procurement/NCC-TEST-A/hse_ref.json": "f1a9aa8ad6bd571873d0c9e987b241542fe1048ce746639a0bfe4fa629f63415",
+    "procurement/NCC-TEST-A/PIPE-01-certificate.json": "d8116d82a5c2785383e86e7fecf657a811dba62ca43dd6e3b234a0f74cf68739",
+    "procurement/NCC-TEST-A/CABLE-01-certificate.json": "483c6a0c7cc8c50243f9c84fb3d765871a473745bc8d95e82f588a01935cb7cd",
+    "procurement/NCC-TEST-A/PUMP-01-certificate.json": "4078f1d64609d86d237eddc5bcbce95d0c30235c2de02d907969f5942710ff59",
+    "procurement/NCC-TEST-A/quote_source.json": "d4719ea8e51df9932508b920e8eca0a81e3ad0420d30190aa1cc2dec64701894",
+    "procurement/NCC-TEST-B/legal_ref.json": "3d51043220569684f44a2139f11e01a6e34a610264c9bfd7cc93bfa919b7f6b7",
+    "procurement/NCC-TEST-B/financial_ref.json": "8d49dd18baf6075828acb9dffcfc43ca728851f4e2d8c22311718a8a59107e22",
+    "procurement/NCC-TEST-B/hse_ref.json": "5ce62ec596d2f902cedbfea49092d007efd333659147cd620ce91aa2a0944986",
+    "procurement/NCC-TEST-B/PIPE-01-certificate.json": "9f2f8b934757643a7e01c51b203ac6c73fc1b310148b1cc3ae7661c8d557690b",
+    "procurement/NCC-TEST-B/CABLE-01-certificate.json": "939bc92453fd1544ce1f0dc8906ea8a6fc645bbed9d667630c059d1823c1b583",
+    "procurement/NCC-TEST-B/PUMP-01-certificate.json": "3cc7f34be359be3f0dd9d87bf334371c6f2c7f8e74d02cedbb3619c1e361422a",
+    "procurement/NCC-TEST-B/quote_source.json": "9e6d0ca6886d1714186f8f7a49dd198ae9b7a360b17494e254bc5b4191e1453d",
+    "procurement/NCC-TEST-C/legal_ref.json": "9c5e1d67946d946dd7542af378f63c305e7fe89ed513a4bcacb4bb3591713bed",
+    "procurement/NCC-TEST-C/financial_ref.json": "fbef2cb9daaa94885d32ddaee4d5eb89ac1a0ff3670418b3e25af748009bdf6c",
+    "procurement/NCC-TEST-C/hse_ref.json": "323b9422a98cb2571690d587f314a52c97d9a4fa3971226abc97613f18e79fd5",
+    "procurement/NCC-TEST-C/quote_source.json": "283e2685d3dff721ba1d4eda6d11c16c5ae07190f9ded06863e148d4f1cb149b",
+    "procurement/delivery-and-invoice.json": "73d6795a56fc55ad3ddad7f90126cfbd5cf4d90859ecf0a89c4f169a1e4bdf3f",
+    "procurement/rfq-and-review.md": "da0d1483a49c2794c27cb69e9b51be118a251ee7d131e29ecf0181094b2493cf",
+    "expectations.json": "f951bed0a76947cbf1b56c7b5d90b2e49de35d6a3f2d9fa1917c2fb226cce625",
+    "briefs/mep_hiring.json": "5f6300c7ac8f71ea30c1a83d2b6c8a45b9f80bdf25e192d7a5839451ea042d1c",
+    "briefs/procurement.json": "bf32e11f5c490ebae907966439b76c96b9e74c2d206e9d0d85c0a5ef352ce9f9"
+  }
+}

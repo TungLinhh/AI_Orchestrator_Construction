@@ -45,6 +45,7 @@ class PublishSkillRequest(BaseModel):
     governance_state: str = "reviewed"
     test_results: dict[str, Any] = Field(default_factory=dict)
     security_scan: dict[str, Any] = Field(default_factory=dict)
+    expert_review_source: str | None = Field(default=None, min_length=5, max_length=1000)
 
 
 class ProposeSkillRequest(BaseModel):
@@ -265,7 +266,22 @@ async def publish_skill(
             details={"expected": body.skill_version_id, "current": version.id},
         )
 
-    tests = body.test_results or (version.test_results or {})
+    evidence = version.derived_from or {}
+    if evidence.get("development_only"):
+        raise ValidationError("Synthetic development proposals cannot be published to production")
+    if evidence.get("lesson_scope") == "proposal_only":
+        from ai_orchestrator.application.skill_evaluation_gate import evaluated_feedback
+
+        tests = await evaluated_feedback(
+            ctx.session, ctx.organization_id, version, body.expert_review_source
+        )
+        version.derived_from = {
+            **evidence,
+            "agent_id": tests["paired_evaluation"]["agent_id"],
+            "expert_review": {"source": body.expert_review_source, "reviewer": str(ctx.actor.id)},
+        }
+    else:
+        tests = body.test_results or (version.test_results or {})
     if not tests.get("passed"):
         msg = (
             "a skill cannot be published without passing test results; attach "
@@ -373,6 +389,7 @@ async def get_skill(skill_id: str, ctx: ApiContext = Depends(get_context)) -> di
     skill, version = row
     return {
         **_skill_dict(skill, version),
+        "derived_from": version.derived_from if version else {},
         "instructions": version.instructions if version else "",
         "input_schema": version.input_schema if version else {},
         "output_schema": version.output_schema if version else {},

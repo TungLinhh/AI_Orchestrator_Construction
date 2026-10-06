@@ -4,6 +4,7 @@ from pathlib import Path
 
 SCRIPTS = (
     "core.js",
+    "palettes.js",
     "preferences.js",
     "navigation.js",
     "work.js",
@@ -11,6 +12,7 @@ SCRIPTS = (
     "management.js",
     "organization.js",
     "agent-blueprints.js",
+    "procurement-intake.js",
     "workflows.js",
     "library.js",
     "operations.js",

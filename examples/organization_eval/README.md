@@ -80,3 +80,29 @@ Workflow MEP 21 bước và procurement 13 bước còn được chạy bằng c
 trong `tests/integration/test_business_workflow.py`. Test MEP dùng transport
 file-drop được ghi rõ, đọc nội dung CV và ghi/đọc lại năm hồ sơ onboarding trong
 sandbox. SMTP và IMAP thật cần một đợt nghiệm thu tích hợp riêng.
+
+## So sánh candidate từ feedback
+
+Candidate phải là SkillVersion chưa xuất bản, `lesson_scope=proposal_only`, có
+campaign HR/procurement nguồn. Runner lấy đúng phòng ban, giữ gold ngoài task
+input, đổi thứ tự baseline/candidate mỗi lượt và không bind hướng dẫn vào agent:
+
+```sh
+AO_MODEL_PROVIDER_DEFAULT=openrouter uv run -m scripts.evaluate_feedback_skill \
+  --org <org_id> --version <skill_version_id> --runtime live --rounds 2 \
+  --output .devdata/reports/feedback-skill-live-paired.json
+```
+
+Thay `--runtime mock` để kiểm tra cơ chế, không cần provider live. Live thiếu
+adapter OpenRouter bị từ chối trước khi tạo task. Báo cáo có task/hash output,
+round/arm/split, lỗi, độ trễ, token và chi phí. Receipt lưu trong SkillVersion và
+audit cùng transaction; file JSON là bản xuất, không thay ledger database.
+
+`receipt.passed` mô tả candidate qua corpus và không có regression quan sát được.
+Nó không có nghĩa đã được phép publish: cổng publish còn yêu cầu mọi task hai
+nhánh hoàn thành, usage OpenRouter free thật, receipt audit đúng hash, ít nhất hai
+lượt và nguồn xác nhận chuyên gia. Vì thế baseline lỗi hạ tầng vẫn chặn publication
+ngay cả khi candidate đạt. Corpus tổng hợp v1 chưa được chuyên gia ký duyệt.
+Development-only luôn bị từ chối publish; `test_results.passed=true` gửi từ client
+không thể bỏ qua cổng của feedback. Chỉ version đã publish mới được bind qua API.
+Giữ cả lượt thất bại; khi thử lại tạo task/receipt mới và audit giữ lịch sử trước.

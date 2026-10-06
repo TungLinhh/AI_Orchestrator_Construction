@@ -1,0 +1,7 @@
+{
+  "synthetic": true,
+  "human_decision": false,
+  "decision": "simulated_approved",
+  "scope": "all controller simulation gates only",
+  "note": "No actual HR/Boss signature or Approval row is created."
+}

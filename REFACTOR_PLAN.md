@@ -1,5 +1,37 @@
 # Kế hoạch refactor O-Nexus — 2026-10-07
 
+## Cập nhật đợt 4 — 2026-10-06
+
+Đã bổ sung module riêng cho domain brief/diff, catalogue HR, contract procurement,
+application revision và publication gate. API chỉ nhận input có kiểu dữ liệu và
+ủy quyền; controller hiện có vẫn sở hữu thực thi. Console tách palette tokens và
+procurement intake khỏi renderer campaign. Không đổi schema/framework/tenant.
+
+Ba cấu trúc UI đã được dựng để so sánh trong `examples/console_layouts.html`;
+chọn stage log cạnh vùng điều khiển để giữ thứ tự SOP và giảm việc tìm nút thao
+tác giữa log dài. Trình tự và bằng chứng nghiệp vụ không phụ thuộc bảng màu.
+
+Thứ tự refactor còn lại, sau khi có số đo và contract test:
+
+1. Instrument pool **trong API** và context/token theo stage; probe đọc đồng thời
+   mới chỉ là baseline, không phải SLA hay throughput model. Sửa nghẽn đo được
+   trước khi tăng concurrency hoặc thay tech stack.
+2. Tách context assembly, ghi usage và settlement của executor thành các đơn vị
+   có input/output rõ; TaskAttemptRunner giữ transaction/lease/fencing. Không
+   thêm compatibility wrapper một caller; chuyển caller rồi xóa API cũ cùng đợt.
+3. State frontend theo campaign/route: một nơi giữ polling, form draft, generation
+   và kết quả request; kiểm tra đổi trang/response về muộn/blur form/reconnect.
+   Không tạo cache song song cho cùng task. Draft revision/chứng cứ/câu trả lời
+   đã được giữ qua polling/blur trong cùng scope; thay bước/hash offer/phiên
+   feedback xóa draft cũ. Chưa tách toàn bộ state console trong đợt này.
+4. Connector writes theo contract intent → effect → receipt → read-back, có
+   idempotency và reconciliation khi crash. Bắt đầu từ adapter được người vận
+   hành chọn, kiểm tra sandbox rồi canary thật theo scope đã duyệt.
+
+Giữ Pydantic/PydanticAI/Temporal. Chưa có bằng chứng bottleneck cần LangGraph;
+chuyển framework lúc này không giải quyết chất lượng nguồn hay human approval.
+Nghiệm thu cụ thể và phần cần người thật nằm ở đầu FUTURE_WORK.md.
+
 **Cập nhật đợt 3:** đã triển khai bảng dispatch bền vững, receipt/đối chiếu SMTP
 self-test, feedback có câu hỏi và revision, cùng cài đặt giao diện. Các đoạn mô tả
 đợt 1/2 dưới đây là lịch sử tại lúc bàn giao; trạng thái hiện tại nằm ở mục đợt 3

@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "source": "fixture:packet-v1:hiring/interview_hr.json",
+  "transcripts": [
+    {
+      "filename": "mep-test-a.txt",
+      "result": "pass",
+      "notes": "Discussed collaboration, mentor, availability and salary expectations; synthetic interview record."
+    },
+    {
+      "filename": "mep-test-b.txt",
+      "result": "pass",
+      "notes": "Discussed collaboration, mentor, availability and salary expectations; synthetic interview record."
+    },
+    {
+      "filename": "mep-test-c.txt",
+      "result": "pass",
+      "notes": "Discussed collaboration, mentor, availability and salary expectations; synthetic interview record."
+    }
+  ]
+}

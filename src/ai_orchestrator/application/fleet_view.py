@@ -240,8 +240,8 @@ LIMIT :limit
 #: structured residue.
 _RUNS = """
 SELECT x.id, x.task_id, x.status, x.summary, x.model_used, x.input_tokens,
-       x.output_tokens, x.duration_ms, x.cost_usd, x.error_message, x.error_kind,
-       x.decision_record, x.artifacts, x.started_at, x.finished_at
+       x.output_tokens, x.reasoning_tokens, x.duration_ms, x.cost_usd,
+       x.error_message, x.error_kind, x.decision_record, x.artifacts, x.started_at, x.finished_at
 FROM executions x
 WHERE x.organization_id = CAST(:o AS varchar(40)) AND x.agent_id = :agent
 ORDER BY x.created_at DESC
@@ -600,7 +600,9 @@ async def _detail(
             # the engine another.
             "summary": r["summary"] or "",
             "model_used": r["model_used"],
-            "tokens": int((r["input_tokens"] or 0) + (r["output_tokens"] or 0)),
+            "tokens": int(
+                (r["input_tokens"] or 0) + (r["output_tokens"] or 0) + (r["reasoning_tokens"] or 0)
+            ),
             "duration_ms": r["duration_ms"],
             "error_message": r["error_message"],
             "error_kind": r["error_kind"],

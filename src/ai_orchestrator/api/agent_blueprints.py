@@ -29,6 +29,7 @@ class DraftRequest(BaseModel):
     parent_agent_id: str | None = None
     model_profile: str = "primary"
     mandate: str = Field(min_length=10, max_length=12000)
+    cycle: Literal["recruitment", "performance", "payroll", "offboarding"] | None = None
 
 
 class EditRequest(BaseModel):
@@ -40,6 +41,18 @@ class EditRequest(BaseModel):
 class InputRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     inputs: dict[str, str] = Field(max_length=20)
+
+
+@router.get("/templates")
+async def templates(ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+    from dataclasses import asdict
+
+    from ai_orchestrator.domain.hr_templates import HR_TEMPLATES
+
+    return {
+        "items": [asdict(template) for template in HR_TEMPLATES],
+        "historical_plans_unchanged": True,
+    }
 
 
 @router.get("")

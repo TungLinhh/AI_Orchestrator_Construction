@@ -392,6 +392,7 @@ async function decide(approvalId, action, extra) {
     await refreshNotificationInbox();
     if (decision.provisioned)
       go("#/processes/provision/workflow/" + decision.provisioned.workflow_id);
+    else if (decision.revision) go("#/processes/workflows/" + decision.revision.id);
     else await refreshAfterAction();
   } catch (err) {
     /* Said plainly, in the page. An approval that silently does nothing is worse
@@ -1556,7 +1557,7 @@ function stepPointers(x) {
   // **Sum numbers, then format.** `num()` returns a formatted *string*, so adding two
   // of them concatenates ("120" + "80" = "12080"). The first version of this line did
   // exactly that and the cost read ten times too high on every step.
-  const tokens = (x.input_tokens ?? 0) + (x.output_tokens ?? 0);
+  const tokens = (x.input_tokens ?? 0) + (x.output_tokens ?? 0) + (x.reasoning_tokens ?? 0);
   const cost = [
     x.model_used ? String(x.model_used) : "",
     x.input_tokens != null || x.output_tokens != null
@@ -1611,7 +1612,7 @@ function renderSteps(d) {
         <div class="s">${esc(stepPointers(x).join(" "))}</div>
         <div class="s">${when ? esc(when) : ""}${x.duration_ms != null ? ` · ${Math.round(x.duration_ms / 1000)}s` : ""}${
           x.input_tokens != null
-            ? ` · ${fmtTokens((x.input_tokens ?? 0) + (x.output_tokens ?? 0))} tokens`
+            ? ` · ${fmtTokens((x.input_tokens ?? 0) + (x.output_tokens ?? 0) + (x.reasoning_tokens ?? 0))} tokens`
             : ""
         }</div>
       </summary>

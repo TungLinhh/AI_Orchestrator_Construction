@@ -84,7 +84,7 @@ function makeNode(id, tag) {
   const node = {
     id: id || "", tagName: (tag || "div").toUpperCase(),
     innerHTML: "", textContent: "", value: "", disabled: false, hidden: false,
-    className: "", style: {}, dataset: {}, attributes: {}, children: [], parentElement: null,
+    className: "", style: {setProperty(k,v) {this[k]=v;}, getPropertyValue(k) {return this[k] || "";}}, dataset: {}, attributes: {}, children: [], parentElement: null,
     classList: {
       add: (c) => classes.add(c),
       remove: (c) => classes.delete(c),
@@ -248,6 +248,7 @@ function matchesWithin(el, parts) {
 }
 
 function queryTree(root, sel) {
+  if (sel.includes(",")) return [...new Set(sel.split(",").flatMap(part => queryTree(root, part.trim())))];
   const parts = sel.trim().split(/\s+(?![^\[]*\])/).filter(Boolean);
   const out = [];
   const walk = (el) => {
@@ -266,6 +267,8 @@ function asDomNode(el, source) {
   const classes = new Set((el.attrs.class || "").split(/\s+/).filter(Boolean));
   const node = {
     tagName: el.tag.toUpperCase(),
+    get name() { return el.attrs.name || ""; },
+    get parentElement() { return el.parent && el.parent.tag !== "#root" ? asDomNode(el.parent, "") : null; },
     dataset: Object.fromEntries(
       Object.entries(el.attrs).map(([k, v]) => [k.replace(/^data-/, "").replace(/-(\w)/g, (_, c) => c.toUpperCase()), v])),
     classes,
@@ -486,6 +489,20 @@ const sandbox = {
   Promise,
   setTimeout, clearTimeout, setInterval: () => 0, clearInterval() {},
   Event: class {},
+  FormData: class {
+    constructor(form) {
+      this.values = [];
+      for (const tag of ["input", "select", "textarea"]) {
+        for (const el of form.querySelectorAll(tag)) {
+          const name = el.getAttribute("name");
+          if (!name || el.hasAttribute("disabled")) continue;
+          if (["radio", "checkbox"].includes(el.getAttribute("type")) && !el.hasAttribute("checked")) continue;
+          this.values.push([name, el.value || (tag === "textarea" ? el.textContent : "")]);
+        }
+      }
+    }
+    [Symbol.iterator]() { return this.values[Symbol.iterator](); }
+  },
   AbortController,
   AbortSignal,
   ReadableStream,

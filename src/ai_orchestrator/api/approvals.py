@@ -211,6 +211,22 @@ async def _decide(
             result["local_run"] = (await continue_goal(ctx.organization_id, task_id)).as_dict()
     if approve and not body.needs_information and approval.action_type == "agent.provision":
         result["provisioned"] = await blueprints.provision(approval_id, ctx.actor)
+    if approval.action_type == "workflow.revision" and not body.needs_information:
+        if approve:
+            from ai_orchestrator.application.workflow_revisions import WorkflowRevisions
+
+            result["revision"] = await WorkflowRevisions(ctx.session, ctx.organization_id).apply(
+                approval_id, ctx.actor
+            )
+        else:
+            from ai_orchestrator.domain.state_machines import Transition
+            from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+            await TaskRepository(ctx.session, ctx.organization_id).transition(
+                str(approval.task_id),
+                Transition.APPROVAL_REJECTED,
+                error=body.note or "Campaign revision rejected",
+            )
     return result
 
 

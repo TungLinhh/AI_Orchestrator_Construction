@@ -196,8 +196,8 @@ ORDER BY d.depth, d.created_at
 
 _REPORT_EXECUTIONS = """
 SELECT x.id, x.task_id, x.status, x.model_used, x.model_profile, x.summary,
-       x.error_kind, x.error_message, x.input_tokens, x.output_tokens, x.duration_ms,
-       x.cost_usd, x.started_at, x.finished_at, x.artifacts,
+       x.error_kind, x.error_message, x.input_tokens, x.output_tokens, x.reasoning_tokens,
+       x.duration_ms, x.cost_usd, x.started_at, x.finished_at, x.artifacts,
        a.name AS agent_name
 FROM executions x
 LEFT JOIN agents a ON a.id = x.agent_id
@@ -213,7 +213,7 @@ ORDER BY x.created_at
 _REPORT_TREE_EXECUTIONS = """
 SELECT x.id, x.task_id, t.title AS task_title, x.status, x.model_used, x.model_profile,
        x.summary, x.error_kind, x.error_message, x.input_tokens, x.output_tokens,
-       x.duration_ms, x.cost_usd, x.started_at, x.finished_at, x.artifacts,
+       x.reasoning_tokens, x.duration_ms, x.cost_usd, x.started_at, x.finished_at, x.artifacts,
        a.name AS agent_name
 FROM executions x
 JOIN tasks t ON t.id = x.task_id AND t.organization_id = x.organization_id

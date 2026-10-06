@@ -284,9 +284,10 @@ class TestTheProcedureRuns:
             async def execute(self, task, context, *, execute_tool=None, **kwargs):  # type: ignore[no-untyped-def]
                 result = await super().execute(task, context, execute_tool=execute_tool, **kwargs)
                 required = (getattr(task, "expected_output_schema", None) or {}).get("required")
-                delegated = bool(getattr(task, "parent_task_id", None))
-                if required and delegated:
-                    result.output = {key: "[draft] " + key for key in required}
+                if required and not context.delegate_options:
+                    result = result.model_copy(
+                        update={"output": {key: "[draft] " + key for key in required}}
+                    )
                 return result
 
         monkey = pytest.MonkeyPatch()
@@ -302,6 +303,8 @@ class TestTheProcedureRuns:
             monkey.undo()
 
         assert outcome.reviews_rerun >= 1, "a procedure answered with placeholders was accepted"
+        assert outcome.root_status == "failed", outcome.summary()
+        assert set(outcome.queue_counts) <= {"completed", "failed", "canceled", "expired"}
 
 
 class TestTheGapsAreReported:

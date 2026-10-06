@@ -246,10 +246,19 @@ def _parse_openai_response(
     raw_usage = body.get("usage") or {}
     details = raw_usage.get("completion_tokens_details") or {}
     prompt_details = raw_usage.get("prompt_tokens_details") or {}
+    completion_tokens = int(raw_usage.get("completion_tokens") or 0)
+    reasoning_tokens = int(details.get("reasoning_tokens") or 0)
+    if not 0 <= reasoning_tokens <= completion_tokens:
+        raise ModelUnavailable(
+            f"{candidate.key()}: inconsistent completion/reasoning usage",
+            details={"completion_tokens": completion_tokens, "reasoning_tokens": reasoning_tokens},
+        )
     usage = TokenUsage(
         input_tokens=int(raw_usage.get("prompt_tokens") or 0),
-        output_tokens=int(raw_usage.get("completion_tokens") or 0),
-        reasoning_tokens=int(details.get("reasoning_tokens") or 0),
+        # OpenRouter's completion count includes reasoning; our internal buckets
+        # are additive. Preserve raw_usage, but count each completion token once.
+        output_tokens=completion_tokens - reasoning_tokens,
+        reasoning_tokens=reasoning_tokens,
         cache_read_tokens=int(prompt_details.get("cached_tokens") or 0),
     )
 

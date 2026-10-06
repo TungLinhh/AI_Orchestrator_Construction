@@ -1,0 +1,108 @@
+{
+  "synthetic": true,
+  "source": "fixture:packet-v1:procurement/delivery-and-invoice.json",
+  "grn_lines": [
+    {
+      "supplier_id": "NCC-TEST-A",
+      "material_id": "PIPE-01",
+      "quantity": 100
+    },
+    {
+      "supplier_id": "NCC-TEST-A",
+      "material_id": "CABLE-01",
+      "quantity": 200
+    },
+    {
+      "supplier_id": "NCC-TEST-A",
+      "material_id": "PUMP-01",
+      "quantity": 2
+    },
+    {
+      "supplier_id": "NCC-TEST-B",
+      "material_id": "PIPE-01",
+      "quantity": 100
+    },
+    {
+      "supplier_id": "NCC-TEST-B",
+      "material_id": "CABLE-01",
+      "quantity": 200
+    },
+    {
+      "supplier_id": "NCC-TEST-B",
+      "material_id": "PUMP-01",
+      "quantity": 2
+    },
+    {
+      "supplier_id": "NCC-TEST-C",
+      "material_id": "PIPE-01",
+      "quantity": 100
+    },
+    {
+      "supplier_id": "NCC-TEST-C",
+      "material_id": "CABLE-01",
+      "quantity": 200
+    },
+    {
+      "supplier_id": "NCC-TEST-C",
+      "material_id": "PUMP-01",
+      "quantity": 2
+    }
+  ],
+  "invoice_lines": [
+    {
+      "supplier_id": "NCC-TEST-A",
+      "material_id": "PIPE-01",
+      "quantity": 100,
+      "unit_price": 60000
+    },
+    {
+      "supplier_id": "NCC-TEST-A",
+      "material_id": "CABLE-01",
+      "quantity": 200,
+      "unit_price": 180000
+    },
+    {
+      "supplier_id": "NCC-TEST-A",
+      "material_id": "PUMP-01",
+      "quantity": 2,
+      "unit_price": 18000000
+    },
+    {
+      "supplier_id": "NCC-TEST-B",
+      "material_id": "PIPE-01",
+      "quantity": 100,
+      "unit_price": 65000
+    },
+    {
+      "supplier_id": "NCC-TEST-B",
+      "material_id": "CABLE-01",
+      "quantity": 200,
+      "unit_price": 175000
+    },
+    {
+      "supplier_id": "NCC-TEST-B",
+      "material_id": "PUMP-01",
+      "quantity": 2,
+      "unit_price": 18500000
+    },
+    {
+      "supplier_id": "NCC-TEST-C",
+      "material_id": "PIPE-01",
+      "quantity": 100,
+      "unit_price": 40000
+    },
+    {
+      "supplier_id": "NCC-TEST-C",
+      "material_id": "CABLE-01",
+      "quantity": 200,
+      "unit_price": 140000
+    },
+    {
+      "supplier_id": "NCC-TEST-C",
+      "material_id": "PUMP-01",
+      "quantity": 2,
+      "unit_price": 14000000
+    }
+  ],
+  "note": "Delivery and invoice records exist only in the acceptance sandbox."
+}

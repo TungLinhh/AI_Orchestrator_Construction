@@ -15,6 +15,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from sqlalchemy import select
 
 from ai_orchestrator.api.deps import ApiContext, get_context, page_params, paginate
 from ai_orchestrator.api.health import bump
@@ -426,11 +427,29 @@ async def bind_skill(
 ) -> dict[str, Any]:
     """Grant a skill. Privileged: a skill carries instructions the agent will follow."""
     ctx.require_admin()
+    from ai_orchestrator.persistence.models import SkillVersion
+
+    criteria = [
+        (SkillVersion.organization_id == ctx.organization_id)
+        | SkillVersion.organization_id.is_(None),
+        SkillVersion.skill_id == body.skill_id,
+        SkillVersion.is_published.is_(True),
+    ]
+    if body.skill_version_id:
+        criteria.append(SkillVersion.id == body.skill_version_id)
+    version = await ctx.session.scalar(
+        select(SkillVersion)
+        .where(*criteria)
+        .order_by(SkillVersion.created_at.desc(), SkillVersion.id.desc())
+        .limit(1)
+    )
+    if version is None:
+        raise ValidationError("Bind requires a published version of this skill")
     repo = AgentCapabilityRepository(ctx.session, ctx.organization_id)
     binding = await repo.bind_skill(
         agent_id=agent_id,
         skill_id=body.skill_id,
-        skill_version_id=body.skill_version_id,
+        skill_version_id=version.id,
         constraints=body.constraints,
         granted_by=str(ctx.actor.id),
     )
@@ -451,7 +470,6 @@ async def bind_tool(
     from sqlalchemy import select
 
     from ai_orchestrator.domain.enums import ToolRisk, tool_risk_exceeds
-    from ai_orchestrator.domain.errors import ValidationError
     from ai_orchestrator.persistence.models import Tool
 
     tool = (
