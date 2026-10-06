@@ -238,20 +238,22 @@ async def _resume_controller(
     request: Request,
     ctx: ApiContext,
 ) -> None:
-    if action_type == "agent.workflow.review" and result["status"] in {"approved", "rejected"}:
-        from ai_orchestrator.api.agent_blueprints import start_workflow
+    from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
 
+    if result["status"] not in {"approved", "rejected"}:
+        return
+    if action_type == "agent.workflow.review":
         await ctx.session.commit()
-        result["workflow_started"] = start_workflow(
-            request.app.state.db, ctx.organization_id, payload["root_id"]
+        result["workflow_started"] = request.app.state.workflow_drivers.start(
+            ctx.organization_id, payload["root_id"], WorkflowKind.AGENT
         )
-    elif action_type == "workflow.review" and result["status"] in {"approved", "rejected"}:
-        from ai_orchestrator.api.business_workflows import start_workflow as start_business_workflow
-
+    elif action_type == "workflow.review":
         await ctx.session.commit()
-        result["workflow_run"] = await start_business_workflow(
-            request.app.state.db, ctx.organization_id, payload["workflow_root"]
+        root = payload["workflow_root"]
+        started = request.app.state.workflow_drivers.start(
+            ctx.organization_id, root, WorkflowKind.BUSINESS
         )
+        result["workflow_run"] = {"id": root, "started": started, "already_running": not started}
 
 
 @router.post("/approvals/{approval_id}/reject")

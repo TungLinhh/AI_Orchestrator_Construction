@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ai_orchestrator.agent_runtime.workflow_evidence import WorkflowEvidenceRuntime
 from ai_orchestrator.application.model_profiles import build_tenant_gateway
 from ai_orchestrator.application.task_execution import TaskExecutionService
+from ai_orchestrator.application.workflow_lifecycle import workflow_run
 from ai_orchestrator.application.workflow_schemas import artifact_schema, validate_shape
 from ai_orchestrator.approvals.service import ApprovalRequest, ApprovalService
 from ai_orchestrator.audit.service import AuditService
@@ -32,6 +33,7 @@ from ai_orchestrator.domain.enums import ActorType, EventType, RunMode
 from ai_orchestrator.domain.errors import PreconditionError, ValidationError
 from ai_orchestrator.domain.hiring_process import JD_SECTIONS
 from ai_orchestrator.domain.state_machines import Transition
+from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
 from ai_orchestrator.integrations.recruitment_mail import RecruitmentMailbox
 from ai_orchestrator.persistence.base import utcnow
 from ai_orchestrator.persistence.models import Agent, Approval, AuditLog, Event, ModelUsage, Task
@@ -369,7 +371,9 @@ class BusinessWorkflowService:
                 "mode": root.input["mode"],
                 "title": root.title,
                 "status": root.status,
-                "error": root.last_error,
+                "error": root.last_error
+                or root.constraints.get("workflow_lifecycle", {}).get("reason"),
+                "lifecycle": root.constraints.get("workflow_lifecycle", {}),
                 "summary": root.output or {},
                 "sources": root.input["sop_sources"],
                 "mail_intake": {
@@ -405,431 +409,361 @@ class BusinessWorkflowService:
             }
 
     async def run(self, root_id: str) -> dict[str, Any]:
-        # Transaction advisory lock releases on cancellation and process death,
-        # including pooled connections. Separate transactions publish each step.
-        async with self.db.engine.begin() as lock:
-            claimed: bool = (
-                await lock.execute(
-                    text("SELECT pg_try_advisory_xact_lock(hashtext(:org), hashtext(:root))"),
-                    {"org": self.org, "root": root_id},
-                )
-            ).scalar_one()
-            if not claimed:
-                raise PreconditionError("This workflow is already running")
+        try:
+            async with workflow_run(self.db, self.org, root_id, WorkflowKind.BUSINESS):
+                return await self._run_steps(root_id)
+        except Exception:
             report = await self.report(root_id)
-            if report["status"] in {"completed", "failed", "canceled", "expired"}:
+            if report["status"] == "failed":
                 return report
-            async with self.db.tenant_session(self.org) as session:
+            raise
+
+    async def _run_steps(self, root_id: str) -> dict[str, Any]:
+        report = await self.report(root_id)
+        if report["status"] in {"completed", "failed", "canceled", "expired"}:
+            return report
+        async with self.db.tenant_session(self.org) as session:
+            repo = TaskRepository(session, self.org)
+            root = await repo.get(root_id)
+            kind = root.input["business_workflow"]
+            mode = root.input["mode"]
+            brief = copy.deepcopy(root.input["brief"])
+            reuse_source = root.input.get("reuse_source")
+            if root.status == "blocked":
+                await repo.transition(root_id, Transition.UNBLOCK)
+            elif root.status == "assigned":
+                await repo.transition(root_id, Transition.BEGIN_WORK)
+            execution = await ExecutionRepository(session, self.org).start(
+                task_id=root_id,
+                agent_id=root.owner_agent_id,
+                runtime_adapter="business_workflow",
+                model_profile="workflow-controller",
+                attempt=1
+                + len(await ExecutionRepository(session, self.org).list_for_task(root_id)),
+            )
+            execution_id = str(execution.id)
+        prior: dict[str, Any] = {}
+        stage_ids = {s["key"]: s["id"] for s in report["stages"]}
+        for stage in WORKFLOWS[kind]:
+            if stage.key not in stage_ids:
+                continue
+            logger.info("business_workflow.step", root_id=root_id, stage=stage.key, mode=mode)
+            async with self.db.committing_tenant_session(self.org) as session:
                 repo = TaskRepository(session, self.org)
-                root = await repo.get(root_id)
-                kind = root.input["business_workflow"]
-                mode = root.input["mode"]
-                brief = copy.deepcopy(root.input["brief"])
-                reuse_source = root.input.get("reuse_source")
-                if root.status == "blocked":
-                    await repo.transition(root_id, Transition.UNBLOCK)
-                elif root.status == "assigned":
-                    await repo.transition(root_id, Transition.BEGIN_WORK)
-                execution = await ExecutionRepository(session, self.org).start(
-                    task_id=root_id,
-                    agent_id=root.owner_agent_id,
-                    runtime_adapter="business_workflow",
-                    model_profile="workflow-controller",
-                    attempt=1
-                    + len(await ExecutionRepository(session, self.org).list_for_task(root_id)),
-                )
-                execution_id = str(execution.id)
-            prior: dict[str, Any] = {}
-            stage_ids = {s["key"]: s["id"] for s in report["stages"]}
-            try:
-                for stage in WORKFLOWS[kind]:
-                    if stage.key not in stage_ids:
-                        continue
-                    logger.info(
-                        "business_workflow.step", root_id=root_id, stage=stage.key, mode=mode
-                    )
-                    async with self.db.committing_tenant_session(self.org) as session:
-                        repo = TaskRepository(session, self.org)
-                        current_root = await repo.get(root_id)
-                        if current_root.status in {"canceled", "expired", "failed"}:
-                            raise ValueError("Workflow stopped before stage " + stage.key)
-                        task = await repo.get(stage_ids[stage.key])
-                        if task.status == "completed":
-                            prior[stage.key] = copy.deepcopy(task.output or {})
-                            continue
-                        if task.status in {"failed", "canceled", "expired"}:
-                            raise ValueError("Predecessor/stage did not complete: " + stage.key)
-                        for predecessor in prior:
-                            if (await repo.get(stage_ids[predecessor])).status != "completed":
-                                raise ValueError("A prerequisite is no longer completed")
-                        stage_brief = brief
-                        if stage.kind == "model":
-                            stage_brief = {
-                                k: v
-                                for k, v in brief.items()
-                                if k
-                                not in {
-                                    "test_cvs",
-                                    "interview_technical",
-                                    "interview_hr",
-                                    "offer_acceptance",
-                                    "onboarding_evidence",
-                                    "delivery",
-                                }
-                            }
-                        task.input = {
-                            **task.input,
-                            "brief": stage_brief,
-                            "prior": copy.deepcopy(prior),
+                current_root = await repo.get(root_id)
+                if current_root.status in {"canceled", "expired", "failed"}:
+                    raise ValueError("Workflow stopped before stage " + stage.key)
+                task = await repo.get(stage_ids[stage.key])
+                if task.status == "completed":
+                    prior[stage.key] = copy.deepcopy(task.output or {})
+                    continue
+                if task.status in {"failed", "canceled", "expired"}:
+                    raise ValueError("Predecessor/stage did not complete: " + stage.key)
+                for predecessor in prior:
+                    if (await repo.get(stage_ids[predecessor])).status != "completed":
+                        raise ValueError("A prerequisite is no longer completed")
+                stage_brief = brief
+                if stage.kind == "model":
+                    stage_brief = {
+                        k: v
+                        for k, v in brief.items()
+                        if k
+                        not in {
+                            "test_cvs",
+                            "interview_technical",
+                            "interview_hr",
+                            "offer_acceptance",
+                            "onboarding_evidence",
+                            "delivery",
                         }
-                        evidence_key = (
-                            "onboarding_evidence" if stage.key == "onboarding_setup" else stage.key
+                    }
+                task.input = {
+                    **task.input,
+                    "brief": stage_brief,
+                    "prior": copy.deepcopy(prior),
+                }
+                evidence_key = (
+                    "onboarding_evidence" if stage.key == "onboarding_setup" else stage.key
+                )
+                needs_input = stage.kind == "input" and stage.key != "brief"
+                needs_input = needs_input or (mode == "live" and stage.key == "onboarding_setup")
+                if needs_input and not brief.get(evidence_key):
+                    if task.status == "assigned":
+                        await repo.transition(task.id, Transition.REQUEST_INPUT)
+                    await session.commit()
+                    await self._pause(root_id, execution_id, "Chờ chứng cứ cho bước " + stage.title)
+                    return await self.report(root_id)
+                if stage.kind == "gate":
+                    output = await self._gate(session, task, root_id, stage, mode, prior)
+                    if output is None:
+                        await session.commit()
+                        await self._pause(
+                            root_id, execution_id, "Chờ người duyệt bước " + stage.title
                         )
-                        needs_input = stage.kind == "input" and stage.key != "brief"
-                        needs_input = needs_input or (
-                            mode == "live" and stage.key == "onboarding_setup"
-                        )
-                        if needs_input and not brief.get(evidence_key):
-                            if task.status == "assigned":
-                                await repo.transition(task.id, Transition.REQUEST_INPUT)
-                            await session.commit()
-                            await self._pause(
-                                root_id, execution_id, "Chờ chứng cứ cho bước " + stage.title
+                        return await self.report(root_id)
+                elif stage.kind == "model":
+                    gateway = None
+
+                    def validator(result: dict[str, Any], current: WorkflowStage = stage) -> None:
+                        if any(k not in result or result[k] is None for k in current.fields):
+                            raise ValueError(
+                                "All declared artifact fields are required: "
+                                + ", ".join(current.fields)
                             )
-                            return await self.report(root_id)
-                        if stage.kind == "gate":
-                            output = await self._gate(session, task, root_id, stage, mode, prior)
-                            if output is None:
-                                await session.commit()
-                                await self._pause(
-                                    root_id, execution_id, "Chờ người duyệt bước " + stage.title
+                        validate_shape(result, artifact_schema(current.key))
+                        validate_artifact(current.key, result, brief, prior)
+
+                    reused = None
+                    if reuse_source:
+                        source_root = await repo.get(reuse_source)
+                        if source_root.input.get("mode") != mode or payload_hash(
+                            source_root.input.get("brief")
+                        ) != payload_hash(brief):
+                            raise ValueError("Artifact reuse requires identical brief and mode")
+                        source = (
+                            await session.execute(
+                                select(Task).where(
+                                    Task.organization_id == self.org,
+                                    Task.parent_task_id == reuse_source,
+                                    Task.input["stage_key"].astext == stage.key,
+                                    Task.status == "completed",
                                 )
-                                return await self.report(root_id)
-                        elif stage.kind == "model":
-                            gateway = None
-
-                            def validator(
-                                result: dict[str, Any], current: WorkflowStage = stage
-                            ) -> None:
-                                if any(
-                                    k not in result or result[k] is None for k in current.fields
-                                ):
-                                    raise ValueError(
-                                        "All declared artifact fields are required: "
-                                        + ", ".join(current.fields)
-                                    )
-                                validate_shape(result, artifact_schema(current.key))
-                                validate_artifact(current.key, result, brief, prior)
-
-                            reused = None
-                            if reuse_source:
-                                source_root = await repo.get(reuse_source)
-                                if source_root.input.get("mode") != mode or payload_hash(
-                                    source_root.input.get("brief")
-                                ) != payload_hash(brief):
-                                    raise ValueError(
-                                        "Artifact reuse requires identical brief and mode"
-                                    )
-                                source = (
-                                    await session.execute(
-                                        select(Task).where(
-                                            Task.organization_id == self.org,
-                                            Task.parent_task_id == reuse_source,
-                                            Task.input["stage_key"].astext == stage.key,
-                                            Task.status == "completed",
-                                        )
-                                    )
-                                ).scalar_one_or_none()
-                                if source and any(
-                                    k in source.input.get("brief", {})
-                                    for k in {
-                                        "test_cvs",
-                                        "interview_technical",
-                                        "interview_hr",
-                                        "offer_acceptance",
-                                        "onboarding_evidence",
-                                        "delivery",
-                                    }
-                                ):
-                                    logger.info(
-                                        "workflow.artifact_reuse_refused",
-                                        stage=stage.key,
-                                        source_task=source.id,
-                                        reason="Future fixture data was exposed",
-                                    )
-                                    source = None
-                                gates = {s.key for s in WORKFLOWS[kind] if s.kind == "gate"}
-                                if source and payload_hash(
-                                    {k: v for k, v in prior.items() if k not in gates}
-                                ) != payload_hash(
-                                    {
-                                        k: v
-                                        for k, v in source.input.get("prior", {}).items()
-                                        if k not in gates
-                                    }
-                                ):
-                                    logger.info(
-                                        "workflow.artifact_reuse_refused",
-                                        stage=stage.key,
-                                        source_task=source.id,
-                                        reason="Source inputs changed",
-                                    )
-                                    source = None
-                                if source:
-                                    reused = copy.deepcopy(source.output or {})
-                                    if stage.key == "comparison":
-                                        reused.pop("total_vnd", None)
-                                    if stage.key == "scoring":
-                                        for candidate in reused.get("candidates", []):
-                                            for field in (
-                                                "score",
-                                                "source_sha256",
-                                                "recommendation",
-                                            ):
-                                                candidate.pop(field, None)
-                                            for criterion in candidate.get("criteria", []):
-                                                criterion.pop("points", None)
-                                    validator(reused)
-                                    task.constraints = {
-                                        **task.constraints,
-                                        "reused_artifact_source": source.id,
-                                    }
-                                    await repo.transition(task.id, Transition.BEGIN_WORK)
-                                    await self._complete_mechanical(
-                                        session, task, reused, "verified_artifact_reuse"
-                                    )
-                                    await AuditService(session, self.org).record(
-                                        actor=SYSTEM,
-                                        action="workflow.artifact.reused",
-                                        resource_type="task",
-                                        resource_id=task.id,
-                                        task_id=task.id,
-                                        context={
-                                            "source_task_id": source.id,
-                                            "source_root_id": reuse_source,
-                                            "artifact_hash": payload_hash(reused),
-                                        },
-                                    )
-                                    await session.commit()
-                                    prior[stage.key] = reused
-                                    continue
-                            if self.runtime_factory:
-                                runtime = self.runtime_factory(stage, validator)
-                            else:
-                                if get_settings().model_provider_default in {
-                                    "fake",
-                                    "scripted",
-                                    "deterministic",
-                                    "none",
-                                    "null",
-                                }:
-                                    raise ValueError(
-                                        "Business acceptance requires "
-                                        "an explicitly configured real model"
-                                    )
-                                gateway = await build_tenant_gateway(self.org, session=session)
-
-                                validation_prior = copy.deepcopy(prior)
-
-                                def candidate_validator(
-                                    cv: dict[str, Any],
-                                    artifact: dict[str, Any],
-                                    stage_prior: dict[str, Any] = validation_prior,
-                                ) -> None:
-                                    single_prior = {**stage_prior, "cv_intake": {"cvs": [cv]}}
-                                    validate_shape(artifact, artifact_schema("scoring"))
-                                    validate_artifact("scoring", artifact, brief, single_prior)
-
-                                runtime = WorkflowEvidenceRuntime(
-                                    gateway,
-                                    validator,
-                                    candidate_validator if stage.key == "scoring" else None,
-                                )
-
-                            async def checkpoint_usage(
-                                task_id: str = task.id,
-                                stage_key: str = stage.key,
-                                task_repo: TaskRepository = repo,
-                            ) -> None:
-                                await task_repo.emit(
-                                    EventType.TASK_UPDATED,
-                                    subject=task_id,
-                                    data={
-                                        "task_id": task_id,
-                                        "model_call_recorded": True,
-                                        "stage_key": stage_key,
-                                    },
-                                )
-                                await session.commit()
-                                await self.db.bind_tenant(session, self.org)
-
-                            try:
-                                outcome = await TaskExecutionService(
-                                    session,
-                                    self.org,
-                                    runtime=runtime,
-                                    run_mode=RunMode.LIVE,
-                                    auto_approve=False,
-                                    model_usage_checkpoint=checkpoint_usage,
-                                ).execute_task(task.id)
-                            finally:
-                                if gateway:
-                                    await gateway.aclose()
-                            if outcome.status.value != "completed":
-                                await session.commit()
-                                raise ValueError(
-                                    "Model stage did not complete: "
-                                    + stage.key
-                                    + " ("
-                                    + outcome.status.value
-                                    + ")"
-                                )
-                            await session.refresh(task)
-                            output = task.output or {}
-                        else:
-                            input_resumed = task.status == "waiting_for_input"
-                            if input_resumed:
-                                await repo.transition(task.id, Transition.PROVIDE_INPUT)
-                            if task.status == "running" and not input_resumed:
-                                raise ValueError(
-                                    (
-                                        "Interrupted action requires "
-                                        "evidence reconciliation before "
-                                        "retry: "
-                                    )
-                                    + stage.key
-                                )
-                            if not input_resumed:
-                                await repo.transition(task.id, Transition.BEGIN_WORK)
-                            await session.commit()
-                            await self.db.bind_tenant(session, self.org)
-                            try:
-                                output = await self._mechanical(root_id, stage, mode, brief, prior)
-                            except Exception as exc:
-                                await repo.transition(
-                                    task.id,
-                                    Transition.FAIL,
-                                    error="Step refused: " + str(exc),
-                                    failure_category="workflow_evidence",
-                                )
-                                await session.commit()
-                                raise
-                        if output.get("awaiting_cv"):
-                            task.output = output
-                            await repo.transition(task.id, Transition.REQUEST_INPUT)
-                            poll = await ExecutionRepository(session, self.org).start(
-                                task_id=task.id,
-                                agent_id=task.owner_agent_id,
-                                runtime_adapter="workflow_mail_read",
-                                model_profile="no-model-mechanical",
                             )
-                            await ExecutionRepository(session, self.org).finish(
-                                poll.id,
-                                status="blocked",
-                                summary="Mailbox checked read-only; waiting for CVs",
-                                decision_record={"count": output["count"], "readonly": True},
+                        ).scalar_one_or_none()
+                        if source and any(
+                            k in source.input.get("brief", {})
+                            for k in {
+                                "test_cvs",
+                                "interview_technical",
+                                "interview_hr",
+                                "offer_acceptance",
+                                "onboarding_evidence",
+                                "delivery",
+                            }
+                        ):
+                            logger.info(
+                                "workflow.artifact_reuse_refused",
+                                stage=stage.key,
+                                source_task=source.id,
+                                reason="Future fixture data was exposed",
+                            )
+                            source = None
+                        gates = {s.key for s in WORKFLOWS[kind] if s.kind == "gate"}
+                        if source and payload_hash(
+                            {k: v for k, v in prior.items() if k not in gates}
+                        ) != payload_hash(
+                            {
+                                k: v
+                                for k, v in source.input.get("prior", {}).items()
+                                if k not in gates
+                            }
+                        ):
+                            logger.info(
+                                "workflow.artifact_reuse_refused",
+                                stage=stage.key,
+                                source_task=source.id,
+                                reason="Source inputs changed",
+                            )
+                            source = None
+                        if source:
+                            reused = copy.deepcopy(source.output or {})
+                            if stage.key == "comparison":
+                                reused.pop("total_vnd", None)
+                            if stage.key == "scoring":
+                                for candidate in reused.get("candidates", []):
+                                    for field in (
+                                        "score",
+                                        "source_sha256",
+                                        "recommendation",
+                                    ):
+                                        candidate.pop(field, None)
+                                    for criterion in candidate.get("criteria", []):
+                                        criterion.pop("points", None)
+                            validator(reused)
+                            task.constraints = {
+                                **task.constraints,
+                                "reused_artifact_source": source.id,
+                            }
+                            await repo.transition(task.id, Transition.BEGIN_WORK)
+                            await self._complete_mechanical(
+                                session, task, reused, "verified_artifact_reuse"
                             )
                             await AuditService(session, self.org).record(
                                 actor=SYSTEM,
-                                action="workflow.cv.poll",
+                                action="workflow.artifact.reused",
                                 resource_type="task",
                                 resource_id=task.id,
                                 task_id=task.id,
-                                context={"count": output["count"], "readonly": True},
+                                context={
+                                    "source_task_id": source.id,
+                                    "source_root_id": reuse_source,
+                                    "artifact_hash": payload_hash(reused),
+                                },
                             )
                             await session.commit()
-                            await self._pause(
-                                root_id,
-                                execution_id,
-                                "Chờ CV; hệ thống sẽ kiểm tra lại hộp thư theo mã đợt",
+                            prior[stage.key] = reused
+                            continue
+                    if self.runtime_factory:
+                        runtime = self.runtime_factory(stage, validator)
+                    else:
+                        if get_settings().model_provider_default in {
+                            "fake",
+                            "scripted",
+                            "deterministic",
+                            "none",
+                            "null",
+                        }:
+                            raise ValueError(
+                                "Business acceptance requires an explicitly configured real model"
                             )
-                            return await self.report(root_id)
-                        if stage.kind != "model":
-                            await self._complete_mechanical(session, task, output, stage.kind)
+                        gateway = await build_tenant_gateway(self.org, session=session)
+
+                        validation_prior = copy.deepcopy(prior)
+
+                        def candidate_validator(
+                            cv: dict[str, Any],
+                            artifact: dict[str, Any],
+                            stage_prior: dict[str, Any] = validation_prior,
+                        ) -> None:
+                            single_prior = {**stage_prior, "cv_intake": {"cvs": [cv]}}
+                            validate_shape(artifact, artifact_schema("scoring"))
+                            validate_artifact("scoring", artifact, brief, single_prior)
+
+                        runtime = WorkflowEvidenceRuntime(
+                            gateway,
+                            validator,
+                            candidate_validator if stage.key == "scoring" else None,
+                        )
+
+                    async def checkpoint_usage(
+                        task_id: str = task.id,
+                        stage_key: str = stage.key,
+                        task_repo: TaskRepository = repo,
+                    ) -> None:
+                        await task_repo.emit(
+                            EventType.TASK_UPDATED,
+                            subject=task_id,
+                            data={
+                                "task_id": task_id,
+                                "model_call_recorded": True,
+                                "stage_key": stage_key,
+                            },
+                        )
                         await session.commit()
-                        prior[stage.key] = copy.deepcopy(output)
-                async with self.db.tenant_session(self.org) as session:
-                    repo = TaskRepository(session, self.org)
-                    root = await repo.get(root_id)
-                    summary = prior["close"]
-                    root.output = summary
-                    await repo.transition(root_id, Transition.COMPLETE)
+                        await self.db.bind_tenant(session, self.org)
+
+                    try:
+                        outcome = await TaskExecutionService(
+                            session,
+                            self.org,
+                            runtime=runtime,
+                            run_mode=RunMode.LIVE,
+                            auto_approve=False,
+                            model_usage_checkpoint=checkpoint_usage,
+                        ).execute_task(
+                            task.id,
+                            attempt=1
+                            + len(
+                                await ExecutionRepository(session, self.org).list_for_task(task.id)
+                            ),
+                        )
+                    finally:
+                        if gateway:
+                            await gateway.aclose()
+                    if outcome.status.value != "completed":
+                        await session.commit()
+                        raise ValueError(
+                            "Model stage did not complete: "
+                            + stage.key
+                            + " ("
+                            + outcome.status.value
+                            + ")"
+                        )
+                    await session.refresh(task)
+                    output = task.output or {}
+                else:
+                    input_resumed = task.status == "waiting_for_input"
+                    if input_resumed:
+                        await repo.transition(task.id, Transition.PROVIDE_INPUT)
+                    if task.status == "running" and not input_resumed:
+                        raise ValueError(
+                            ("Interrupted action requires evidence reconciliation before retry: ")
+                            + stage.key
+                        )
+                    if not input_resumed:
+                        await repo.transition(task.id, Transition.BEGIN_WORK)
+                    await session.commit()
+                    await self.db.bind_tenant(session, self.org)
+                    try:
+                        output = await self._mechanical(root_id, stage, mode, brief, prior)
+                    except Exception as exc:
+                        await repo.transition(
+                            task.id,
+                            Transition.FAIL,
+                            error="Step refused: " + str(exc),
+                            failure_category="workflow_evidence",
+                        )
+                        await session.commit()
+                        raise
+                if output.get("awaiting_cv"):
+                    task.output = output
+                    await repo.transition(task.id, Transition.REQUEST_INPUT)
+                    poll = await ExecutionRepository(session, self.org).start(
+                        task_id=task.id,
+                        agent_id=task.owner_agent_id,
+                        runtime_adapter="workflow_mail_read",
+                        model_profile="no-model-mechanical",
+                    )
                     await ExecutionRepository(session, self.org).finish(
-                        execution_id,
-                        status="completed",
-                        summary=summary["summary"],
-                        decision_record={"mode": mode, "completed_steps": list(prior)},
+                        poll.id,
+                        status="blocked",
+                        summary="Mailbox checked read-only; waiting for CVs",
+                        decision_record={"count": output["count"], "readonly": True},
                     )
                     await AuditService(session, self.org).record(
                         actor=SYSTEM,
-                        action="workflow.completed",
+                        action="workflow.cv.poll",
                         resource_type="task",
-                        resource_id=root_id,
-                        task_id=root_id,
-                        context={
-                            "mode": mode,
-                            "completed_steps": len(prior),
-                            "artifact_hash": payload_hash(summary),
-                        },
+                        resource_id=task.id,
+                        task_id=task.id,
+                        context={"count": output["count"], "readonly": True},
                     )
-            except BaseException as exc:
-                reason = (
-                    "Interrupted workflow" if isinstance(exc, asyncio.CancelledError) else str(exc)
-                )
-                async with self.db.tenant_session(self.org) as session:
-                    repo = TaskRepository(session, self.org)
-                    root = await repo.get(root_id)
-                    if root.status not in {"completed", "failed", "canceled", "expired"}:
-                        await repo.transition(
-                            root_id,
-                            Transition.FAIL,
-                            error=reason,
-                            failure_category="workflow_evidence",
-                        )
-                    await ExecutionRepository(session, self.org).finish(
+                    await session.commit()
+                    await self._pause(
+                        root_id,
                         execution_id,
-                        status="failed",
-                        error_category="workflow_evidence",
-                        error_message=reason,
+                        "Chờ CV; hệ thống sẽ kiểm tra lại hộp thư theo mã đợt",
                     )
-                async with self.db.tenant_session(self.org) as session:
-                    repo = TaskRepository(session, self.org)
-                    for tid, status in (await repo.subtree_statuses(root_id)).items():
-                        if status not in {"completed", "failed", "canceled", "expired"}:
-                            await repo.transition(tid, Transition.CANCEL)
-                    from ai_orchestrator.persistence.models import Execution
-
-                    unfinished = (
-                        (
-                            await session.execute(
-                                select(Execution).where(
-                                    Execution.organization_id == self.org,
-                                    Execution.task_id.in_(list(stage_ids.values())),
-                                    Execution.status == "running",
-                                )
-                            )
-                        )
-                        .scalars()
-                        .all()
-                    )
-                    for row in unfinished:
-                        await ExecutionRepository(session, self.org).finish(
-                            row.id,
-                            status="failed",
-                            error_category="workflow_evidence",
-                            error_message=reason[:2000],
-                        )
-                        await AuditService(session, self.org).record(
-                            actor=SYSTEM,
-                            action="workflow.execution.interrupted",
-                            resource_type="execution",
-                            resource_id=row.id,
-                            task_id=row.task_id,
-                            context={"root": root_id, "reason": reason[:200]},
-                        )
-                if isinstance(exc, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
-                    raise
-            return await self.report(root_id)
+                    return await self.report(root_id)
+                if stage.kind != "model":
+                    await self._complete_mechanical(session, task, output, stage.kind)
+                await session.commit()
+                prior[stage.key] = copy.deepcopy(output)
+        async with self.db.tenant_session(self.org) as session:
+            repo = TaskRepository(session, self.org)
+            root = await repo.get(root_id)
+            summary = prior["close"]
+            root.output = summary
+            await repo.transition(root_id, Transition.COMPLETE)
+            await ExecutionRepository(session, self.org).finish(
+                execution_id,
+                status="completed",
+                summary=summary["summary"],
+                decision_record={"mode": mode, "completed_steps": list(prior)},
+            )
+            await AuditService(session, self.org).record(
+                actor=SYSTEM,
+                action="workflow.completed",
+                resource_type="task",
+                resource_id=root_id,
+                task_id=root_id,
+                context={
+                    "mode": mode,
+                    "completed_steps": len(prior),
+                    "artifact_hash": payload_hash(summary),
+                },
+            )
+        return await self.report(root_id)
 
     async def _pause(self, root: str, execution: str, reason: str) -> None:
         async with self.db.tenant_session(self.org) as session:

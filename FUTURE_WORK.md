@@ -1,14 +1,32 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
+## Refactor ưu tiên đã triển khai — 2026-10-07
+
+Đã triển khai refactor vòng đời controller theo yêu cầu mới của chủ dự án.
+Thiết kế, phạm vi đã triển khai và thứ tự các đợt tiếp theo nằm trong
+[REFACTOR_PLAN.md](REFACTOR_PLAN.md). Tối ưu tenant nằm ngoài đợt này.
+
+Controller business và blueprint dùng chung khóa, phục hồi và ghi gián đoạn.
+API chỉ dispatch lệnh. Tắt bình thường giữ checkpoint để tiếp tục; gửi mail có
+kết quả chưa rõ phải đối chiếu trước khi chạy lại. Phép thử kill tiến trình đã
+chứng minh phục hồi procurement đủ 13 bước mà không thực thi lại bước đã xong.
+Blueprint phục hồi vẫn chờ người duyệt thật. Không có mail thật hoặc model thật
+được gọi trong các phép thử refactor.
+
+Tiếp theo là transaction và lease của task executor, receipt của connector,
+dispatch bền vững rồi template HR theo campaign. Việc chia nhỏ executor và state
+console đi sau các ranh giới vận hành đó. Phục hồi hiện cần lệnh Run hoặc tín hiệu
+tiếp tục mới; chưa tự chạy lại mọi workflow khi API khởi động.
+
 ## Hướng phát triển sau nghiên cứu ngày 2026-10-06
 
 Đây là file kế hoạch trong repository `/home/vutun/ai_orchestrator`. Báo cáo phân
 tích stack, chất lượng và học từ phản hồi nằm trong [RESEARCH_REPORT.md](RESEARCH_REPORT.md).
 Cách chạy corpus có trong [examples/organization_eval/README.md](examples/organization_eval/README.md).
 
-Giữ Pydantic, PydanticAI và Temporal ở thời điểm này. Chưa thực hiện chuyển sang
-LangGraph hoặc refactor lớn. Những phương án cần chủ dự án quyết định được liệt
-kê ở cuối báo cáo nghiên cứu. Các snapshot cũ ở phần dưới là lịch sử kiểm tra,
+Giữ Pydantic, PydanticAI và Temporal. Chưa thực hiện chuyển sang LangGraph.
+Phần lifecycle controller đã được chọn để triển khai ngày 2026-10-07. Các phương
+án khác trong báo cáo nghiên cứu giữ vai trò tham khảo cho đợt kế tiếp. Các snapshot cũ ở phần dưới là lịch sử kiểm tra,
 không phải cam kết rằng hệ thống đã vận hành nghiệp vụ thật.
 
 ### Việc đã bổ sung trong đợt củng cố
@@ -44,7 +62,7 @@ Không lấy test kỹ thuật hoặc mock làm chứng nhận chất lượng m
 | --- | --- | --- |
 | 1 | Chuyên gia HR và Procurement duyệt corpus, bổ sung hồ sơ khó và ca lỗi | Đáp án có căn cứ SOP, phản ví dụ và phiên bản do người phụ trách xác nhận |
 | 2 | Đo model trên nhiều lượt và so sánh candidate với baseline | Báo cáo theo phòng ban về chất lượng, lỗi, p50/p95, token, chi phí và retry. Không nâng điểm bằng việc thay dữ liệu test |
-| 3 | Quyết định refactor template HR, lifecycle controller và tổng hợp relay | Có thiết kế cụ thể, phạm vi migration, rollback và phép đo trước/sau. Chờ quyết định của chủ dự án |
+| 3 | Triển khai và nghiệm thu refactor lifecycle controller | Thiết kế và thứ tự refactor có trong REFACTOR_PLAN.md. Không làm tối ưu tenant hoặc relay trong đợt này |
 | 4 | Nghiệm thu crash/restart, retry trùng, nguồn cập nhật và cổng hỏi thêm | Không mất bước, không chạy hành động hai lần, không dùng phê duyệt sai phiên bản |
 | 5 | Chuẩn hóa contract cho từng connector và kiểm tra sandbox | Có cursor, idempotency key, receipt, read-back, timeout, rate limit, quyền theo scope và log lỗi |
 | 6 | Nối nguồn thật theo từng canary read-only, bắt đầu từ tuyển MEP | Đối chiếu nguồn thực tế, đúng campaign và quyền. Sau đó mới duyệt mở từng write action |

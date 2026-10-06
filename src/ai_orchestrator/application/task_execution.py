@@ -584,6 +584,7 @@ class TaskExecutionService:
             context = await self._build_context(
                 task,
                 resolved,
+                execution_id=str(execution.id),
                 retrieved_context=(*retrieved_context, *child_reports),
             )
         except PlatformError as exc:
@@ -619,10 +620,8 @@ class TaskExecutionService:
         # carrying it across tasks would make the second task unable to ask at
         # all because of work the first one did.
         self._consultations = ConsultationLedger()
-        # The real execution row's id, held for the same reason. The id on
-        # `context.task.execution_id` is minted per call and has no row behind it,
-        # so writing it into an audited record violates the executions foreign key
-        # — which is exactly what happened the first time a tool call was recorded.
+        # The runtime contract, context, tool records and usage ledger share the
+        # same persisted execution id. Counters also retain it for finalization.
         self._active_execution_id = execution.id
         # Call counters for this execution, kept in memory and written once when
         # the run finishes (see migration 0029). Counting in memory rather than
@@ -635,7 +634,7 @@ class TaskExecutionService:
         # asks "did *this* agent delegate this task?" and only the database can
         # answer it for the tool path.
         self._active_source_agent_id = str(resolved.agent.id)
-        agent_task = self._to_agent_task(task, input_override)
+        agent_task = self._to_agent_task(task, input_override, execution_id=str(execution.id))
         # **Read the ids now, not inside the callback.**
         #
         # The model call takes tens of seconds. If anything expires this row in the
@@ -1347,14 +1346,16 @@ class TaskExecutionService:
         )
         try:
             peer = await self._resolve_agent(target.id)
-            peer_context = await self._build_context(task, peer)
+            peer_context = await self._build_context(
+                task, peer, execution_id=str(context.task.execution_id)
+            )
             # Empty the peer's reach. An answer is advice; a colleague who can
             # delegate from inside an answer is running a second organisation's
             # work inside this run.
             peer_context = peer_context.model_copy(
                 update={"authorized_tools": (), "delegate_targets": (), "delegate_options": ()}
             )
-            agent_task = self._to_agent_task(task)
+            agent_task = self._to_agent_task(task, execution_id=str(context.task.execution_id))
             result = await self._runtime.execute(agent_task, peer_context)
         except Exception as exc:
             logger.info("consultation.failed", target=agent_name, error=str(exc))
@@ -1846,6 +1847,7 @@ class TaskExecutionService:
         task: Task,
         resolved: ResolvedAgent,
         *,
+        execution_id: str,
         retrieved_context: Sequence[str] = (),
     ) -> AgentContext:
         """Assemble what this agent is allowed to see.
@@ -1945,7 +1947,7 @@ class TaskExecutionService:
                     role_id=resolved.role.id,
                     display_name=resolved.agent.name,
                 ),
-                task=self._to_agent_task(task, task_input),
+                task=self._to_agent_task(task, task_input, execution_id=execution_id),
                 system_instructions=resolved.definition.system_instructions,
                 role_name=resolved.role.name,
                 delegate_targets=roster,
@@ -2640,7 +2642,9 @@ class TaskExecutionService:
             return {k: v for k, v in payload.items() if k != "brief"}
         return dict(payload)
 
-    def _to_agent_task(self, task: Task, input_override: dict[str, Any] | None = None) -> Any:
+    def _to_agent_task(
+        self, task: Task, input_override: dict[str, Any] | None = None, *, execution_id: str
+    ) -> Any:
         from ai_orchestrator.domain.contracts import AgentTask
 
         return AgentTask(
@@ -2648,7 +2652,7 @@ class TaskExecutionService:
             organization_id=OrganizationId(self._org),
             goal=task.goal,
             task_type=TaskType(task.task_type),
-            execution_id=ExecutionId.create(),
+            execution_id=ExecutionId(execution_id),
             deadline=task.deadline_at,
             input=self._input_the_agent_sees(task, input_override),
             constraints=task.constraints,

@@ -16,6 +16,7 @@ from ai_orchestrator.domain.errors import AuthorizationError, PreconditionError,
 from ai_orchestrator.models.gateway import ModelCandidate, ModelGateway, ModelProfile
 from ai_orchestrator.persistence.models import Agent, Approval, Event, Organization, Task, User
 from ai_orchestrator.persistence.process import SopDefinition
+from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.seed import seed
 from tests.integration.test_console_management import _human_headers
 from tests.unit.test_agent_blueprint import example_plan
@@ -222,11 +223,12 @@ async def test_review_hash_refuses_changed_stage_and_cross_tenant(prepared, othe
     await service.approvals.decide(paused["approval_id"], approver=actor, approve=True)
     child = await service.tasks.get(result["task_ids"][-1])
     child.output = {"report": "Modified after review"}
+    draft_id = draft.id
     with pytest.raises(AuthorizationError, match="different payload"):
         await service.run(root.id)
     with pytest.raises(ValidationError, match="not found"):
         await AgentBlueprintService(other_tenant.session, other_tenant.organization_id).get(
-            draft.id
+            draft_id
         )
 
 
@@ -296,7 +298,6 @@ async def test_api_run_and_review_automatically_resume_owned_workflow(
 async def test_cancel_interrupts_model_and_preserves_owned_tree(client, prepared, monkeypatch):
     import asyncio
 
-    from ai_orchestrator.api.agent_blueprints import _RUNS
     from ai_orchestrator.persistence.models import Execution
 
     tenant, headers, actor, config = prepared
@@ -334,7 +335,9 @@ async def test_cancel_interrupts_model_and_preserves_owned_tree(client, prepared
     )
     assert response.status_code == 200, response.text
     assert response.json()["status"] == "canceled"
-    assert (tenant.organization_id, root_id) not in _RUNS
+    assert not client._transport.app.state.workflow_drivers.is_running(
+        tenant.organization_id, root_id
+    )
     async with tenant.db.tenant_session(tenant.organization_id) as session:
         rows = (
             (
@@ -568,3 +571,102 @@ async def test_local_runner_refuses_owned_tasks_before_scheduling(prepared):
         assert (tenant.organization_id, task_id) not in local_runner._running
     child = await service.tasks.get(result["task_ids"][0])
     assert child.status == "assigned"
+
+
+async def test_agent_shutdown_resumes_at_checkpoint_and_preserves_real_review(
+    prepared, monkeypatch
+):
+    import asyncio
+
+    from ai_orchestrator.application.workflow_drivers import WorkflowDrivers
+    from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
+    from ai_orchestrator.persistence.models import Execution
+
+    tenant, _, actor, config = prepared
+    service = AgentBlueprintService(tenant.session, tenant.organization_id, tenant.db)
+    draft = await service.draft(config)
+    approval = await service.submit(draft.id)
+    await service.approvals.decide(approval.id, approver=actor, approve=True)
+    provisioned = await service.provision(approval.id, actor)
+    root_id = provisioned["workflow_id"]
+    root = await service.tasks.get(root_id)
+    root.input = {**root.input, "inputs": {"brief": "Real test sources"}}
+    await tenant.commit()
+    entered = asyncio.Event()
+
+    class PausedRuntime(FixtureRuntime):
+        async def execute(self, task, context, **kwargs):
+            assert task.execution_id == context.task.execution_id
+            await self.checkpoint()
+            entered.set()
+            await asyncio.Event().wait()
+
+    monkeypatch.setattr(
+        "ai_orchestrator.application.agent_blueprints.BlueprintRuntime", PausedRuntime
+    )
+    drivers = WorkflowDrivers(tenant.db)
+    assert drivers.start(tenant.organization_id, root_id, WorkflowKind.AGENT)
+    await asyncio.wait_for(entered.wait(), timeout=5)
+    await asyncio.wait_for(drivers.shutdown(), timeout=5)
+    async with tenant.db.tenant_session(tenant.organization_id) as session:
+        root = await TaskRepository(session, tenant.organization_id).get(root_id)
+        assert root.status == "blocked"
+        assert root.constraints["workflow_lifecycle"]["state"] == "suspended"
+        assert not (
+            await session.scalars(
+                select(Execution.id).where(
+                    Execution.organization_id == tenant.organization_id,
+                    Execution.status == "running",
+                )
+            )
+        ).all()
+
+    monkeypatch.setattr(
+        "ai_orchestrator.application.agent_blueprints.BlueprintRuntime", FixtureRuntime
+    )
+    restarted = WorkflowDrivers(tenant.db)
+    assert restarted.start(tenant.organization_id, root_id, WorkflowKind.AGENT)
+    await asyncio.wait_for(restarted.wait(tenant.organization_id, root_id), timeout=5)
+    async with tenant.db.tenant_session(tenant.organization_id) as session:
+        root = await TaskRepository(session, tenant.organization_id).get(root_id)
+        assert root.status == "blocked"  # Still requires a real human review.
+        pending = (
+            await session.scalars(
+                select(Approval).where(
+                    Approval.organization_id == tenant.organization_id,
+                    Approval.action_type == "agent.workflow.review",
+                )
+            )
+        ).all()
+        assert len(pending) == 1
+        assert pending[0].status == "pending"
+        attempts = (
+            await session.scalars(
+                select(Execution)
+                .where(
+                    Execution.organization_id == tenant.organization_id,
+                    Execution.task_id == provisioned["task_ids"][0],
+                )
+                .order_by(Execution.started_at)
+            )
+        ).all()
+        assert [e.status for e in attempts] == ["failed", "completed"]
+        assert [e.attempt for e in attempts] == [1, 2]
+    # Resuming the waiting gate must not create another review or execute its artifact again.
+    assert restarted.start(tenant.organization_id, root_id, WorkflowKind.AGENT)
+    await asyncio.wait_for(restarted.wait(tenant.organization_id, root_id), timeout=5)
+    async with tenant.db.tenant_session(tenant.organization_id) as session:
+        assert (
+            len(
+                (
+                    await session.scalars(
+                        select(Approval).where(
+                            Approval.organization_id == tenant.organization_id,
+                            Approval.action_type == "agent.workflow.review",
+                        )
+                    )
+                ).all()
+            )
+            == 1
+        )
+    await restarted.shutdown()

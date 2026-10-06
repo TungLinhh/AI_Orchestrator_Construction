@@ -2,26 +2,22 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from ai_orchestrator.api.deps import ApiContext, get_context
 from ai_orchestrator.application.agent_blueprints import AgentBlueprintService
 from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.domain.agent_blueprint import AgentBlueprint
-from ai_orchestrator.domain.contracts import Actor
-from ai_orchestrator.domain.enums import ActorType
 from ai_orchestrator.domain.errors import PreconditionError, ValidationError
-from ai_orchestrator.domain.state_machines import Transition
-from ai_orchestrator.persistence.models import Execution, Task
+from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
+from ai_orchestrator.persistence.models import Task
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 
 router = APIRouter(prefix="/agent-blueprints", tags=["agent-blueprints"])
-_RUNS: dict[tuple[str, str], asyncio.Task[None]] = {}
 
 
 class DraftRequest(BaseModel):
@@ -129,6 +125,8 @@ async def workflow(root_id: str, ctx: ApiContext = Depends(get_context)) -> dict
     return {
         "id": root.id,
         "status": root.status,
+        "lifecycle": root.constraints.get("workflow_lifecycle", {}),
+        "error": root.last_error or root.constraints.get("workflow_lifecycle", {}).get("reason"),
         "waiting_step": next_step.key if next_step and missing else None,
         "missing_inputs": missing,
         "inputs_locked": bool(completed),
@@ -199,109 +197,6 @@ async def inputs(
     return {"id": root.id, "status": root.status, "inputs_saved": sorted(body.inputs)}
 
 
-async def _drive_owned(database: Any, org: str, root_id: str) -> None:
-    try:
-        async with database.committing_tenant_session(org) as session:
-            await AgentBlueprintService(session, org, database).run(root_id)
-            await session.commit()
-    except (Exception, asyncio.CancelledError) as exc:
-        async with database.tenant_session(org) as session:
-            repo = TaskRepository(session, org)
-            root = await repo.get(root_id)
-            rows = (
-                (
-                    await session.execute(
-                        select(Task).where(
-                            Task.organization_id == org, Task.parent_task_id == root_id
-                        )
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            for row in [root, *rows]:
-                if row.status not in {"completed", "failed", "canceled", "expired"}:
-                    await repo.transition(
-                        row.id,
-                        Transition.CANCEL if root.status == "canceled" else Transition.FAIL,
-                        error="Agent workflow driver stopped: "
-                        + type(exc).__name__
-                        + ": "
-                        + str(exc)[:1500],
-                    )
-            executions = (
-                (
-                    await session.execute(
-                        select(Execution).where(
-                            Execution.organization_id == org,
-                            Execution.task_id.in_([t.id for t in rows]),
-                            Execution.status == "running",
-                        )
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            from ai_orchestrator.persistence.base import utcnow
-
-            for execution in executions:
-                execution.status = "failed"
-                execution.finished_at = utcnow()
-            await AuditService(session, org).record(
-                actor=Actor(id="agent-blueprint-controller", kind=ActorType.SYSTEM),
-                action="agent.workflow.interrupted",
-                resource_type="task",
-                resource_id=root_id,
-                task_id=root_id,
-                outcome="failure",
-                context={"error_type": type(exc).__name__},
-            )
-    finally:
-        _RUNS.pop((org, root_id), None)
-
-
-async def _drive(database: Any, org: str, root_id: str) -> None:
-    # A separate connection retains the lease across per-stage commits.
-    async with database.engine.connect() as lock:
-        params = {"org": org, "root": root_id}
-        acquired = (
-            await lock.execute(
-                text("SELECT pg_try_advisory_lock(hashtext(:org), hashtext(:root))"), params
-            )
-        ).scalar_one()
-        if not acquired:
-            _RUNS.pop((org, root_id), None)
-            return
-        try:
-            await _drive_owned(database, org, root_id)
-        finally:
-            await lock.execute(
-                text("SELECT pg_advisory_unlock(hashtext(:org), hashtext(:root))"), params
-            )
-
-
-def start_workflow(database: Any, org: str, root_id: str) -> bool:
-    key = (org, root_id)
-    if key in _RUNS:
-        return False
-    _RUNS[key] = asyncio.create_task(_drive(database, org, root_id))
-    return True
-
-
-async def cancel_agent_run(org: str, root_id: str) -> None:
-    driver = _RUNS.get((org, root_id))
-    if driver:
-        driver.cancel()
-        await asyncio.gather(driver, return_exceptions=True)
-
-
-async def stop_agent_workflows() -> None:
-    for task in list(_RUNS.values()):
-        task.cancel()
-    if _RUNS:
-        await asyncio.gather(*list(_RUNS.values()), return_exceptions=True)
-
-
 @router.post("/workflows/{root_id}/run", status_code=202)
 async def run(
     root_id: str, request: Request, ctx: ApiContext = Depends(get_context)
@@ -309,7 +204,9 @@ async def run(
     ctx.require_admin()
     await workflow(root_id, ctx)
     await ctx.session.commit()
-    started = start_workflow(request.app.state.db, ctx.organization_id, root_id)
+    started = request.app.state.workflow_drivers.start(
+        ctx.organization_id, root_id, WorkflowKind.AGENT
+    )
     return {"id": root_id, "started": started}
 
 

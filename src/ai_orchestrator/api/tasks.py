@@ -368,19 +368,12 @@ async def cancel_task(
             from ai_orchestrator.domain.errors import PreconditionError
 
             raise PreconditionError("Cancel the workflow root to stop all its ordered stages")
-        from ai_orchestrator.api.business_workflows import cancel_business_run
-
         task = await repo.transition(task_id, Transition.CANCEL)
         result = _task_dict(task)
         # Publish the root stop before interrupting the driver. Child rows may be
         # locked by an in-flight model call; waiting on them first deadlocks stop.
         await ctx.session.commit()
-        if task.input.get("agent_workflow"):
-            from ai_orchestrator.api.agent_blueprints import cancel_agent_run
-
-            await cancel_agent_run(ctx.organization_id, task_id)
-        else:
-            await cancel_business_run(ctx.organization_id, task_id)
+        await request.app.state.workflow_drivers.cancel(ctx.organization_id, task_id)
         async with request.app.state.db.tenant_session(ctx.organization_id) as cleanup_session:
             cleanup = TaskRepository(cleanup_session, ctx.organization_id)
             for stage_id, stage_status in (await cleanup.subtree_statuses(task_id)).items():

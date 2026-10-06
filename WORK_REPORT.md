@@ -1,3 +1,76 @@
+# Workflow lifecycle refactor — 2026-10-07
+
+This is the current delivery record for the controller refactor. Earlier sections
+retain their original measurements.
+
+## Behaviour and ownership
+
+The API no longer owns native workflow drivers, registries or failure cleanup.
+Business and blueprint services share an application lifecycle that owns the
+PostgreSQL transaction advisory lock, interruption settlement and checkpoint
+recovery. API Run, approval decisions, root cancellation and shutdown use one
+per-application dispatcher. Mail polling is also owned by application code.
+
+Normal shutdown suspends unfinished work instead of failing its task tree.
+Recovery preserves completed artifacts and human gates, closes orphan attempts,
+retains committed usage and decision records, and increments the new stage
+attempt. An uncertain external write stays blocked for evidence reconciliation.
+An approval wakeup arriving before the previous driver exits is coalesced and
+retained. Native dispatch defaults to four concurrent controllers.
+
+Runtime tasks, context and the usage ledger now share the persisted execution
+ID. The prior runtime ID was minted separately and had no execution row.
+The blueprint console now displays the root interruption or failure reason.
+API 8100 was restarted with the updated source; health and the console returned 200.
+
+The architecture alternatives, remaining limits and ordered follow-up work are in
+[REFACTOR_PLAN.md](REFACTOR_PLAN.md). No schema migration, framework replacement
+or tenant optimization was made.
+
+## Evidence and gates
+
+| Verification | Result |
+| --- | --- |
+| `make lint` | Ruff passed, 375 files satisfy the formatter |
+| `make typecheck` | No errors in 166 source files |
+| `make test-fresh` → `make test` | 3,387 passed, 3 skipped, 1 deselected, 10 warnings; 393.16 seconds |
+| `make test-e2e` | Preflight PostgreSQL, NATS and Temporal passed; 34 tests passed |
+| Final recovery, controller and dispatcher checks | 38 passed after final configuration wiring and console copy changes |
+| `make page` | Passed live API rendering, navigation and workflow evidence checks |
+| `git diff --check` | Passed |
+
+The subprocess recovery test observes committed running task and execution rows
+from another connection, kills the process at the RFQ usage checkpoint, then
+runs a new dispatcher. Procurement completes 13/13 stages. Previously completed
+steps retain one execution and the same output. The interrupted RFQ attempt keeps
+its ModelUsage row and is followed by completed attempt 2. No running execution
+is left in that test tree.
+
+Shutdown tests cover business and blueprint recovery. Blueprint recovery still
+waits for a human review and does not duplicate the review request. The uncertain
+mail-write test refuses repeated Run calls without constructing the mailbox
+adapter. Dispatcher tests cover the late approval wakeup, concurrency limits and
+independent application registries.
+
+All lifecycle tests use fake model content and the test database. No real model
+quality, actual mail delivery or real human business approval is claimed.
+The page check executes the served console in Node against a live API; it is not
+a browser screenshot.
+
+Logs: `.devdata/reports/refactor-full-suite.log`, `refactor-e2e.log`,
+`refactor-final-focused.log`, and `refactor-page.log`.
+
+## Remaining operational work
+
+A new Run or approval wakeup is still needed to recover after restart. Dispatch
+waiting in memory is not durable. Uncertain mail delivery has no receipt
+reconciliation UI yet. Cross-process cancellation becomes visible at checkpoints;
+immediate interruption of another process's external call is not proved.
+General executor transaction and heartbeat work described in F190 remains a
+separate refactor. These limits precede opening new real write connectors.
+
+---
+
 # Current review and delivery — 2026-10-06
 
 This section is the current delivery record. The sections below it retain historical measurements and gate counts; they do not describe this release's final source.

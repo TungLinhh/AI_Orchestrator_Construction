@@ -45,11 +45,17 @@ async def client(tenant: Any, monkeypatch: Any) -> AsyncIterator[Any]:
     reset_settings_cache()
 
     app = create_app()
+    from ai_orchestrator.application.workflow_drivers import WorkflowDrivers
+
     app.state.db = tenant.db
+    app.state.workflow_drivers = WorkflowDrivers(tenant.db)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://control-plane.test"
     ) as http:
-        yield http
+        try:
+            yield http
+        finally:
+            await app.state.workflow_drivers.shutdown()
 
 
 #: A second organization with a session bound to it, for cross-tenant tests.

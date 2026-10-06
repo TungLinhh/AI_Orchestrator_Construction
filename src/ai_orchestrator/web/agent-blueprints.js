@@ -422,6 +422,7 @@ const AgentBlueprints = (() => {
         L("Prepared agent workflow", "Workflow agent đã chuẩn bị"),
         fields([
           [L("State", "Trạng thái"), statusName(d.status)],
+          [L("Interruption or failure", "Gián đoạn hoặc lỗi"), d.error || "—"],
           [L("Current missing inputs", "Đầu vào đang thiếu"), d.missing_inputs],
         ]) +
           `<p>${esc(L("This operating plan prepares document drafts for human review. Use business workflows for MEP email intake, CV scoring and procurement evidence.", "Kế hoạch vận hành này soạn hồ sơ dự thảo để người phụ trách duyệt. Workflow nghiệp vụ xử lý nhận CV MEP qua mail, chấm CV và chứng cứ procurement."))} ${link("#/processes/workflows", L("Open business workflows", "Mở workflow nghiệp vụ"))}</p>` +

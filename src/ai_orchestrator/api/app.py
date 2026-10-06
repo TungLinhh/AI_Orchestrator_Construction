@@ -18,6 +18,8 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from ai_orchestrator.application.workflow_drivers import WorkflowDrivers
+from ai_orchestrator.application.workflow_mail_monitor import WorkflowMailMonitor
 from ai_orchestrator.config.settings import Settings, get_settings
 from ai_orchestrator.persistence.session import Database
 from ai_orchestrator.telemetry.logging import configure_logging, get_logger
@@ -71,15 +73,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from ai_orchestrator.api.stream_pump import start_stream_pump, stop_stream_pump
 
     start_stream_pump(app, database)
-    from ai_orchestrator.api.business_workflows import start_mail_monitor
-
-    start_mail_monitor(database)
+    app.state.workflow_drivers = WorkflowDrivers(
+        database, concurrency=settings.native_workflow_concurrency
+    )
+    app.state.workflow_mail_monitor = WorkflowMailMonitor(app.state.workflow_drivers)
+    app.state.workflow_mail_monitor.start()
     try:
         yield
     finally:
         # Subscribers before the database: a browser tab should learn the platform is
         # going away while the database can still answer, not after it has gone.
         await stop_stream_pump(app)
+        await app.state.workflow_mail_monitor.stop()
         # In-flight local runs next, and **awaited rather than cancelled**. A run cancelled
         # halfway leaves a task in `assigned` with an execution that never finished and no
         # worker to pick it up -- the exact state `local_runner` exists to escape, created by
@@ -87,12 +92,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from ai_orchestrator.application.local_runner import shutdown as stop_local_runs
 
         await stop_local_runs()
-        from ai_orchestrator.api.business_workflows import stop_business_runs
-
-        await stop_business_runs()
-        from ai_orchestrator.api.agent_blueprints import stop_agent_workflows
-
-        await stop_agent_workflows()
+        await app.state.workflow_drivers.shutdown()
         await database.dispose()
         if telemetry is not None:
             telemetry.shutdown()

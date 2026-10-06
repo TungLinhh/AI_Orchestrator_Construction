@@ -18,6 +18,7 @@ from ai_orchestrator.application.business_workflow import payload_hash
 from ai_orchestrator.application.model_profiles import build_tenant_gateway
 from ai_orchestrator.application.playbook import PLAYBOOK
 from ai_orchestrator.application.task_execution import TaskExecutionService
+from ai_orchestrator.application.workflow_lifecycle import workflow_run
 from ai_orchestrator.application.workflow_schemas import validate_shape
 from ai_orchestrator.approvals.service import ApprovalRequest, ApprovalService
 from ai_orchestrator.audit.service import AuditService
@@ -26,6 +27,7 @@ from ai_orchestrator.domain.contracts import Actor
 from ai_orchestrator.domain.enums import ActorType, EventType
 from ai_orchestrator.domain.errors import PreconditionError, ValidationError
 from ai_orchestrator.domain.state_machines import Transition
+from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
 from ai_orchestrator.models.gateway import ModelGateway
 from ai_orchestrator.persistence.base import utcnow
 from ai_orchestrator.persistence.models import (
@@ -44,7 +46,7 @@ from ai_orchestrator.persistence.repositories.organization import (
     AgentRepository,
     OrgUnitRepository,
 )
-from ai_orchestrator.persistence.repositories.task import TaskRepository
+from ai_orchestrator.persistence.repositories.task import ExecutionRepository, TaskRepository
 from ai_orchestrator.persistence.session import Database
 
 SYSTEM = Actor(id="agent-blueprint-controller", kind=ActorType.SYSTEM)
@@ -651,6 +653,29 @@ class AgentBlueprintService:
                 )
 
     async def run(self, root_id: str) -> dict[str, Any]:
+        if self.database is None:
+            raise PreconditionError("A committing tenant session is required for model runs")
+        # Publish caller-supplied inputs before the recovery connection reads them.
+        await self._commit()
+        async with workflow_run(self.database, self.org, root_id, WorkflowKind.AGENT):
+            # Refresh only controller checkpoints, not unrelated caller objects.
+            await self.session.execute(
+                select(Task)
+                .where(
+                    Task.organization_id == self.org,
+                    (Task.id == root_id) | (Task.parent_task_id == root_id),
+                )
+                .execution_options(populate_existing=True)
+            )
+            try:
+                return await self._run_steps(root_id)
+            except BaseException:
+                # Release stage row locks before recovery uses a fresh transaction.
+                await self.session.rollback()
+                await self.database.bind_tenant(self.session, self.org)
+                raise
+
+    async def _run_steps(self, root_id: str) -> dict[str, Any]:
         root = await self.tasks.get(root_id)
         if not root.input.get("agent_workflow") or root.parent_task_id:
             raise ValidationError("Not an agent workflow root")
@@ -729,7 +754,15 @@ class AgentBlueprintService:
                         runtime=runtime,
                         auto_approve=False,
                         model_usage_checkpoint=self._commit,
-                    ).execute_task(child.id)
+                    ).execute_task(
+                        child.id,
+                        attempt=1
+                        + len(
+                            await ExecutionRepository(self.session, self.org).list_for_task(
+                                child.id
+                            )
+                        ),
+                    )
                 finally:
                     await gateway.aclose()
                 await self.session.refresh(root)

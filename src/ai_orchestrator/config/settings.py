@@ -145,6 +145,8 @@ class Settings(BaseSettings):
     temporal_task_queue: str = "ao-workflows"
     # Deterministic replay safety: never change this while workflows are running.
     temporal_build_id: str = "v1"
+    # Each native controller holds a lock connection plus a stage connection.
+    native_workflow_concurrency: int = Field(default=4, ge=1, le=32)
 
     # -------------------------------------------------------------- model --
     # 'fake' is a deterministic scripted provider: full pipeline, zero spend,

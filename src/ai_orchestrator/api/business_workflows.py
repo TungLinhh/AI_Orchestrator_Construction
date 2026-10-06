@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Request
@@ -17,19 +16,13 @@ from ai_orchestrator.application.business_workflow import (
 )
 from ai_orchestrator.application.workflow_fixtures import hiring_fixture, procurement_fixture
 from ai_orchestrator.audit.service import AuditService
-from ai_orchestrator.config.settings import Environment, get_settings
 from ai_orchestrator.domain.business_workflow import RUBRIC_SPEC
 from ai_orchestrator.domain.errors import PreconditionError, ValidationError
+from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
 from ai_orchestrator.persistence.models import Task
 from ai_orchestrator.persistence.repositories.task import TaskRepository
-from ai_orchestrator.persistence.session import Database
-from ai_orchestrator.telemetry.logging import get_logger
-
-logger = get_logger(__name__)
-_mail_monitor: asyncio.Task[Any] | None = None
 
 router = APIRouter(tags=["business-workflows"])
-_running: dict[tuple[str, str], asyncio.Task[Any]] = {}
 
 
 class ExampleRequest(BaseModel):
@@ -133,41 +126,6 @@ async def detail(
     return await BusinessWorkflowService(request.app.state.db, ctx.organization_id).report(root_id)
 
 
-async def start_workflow(db: Database, org: str, root: str) -> dict[str, Any]:
-    key = (org, root)
-    if key in _running and not _running[key].done():
-        return {"id": root, "started": False, "already_running": True}
-
-    async def drive() -> None:
-        try:
-            await BusinessWorkflowService(db, org).run(root)
-        finally:
-            _running.pop(key, None)
-
-    _running[key] = asyncio.create_task(drive(), name="business-workflow:" + root)
-    return {"id": root, "started": True, "already_running": False}
-
-
-async def stop_business_runs() -> None:
-    global _mail_monitor
-    if _mail_monitor:
-        _mail_monitor.cancel()
-        await asyncio.gather(_mail_monitor, return_exceptions=True)
-        _mail_monitor = None
-    tasks = list(_running.values())
-    for task in tasks:
-        task.cancel()
-    await asyncio.gather(*tasks, return_exceptions=True)
-    _running.clear()
-
-
-async def cancel_business_run(org: str, root: str) -> None:
-    active = _running.get((org, root))
-    if active and not active.done():
-        active.cancel()
-        await asyncio.gather(active, return_exceptions=True)
-
-
 @router.post("/workflows/{root_id}/run")
 async def run(
     root_id: str, request: Request, ctx: ApiContext = Depends(get_context)
@@ -178,7 +136,11 @@ async def run(
         raise ValidationError("Run requires a workflow root")
     if root.status in {"completed", "failed", "canceled", "expired"}:
         raise PreconditionError("This workflow is terminal; create a new run for changed inputs")
-    return await start_workflow(request.app.state.db, ctx.organization_id, root_id)
+    await ctx.session.commit()
+    started = request.app.state.workflow_drivers.start(
+        ctx.organization_id, root_id, WorkflowKind.BUSINESS
+    )
+    return {"id": root_id, "started": started, "already_running": not started}
 
 
 @router.post("/workflows/{root_id}/evidence")
@@ -263,44 +225,3 @@ async def retry(root_id: str, ctx: ApiContext = Depends(get_context)) -> dict[st
         reuse_source=root_id,
     )
     return {"id": root, "mode": source.input["mode"], "source_root": root_id, "started": False}
-
-
-async def pending_mail_intakes(db: Database, org: str) -> list[str]:
-    async with db.tenant_session(org) as session:
-        rows = await session.execute(
-            text(
-                "SELECT DISTINCT root.id FROM tasks root JOIN tasks child "
-                "ON child.parent_task_id=root.id AND child.organization_id=root.organization_id "
-                "WHERE root.organization_id=:org AND root.status='blocked' "
-                "AND root.input->>'mode'='live' "
-                "AND root.input->>'business_workflow'='mep_hiring' "
-                "AND child.input->>'stage_key'='cv_intake' "
-                "AND child.status='waiting_for_input' ORDER BY root.id LIMIT 10"
-            ),
-            {"org": org},
-        )
-        return [str(row[0]) for row in rows]
-
-
-def start_mail_monitor(db: Database) -> None:
-    global _mail_monitor
-    settings = get_settings()
-    if (
-        settings.environment == Environment.TEST
-        or settings.model_provider_default in {"fake", "scripted", "deterministic"}
-        or not settings.recruitment_mail_org
-    ):
-        return
-
-    async def watch() -> None:
-        while True:
-            try:
-                for root in await pending_mail_intakes(db, settings.recruitment_mail_org):
-                    await start_workflow(db, settings.recruitment_mail_org, root)
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                logger.error("workflow.mail_monitor_failed", error_type=type(exc).__name__)
-            await asyncio.sleep(settings.recruitment_mail_poll_interval_s)
-
-    _mail_monitor = asyncio.create_task(watch(), name="workflow-mail-intake-monitor")

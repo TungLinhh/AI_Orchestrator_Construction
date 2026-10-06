@@ -671,7 +671,8 @@ async def test_cancel_after_a_recorded_model_call_settles_every_execution(prepar
     with pytest.raises(asyncio.CancelledError):
         await service.run(root)
     report = await service.report(root)
-    assert report["status"] == "failed"
+    assert report["status"] == "blocked"
+    assert report["lifecycle"]["state"] == "suspended"
     assert report["evidence"]["fake_model_calls"] == 1
     async with db.tenant_session(prepared.organization_id) as session:
         running = (
@@ -730,7 +731,8 @@ async def test_cancel_interrupts_an_inflight_workflow_without_waiting_for_model(
 ):
     import asyncio
 
-    from ai_orchestrator.api.business_workflows import _running
+    from ai_orchestrator.application.workflow_drivers import WorkflowDrivers
+    from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
     from tests.integration.test_console_management import _human_headers
 
     entered = asyncio.Event()
@@ -742,13 +744,14 @@ async def test_cancel_interrupts_an_inflight_workflow_without_waiting_for_model(
 
     root = await new_run(prepared)
     headers = await _human_headers(prepared)
-    driver = asyncio.create_task(
-        BusinessWorkflowService(db, prepared.organization_id, runtime_factory=PausedRuntime).run(
-            root
-        )
-    )
-    key = (prepared.organization_id, root)
-    _running[key] = driver
+
+    async def execute(org, root_id, kind):
+        await BusinessWorkflowService(db, org, runtime_factory=PausedRuntime).run(root_id)
+
+    drivers = WorkflowDrivers(db, handler=execute)
+    await client._transport.app.state.workflow_drivers.shutdown()
+    client._transport.app.state.workflow_drivers = drivers
+    assert drivers.start(prepared.organization_id, root, WorkflowKind.BUSINESS)
     try:
         await asyncio.wait_for(entered.wait(), timeout=5)
         canceled = await asyncio.wait_for(
@@ -759,6 +762,4 @@ async def test_cancel_interrupts_an_inflight_workflow_without_waiting_for_model(
         assert closed.json()["status"] == "canceled"
         assert all(s["status"] in {"completed", "canceled"} for s in closed.json()["stages"])
     finally:
-        driver.cancel()
-        await asyncio.gather(driver, return_exceptions=True)
-        _running.pop(key, None)
+        await drivers.shutdown()
