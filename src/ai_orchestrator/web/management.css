@@ -1,0 +1,216 @@
+/* Management uses the same spacing, focus and contrast tokens as work. */
+.manage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.manage-body {
+  padding: 20px;
+  min-width: 0;
+}
+.manage-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.manage-form label,
+.manage-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+.manage-form input,
+.manage-form select,
+.manage-form textarea,
+.manage-search input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 10px;
+  font: inherit;
+}
+.manage-form .wide {
+  grid-column: 1/-1;
+}
+.form-notice {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.form-result {
+  border-left: 3px solid var(--accent);
+  padding: 12px;
+  background: var(--accent-soft);
+  overflow-wrap: anywhere;
+}
+.form-result.error {
+  border-color: var(--late);
+  background: var(--late-soft);
+}
+.record-fields {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.record-fields > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr);
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+.record-fields dt {
+  color: var(--text-2);
+}
+.record-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.table-scroll {
+  overflow-x: auto;
+  width: 100%;
+  margin-top: 16px;
+}
+.manage-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.manage-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+.manage-table th,
+.manage-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.manage-table a {
+  font-weight: 600;
+  color: var(--accent-2);
+}
+.manage-table tbody tr:hover {
+  background: var(--surface-2);
+}
+.readable-text {
+  margin: 12px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-height: 480px;
+  overflow: auto;
+  background: var(--surface-2);
+  padding: 16px;
+  border-radius: 8px;
+  font: 12px/1.7 var(--mono);
+}
+.readable-text {
+  font: 14px/1.7 var(--font);
+}
+.record-details {
+  margin: 12px 0;
+}
+.record-details summary {
+  cursor: pointer;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+.identity-card {
+  padding: 20px;
+}
+.identity-card h2 {
+  margin: 0 0 6px;
+}
+.workspace-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.workspace-tabs a {
+  padding: 9px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+}
+.workspace-tabs a[aria-current="page"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-2);
+  font-weight: 600;
+}
+.list-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  color: var(--text-2);
+}
+.nav .items {
+  overflow-y: auto;
+  min-height: 0;
+}
+#navWorkCount {
+  display: none;
+}
+@media (max-width: 760px) {
+  .manage-grid,
+  .manage-form {
+    grid-template-columns: 1fr;
+  }
+  .manage-body {
+    padding: 14px;
+  }
+  .manage-table th,
+  .manage-table td {
+    padding: 10px;
+  }
+  .record-fields > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .workspace-tabs a {
+    padding: 8px 10px;
+  }
+  .list-footer {
+    flex-wrap: wrap;
+  }
+}
+
+.record-value {
+  white-space: pre-wrap;
+}
+.record-list {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+.record-fields .record-fields {
+  padding: 6px 0;
+  font-size: 13px;
+}
+.record-fields .record-fields > div {
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr);
+}
+.parameter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .parameter-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+#managementBody {
+  display: grid;
+  gap: 20px;
+}

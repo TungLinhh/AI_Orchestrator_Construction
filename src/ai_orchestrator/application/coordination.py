@@ -64,7 +64,9 @@ from sqlalchemy import text
 
 from ai_orchestrator.application.event_view import enrich
 from ai_orchestrator.application.ports import ReadConnection
+from ai_orchestrator.domain.enums import TaskStatus
 from ai_orchestrator.domain.errors import NotFoundError
+from ai_orchestrator.domain.state_machines import allowed_task_transitions
 
 #: The CEO's queue.
 #:
@@ -81,7 +83,8 @@ SELECT t.id, t.title, t.goal, t.task_type, t.status, t.priority, t.requester_typ
        (SELECT count(*) FROM tasks c WHERE c.parent_task_id = t.id) AS children,
        (SELECT count(*) FROM executions x WHERE x.task_id = t.id) AS executions,
        (SELECT count(*) FROM approvals ap WHERE ap.task_id = t.id
-          AND ap.status = 'pending') AS approvals_waiting
+          AND ap.status = 'pending') AS approvals_waiting,
+       {WAITING_ON_CASE} AS waiting_bucket
 FROM tasks t
 LEFT JOIN agents a ON a.id = t.owner_agent_id
 WHERE t.organization_id = CAST(:o AS varchar(40))
@@ -147,7 +150,7 @@ WHERE t.organization_id = CAST(:o AS varchar(40))
 WAITING_ON_CASE = """\
 CASE WHEN (SELECT count(*) FROM approvals ap WHERE ap.task_id = t.id
             AND ap.status = 'pending') > 0 THEN 0
-     WHEN t.status IN ('created', 'assigned', 'failed', 'blocked') THEN 0
+     WHEN t.status IN ('created', 'assigned', 'failed', 'blocked', 'waiting_for_approval') THEN 0
      WHEN t.status = 'running' THEN 1
      ELSE 2 END"""
 
@@ -228,74 +231,41 @@ ORDER BY ap.created_at
 #: The ordered record. `events` is the platform's own log and it is the one thing here that
 #: is written by everything rather than by any one part, which is why it is the last source
 #: rather than a join onto the others.
-_REPORT_EVENTS = """
--- CloudEvents shape, so the columns are `type`, `source` and `data` -- and `subject` is
--- what an event is *about*, which is the only honest way to find "the events for this
--- task". The first version filtered on `payload::text LIKE '%<id>%'`, which is a scan of
--- the whole tenant's log and would match a task id that happened to appear inside
--- somebody else's payload.
-SELECT id, type, actor_id, source AS actor_type, occurred_at, subject, data
+_REPORT_EVENT_SCOPE = """
 FROM events
 WHERE organization_id = CAST(:o AS varchar(40))
-  AND (subject = :id OR subject LIKE :like || '%')
-ORDER BY occurred_at
-LIMIT 200
+  AND (split_part(subject, '.', 1) = ANY(:ids) OR data->>'task_id' = ANY(:ids))
 """
+_REPORT_EVENTS = (
+    "SELECT id, type, actor_id, source AS actor_type, occurred_at, subject, data "
+    + _REPORT_EVENT_SCOPE
+    + " ORDER BY occurred_at, id LIMIT :event_limit OFFSET :event_offset"
+)
+_REPORT_EVENT_COUNT = "SELECT count(*) " + _REPORT_EVENT_SCOPE
+
 
 #: Everything underneath a task, by walking `root_task_id`. A report that only shows the
 #: task you asked about and not the work it produced is a report about a shell.
 _REPORT_TREE = """
+WITH RECURSIVE scoped_ids(id) AS (
+    SELECT id FROM tasks
+    WHERE organization_id = CAST(:o AS varchar(40)) AND (id = :id OR root_task_id = :id)
+    UNION
+    SELECT child.id FROM tasks child JOIN scoped_ids parent ON child.parent_task_id = parent.id
+    WHERE child.organization_id = CAST(:o AS varchar(40))
+)
 SELECT t.id, t.title, t.status, t.task_type, t.parent_task_id, t.created_at, t.completed_at,
        a.name AS owner_name
-FROM tasks t
-LEFT JOIN agents a ON a.id = t.owner_agent_id
+FROM tasks t JOIN scoped_ids scope ON scope.id = t.id
+LEFT JOIN agents a ON a.id = t.owner_agent_id AND a.organization_id = t.organization_id
 WHERE t.organization_id = CAST(:o AS varchar(40))
-  AND (t.id = :id OR t.root_task_id = :id OR t.parent_task_id = :id)
-ORDER BY t.created_at
+ORDER BY t.created_at, t.id
 """
 
 
 #: `WAITING_ON_CASE` in SQL, as `(bucket, name)`. Adjacent to it on purpose: a change to
 #: one is visibly a change to the other, which is the whole point of writing it once.
 _BUCKETS: dict[int, str] = {0: "you", 1: "an_agent", 2: "nobody"}
-
-#: Terminal states that still need **a person** to decide what happens next, as opposed to
-#: states that need nobody at all.
-#:
-#: `failed` is here, and it was not. It used to report `an_agent` -- which the register
-#: renders as the tile "With an agent" above a filter called the same -- and that is the
-#: wording of a system that is working, attached to work that has stopped. Measured on the
-#: demo company: the register read **"With an agent: 2"** while both of those tasks had
-#: `status = failed`.
-#:
-#: The test that pinned the old behaviour argued that a failed task "needs somebody but is
-#: not waiting on a person to press a button". Both halves are right and they point
-#: somewhere else: it is waiting on a person to decide, and `you` is the column a person
-#: acts in. `an_agent` is the column that claims a **running** agent holds it, and none
-#: does.
-SETTLED_OK_BY_A_PERSON = frozenset({"failed", "blocked"})
-
-
-def _waiting_on(row: dict[str, Any]) -> str:
-    """Which of the three the CEO is looking at. See the module docstring.
-
-    **The same table the counts are computed from**, branch for branch. It used to be a
-    separate `if` chain whose last line was `completed ? nobody : an_agent`, so a **failed**
-    task reported `an_agent` — and the three tiles were a *different* rule again, in SQL.
-    Two rules for one question is how the page came to read "With an agent: 2" above a
-    list of failures.
-    """
-    if int(row.get("approvals_waiting") or 0) > 0:
-        return "you"
-    if row.get("status") in ("created", "assigned"):
-        return "you"
-    if row.get("status") == "running":
-        return "an_agent"
-    if row.get("status") in SETTLED_OK_BY_A_PERSON:
-        # A failed task is waiting on a **decision**, not on an agent. It is in the
-        # person's column because that column is the actionable one.
-        return "you"
-    return "nobody"
 
 
 async def ceo_work_queue(
@@ -348,6 +318,8 @@ async def ceo_work_queue(
                 "id": r["id"],
                 "title": r["title"],
                 "goal": r["goal"],
+                "parent_task_id": r["parent_task_id"],
+                "root_task_id": r["root_task_id"],
                 "task_type": r["task_type"],
                 "status": r["status"],
                 "priority": r["priority"],
@@ -361,7 +333,7 @@ async def ceo_work_queue(
                 "approvals_waiting": int(r["approvals_waiting"] or 0),
                 "failure_category": r["failure_category"],
                 "last_error": r["last_error"],
-                "waiting_on": _waiting_on(dict(r)),
+                "waiting_on": _BUCKETS[int(r["waiting_bucket"])],
             }
             for r in rows
         ],
@@ -375,7 +347,12 @@ async def ceo_work_queue(
 
 
 async def task_report(
-    conn: ReadConnection, *, organization_id: str, task_id: str
+    conn: ReadConnection,
+    *,
+    organization_id: str,
+    task_id: str,
+    event_limit: int = 200,
+    event_offset: int = 0,
 ) -> dict[str, Any]:
     """The account of one task: what was asked, and everything that happened to it.
 
@@ -410,18 +387,25 @@ async def task_report(
         .mappings()
         .all()
     )
+    tree_ids = {str(r["id"]) for r in tree}
+    event_params = {
+        "o": organization_id,
+        "ids": sorted(tree_ids),
+        "event_limit": event_limit,
+        "event_offset": event_offset,
+    }
+    event_total = int((await conn.execute(text(_REPORT_EVENT_COUNT), event_params)).scalar_one())
     events = (
         (
             await conn.execute(
                 text(_REPORT_EVENTS),
-                {"o": organization_id, "id": task_id, "like": f"{task_id}."},
+                event_params,
             )
         )
         .mappings()
         .all()
     )
 
-    tree_ids = {str(r["id"]) for r in tree}
     tree_executions = (
         (
             await conn.execute(
@@ -441,6 +425,9 @@ async def task_report(
     enriched = [dict(f.get("view") or {}) for f in frames]
 
     return {
+        "available_actions": sorted(
+            event.value for event in allowed_task_transitions(TaskStatus(head["status"]))
+        ),
         "task": {
             "id": head["id"],
             "title": head["title"],
@@ -552,6 +539,9 @@ async def task_report(
             # Same length by construction: one frame per row, in order.
             for e, view in zip(events, enriched, strict=True)
         ],
+        "event_total": event_total,
+        "event_limit": event_limit,
+        "event_offset": event_offset,
         "tree_size": len(tree_ids),
         "tree_executions": [
             {

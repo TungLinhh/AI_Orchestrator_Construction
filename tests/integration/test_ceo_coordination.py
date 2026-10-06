@@ -252,6 +252,7 @@ class TestTheWorkQueue:
             # acts in. So is where it goes.
             ("failed", "you"),
             ("blocked", "you"),
+            ("waiting_for_approval", "you"),
             ("completed", "nobody"),
             ("cancelled", "nobody"),
             # `running` is the *only* thing in this column, and that is the point: a
@@ -727,3 +728,64 @@ class TestTheThreeFixesThisSuiteExistsFor:
             f"stayed invisible: {summary}"
         )
         assert summary["attempts"] == 2
+
+
+class TestScopedEventPages:
+    async def test_a_subtask_report_contains_all_its_descendants(self, tenant: Tenant) -> None:
+        from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        root = await repo.create(title="Root scope", goal="root scope", task_type="research")
+        branch = await repo.create(
+            title="Branch scope", goal="branch scope", task_type="research", parent_task_id=root.id
+        )
+        child = await repo.create(
+            title="Child scope", goal="child scope", task_type="research", parent_task_id=branch.id
+        )
+        leaf = await repo.create(
+            title="Leaf scope", goal="leaf scope", task_type="research", parent_task_id=child.id
+        )
+        branch_id = branch.id
+        expected = {branch.id, child.id, leaf.id}
+        await tenant.commit()
+        report = await task_report(
+            tenant.session, organization_id=tenant.organization_id, task_id=branch_id
+        )
+        assert {task["id"] for task in report["tree"]} == expected
+        assert report["event_total"] == 3
+        assert {event["subject"] for event in report["events"]} == expected
+
+    async def test_descendant_events_are_paged_without_another_goals_events(
+        self, tenant: Tenant
+    ) -> None:
+        from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        root = await repo.create(title="Scoped root", goal="Root event scope")
+        child = await repo.create(
+            title="Scoped child", goal="Child event scope", parent_task_id=root.id
+        )
+        unrelated = await repo.create(title="Other goal", goal="Unrelated event scope")
+        root_id, child_id, unrelated_id = root.id, child.id, unrelated.id
+        await tenant.commit()
+        first = await task_report(
+            tenant.session, organization_id=tenant.organization_id, task_id=root_id, event_limit=1
+        )
+        second = await task_report(
+            tenant.session,
+            organization_id=tenant.organization_id,
+            task_id=root_id,
+            event_limit=1,
+            event_offset=1,
+        )
+        assert first["event_total"] == second["event_total"] == 2
+        assert first["event_offset"] == 0 and second["event_offset"] == 1
+        assert {event["subject"] for page in [first, second] for event in page["events"]} == {
+            root_id,
+            child_id,
+        }
+        child_report = await task_report(
+            tenant.session, organization_id=tenant.organization_id, task_id=child_id
+        )
+        assert child_report["event_total"] == 1
+        assert all(event["subject"] != unrelated_id for event in child_report["events"])

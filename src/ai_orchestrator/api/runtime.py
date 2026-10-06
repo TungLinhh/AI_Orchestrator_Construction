@@ -11,9 +11,9 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
-from ai_orchestrator.api.deps import ApiContext, get_context, paginate
+from ai_orchestrator.api.deps import ApiContext, get_context, paginate, require_body_tenant
 from ai_orchestrator.api.health import bump
 from ai_orchestrator.domain.enums import (
     AutonomyLevel,
@@ -23,7 +23,7 @@ from ai_orchestrator.domain.enums import (
 from ai_orchestrator.domain.errors import ValidationError
 from ai_orchestrator.domain.ids import ExecutionId, OrganizationId
 from ai_orchestrator.memory import HashEmbedder, MemoryService
-from ai_orchestrator.persistence.models import ModelProfile, ModelUsage
+from ai_orchestrator.persistence.models import ModelUsage
 
 router = APIRouter(tags=["runtime"])
 
@@ -81,33 +81,40 @@ async def list_model_profiles(ctx: ApiContext = Depends(get_context)) -> dict[st
     an operator answers "can I change the provider without editing agents?" —
     yes, because agents never name a provider.
     """
-    rows = (
-        (
-            await ctx.session.execute(
-                select(ModelProfile).where(
-                    (ModelProfile.organization_id == ctx.organization_id)
-                    | (ModelProfile.organization_id.is_(None))
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
-    return paginate(
-        [
-            {
-                "name": p.name,
-                "description": p.description,
-                "providers": p.providers,
-                "fallback_profile_id": p.fallback_profile_id,
-                "max_classification": p.max_classification,
-                "is_active": p.is_active,
-            }
-            for p in rows
-        ],
-        100,
-        0,
-    )
+    from ai_orchestrator.application.model_profiles import load_profiles_from_session
+
+    load = await load_profiles_from_session(ctx.session, ctx.organization_id)
+    return {
+        **paginate(
+            [
+                {
+                    "name": p.name,
+                    "description": p.description,
+                    "providers": [
+                        {
+                            "provider": c.provider,
+                            "model": c.model,
+                            "weight": c.weight,
+                            "max_input_tokens": c.max_input_tokens,
+                            "supports_tools": c.supports_tools,
+                            "supports_structured_output": c.supports_structured_output,
+                            "max_classification": c.max_classification.value,
+                        }
+                        for c in p.candidates
+                    ],
+                    "fallback_profile": p.fallback_profile,
+                    "max_classification": p.max_classification.value,
+                    "requires_tools": p.requires_tools,
+                    "requires_structured_output": p.requires_structured_output,
+                    "is_active": True,
+                }
+                for p in load.profiles.values()
+            ],
+            100,
+            0,
+        ),
+        "warnings": load.warnings,
+    }
 
 
 @router.post("/model/call")
@@ -120,18 +127,11 @@ async def call_model(
     without writing a script. The classification travels with the request, so the
     privacy filter applies here exactly as it does for an agent.
     """
-    from ai_orchestrator.config.settings import get_settings
-    from ai_orchestrator.models.gateway import ModelGateway, ModelRequest
-    from ai_orchestrator.models.profiles import default_profiles
-    from ai_orchestrator.models.providers import (
-        DeterministicProvider,
-        build_providers_from_settings,
-    )
+    from ai_orchestrator.application.model_profiles import build_tenant_gateway
+    from ai_orchestrator.models.gateway import ModelRequest
 
-    settings = get_settings()
-    providers = build_providers_from_settings(settings)
-    providers["deterministic"] = DeterministicProvider()
-    gateway = ModelGateway(providers=providers, profiles=default_profiles())
+    require_body_tenant(body.model_dump(), ctx)
+    gateway = await build_tenant_gateway(ctx.organization_id, session=ctx.session)
 
     request = ModelRequest(
         profile=body.profile,
@@ -141,7 +141,10 @@ async def call_model(
         data_classification=DataClassification(body.data_classification),
         organization_id=ctx.organization_id,
     )
-    response = await gateway.complete(request)
+    try:
+        response = await gateway.complete(request)
+    finally:
+        await gateway.aclose()
     bump("model_calls_total")
     return {
         "model_used": response.model_used,
@@ -156,7 +159,11 @@ async def call_model(
 
 @router.get("/model/usage")
 async def model_usage(
-    limit: int = Query(50, ge=1, le=200), ctx: ApiContext = Depends(get_context)
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    task_id: str | None = None,
+    agent_id: str | None = None,
+    ctx: ApiContext = Depends(get_context),
 ) -> dict[str, Any]:
     """Recent model calls with their routing reason.
 
@@ -164,13 +171,20 @@ async def model_usage(
     a fallback engaged is a different result from one that succeeded on its
     primary, and conflating them flatters the evaluation numbers.
     """
+    stmt = select(ModelUsage).where(ModelUsage.organization_id == ctx.organization_id)
+    if task_id:
+        stmt = stmt.where(ModelUsage.task_id == task_id)
+    if agent_id:
+        stmt = stmt.where(ModelUsage.agent_id == agent_id)
+    total = int(
+        (await ctx.session.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
+    )
     rows = (
         (
             await ctx.session.execute(
-                select(ModelUsage)
-                .where(ModelUsage.organization_id == ctx.organization_id)
-                .order_by(ModelUsage.created_at.desc())
+                stmt.order_by(ModelUsage.created_at.desc(), ModelUsage.id.desc())
                 .limit(limit)
+                .offset(offset)
             )
         )
         .scalars()
@@ -196,6 +210,9 @@ async def model_usage(
             for r in rows
         ],
         "count": len(rows),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
     }
 
 
@@ -260,6 +277,7 @@ async def write_memory(
         msg = f"unknown memory tier: {body.tier}"
         raise ValidationError(msg, details={"tier": body.tier}) from exc
 
+    require_body_tenant(body.model_dump(), ctx)
     service = MemoryService(ctx.session, ctx.organization_id, embedder=HashEmbedder())
     result = await service.write(
         content=body.content,
@@ -293,6 +311,7 @@ async def search_memory(
     """
     from ai_orchestrator.domain.contracts import MemoryScope
 
+    require_body_tenant(body.model_dump(), ctx)
     scope = MemoryScope(
         organization_id=OrganizationId(ctx.organization_id),
         max_classification=DataClassification(body.max_classification),

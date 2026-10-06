@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
@@ -41,6 +41,7 @@ class CreateSkillRequest(BaseModel):
 class PublishSkillRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    skill_version_id: str | None = None
     governance_state: str = "reviewed"
     test_results: dict[str, Any] = Field(default_factory=dict)
     security_scan: dict[str, Any] = Field(default_factory=dict)
@@ -91,6 +92,7 @@ def _skill_dict(skill: Skill, version: SkillVersion | None) -> dict[str, Any]:
         "requires_approval": skill.requires_approval,
         "tags": skill.tags,
         "current_version": version.version if version else None,
+        "version_id": version.id if version else None,
         "risk_level": version.risk_level if version else None,
         "is_published": version.is_published if version else False,
         "test_results": version.test_results if version else {},
@@ -115,6 +117,7 @@ def _tool_dict(tool: Tool, version: ToolVersion | None) -> dict[str, Any]:
         "is_idempotent": version.is_idempotent if version else None,
         "log_payload": version.log_payload if version else None,
         "current_version": version.version if version else None,
+        "version_id": version.id if version else None,
     }
 
 
@@ -248,13 +251,19 @@ async def publish_skill(
                 SkillVersion.skill_id == skill_id,
                 SkillVersion.organization_id == ctx.organization_id,
             )
-            .order_by(SkillVersion.version.desc())
+            .order_by(SkillVersion.created_at.desc(), SkillVersion.id.desc())
             .limit(1)
         )
     ).scalar_one_or_none()
     if version is None:
         msg = f"skill {skill_id} has no version to publish"
         raise ValidationError(msg, details={"skill_id": skill_id})
+
+    if body.skill_version_id is not None and body.skill_version_id != version.id:
+        raise ValidationError(
+            "the skill version changed since it was reviewed; reload before publishing",
+            details={"expected": body.skill_version_id, "current": version.id},
+        )
 
     tests = body.test_results or (version.test_results or {})
     if not tests.get("passed"):
@@ -316,18 +325,59 @@ async def publish_skill(
     return published
 
 
+def _latest_skill_version() -> Any:
+    return (
+        select(SkillVersion.id)
+        .where(SkillVersion.skill_id == Skill.id)
+        .order_by(SkillVersion.created_at.desc(), SkillVersion.id.desc())
+        .limit(1)
+        .correlate(Skill)
+        .scalar_subquery()
+    )
+
+
 @router.get("/skills")
 async def list_skills(
-    governance_state: str | None = None, ctx: ApiContext = Depends(get_context)
+    governance_state: str | None = None,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    ctx: ApiContext = Depends(get_context),
 ) -> dict[str, Any]:
-    stmt = select(Skill, SkillVersion).outerjoin(SkillVersion, SkillVersion.skill_id == Skill.id)
-    stmt = stmt.where(
-        (Skill.organization_id == ctx.organization_id) | (Skill.organization_id.is_(None))
+    stmt = (
+        select(Skill, SkillVersion)
+        .outerjoin(SkillVersion, SkillVersion.id == _latest_skill_version())
+        .where((Skill.organization_id == ctx.organization_id) | Skill.organization_id.is_(None))
     )
     if governance_state:
         stmt = stmt.where(Skill.governance_state == governance_state)
-    rows = (await ctx.session.execute(stmt)).all()
-    return paginate([_skill_dict(s, v) for s, v in rows], 200, 0)
+    rows = (await ctx.session.execute(stmt.order_by(Skill.name, Skill.id))).all()
+    return paginate([_skill_dict(s, v) for s, v in rows], limit, offset)
+
+
+@router.get("/skills/{skill_id}")
+async def get_skill(skill_id: str, ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+    row = (
+        await ctx.session.execute(
+            select(Skill, SkillVersion)
+            .outerjoin(SkillVersion, SkillVersion.id == _latest_skill_version())
+            .where(
+                Skill.id == skill_id,
+                (Skill.organization_id == ctx.organization_id) | Skill.organization_id.is_(None),
+            )
+        )
+    ).first()
+    if row is None:
+        raise NotFoundError(
+            f"skill not found: {skill_id}", resource_type="skill", resource_id=skill_id
+        )
+    skill, version = row
+    return {
+        **_skill_dict(skill, version),
+        "instructions": version.instructions if version else "",
+        "input_schema": version.input_schema if version else {},
+        "output_schema": version.output_schema if version else {},
+        "required_tool_ids": version.required_tool_ids if version else [],
+    }
 
 
 @router.post("/tools", status_code=status.HTTP_201_CREATED)
@@ -368,19 +418,35 @@ async def create_tool(
     ctx.session.add(version)
     await ctx.session.flush()
     bump("tools_created_total")
-    return _tool_dict(tool, version)
+    return {**_tool_dict(tool, version), "input_schema": version.input_schema if version else {}}
+
+
+def _latest_tool_version() -> Any:
+    return (
+        select(ToolVersion.id)
+        .where(ToolVersion.tool_id == Tool.id)
+        .order_by(ToolVersion.created_at.desc(), ToolVersion.id.desc())
+        .limit(1)
+        .correlate(Tool)
+        .scalar_subquery()
+    )
 
 
 @router.get("/tools")
-async def list_tools(ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+async def list_tools(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
     rows = (
         await ctx.session.execute(
             select(Tool, ToolVersion)
-            .outerjoin(ToolVersion, ToolVersion.tool_id == Tool.id)
-            .where((Tool.organization_id == ctx.organization_id) | (Tool.organization_id.is_(None)))
+            .outerjoin(ToolVersion, ToolVersion.id == _latest_tool_version())
+            .where((Tool.organization_id == ctx.organization_id) | Tool.organization_id.is_(None))
+            .order_by(Tool.name, Tool.id)
         )
     ).all()
-    return paginate([_tool_dict(t, v) for t, v in rows], 200, 0)
+    return paginate([_tool_dict(t, v) for t, v in rows], limit, offset)
 
 
 @router.get("/tools/{tool_id}")
@@ -388,15 +454,18 @@ async def get_tool(tool_id: str, ctx: ApiContext = Depends(get_context)) -> dict
     rows = (
         await ctx.session.execute(
             select(Tool, ToolVersion)
-            .outerjoin(ToolVersion, ToolVersion.tool_id == Tool.id)
-            .where(Tool.id == tool_id, Tool.organization_id == ctx.organization_id)
+            .outerjoin(ToolVersion, ToolVersion.id == _latest_tool_version())
+            .where(
+                Tool.id == tool_id,
+                (Tool.organization_id == ctx.organization_id) | Tool.organization_id.is_(None),
+            )
         )
     ).first()
     if rows is None:
         msg = f"tool not found: {tool_id}"
         raise NotFoundError(msg, resource_type="tool", resource_id=tool_id)
     tool, version = rows
-    return _tool_dict(tool, version)
+    return {**_tool_dict(tool, version), "input_schema": version.input_schema if version else {}}
 
 
 __all__ = ["router"]

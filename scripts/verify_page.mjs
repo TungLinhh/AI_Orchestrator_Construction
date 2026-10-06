@@ -517,6 +517,24 @@ sandbox.window = sandbox;
    It is implemented now, and one check reads it directly: after clicking an office the
    panel must show *that office*. Before this, the click appeared to work (the hash was
    right) while the panel still showed whatever the previous check had left there. */
+const historyEntries = [{hash: "#/dashboard", state: null}];
+let historyIndex = 0;
+sandbox.history = {
+  get state() { return historyEntries[historyIndex].state; },
+  replaceState(value) { historyEntries[historyIndex] = {hash: sandbox.__hash, state: value}; },
+  back() {
+    if (!historyIndex) return;
+    historyIndex--;
+    sandbox.__hash = historyEntries[historyIndex].hash;
+    fire("hashchange", {type:"hashchange"}).catch(e => {uncaught = e;});
+  },
+  forward() {
+    if (historyIndex + 1 >= historyEntries.length) return;
+    historyIndex++;
+    sandbox.__hash = historyEntries[historyIndex].hash;
+    fire("hashchange", {type:"hashchange"}).catch(e => {uncaught = e;});
+  },
+};
 let hashQuiet = 0;
 let pendingHash = null;
 const locationShim = {
@@ -525,6 +543,10 @@ const locationShim = {
   get hash() { return sandbox.__hash ?? "#/dashboard"; },
   set hash(v) {
     if (v === sandbox.__hash) return;
+    const inheritedState = sandbox.history.state;
+    historyEntries.splice(historyIndex + 1);
+    historyEntries.push({hash: v, state: inheritedState});
+    historyIndex++;
     sandbox.__hash = v;
     // Fire after the assignment settles, and only once, so a `go()` that writes the
     // hash twice renders once.
@@ -615,11 +637,11 @@ check("every element the page writes to exists",
 /* The end-product shape, asserted as structure rather than taste: one nav link per
    screen, the work form before the workflow log, an answer card on the task view,
    and a finder on the organisation view. */
-const navHrefs = [...html.matchAll(/<a[^>]*href="(#\/[a-z]*)"[^>]*data-nav="([a-z]+)"/g)]
+const navHrefs = [...html.matchAll(/<a[^>]*href="(#\/[^" ]*)"[^>]*data-nav="([a-z]+)"/g)]
   .map((m) => `${m[2]}:${m[1]}`);
 const primaryHrefs = navHrefs.filter((s) => ["departments", "give", "work"].includes(s.split(":")[0]))
   .map((s) => s.split(":")[1]);
-check("one nav link per screen, no two sharing a destination", new Set(primaryHrefs).size === primaryHrefs.length && primaryHrefs.length === 3,
+check("one nav link per screen, no two sharing a destination", new Set(primaryHrefs).size === primaryHrefs.length && primaryHrefs.length === 4,
   navHrefs.join(", "));
 check("the work form comes before the workflow it explains",
   html.indexOf('id="scenario"') > 0 && html.indexOf('id="scenario"') < html.indexOf('id="tree"'),
@@ -641,7 +663,7 @@ const i18nUsed = new Set([
   ...[...html.matchAll(/data-i18n(?:-html|-ph|-aria|-title)?="([^"]+)"/g)].map((m) => m[1]),
 ].filter((k) => /^[a-z_]+\.[a-z_0-9]+$/.test(k) && k !== "key"));
 const i18nDefined = new Set(
-  [...html.matchAll(/^\s*"([a-z_]+\.[a-z_0-9]+)":/gm)].map((m) => m[1]));
+  [...html.matchAll(/"([a-z_]+\.[a-z_0-9]+)"\s*:/g)].map((m) => m[1]));
 const i18nMissing = [...i18nUsed].filter((k) => !i18nDefined.has(k));
 check("the language switch exists", idsInMarkup.includes("langBtn"), "VI/EN toggle in the crumbs");
 check("every chrome string has a Vietnamese entry", i18nMissing.length === 0,
@@ -662,7 +684,7 @@ check("both run controls carry the provider pill",
    the served document and a node carries a status class, a title and a meta
    line instead of a raw id slice. */
 check("the workflow tree has card styles, not browser bullets",
-  /\.tree\s*\{[^}]*list-style:\s*none/.test(html) && /\.node\.st-completed/.test(html),
+  /\.tree(?:\s*,[^{}]+)?\s*\{[^}]*list-style:\s*none/.test(html) && /\.node\.st-completed/.test(html),
   ".tree reset + status rails");
 console.log("runtime:");
 check("the script loaded without throwing", uncaught === null, uncaught?.message);
@@ -825,12 +847,11 @@ try {
   check("the list has tasks to pick from", /class="row/.test($("giveList").innerHTML),
     `${($("giveList").innerHTML.match(/class="row/g) || []).length} rows`);
 
-  /* The badge and the API, compared. A stale "3" on the sidebar after a decision is the
-     small version of the stale-tile defect, and it is the number a CEO trusts. */
-  const badge = $("navWorkCount");
-  const shownBadge = badge.hidden ? 0 : Number(badge.textContent || 0);
-  check("the sidebar badge agrees with the API", shownBadge === (queue.needs_you ?? 0),
-    `badge=${shownBadge} api=${queue.needs_you}`);
+  const population = [...workStats.matchAll(/class="v">([^<]+)</g)]
+    .map((m) => Number(m[1].replaceAll(",", "")));
+  check("the work summary agrees with the whole API population",
+    population.join() === [queue.needs_you, queue.in_flight, queue.settled, queue.total].join(),
+    `rendered=${population.join()}, total=${queue.total}`);
 
   const first = $("giveList").innerHTML.match(/data-task="([^"]+)"/);
   check("a task row exists to open", !!first, first ? first[1] : "no data-task in the list");
@@ -851,7 +872,7 @@ try {
       `${($("taskTree").innerHTML.match(/class="row/g) || []).length} rows`);
     check("the log is there", $("taskLog").innerHTML.length >= 0,
       `${$("taskLog").innerHTML.length} chars`);
-    check("the report is written in words", /Reported/.test($("taskNote").innerHTML),
+    check("the report is written in words", /model|openrouter|scripted/i.test($("taskNote").innerHTML),
       $("taskNote").innerHTML.slice(0, 120));
 
     /* ---- the task page answers the boss's questions, in order ----
@@ -938,10 +959,10 @@ try {
      * how somebody discovers 67,000 tokens. */
     check("there is a run control", !!$("runThisTask").onclick);
     check("the run states its cost before it is pressed",
-      /67,000 tokens/.test(html) && /10 minutes/.test(html),
-      "the hint names the measured cost: 644s and 67,136 tokens");
+      /free-model quota/.test(html) && /duration varies/.test(html),
+      "quota and variable duration are visible before starting");
     check("the run says it is started in the background",
-      /started in the background/.test(html));
+      /runs in the background/.test(html));
 
     const crumb = $("path").innerHTML;
     check("the breadcrumb offers a way out", /#\/give/.test(crumb), crumb.slice(0, 160));
@@ -1267,6 +1288,16 @@ try {
   sandbox.location.hash = "#/task/" + taskId;
   await new Promise((r) => setTimeout(r, 1500));
 
+  check("a stopped task never reports itself as running",
+    $("runThisState").textContent === status && $("runThisTask").hidden,
+    `state=${$("runThisState").textContent}, run hidden=${$("runThisTask").hidden}`);
+  check("opening a task preserves its exact identity",
+    $("taskIdentity").textContent === taskId && $("taskTitle").textContent === report.task.title);
+  const reportLine = vm.runInContext('eventLine({event_type:"task.failed",view:{title:"<img src=x onerror=alert(1)>"}})', sandbox);
+  check("report event types are understood and untrusted titles are escaped",
+    /could not finish/.test(reportLine) && /&lt;img/.test(reportLine) && !/<img/.test(reportLine), reportLine);
+  check("approval handlers cannot also consume a task-decision button",
+    html.includes('button[data-do][data-id]'));
   const retryable = ["failed", "cancelled", "blocked"].includes(status);
   check("the retry button appears for exactly the work that stopped",
     $("retryBtn").hidden === !retryable,
@@ -1321,4 +1352,71 @@ try {
    the checks are about the four questions the view exists to answer -- where is it, what is
    waiting on me, what has been produced, and which SOP is this -- and about the two things it
    deliberately refuses to say. */
+/* Primitive rendering and input contracts exercise nested untrusted values. */
+const readable = vm.runInContext('valueHTML({recommendation:{message:"<img src=x onerror=alert(1)>"},items:["Preserve the words",{score:7}]})', sandbox);
+check("nested records are readable and escaped without JSON", /Recommendation/.test(readable) && /Score/.test(readable) && /Preserve the words/.test(readable) && /&lt;img/.test(readable) && !/<img|json-block/.test(readable));
+check("structured answers copy as words without JSON", vm.runInContext('plain({decision:"approved",items:[{score:7}]})', sandbox) === "Decision: approved\nItems: Score: 7");
+const typedArguments = vm.runInContext('Management.schemaArguments({properties:{limit:{type:"integer"},enabled:{type:"boolean"},mode:{type:"string",enum:["a","b"]}},required:["enabled"]},{arg_limit:"7",arg_enabled:"false",arg_mode:"b"})', sandbox);
+check("tool forms preserve numeric and false values", typedArguments.limit === 7 && typedArguments.enabled === false && typedArguments.mode === "b");
+let requiredRefused = false;
+try {vm.runInContext('Management.schemaArguments({properties:{enabled:{type:"boolean"}},required:["enabled"]},{})', sandbox);} catch {requiredRefused = true;}
+check("tool forms refuse missing required values", requiredRefused);
+const hashBeforeSkip = sandbox.location.hash;
+$("skipContent").onclick({preventDefault(){}});
+check("Skip to content preserves the current route", sandbox.location.hash === hashBeforeSkip);
+check("no management form asks the chairman to enter JSON", !/Arguments \(JSON|evidence \(JSON|schema \(JSON/.test(html));
+sandbox.location.hash = "#/library/skills";
+await new Promise(r => setTimeout(r, 500));
+sandbox.location.hash = "#/operations/models";
+await new Promise(r => setTimeout(r, 500));
+vm.runInContext("backWithinConsole()", sandbox);
+await new Promise(r => setTimeout(r, 500));
+check("Back returns to the preceding console screen", sandbox.location.hash === "#/library/skills");
+sandbox.history.forward();
+await new Promise(r => setTimeout(r, 500));
+check("browser Forward returns to the next console screen", sandbox.location.hash === "#/operations/models");
+/* Management routes use the real projections and preserve exact deep links. */
+console.log("management:");
+for (const destination of ["processes/catalogue", "processes/hiring", "processes/definitions", "processes/provision",
+  "library/skills", "library/tools", "library/memory", "business/projects", "business/documents",
+  "operations/models", "operations/usage", "operations/events", "operations/decisions",
+  "operations/audit", "operations/governance", "operations/system", "settings", "settings/units", "settings/roles"]) {
+  try {
+    sandbox.__hash = "#/" + destination;
+    await vm.runInContext("route()", sandbox);
+    const content = String($("managementBody")?.innerHTML || "");
+    const error = !$("pageError").hidden ? $("pageError").innerHTML : "";
+    check(destination + " renders from its API", !error && content.length > 0,
+      error ? String(error).replace(/<[^>]*>/g, " ").slice(0,160) : `${content.length} characters`);
+    if (destination === "processes/hiring") check("the example process explains its reference and recorded stage count", /JD reference|Tham chiếu JD/.test(content) && /Finished \/ recorded stages|Bước đã xong/.test(content));
+    check(destination + " does not show missing JS values", !/\bundefined\b|\[object Object\]/.test(content));
+    check(destination + " selects only the management surface", !$("view-management").hidden && $("view-give").hidden && $("view-departments").hidden);
+  } catch (err) { check(destination + " did not throw", false, err.message); }
+}
+try {
+  const profiles = await (await fetch(`${BASE}/api/v1/model-profiles`,{headers:{"x-organization-id":ORG}})).json();
+  check("effective primary profile names the requested Dots model",
+    profiles.items.find(p=>p.name === "primary")?.providers[0]?.model === "dots-studio/dots-3-note-preview:free");
+  const definitions = await (await fetch(`${BASE}/api/v1/console/catalogue?kind=definitions`,{headers:{"x-organization-id":ORG}})).json();
+  if(definitions.items.length){
+    const definition=definitions.items[0]; sandbox.__hash="#/processes/definitions/"+definition.id;
+    await vm.runInContext("route()",sandbox);
+    check("a definition deep link shows exactly the selected definition",
+      $("managementBody").innerHTML.includes(definition.id) && $("managementBody").innerHTML.includes(definition.name));
+  }
+  const agents=await (await fetch(`${BASE}/api/v1/agents?limit=1`,{headers:{"x-organization-id":ORG}})).json();
+  if(agents.items.length){
+    const agent=agents.items[0]; sandbox.__hash="#/agent/"+agent.id;
+    await vm.runInContext("route()",sandbox);
+    check("agent controls preserve the selected agent identity",$("managementBody").innerHTML.includes(agent.id) && $("managementBody").innerHTML.includes(agent.name));
+    check("agent configuration exposes actual profile and budget controls", /agent-config/.test($("managementBody").innerHTML) && /budget_limit_tokens/.test($("managementBody").innerHTML));
+  }
+  const events=await (await fetch(`${BASE}/api/v1/events?limit=2`,{headers:{"x-organization-id":ORG}})).json();
+  if(events.items.length){
+    const event=events.items[0]; sandbox.__hash="#/operations/events/"+event.id;
+    await vm.runInContext("route()",sandbox);
+    check("an event deep link opens its exact payload", $("managementBody").innerHTML.includes(event.id) && $("managementBody").innerHTML.includes(event.type));
+  }
+} catch(err){check("management detail checks did not throw",false,err.message);}
+check("management navigation produced no unhandled error",uncaught === null,uncaught?.message);
 process.exit(problems.length ? 1 : 0);

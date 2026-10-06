@@ -66,3 +66,11 @@ uv run python scripts/deployment_readiness.py \
 The first command counts unexpected outcomes in its exit status. Required human pauses are separate from autonomous completions. The readiness command exits 1 until its recorded preconditions hold.
 
 Completed IT goal: [access review](http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m46xevdsymrh2xysgxfzztze).
+
+## 2026-10-06 — Console management review completed
+
+Reviewed and finished the other chat's console changes: readable business records, typed tool controls, skill-version publication guard, tenant profile diagnostics, null/profile validation, scoped pagination and navigation history. Verification: make lint (343 files), make typecheck (152 source files), make test (3275 passed, 3 skipped, 1 deselected), make test-e2e (34 passed), make page (exit 0 including management routes, bilingual controls and history). Direct selected Dots model tool-call smoke passed; this does not measure business workflow quality.
+
+The legacy live corpus was interrupted at the owner's direction after the scope changed to isolated MEP hiring and procurement. The current progress-report root and its open child were canceled through TaskRepository; completed prior measurements remain historical and are excluded from the new acceptance cases. No Bãi Tràm work is part of the new workflow. Shadow readiness remains false: zero observations, not four weeks.
+
+Next implementation is specified in FUTURE_WORK.md: real Gmail self-test intake, source-checked CV scoring and explicitly simulated approval/onboarding; procurement complete-line coverage, quality review and 3-way match. Those workflows are not claimed complete in this entry.

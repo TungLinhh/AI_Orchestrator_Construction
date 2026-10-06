@@ -48,7 +48,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 
-from ai_orchestrator.api.deps import ApiContext, get_context, paginate, store_idempotency
+from ai_orchestrator.api.deps import ApiContext, get_context, store_idempotency
 from ai_orchestrator.api.health import bump
 from ai_orchestrator.domain.errors import NotFoundError
 from ai_orchestrator.domain.ids import new_ulid
@@ -377,7 +377,22 @@ async def list_decisions(
         row = dict(r)
         row["occurred_at"] = row["occurred_at"].isoformat()
         items.append(row)
-    return paginate(items, limit, offset)
+    count_sql = "SELECT count(*) FROM (" + _DECISIONS.split("ORDER BY")[0] + ") AS decisions"  # noqa: S608
+    total = int(
+        (
+            await ctx.session.execute(
+                text(count_sql),
+                {"o": ctx.organization_id, "agent": agent_id, "decision": decision, "since": since},
+            )
+        ).scalar_one()
+    )
+    return {
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "returned": len(items),
+    }
 
 
 __all__ = ["AgentView", "KillRequest", "router"]

@@ -207,6 +207,12 @@ async def load_tenant_profiles(db: Database, organization_id: str) -> ProfileLoa
     because a tenant configuring `default` is configuring `default` and not asking for a
     second one.
     """
+    async with db.tenant_session(organization_id) as session:
+        return await load_profiles_from_session(session, organization_id)
+
+
+async def load_profiles_from_session(session: Any, organization_id: str) -> ProfileLoad:
+    """Resolve profiles in the caller's transaction using the execution catalogue."""
     from sqlalchemy import text
 
     load = ProfileLoad()
@@ -215,8 +221,7 @@ async def load_tenant_profiles(db: Database, organization_id: str) -> ProfileLoa
     def warn(message: str) -> None:
         load.warnings.append(message)
 
-    async with db.tenant_session(organization_id) as session:
-        rows = (await session.execute(text(_SQL), {"org": organization_id})).all()
+    rows = (await session.execute(text(_SQL), {"org": organization_id})).all()
     load.rows = len(rows)
 
     # The fallback column is an id and `ModelProfile` wants a name, so the names are read
@@ -263,7 +268,7 @@ def _database() -> Database:
     return database
 
 
-async def build_tenant_gateway(organization_id: str) -> Any:
+async def build_tenant_gateway(organization_id: str, *, session: Any = None) -> Any:
     """A `ModelGateway` whose profiles are this tenant's, overlaid on the code catalogue.
 
     Returns the gateway, so the caller can register providers on it and keep the
@@ -274,13 +279,13 @@ async def build_tenant_gateway(organization_id: str) -> Any:
     from ai_orchestrator.models.providers import build_providers_from_settings
 
     gateway = ModelGateway()
-    for provider in build_providers_from_settings(get_settings()).values():
-        gateway.register_provider(provider)
-    if not gateway.available_providers():
-        # The deterministic provider is always available and is what makes the whole
-        # agent path testable at zero cost. Registering it unconditionally would let a
-        # misconfigured deployment answer with a script while *believing* it called a
-        # model, so it is registered only when nothing else is.
+    settings = get_settings()
+    if settings.model_provider_default != "fake":
+        for provider in build_providers_from_settings(settings).values():
+            gateway.register_provider(provider)
+    if settings.model_provider_default == "fake":
+        # Explicit fake mode must remain local even when runtime.env contains a key.
+        # Real deployments fail visibly when no real adapter is usable.
         from ai_orchestrator.models.providers import DeterministicProvider
 
         gateway.register_provider(DeterministicProvider())
@@ -288,7 +293,11 @@ async def build_tenant_gateway(organization_id: str) -> Any:
     if not organization_id:
         return gateway
 
-    load = await load_tenant_profiles(_database(), organization_id)
+    load = (
+        await load_profiles_from_session(session, organization_id)
+        if session is not None
+        else await load_tenant_profiles(_database(), organization_id)
+    )
     for profile in load.profiles.values():
         gateway.register_profile(profile)
     if load.warnings:

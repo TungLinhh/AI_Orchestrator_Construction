@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from ai_orchestrator.api.deps import (
@@ -218,10 +218,14 @@ async def get_org_unit_tree(unit_id: str, ctx: ApiContext = Depends(get_context)
 
 
 @router.get("/org-units")
-async def list_org_units(ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+async def list_org_units(
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
     repo = OrgUnitRepository(ctx.session, ctx.organization_id)
     units = await repo.tree()
-    return paginate([_unit_dict(u) for u in units], 500, 0)
+    return paginate([_unit_dict(u) for u in units], limit, offset)
 
 
 @router.post("/org-units/{unit_id}/move")
@@ -272,7 +276,11 @@ async def create_role(
 
 
 @router.get("/roles")
-async def list_roles(ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+async def list_roles(
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
     repo = RoleRepository(ctx.session, ctx.organization_id)
     roles = await repo.list()
     return paginate(
@@ -288,8 +296,8 @@ async def list_roles(ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
             }
             for r in roles
         ],
-        200,
-        0,
+        limit,
+        offset,
     )
 
 

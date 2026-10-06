@@ -13,9 +13,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 
-from ai_orchestrator.api.deps import ApiContext, get_context, paginate
+from ai_orchestrator.api.deps import ApiContext, get_context
 from ai_orchestrator.audit import AuditService
-from ai_orchestrator.persistence.models import Event, OutboxEvent
+from ai_orchestrator.persistence.models import AuditLog, Event, OutboxEvent
 
 router = APIRouter(tags=["events", "audit"])
 
@@ -62,7 +62,16 @@ async def list_events(
         .scalars()
         .all()
     )
-    return paginate([_event_dict(e) for e in rows], limit, offset)
+    total = int(
+        (await ctx.session.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
+    )
+    return {
+        "items": [_event_dict(e) for e in rows],
+        "limit": limit,
+        "offset": offset,
+        "returned": len(rows),
+        "total": total,
+    }
 
 
 @router.get("/events/stats")
@@ -136,29 +145,47 @@ async def list_audit(
         limit=limit,
         offset=offset,
     )
-    return paginate(
-        [
-            {
-                "sequence": r.sequence,
-                "at": r.created_at.isoformat(),
-                "actor_type": r.actor_type,
-                "actor_id": r.actor_id,
-                "action": r.action,
-                "resource_type": r.resource_type,
-                "resource_id": r.resource_id,
-                "task_id": r.task_id,
-                "outcome": r.outcome,
-                "policy_decision": r.policy_decision,
-                "policy_rule_id": r.policy_rule_id,
-                "approval_id": r.approval_id,
-                "trace_id": r.trace_id,
-                "context": r.context,
-            }
-            for r in rows
-        ],
-        limit,
-        offset,
+    items = [
+        {
+            "sequence": r.sequence,
+            "at": r.created_at.isoformat(),
+            "actor_type": r.actor_type,
+            "actor_id": r.actor_id,
+            "action": r.action,
+            "resource_type": r.resource_type,
+            "resource_id": r.resource_id,
+            "task_id": r.task_id,
+            "outcome": r.outcome,
+            "policy_decision": r.policy_decision,
+            "policy_rule_id": r.policy_rule_id,
+            "approval_id": r.approval_id,
+            "trace_id": r.trace_id,
+            "context": r.context,
+        }
+        for r in rows
+    ]
+    stmt = (
+        select(func.count())
+        .select_from(AuditLog)
+        .where(AuditLog.organization_id == ctx.organization_id)
     )
+    for column, value in (
+        (AuditLog.resource_type, resource_type),
+        (AuditLog.resource_id, resource_id),
+        (AuditLog.actor_id, actor_id),
+        (AuditLog.action, action),
+        (AuditLog.task_id, task_id),
+    ):
+        if value is not None:
+            stmt = stmt.where(column == value)
+    total = int((await ctx.session.execute(stmt)).scalar_one())
+    return {
+        "items": items,
+        "limit": limit,
+        "offset": offset,
+        "total": total,
+        "returned": len(items),
+    }
 
 
 @router.get("/audit/denials")

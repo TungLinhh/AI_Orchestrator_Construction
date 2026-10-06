@@ -14,11 +14,12 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ai_orchestrator.api.deps import ApiContext, get_context, page_params, paginate
 from ai_orchestrator.api.health import bump
-from ai_orchestrator.domain.errors import NotFoundError
+from ai_orchestrator.domain.enums import AutonomyLevel
+from ai_orchestrator.domain.errors import NotFoundError, ValidationError
 from ai_orchestrator.domain.state_machines import Transition
 from ai_orchestrator.persistence.repositories.organization import (
     AgentCapabilityRepository,
@@ -62,6 +63,28 @@ class CreateAgentRequest(BaseModel):
     capabilities: list[str] = Field(default_factory=list)
 
 
+class UpdateAgentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    description: str | None = None
+    model_profile: str | None = Field(default=None, min_length=1, max_length=128)
+    autonomy_level: str | None = Field(
+        default=None,
+        pattern=r"^l[0-4]_(suggest|low_risk_autonomous|parent_review|human_approval|bounded_autonomous)$",
+    )
+    runtime_adapter: str | None = Field(default=None, min_length=1, max_length=128)
+    budget_limit_usd: float | None = Field(default=None, ge=0)
+    budget_limit_tokens: int | None = Field(default=None, ge=0)
+    capabilities: list[str] | None = None
+
+    @model_validator(mode="after")
+    def non_nullable_fields(self) -> UpdateAgentRequest:
+        for name in self.model_fields_set - {"budget_limit_usd", "budget_limit_tokens"}:
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} cannot be null")
+        return self
+
+
 class BindSkillRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -74,7 +97,7 @@ class BindToolRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     tool_id: str
-    max_risk: str = "medium"
+    max_risk: str = "read_only"
     requires_approval: bool = False
     rate_limit_override: int | None = Field(default=None, ge=1, le=100_000)
 
@@ -226,7 +249,7 @@ async def get_agent(agent_id: str, ctx: ApiContext = Depends(get_context)) -> di
 
 @router.patch("/{agent_id}")
 async def update_agent(
-    agent_id: str, body: dict[str, Any], ctx: ApiContext = Depends(get_context)
+    agent_id: str, body: UpdateAgentRequest, ctx: ApiContext = Depends(get_context)
 ) -> dict[str, Any]:
     """Adjust the operational envelope: budgets, capabilities, model profile.
 
@@ -236,6 +259,17 @@ async def update_agent(
     ctx.require_admin()
     repo = AgentRepository(ctx.session, ctx.organization_id)
     agent = await repo.get(agent_id)
+    if body.autonomy_level is not None:
+        try:
+            AutonomyLevel(body.autonomy_level)
+        except ValueError as exc:
+            raise ValidationError("unknown autonomy level") from exc
+    if body.model_profile is not None:
+        from ai_orchestrator.application.model_profiles import load_profiles_from_session
+
+        profiles = await load_profiles_from_session(ctx.session, ctx.organization_id)
+        if body.model_profile not in profiles.profiles:
+            raise ValidationError("unknown model profile", details={"profile": body.model_profile})
     mutable = {
         "description",
         "model_profile",
@@ -245,11 +279,9 @@ async def update_agent(
         "budget_limit_tokens",
         "capabilities",
     }
-    for key, value in body.items():
+    for key, value in body.model_dump(exclude_unset=True).items():
         if key not in mutable:
             msg = f"field {key!r} is not mutable through this endpoint"
-            from ai_orchestrator.domain.errors import ValidationError
-
             raise ValidationError(msg, details={"field": key, "mutable": sorted(mutable)})
         setattr(agent, key, value)
     await ctx.session.flush()
@@ -312,7 +344,9 @@ async def get_capabilities(agent_id: str, ctx: ApiContext = Depends(get_context)
         list(
             (
                 await ctx.session.execute(
-                    select(Skill.name, Skill.governance_state).where(Skill.id.in_(list(skill_ids)))
+                    select(Skill.id, Skill.name, Skill.governance_state).where(
+                        Skill.id.in_(list(skill_ids))
+                    )
                 )
             ).all()
         )
@@ -322,7 +356,7 @@ async def get_capabilities(agent_id: str, ctx: ApiContext = Depends(get_context)
     tools = list(
         (
             await ctx.session.execute(
-                select(Tool.name, Tool.risk_level, Tool.requires_approval).where(
+                select(Tool.id, Tool.name, Tool.risk_level, Tool.requires_approval).where(
                     Tool.id.in_([b.tool_id for b in tool_bindings])
                 )
             )
@@ -332,17 +366,22 @@ async def get_capabilities(agent_id: str, ctx: ApiContext = Depends(get_context)
     return {
         "agent_id": agent_id,
         "declared": agent.capabilities,
-        "skills": [{"name": name, "governance_state": state} for name, state in skills],
+        "skills": [
+            {"id": skill_id, "name": name, "governance_state": state}
+            for skill_id, name, state in skills
+        ],
         "tools": [
             {
+                "id": tool_id,
                 "name": name,
                 "risk_level": risk,
-                "requires_approval": requires,
+                "requires_approval": requires
+                or any(b.requires_approval for b in tool_bindings if b.tool_id == tool_id),
                 "binding_max_risk": next(
-                    (b.max_risk for b in tool_bindings if b.tool_id == b.tool_id), None
+                    (b.max_risk for b in tool_bindings if b.tool_id == tool_id), None
                 ),
             }
-            for name, risk, requires in tools
+            for tool_id, name, risk, requires in tools
         ],
     }
 

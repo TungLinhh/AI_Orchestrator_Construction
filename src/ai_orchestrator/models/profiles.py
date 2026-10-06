@@ -40,17 +40,11 @@ _DETERMINISTIC = ModelCandidate(
     max_classification=DataClassification.SECRET,
 )
 
-#: The operator's chosen model. Free, 512k context, supports tools and structured
-#: output -- verified against the live API, not read off the catalogue entry.
-#:
-#: `qwen3.8-27b:free`, not `dots-studio/dots-3-note-preview:free`: the dots model
-#: failed every task with `Model token limit (provider default) exceeded before
-#: any response was generated`, on a prompt a fraction of its 512k context. The
-#: limit it hit is its own reasoning budget, not the context window, and the
-#: message names the wrong knob.
+#: The operator's chosen free OpenRouter model. Keep the configured preference
+#: first; fallback usage is recorded separately by the gateway.
 _PRIMARY_FREE = ModelCandidate(
     provider="openrouter",
-    model="qwen/qwen3.8-27b:free",
+    model="dots-studio/dots-3-note-preview:free",
     pricing=_pricing("0", "0"),
     max_classification=DataClassification.PUBLIC,
 )
@@ -118,8 +112,8 @@ def default_profiles() -> dict[str, ModelProfile]:
     """
     return {
         # The operator's chosen model, first in every profile. Free, 512k
-        # context, and it supports tools and structured output — verified against
-        # the live API, not assumed from the catalogue entry.
+        # context, tools and structured output advertised by the provider catalogue.
+        # Live availability still depends on provider capacity and quota.
         #
         # Placed ahead of the deterministic provider on purpose: the point of
         # this deployment is a real model deciding real work. A profile whose

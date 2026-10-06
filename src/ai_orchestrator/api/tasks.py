@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from ai_orchestrator.api.deps import (
@@ -604,7 +604,12 @@ async def retry_task(task_id: str, ctx: ApiContext = Depends(get_context)) -> di
 
 
 @router.get("/tasks/{task_id}/report")
-async def get_task_report(task_id: str, ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+async def get_task_report(
+    task_id: str,
+    event_limit: int = Query(200, ge=1, le=1000),
+    event_offset: int = Query(0, ge=0),
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
     """The account of a task: what was asked, and everything that happened to it.
 
     Separate from `GET /tasks/{task_id}` on purpose. That one returns the row; this
@@ -618,7 +623,13 @@ async def get_task_report(task_id: str, ctx: ApiContext = Depends(get_context)) 
     """
     from ai_orchestrator.application.coordination import task_report
 
-    return await task_report(ctx.session, organization_id=ctx.organization_id, task_id=task_id)
+    return await task_report(
+        ctx.session,
+        organization_id=ctx.organization_id,
+        task_id=task_id,
+        event_limit=event_limit,
+        event_offset=event_offset,
+    )
 
 
 @router.get("/tasks/{task_id}/timeline")

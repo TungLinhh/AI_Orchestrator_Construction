@@ -276,6 +276,11 @@ class ModelGateway:
         """Providers with a usable credential. Names only."""
         return sorted(name for name, p in self._providers.items() if p.is_configured())
 
+    async def aclose(self) -> None:
+        """Release provider connections owned by this gateway."""
+        for provider in self._providers.values():
+            await provider.aclose()
+
     async def complete(self, request: ModelRequest) -> ModelResponse:
         """Route, call, and fall back on failure.
 

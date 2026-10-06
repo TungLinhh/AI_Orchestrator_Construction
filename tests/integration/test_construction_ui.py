@@ -299,7 +299,7 @@ class TestUnmeasuredIsNotOnTime:
         page = (await client.get("/api/v1/ui")).text
         # A dashed outline and no fill, against a solid bar for a measurement.
         assert ".bar.unmeasured .track" in page
-        assert ".bar.unmeasured .fillbar { display:none; }" in page, (
+        assert re.search(r"\.bar\.unmeasured \.fillbar\s*\{\s*display:\s*none;?\s*}", page), (
             "an unmeasured work package must render no bar at all: a bar is a width "
             "and a width is a measurement"
         )

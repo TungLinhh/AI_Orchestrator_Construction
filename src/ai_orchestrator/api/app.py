@@ -178,6 +178,7 @@ def _install_routes(app: FastAPI) -> None:
     from ai_orchestrator.api.agents import router as agents_router
     from ai_orchestrator.api.agents_control import router as agents_control_router
     from ai_orchestrator.api.approvals import router as approvals_router
+    from ai_orchestrator.api.console import router as console_router
     from ai_orchestrator.api.construction import router as construction_router
     from ai_orchestrator.api.documents import router as documents_router
     from ai_orchestrator.api.events_audit import router as events_audit_router
@@ -204,6 +205,7 @@ def _install_routes(app: FastAPI) -> None:
     # applies *within* a router, and is why `/approvals/stats` and `/events/stats` are
     # declared above their `{id}` siblings rather than below them — see F123.
     for router in (
+        console_router,
         organizations_router,
         agents_router,
         tasks_router,

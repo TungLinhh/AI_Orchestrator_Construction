@@ -49,6 +49,7 @@ from ai_orchestrator.application.event_view import enrich
 from ai_orchestrator.config.settings import get_settings
 from ai_orchestrator.domain.errors import NotFoundError, ValidationError
 from ai_orchestrator.persistence.models import Event
+from ai_orchestrator.web.page import render_console
 
 logger = logging.getLogger(__name__)
 
@@ -388,7 +389,7 @@ async def ui(org: str | None = Query(default=None, max_length=64)) -> HTMLRespon
             raise ValidationError(msg, details={"field": "org"})
         organization = org
     html = (
-        index.read_text(encoding="utf-8")
+        render_console(WEB_ROOT)
         .replace("__ORG_ID__", organization)
         # The page needs to know, or it prompts for a token that the server will not
         # look at. Rendering it from the server is also the only way the banner saying
