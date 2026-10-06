@@ -558,6 +558,11 @@ Object.assign(STR.vi, {
   "status.completed": "Hoàn tất",
   "status.failed": "Thất bại",
   "status.waiting_for_approval": "Chờ duyệt",
+  "status.waiting_for_input": "Chờ đầu vào",
+  "status.pending": "Chờ duyệt",
+  "status.approved": "Đã duyệt",
+  "status.rejected": "Từ chối",
+  "status.needs_information": "Cần bổ sung thông tin",
   "status.canceled": "Đã hủy",
   "status.cancelled": "Đã hủy",
   "status.expired": "Hết hạn",
@@ -600,6 +605,7 @@ function langSet(v) {
   if (b) b.textContent = state.lang === "vi" ? "EN" : "VI";
   paintStatic();
   if (state.connection) setConn(...state.connection);
+  paintSidebar();
 }
 function paintStatic() {
   const vi = state.lang === "vi";
@@ -866,19 +872,8 @@ function toast(message, bad) {
   );
 }
 
-/* ====================== notifications: popups that are kept ======================
-   A toast vanishes; the bell does not. Every stream-raised notification lives in both:
-   the popup for the moment, the bell list for later. The bell list survives a reload
-   (read ids in `localStorage`), because "you missed it and then reloaded" is exactly
-   when a memory-only list would lose the thing it exists to keep.
-
-   **Only fresh events notify.** `occurred_at` is compared against boot time, so the
-   backfill replay on connect — which can be hundreds of old events — populates state
-   without a hundred popups. A 60s tolerance covers clock skew between the server that
-   stamped the event and the browser reading it; anything older than that at boot is
-   history, and history does not pop up.
-   ================================================================== */
-const NOTIF_SEEN_KEY = "ao-notif-seen-v1";
+/* Notifications reconcile with the durable pending inbox, including after reload. */
+const NOTIF_SEEN_KEY = "ao-notif-seen-v2:" + ORG;
 let notifs = [];
 try {
   const seen = JSON.parse(localStorage.getItem(NOTIF_SEEN_KEY) || "[]");
@@ -908,7 +903,7 @@ function paintBell() {
   const badge = $("notifCount");
   if (badge) {
     badge.textContent = n ? String(n) : "";
-    badge.hidden = true;
+    badge.hidden = !n;
   }
   document.title = n ? `(${n}) Orchestrator` : "Orchestrator";
   const list = $("notifList");
@@ -920,11 +915,11 @@ function paintBell() {
         .reverse()
         .map(
           (nt) => `
-      <div class="notif${nt.read ? " read" : ""}" data-notif="${esc(nt.id)}">
+      <a class="notif${nt.read ? " read" : ""}" href="${esc(nt.href || "#/work/approvals")}" data-notif="${esc(nt.id)}">
         <span class="ndot"></span>
         <div class="grow"><div class="nt">${esc(nt.title)}</div>
           <div class="ns">${esc(nt.body)}${nt.at ? " · " + esc(ago(nt.at)) : ""}</div></div>
-      </div>`,
+      </a>`,
         )
         .join(""),
     );
@@ -934,7 +929,7 @@ function paintBell() {
 }
 
 /** A popup with a jump link, plus a bell entry. One call, both surfaces. */
-function notify({ id, kind, title, body, href, action }) {
+function notify({ id, kind, title, body, href, action, silent = false, at }) {
   if (!id || state.backfill.has("notified:" + id)) return;
   state.backfill.add("notified:" + id);
   const nt = {
@@ -943,12 +938,17 @@ function notify({ id, kind, title, body, href, action }) {
     title,
     body: body || "",
     href: href || "",
-    at: new Date().toISOString(),
+    at: at || new Date().toISOString(),
     read: state._notifSeen.has(id),
   };
   notifs.push(nt);
-  if (notifs.length > 60) notifs.splice(0, notifs.length - 60);
+  const general = notifs.filter(n => !n.id.startsWith("approval:"));
+  if (general.length > 60) {
+    const expired = new Set(general.slice(0, general.length - 60).map(n => n.id));
+    notifs = notifs.filter(n => !expired.has(n.id));
+  }
   paintBell();
+  if (silent || nt.read) return;
   // The popup. Text plus one link — a popup with two actions is a dialog, and this is
   // not the place for a decision, only for "go look".
   const el = $("toast");
@@ -977,11 +977,12 @@ $("notifBtn").onclick = (e) => {
   e.stopPropagation();
   const panel = $("notifPanel");
   panel.hidden = !panel.hidden;
+  $("notifBtn").setAttribute("aria-expanded", String(!panel.hidden));
 };
 document.addEventListener("click", (e) => {
   const panel = $("notifPanel");
   if (panel && !panel.hidden && !e.target.closest(".bellwrap"))
-    panel.hidden = true;
+    { panel.hidden = true; $("notifBtn").setAttribute("aria-expanded", "false"); }
   const row = e.target.closest("[data-notif]");
   if (row && row.dataset.notif) {
     const nt = notifs.find((n) => n.id === row.dataset.notif);
@@ -999,35 +1000,49 @@ $("notifClear").onclick = () => {
   paintBell();
 };
 
-/* Badges, refreshed on a trailing debounce rather than per frame. A burst of forty
-   events must not cause forty pairs of fetches; fifteen seconds stale is nothing against
-   a human reading speed, and a badge that lags the truth by seconds beats one that
-   costs the API a stampede. */
+/* Stream-triggered refresh plus a short recovery poll when the stream is unavailable. */
 let badgeTimer = null;
+let inboxRefreshing = false;
+let inboxRefreshAgain = false;
+let inboxInitialized = false;
+async function refreshNotificationInbox() {
+  if (inboxRefreshing) { inboxRefreshAgain = true; return; }
+  inboxRefreshing = true;
+  try {
+    const items = [];
+    for (let offset = 0; ; offset += 200) {
+      const page = await apiGet("/approvals", { status: "pending", limit: 200, offset });
+      items.push(...page.items);
+      if (page.items.length < 200) break;
+    }
+    const live = new Set(items.map(a => "approval:" + a.id));
+    notifs = notifs.filter(n => !n.id.startsWith("approval:") || live.has(n.id));
+    for (const a of items) {
+      notify({ id: "approval:" + a.id, kind: "warn",
+        title: tr("notif.decision", "A decision is waiting on you"),
+        body: a.reason || a.action_type,
+        href: "#/approval/" + encodeURIComponent(a.id),
+        action: tr("notif.review", "Review"),
+        at: a.created_at, silent: !inboxInitialized });
+    }
+    // A resolved request may be reintroduced only with a new approval id.
+    setHTML("navApprovalCount", items.length ? String(items.length) : "");
+    $("navApprovalCount").hidden = !items.length;
+    inboxInitialized = true;
+    paintBell();
+  } catch {
+    // Preserve the last known inbox on transport errors; reconnect/poll retries it.
+  } finally {
+    inboxRefreshing = false;
+    if (inboxRefreshAgain) { inboxRefreshAgain = false; scheduleBadgeRefresh(); }
+  }
+}
 function scheduleBadgeRefresh() {
   if (badgeTimer) return;
-  badgeTimer = setTimeout(async () => {
+  badgeTimer = setTimeout(() => {
     badgeTimer = null;
-    try {
-      const [inbox, q] = await Promise.all([
-        apiGet("/approvals/inbox").catch(() => null),
-        apiGet("/ceo/work", { limit: 1 }).catch(() => null),
-      ]);
-      if (inbox) {
-        setHTML("navApprovalCount", inbox.count ? String(inbox.count) : "");
-        $("navApprovalCount").hidden = !inbox.count;
-      }
-      if (q) {
-        const badge = $("navWorkCount");
-        if (badge) {
-          badge.textContent = q.needs_you ? String(q.needs_you) : "";
-          badge.hidden = !q.needs_you;
-        }
-      }
-    } catch {
-      /* badges are advisory; a failed refresh is not an error to show */
-    }
-  }, 15000);
+    refreshNotificationInbox();
+  }, 100);
 }
 
 /** Classify one stream event into a notification, or nothing. Kept beside `eventLine`
@@ -1040,15 +1055,6 @@ function notifFor(ev) {
   // History does not pop up: only events stamped after this page booted (with a 60s
   // tolerance for clock skew) may notify. The backfill replay still populates state.
   if (!Number.isNaN(when) && when < state.bootedAt - 60000) return null;
-  if (/approval\.requested/i.test(type)) {
-    return {
-      kind: "warn",
-      title: tr("notif.decision", "A decision is waiting on you"),
-      body: v.title || tr("notif.decision_sub", "an approval was requested"),
-      href: "#/work",
-      action: tr("notif.review", "Review"),
-    };
-  }
   if (/task\.failed/i.test(type)) {
     return {
       kind: "bad",
@@ -1136,3 +1142,29 @@ async function apiPost(path, body) {
   }
   return r.json();
 }
+
+function paintSidebar() {
+  const collapsed = document.documentElement.classList.contains("sidebar-collapsed");
+  const btn = $("sidebarToggle");
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="${collapsed ? "M6 3l5 5-5 5" : "M10 3L5 8l5 5"}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  btn.title = state.lang === "vi"
+    ? (collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên")
+    : (collapsed ? "Expand sidebar" : "Collapse sidebar");
+  btn.setAttribute("aria-label", btn.title);
+  btn.setAttribute("aria-expanded", String(!collapsed));
+  document.querySelectorAll("#navItems a").forEach(a => {
+    const label = a.querySelector("[data-i18n]")?.textContent || a.textContent;
+    a.setAttribute("aria-label", label.trim());
+    a.title = label.trim();
+  });
+}
+try {
+  if (localStorage.getItem("ao-sidebar-collapsed") === "true")
+    document.documentElement.classList.add("sidebar-collapsed");
+} catch { /* storage may be unavailable */ }
+$("sidebarToggle").onclick = () => {
+  document.documentElement.classList.toggle("sidebar-collapsed");
+  try { localStorage.setItem("ao-sidebar-collapsed", String(document.documentElement.classList.contains("sidebar-collapsed"))); } catch { }
+  paintSidebar();
+};
+paintSidebar();

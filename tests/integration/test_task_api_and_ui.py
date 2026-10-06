@@ -20,6 +20,7 @@ broken version:
 
 from __future__ import annotations
 
+import re
 import uuid
 from typing import Any
 
@@ -549,7 +550,8 @@ class TestTheOperatorView:
         """
         text = _js_without_comments((await client.get("/api/v1/ui")).text)
         for invented in ("to_agent_name", "from_agent_name", "result.note", "a.status"):
-            assert invented not in text, (
+            # Match a JS identifier, not the suffix of a valid draft `data.status`.
+            assert re.search(r"\b" + re.escape(invented) + r"\b", text) is None, (
                 f"the view reads {invented!r}, which no payload has ever contained"
             )
         # And the names it *should* read, so the test fails if the working version is

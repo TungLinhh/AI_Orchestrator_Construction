@@ -486,3 +486,37 @@ class TestAuditLog:
         )
         other = AuditService(tenant.session, "org_someone_else")
         assert await other.query(limit=10) == []
+
+
+async def test_pending_api_pagination_preserves_second_page_and_hides_expiry(client, tenant):
+    from datetime import timedelta
+
+    from ai_orchestrator.persistence.base import utcnow
+    from tests.integration.api_client import auth_headers
+
+    service = ApprovalService(tenant.session, tenant.organization_id)
+    for index in range(6):
+        row = await service.create(
+            ApprovalRequest(
+                organization_id=tenant.organization_id,
+                action_type="test.review",
+                action_payload={"index": index},
+                requested_by="fixture-agent",
+                reason="Review test item",
+            )
+        )
+        if index == 0:
+            row.expires_at = utcnow() - timedelta(seconds=1)
+    await tenant.commit()
+    pages = []
+    for offset in (0, 2, 4):
+        response = await client.get(
+            "/api/v1/approvals",
+            params={"status": "pending", "limit": 2, "offset": offset},
+            headers=auth_headers(tenant.organization_id),
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["total"] == 5
+        pages.extend(a["id"] for a in data["items"])
+    assert len(pages) == len(set(pages)) == 5

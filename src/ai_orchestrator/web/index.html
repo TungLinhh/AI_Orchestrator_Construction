@@ -20,6 +20,7 @@
         <div class="sub">O-Nexus</div>
       </div>
     </div>
+    <button class="btn ghost sm sidebar-toggle" id="sidebarToggle" aria-controls="navItems" aria-expanded="true" title="Collapse sidebar">‹</button>
     <div class="items" id="navItems">
       <div class="label" data-i18n="nav.workspace">Workspace</div>
       <a href="#/give" data-nav="give"><span class="ic">▤</span><span data-i18n="nav.give">Work</span></a>
@@ -61,7 +62,7 @@
           marks it read.
         -->
         <span class="bellwrap">
-          <button class="btn ghost sm" id="notifBtn" title="Notifications">🔔
+          <button class="btn ghost sm" id="notifBtn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
             <span class="count" id="notifCount" hidden></span></button>
           <div class="bellpanel" id="notifPanel" hidden>
             <div class="bellhead"><b data-i18n="bell.title">Notifications</b>

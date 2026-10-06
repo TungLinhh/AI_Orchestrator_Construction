@@ -19,6 +19,7 @@ harmful rather than merely wrong:
 from __future__ import annotations
 
 import datetime as dt
+import json
 
 import pytest
 from sqlalchemy import event, text
@@ -647,3 +648,43 @@ class TestTheReportIsHonest:
         assert row["policy_decision"] == "retryable_failure"
         assert "timeout" in str(row["policy_reason"])
         assert str(row["policy_reason"]).startswith("failed with timeout")
+
+
+@pytest.mark.parametrize("marker", ["business_workflow", "agent_workflow"])
+async def test_generic_maintenance_preserves_controller_owned_waits(tenant, marker):
+    from ai_orchestrator.application.task_reaper import (
+        UNCLAIMED_TASKS_SQL,
+        abandon_unclaimed_tasks,
+    )
+
+    waiting = await _task(tenant, TaskStatus.WAITING_FOR_INPUT, updated=_ago(hours=200))
+    assigned = await _task(tenant, TaskStatus.ASSIGNED, updated=_ago(hours=200))
+    for task_id in (waiting, assigned):
+        await tenant.session.execute(
+            text("UPDATE tasks SET input = CAST(:input AS jsonb) WHERE id = :id"),
+            {"input": json.dumps({marker: True}), "id": task_id},
+        )
+    report = await _sweep(tenant)
+    assert report.candidates == 0
+    abandoned = await tenant.run(
+        lambda session: abandon_unclaimed_tasks(
+            session, organization_id=tenant.organization_id, now=NOW
+        )
+    )
+    assert abandoned == []
+    assert (await _row(tenant, waiting))["status"] == "waiting_for_input"
+    assert (await _row(tenant, assigned))["status"] == "assigned"
+
+    # This is also the script's post-write read-back query, not an independent predicate.
+    count_sql = text(f"SELECT count(*) FROM ({UNCLAIMED_TASKS_SQL}) unclaimed")
+    params = {"o": tenant.organization_id, "since": NOW - dt.timedelta(hours=1)}
+    assert (await tenant.session.execute(count_sql, params)).scalar_one() == 0
+    ordinary = await _task(tenant, TaskStatus.ASSIGNED, updated=_ago(hours=200))
+    assert (await tenant.session.execute(count_sql, params)).scalar_one() == 1
+    abandoned = await tenant.run(
+        lambda session: abandon_unclaimed_tasks(
+            session, organization_id=tenant.organization_id, now=NOW
+        )
+    )
+    assert abandoned == [ordinary]
+    assert (await tenant.session.execute(count_sql, params)).scalar_one() == 0

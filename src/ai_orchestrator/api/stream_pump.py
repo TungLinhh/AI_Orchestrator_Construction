@@ -43,15 +43,17 @@ async def publish_from_database(fanout: Any, organization_id: str) -> int:
 
     Cursor is a timestamp rather than an offset because `events` is append-only with
     no sequence column of its own, and a timestamp cursor on an append-only table is
-    monotone in practice. `>` rather than `>=` so the last frame is not replayed on
-    every tick, which would look like the platform repeating itself.
+    a projection cursor. Commit order can differ from occurrence order in long
+    transactions; the approval bell therefore also reconciles its pending inbox
+    directly. `>` avoids replaying the last frame on every tick.
     """
     from ai_orchestrator.api.stream import frame_of
     from ai_orchestrator.application.event_view import enrich
     from ai_orchestrator.persistence.session import Database
 
     db: Database = fanout.db
-    cursor: datetime | None = getattr(fanout, "cursor", None)
+    cursors: dict[str, datetime] = getattr(fanout, "cursors", {})
+    cursor = cursors.get(organization_id)
     stmt = select(Event).where(Event.organization_id == organization_id)
     if cursor is not None:
         stmt = stmt.where(Event.occurred_at > cursor)
@@ -66,7 +68,8 @@ async def publish_from_database(fanout: Any, organization_id: str) -> int:
         await enrich(frames, session, organization_id)
     for frame in frames:
         await fanout.publish(frame)
-    fanout.cursor = events[-1].occurred_at
+    cursors[organization_id] = events[-1].occurred_at
+    fanout.cursors = cursors
     return len(events)
 
 
@@ -79,7 +82,7 @@ async def run_stream_pump(
     """Poll the durable event log and push what is new, forever.
 
     Deliberately a database poll rather than a NATS consumer for the *first* version.
-    It needs no broker, survives a broker restart, cannot lose an event, and — the
+    It needs no broker, survives a broker restart, and — the
     part that matters for a first version — cannot acknowledge a message and then fail
     to render it. It costs one indexed query every two seconds per process, which for
     a control plane viewed by a human is nothing.

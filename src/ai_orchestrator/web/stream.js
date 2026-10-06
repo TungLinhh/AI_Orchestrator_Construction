@@ -121,6 +121,7 @@ async function stream() {
       });
       if (!r.ok || !r.body) throw new Error(String(r.status));
       setConn("ok", "conn.live", "live");
+      scheduleBadgeRefresh();
       const reader = r.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
@@ -234,6 +235,7 @@ function handleFrame(payload) {
   let notable = false;
   for (const ev of msg.events || [msg]) {
     if (!ev || !ev.id || !state.backfill.has(ev.id)) continue;
+    if (/approval\./i.test(ev.type || ev.event_type || "")) notable = true;
     const n = notifFor(ev);
     if (n) {
       n.id = ev.id;

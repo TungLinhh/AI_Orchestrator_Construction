@@ -352,6 +352,14 @@ function asDomNode(el, source) {
     value: el.attrs.value ?? "",
     selectedIndex: -1,
     get innerHTML() { return source || ""; },
+    set innerHTML(markup) {
+      source = String(markup);
+      const parsed = parseHTML(source);
+      el.children = parsed.children;
+      el.text = parsed.text;
+      for (const child of el.children) child.parent = el;
+      if (el.tag === "select") node.value = node.options.find(o => o.selected)?.value || node.options[0]?.value || "";
+    },
     querySelectorAll(s) { return queryTree(el, s).map((c) => asDomNode(c, "")); },
     querySelector(s) { return queryTree(el, s).map((c) => asDomNode(c, ""))[0] ?? null; },
     closest(s) {
@@ -436,6 +444,7 @@ async function fire(type, event) {
 }
 
 const document_ = {
+  documentElement: makeNode("html", "html"),
   getElementById(id) {
     if (!nodes.has(id)) nodes.set(id, makeNode(id, id === "sheet" ? "dialog" : "div"));
     return nodes.get(id);
@@ -1065,13 +1074,9 @@ try {
   check("the departments view loaded", !pageError, pageError ? pageError.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160) : "");
   check("the department tree rendered", /class="abox/.test(tree),
     `${(tree.match(/class="abox/g) || []).length} box(es)`);
-  /* Seven, since IT was added as the seventh department so BO-IT-SOP-007 and
-     PMO-KNW-SOP-006 stopped having no owner. **The number is read from the API's own
-     department count rather than written here**, because this check previously compared
-     against a literal of 6 and failed with "all six departments are present -- 7",
-     which reads as though the platform had invented a department. */
-  check("every department is present", depts.offices.length === EXPECTED_DEPARTMENTS,
-    `${depts.offices.length} of ${EXPECTED_DEPARTMENTS}`);
+  // Operators may add departments; verify the baseline and every live node's nesting.
+  check("the department roster retains the seed baseline", depts.offices.length >= EXPECTED_DEPARTMENTS,
+    `${depts.offices.length} live departments; minimum ${EXPECTED_DEPARTMENTS}`);
   check("the chief is the root of the tree", /Chief/.test(tree) && /Executive/.test(tree));
 
   /* --- the hierarchy, asserted structurally -------------------------------
@@ -1272,7 +1277,7 @@ try {
     headers: { "x-organization-id": ORG },
   })).json();
   const failed = (all.items || []).find((t) =>
-    ["failed", "cancelled", "blocked"].includes(t.status));
+    ["failed", "cancelled", "blocked"].includes(t.status) && !t.input?.agent_blueprint_draft && !t.input?.agent_workflow);
   const workList = $("giveList").innerHTML;
   const row = workList.match(/data-task="([^"]+)"/);
   check("a task row exists to open", !!row, row ? row[1] : "no data-task in the list");
@@ -1361,6 +1366,18 @@ try {
    the checks are about the four questions the view exists to answer -- where is it, what is
    waiting on me, what has been produced, and which SOP is this -- and about the two things it
    deliberately refuses to say. */
+/* Approval notifications share one durable identity across stream and inbox reloads. */
+const beforeNotif = vm.runInContext("notifs.length", sandbox);
+vm.runInContext('notify({id:"approval:ui-notification-check", title:"Review this draft", href:"#/approval/ui-notification-check", silent:true})', sandbox);
+check("unread approval lights the bell badge", !$("notifCount").hidden && Number($("notifCount").textContent) >= 1);
+vm.runInContext('notify({id:"approval:ui-notification-check", title:"Duplicate", silent:true})', sandbox);
+check("stream and inbox duplicates keep one bell entry", vm.runInContext("notifs.length",sandbox) === beforeNotif+1);
+check("bell links the exact approval", $("notifList").innerHTML.includes('href="#/approval/ui-notification-check"'));
+check("restoring an approval does not interrupt with a toast", !$("toast").innerHTML.includes("Review this draft"));
+$("sidebarToggle").onclick();
+check("sidebar collapse is accessible and persistent", $("sidebarToggle").getAttribute("aria-expanded") === "false" && sandbox.document.documentElement.classList.contains("sidebar-collapsed"));
+$("sidebarToggle").onclick();
+check("sidebar expands again", $("sidebarToggle").getAttribute("aria-expanded") === "true");
 /* Primitive rendering and input contracts exercise nested untrusted values. */
 const readable = vm.runInContext('valueHTML({recommendation:{message:"<img src=x onerror=alert(1)>"},items:["Preserve the words",{score:7}]})', sandbox);
 check("nested records are readable and escaped without JSON", /Recommendation/.test(readable) && /Score/.test(readable) && /Preserve the words/.test(readable) && /&lt;img/.test(readable) && !/<img|json-block/.test(readable));
@@ -1420,6 +1437,27 @@ try {
     await vm.runInContext("route()",sandbox);
     check("agent controls preserve the selected agent identity",$("managementBody").innerHTML.includes(agent.id) && $("managementBody").innerHTML.includes(agent.name));
     check("agent configuration exposes actual profile and budget controls", /agent-config/.test($("managementBody").innerHTML) && /budget_limit_tokens/.test($("managementBody").innerHTML));
+  }
+  const blueprints=await (await fetch(`${BASE}/api/v1/agent-blueprints`,{headers:{"x-organization-id":ORG}})).json();
+  const completedPlan=blueprints.items.find(d=>d.status==="completed");
+  if(completedPlan){
+    sandbox.__hash="#/processes/provision/"+completedPlan.id;
+    await vm.runInContext("route()",sandbox);
+    const draft=await (await fetch(`${BASE}/api/v1/agent-blueprints/${completedPlan.id}`,{headers:{"x-organization-id":ORG}})).json();
+    const content=$("managementBody").innerHTML;
+    check("agent plan deep link renders the exact editable draft",!!$("blueprint-editor") && content.includes(draft.config.name));
+    check("all drafted tasks and source references are reviewable",draft.output.plan.steps.every(s=>content.includes(s.title) && s.source_sop_codes.every(code=>content.includes(code))));
+    check("agent plan has a separate human submission control",!!$("blueprint-submit") || !!draft.output.provisioned);
+    if(draft.output.provisioned){
+      const rootId=draft.output.provisioned.workflow_id;
+      sandbox.__hash="#/processes/provision/workflow/"+rootId;
+      await vm.runInContext("route()",sandbox);
+      const workflow=await (await fetch(`${BASE}/api/v1/agent-blueprints/workflows/${rootId}`,{headers:{"x-organization-id":ORG}})).json();
+      const workflowContent=$("managementBody").innerHTML;
+      check("prepared workflow opens its exact root and task links",workflowContent.includes(rootId) && workflow.steps.every(s=>workflowContent.includes("#/give/"+s.id)));
+      check("prepared workflow exposes refresh and current input requirements",!!$("blueprint-refresh") && workflow.missing_inputs.every(k=>workflowContent.includes(k)));
+      check("future source fields do not block partial submission", [...sandbox.document.querySelectorAll("#blueprint-inputs textarea")].every(el=>!el.hasAttribute("required")));
+    }
   }
   const events=await (await fetch(`${BASE}/api/v1/events?limit=2`,{headers:{"x-organization-id":ORG}})).json();
   if(events.items.length){

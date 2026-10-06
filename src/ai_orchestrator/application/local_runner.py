@@ -138,7 +138,7 @@ async def start(
         (
             await conn.execute(
                 text(
-                    "SELECT id, status, owner_agent_id, title FROM tasks "
+                    "SELECT id, status, owner_agent_id, title, input FROM tasks "
                     " WHERE organization_id = CAST(:o AS varchar(64)) AND id = :t"
                 ),
                 {"o": organization_id, "t": task_id},
@@ -149,6 +149,18 @@ async def start(
     )
     if task is None:
         raise NotFoundError(f"no task {task_id}")
+
+    task_input = task["input"] or {}
+    if any(
+        task_input.get(flag)
+        for flag in ("business_workflow", "agent_workflow", "agent_blueprint_draft")
+    ):
+        return RunHandle(
+            task_id=task_id,
+            agent_id=str(agent_id or task["owner_agent_id"] or ""),
+            started=False,
+            reason="Run this task through its workflow controller",
+        )
 
     remote = int(
         (await conn.execute(text(_IS_RUNNING), {"o": organization_id, "t": task_id})).scalar_one()

@@ -1,4 +1,39 @@
-# Kế hoạch workflow O-Nexus
+# FUTURE_WORK — kế hoạch O-Nexus
+
+## Ưu tiên hiện tại — cập nhật 2026-10-06
+
+**Thứ tự:** thông báo phê duyệt và UI → soạn agent bằng model free, Boss chỉnh sửa/duyệt, thiết lập workflow → tuyển MEP với hồ sơ thật → procurement → Design, QA/QC-HSE, Finance, Sales. Phát triển riêng phòng IT tạm hoãn; phần nhận CV và chứng cứ onboarding vẫn phục vụ HR. Không mở dự án Bãi Tràm.
+
+- **Đã triển khai và kiểm tra:** chuông khôi phục toàn bộ yêu cầu pending khi mở lại trang; sự kiện yêu cầu/đã duyệt ghi cùng transaction; badge không bị ẩn; kiểm tra dự phòng 5 giây khi mất stream. Mỗi thông báo mở đúng bản duyệt, không chỉ màn hình tổng. Cursor stream tách theo tenant.
+- **Đã triển khai và kiểm tra:** sidebar gọn, khoảng icon/chữ ngắn hơn, nút thu gọn có nhãn truy cập và lưu lựa chọn.
+- **Đã triển khai và kiểm tra:** bản nháp agent từ model real `:free`, không fallback sang model trả phí/scripted; lưu execution và model usage. Đầy đủ trách nhiệm, đầu vào, task, đầu ra, tiêu chí, SOP nguồn và cổng người duyệt. Boss sửa từng mục, thêm/xóa/sắp xếp bước; sửa tạo phiên bản và vô hiệu bản duyệt cũ. Cung cấp chuỗi bước và điểm kiểm soát từ playbook; mỗi bước nguồn có tham chiếu cần bao phủ. Đầu vào phải là nguồn hoặc đầu ra đã có của bước trước, không là sản phẩm tương lai. Tham chiếu đủ bước chưa chứng minh nội dung đạt chất lượng.
+- **Đã triển khai và kiểm tra:** chấp thuận đúng hash tự tạo definition, agent, skill đã phát hành, công cụ chỉ đọc, workflow và toàn bộ task/dependency/gate. Chờ đầu vào thực tế; người vận hành bắt đầu workflow bằng nút Run. Controller giữ thứ tự, nối đầu ra, chặn chạy/retry rời và dừng cả cây khi hủy. Các cổng duyệt sản phẩm tự tiếp tục sau quyết định thật. Quyền tuyển dụng, cấp production, an toàn, phát hành PO/thanh toán không được cấp từ bản nháp model.
+
+**Trạng thái thực tế bản HR:** draft `tsk_01m48f9egjw00p1qrzrkwhf7zn`, phiên bản 2, 26 bước/14 tham chiếu nguồn từ hai SOP. Console đã ghi quyết định chấp thuận của operator cục bộ lúc 18:50 ngày 2026-10-06; đã tạo agent và workflow `tsk_01m48gt2v1y0kyn9q1m6p3mf0k` với 26 task và 26 cổng duyệt, đang chờ đầu vào. Chưa chạy tuyển người thật. Model free ghi ba phản hồi thành công, 55.971 token, 0 USD; phủ tham chiếu chưa chứng minh chất lượng nội dung. Kế hoạch hiện tại nối nhiều quy trình HR thành một chuỗi; mốc tiếp theo phải tách tuyển dụng, payroll, hiệu suất, offboarding thành các workflow độc lập. Việc nhận nguồn theo từng bước đã được sửa trong bản rà soát này: bước đầu chỉ cần nguồn của chính bước đó, bước sau chờ nguồn bổ sung; nguồn đã cung cấp được khóa sau khi có bước hoàn thành.
+
+**Bổ sung trong lần rà soát:** trình soạn cho thêm/xóa/đổi mã nguồn đầu vào, kiểm tra mã trùng; workflow hiển thị dữ liệu còn thiếu của bước hiện tại và có nút cập nhật trạng thái. Nguồn bổ sung không ghi đè bằng chứng đã dùng. Yêu cầu thêm thông tin không gửi tín hiệu từ chối tới Temporal. Script demo và runner thông thường không bắt đầu các task do controller sở hữu; bước kiểm tra sau dọn hàng đợi dùng chung điều kiện chọn với bộ dọn. Script `scripts/audit_agent_blueprint.py` kiểm tra độc lập việc thiết lập từ bản được duyệt, không chứng nhận chất lượng hồ sơ hay hoàn thành nghiệp vụ.
+
+**Rà soát tính mạch lạc:** ánh xạ SOP Sales từ BD/CR và QA/QC-HSE từ HSE/RSK theo playbook, giữ thông tin nguồn/ánh xạ cho người duyệt; job dọn hàng đợi không được hủy/requeue các task do controller workflow sở hữu. Test kiểm tra người duyệt, hash, cách ly tenant, nối đầu ra, hủy khi model đang chạy và bảo toàn task chờ.
+
+**Sau bản này:** (1) đánh giá bản nháp theo từng bước SOP gốc, đủ trường chưa được tính là chất lượng đạt; (2) tách các nhánh vận hành độc lập của một phòng ban thành workflow tái dùng, có trigger và đầu vào riêng; (3) luồng hỏi thêm/sửa sản phẩm sau gate, retry có lịch sử và phục hồi khi process bị dừng; (4) đo độ trễ commit → bell qua browser, thêm nhắc/escalation theo SLA; (5) tuyển MEP live và procurement live theo các mốc dưới đây; (6) shadow thật 28 ngày trước khi nâng quyền. Mỗi mốc có bộ input cố định, phản ví dụ, log mọi bước và audit độc lập.
+
+Model free có quota và độ sẵn sàng riêng; khi hết quota giữ lỗi thực tế và không báo đã soạn/triển khai. Tham chiếu: [OpenRouter free variants và giới hạn](https://openrouter.ai/docs/api-reference/limits), [tool calling](https://openrouter.ai/docs/guides/features/tool-calling).
+
+## Kế hoạch triển khai tiếp theo có điều kiện nghiệm thu
+
+| Task | Phần phải xây | Điều kiện nghiệm thu |
+|---|---|---|
+| ORG-01 · tách chu kỳ HR | Một kế hoạch phòng ban chứa các template tuyển dụng, payroll, hiệu suất, offboarding độc lập; mỗi template có trigger, nguồn theo bước và cổng duyệt cuối. Mỗi lần chạy giữ snapshot phiên bản được duyệt. | Tuyển MEP không đòi dữ liệu payroll/offboarding; chạy hai đợt không trộn CV, hồ sơ hoặc quyết định. Bản HR v2 đã duyệt được giữ làm lịch sử, bản thay thế phải duyệt lại. |
+| ORG-02 · nối kế hoạch với hành động thật | Dùng lại controller MEP/procurement hiện có cho mail, CV, hồ sơ vật tư và chứng cứ; phân biệt bước soạn tài liệu, nhận nguồn, kiểm chứng và duyệt bằng loại bước có executor được cho phép. | Model không tự khai rằng đã thực hiện hành động. Mỗi hành động có receipt/artefact đọc lại được; mọi quyền gửi ngoài, cấp tài khoản thật hoặc chi tiền cần quyết định đúng phạm vi. |
+| ORG-03 · sửa và tiếp tục sau gate | Hỏi thêm → người phụ trách nộp nguồn/trả lời → phiên bản sản phẩm mới → approval mới gắn hash mới. Retry tạo lượt mới giữ lịch sử; controller phục hồi từ trạng thái bền vững sau process restart. | Output cũ, người hỏi và lời giải thích vẫn đọc được; approval cũ không duyệt được bản mới. Thử lỗi giữa từng bước, retry trùng và restart trong lúc chờ người. |
+| HR-LIVE · tuyển MEP thật | Chốt brief/định biên, policy lương, người phụ trách HR; nhận CV thật theo subject của đợt; ghi hai vòng phỏng vấn, quyết định Boss, offer/acceptance và chứng cứ onboarding. | Tất cả 21 bước có nguồn, sản phẩm, log và quyết định thật ở chế độ live; thiếu nguồn dừng đúng bước. Kiểm toán độc lập, không dùng fixture để báo đã tuyển. |
+| PRC-LIVE · mua sắm thật | Chốt BOQ, ba báo giá, hồ sơ NCC, chứng chỉ từng dòng vật tư và người duyệt chất lượng; chạy RFQ/so sánh/DOA rồi kiểm tra hồ sơ giao nhận. | Mỗi vật tư có NCC được xét chất lượng; thiếu dòng, NCC đỏ hay lệch PO–GRN–Invoice chặn hoàn thành. Phát hành PO/thanh toán theo quyền được duyệt riêng. |
+| ORG-04 · thông báo có SLA | Đo commit → popup/bell trên browser nhiều lần; reconnect, nhiều trang pending, nhiều tenant; nhắc và escalation theo cấu hình. | Không mất yêu cầu pending hoặc mở nhầm hồ sơ; có số đo độ trễ và kiểm tra timeout. Một quan sát 5,798 giây chưa được tính là SLA. |
+| ORG-05 · mở phòng ban và tăng tự chủ | Sau HR/procurement, triển khai Design → QA/QC-HSE → Finance → Sales, bộ đánh giá theo hồ sơ O-Nexus của từng phòng. IT tiếp tục hoãn. | Hồ sơ đạt tiêu chí nội dung qua đánh giá độc lập và thử ngoại lệ; shadow thật 28 ngày trước khi nâng quyền. |
+
+Chọn mở rộng kế hoạch phòng ban thành các template có phiên bản thay vì thêm nhánh điều kiện vào chuỗi 26 bước: template là đơn vị duyệt và tái dùng, instance là đơn vị thực thi và ghi log. Dùng lại executor nghiệp vụ hiện có để giữ một đường xử lý mail/CV và vật tư. Trình bày trong UI theo ba lớp: kế hoạch phòng ban → các chu kỳ công việc → đợt đang chạy; click đợt mở đúng bước, nguồn, sản phẩm, gate và log của đợt đó.
+
+## Kế hoạch workflow O-Nexus
 
 Ngày 2026-10-06. Thứ tự do chủ sở hữu xác nhận: tuyển kỹ sư MEP đến onboarding, procurement, rồi các phòng ban còn lại. Không dùng dữ liệu Bãi Tràm.
 
@@ -40,7 +75,7 @@ Nghiệm thu: mọi bước bắt buộc xong, không task bỏ dở, điểm t�
 | QA/QC-HSE | ITP → chứng chỉ → inspection checklist → NCR → biện pháp sửa → kiểm tra lại → người nghiệm thu | Thiếu bằng chứng giữ pending; lệnh dừng thi công do người quyết |
 | Finance | Hồ sơ PO/GRN/invoice → 3-way match → tính thuế/tổng → kiểm tra DOA → người duyệt → đề xuất thanh toán → đối chiếu | Không trả tiền; sai số hoặc thiếu chứng từ chặn luồng |
 | Sales | Yêu cầu khách hàng → đối chiếu hợp đồng → phân loại → hỏi đơn vị chuyên môn → soạn phản hồi → duyệt cam kết → lưu follow-up | Mọi cam kết có nguồn, không gửi ngoài phạm vi được phép |
-| IT | Yêu cầu onboarding từ HR → quyền theo vai trò → duyệt truy cập → cấp trong staging → kiểm thử đăng nhập/quyền → bàn giao → rà soát | Không cấp production từ quyết định mô phỏng |
+| IT — tạm hoãn phát triển riêng | Yêu cầu onboarding từ HR → quyền theo vai trò → duyệt truy cập → cấp trong staging → kiểm thử đăng nhập/quyền → bàn giao → rà soát | Không cấp production từ quyết định mô phỏng |
 
 Sau hai workflow đầu, mở bộ đánh giá có phiên bản cho từng phòng ban và thử ngoại lệ trước khi tăng quyền. Điều kiện triển khai vẫn cần shadow thật ít nhất 28 ngày, đủ bốn tuần, đồng thuận ≥95%; không dùng simulation để thay traffic thật.
 
@@ -85,7 +120,9 @@ Các task dưới đây là backlog có điều kiện nghiệm thu, chưa phả
 
 **SAL-01** tiếp nhận yêu cầu/đơn khiếu nại và nguồn → **SAL-02** đối chiếu phạm vi hợp đồng và cam kết → **SAL-03** phân loại, giao đơn vị chuyên môn → **SAL-04** tổng hợp trả lời có căn cứ và phần chưa rõ → **SAL-05** tạo phương án, trách nhiệm, hạn xử lý → **SAL-06** người có quyền duyệt cam kết và bản gửi → **SAL-07** theo dõi xác nhận, đóng với chứng cứ hoặc giữ pending. Nghiệm thu: không suy diễn điều khoản, không tự gửi cam kết ngoài phạm vi được phép, không coi bản trả lời dự thảo là khách đã nhận.
 
-### Mốc 7 — IT
+### IT — tạm hoãn theo yêu cầu mới
+
+Không lên lịch phát triển riêng. Chỉ mở lại khi Boss yêu cầu; giữ hỗ trợ mail và onboarding thuộc luồng HR.
 
 **IT-01** nhận yêu cầu onboarding từ HR đã duyệt → **IT-02** lập quyền tối thiểu theo vai trò và danh mục hệ thống → **IT-03** người quản lý truy cập duyệt → **IT-04** cấp trong staging qua adapter, lưu receipt → **IT-05** kiểm đăng nhập và quyền cho phép/cấm → **IT-06** bàn giao, hướng dẫn và nhật ký → **IT-07** rà soát/thu hồi theo thay đổi nhân sự. Nghiệm thu: có bằng chứng cấp và kiểm thử thực tế, thử quyền từ chối, không cấp production bằng quyết định mô phỏng.
 

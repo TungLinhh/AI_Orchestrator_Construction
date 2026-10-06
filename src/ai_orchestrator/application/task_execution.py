@@ -436,6 +436,15 @@ class TaskExecutionService:
         started = time.monotonic()
         task = await self._tasks.get(task_id)
 
+        if task.input.get("agent_blueprint_draft") and self._runtime.name != "agent_blueprint":
+            raise PreconditionError("Generate this draft through its agent blueprint controller")
+        if task.input.get("agent_workflow") and (
+            self._runtime.name != "agent_blueprint"
+            or not task.input.get("stage_key")
+            or not task.input.get("inputs")
+        ):
+            raise PreconditionError("Run this task through its agent workflow controller")
+
         # Ordered business stages cannot be started through an ordinary agent run:
         # doing so could skip a workflow review or its independent evidence checks.
         if task.input.get("business_workflow"):

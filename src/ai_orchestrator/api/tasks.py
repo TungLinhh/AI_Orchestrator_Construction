@@ -362,7 +362,7 @@ async def cancel_task(
 
     repo = TaskRepository(ctx.session, ctx.organization_id)
     task = await repo.get(task_id)
-    if task.input.get("business_workflow"):
+    if task.input.get("business_workflow") or task.input.get("agent_workflow"):
         ctx.require_admin()
         if task.parent_task_id:
             from ai_orchestrator.domain.errors import PreconditionError
@@ -375,12 +375,44 @@ async def cancel_task(
         # Publish the root stop before interrupting the driver. Child rows may be
         # locked by an in-flight model call; waiting on them first deadlocks stop.
         await ctx.session.commit()
-        await cancel_business_run(ctx.organization_id, task_id)
+        if task.input.get("agent_workflow"):
+            from ai_orchestrator.api.agent_blueprints import cancel_agent_run
+
+            await cancel_agent_run(ctx.organization_id, task_id)
+        else:
+            await cancel_business_run(ctx.organization_id, task_id)
         async with request.app.state.db.tenant_session(ctx.organization_id) as cleanup_session:
             cleanup = TaskRepository(cleanup_session, ctx.organization_id)
             for stage_id, stage_status in (await cleanup.subtree_statuses(task_id)).items():
                 if stage_status not in {"completed", "failed", "canceled", "expired"}:
                     await cleanup.transition(stage_id, Transition.CANCEL)
+            if task.input.get("agent_workflow"):
+                from sqlalchemy import select
+
+                from ai_orchestrator.approvals.service import ApprovalService
+                from ai_orchestrator.domain.enums import EventType
+                from ai_orchestrator.persistence.base import utcnow
+                from ai_orchestrator.persistence.models import Approval
+
+                approvals = ApprovalService(cleanup_session, ctx.organization_id)
+                child_ids = list((await cleanup.subtree_statuses(task_id)).keys())
+                pending = (
+                    (
+                        await cleanup_session.execute(
+                            select(Approval).where(
+                                Approval.organization_id == ctx.organization_id,
+                                Approval.task_id.in_(child_ids),
+                                Approval.status == "pending",
+                            )
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                for approval in pending:
+                    approval.status = "expired"
+                    approval.expires_at = utcnow()
+                    await approvals._announce(approval, EventType.APPROVAL_EXPIRED)
         bump("tasks_canceled_total")
         return result
     task = await repo.transition(task_id, Transition.CANCEL)

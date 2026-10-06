@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import Select, and_, select, update
+from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ai_orchestrator.domain.authority import require_separate_approver
@@ -36,6 +36,7 @@ from ai_orchestrator.domain.enums import (
     ApprovalStatus,
     DataClassification,
     EffectClass,
+    EventType,
     RiskLevel,
 )
 from ai_orchestrator.domain.errors import (
@@ -209,9 +210,8 @@ class ApprovalService:
     async def create(self, request: ApprovalRequest) -> Approval:
         """Record a pending approval.
 
-        Also publishes `approval.requested` through the caller's task repository,
-        so a human sees it. That is done by the workflow, not here, to keep this
-        class free of event concerns.
+        The pending row and its notification event commit together, regardless
+        of which workflow requested the review.
         """
         if request.ttl_seconds <= 0:
             msg = "approval TTL must be positive; an approval that never expires is a deadlock"
@@ -241,7 +241,23 @@ class ApprovalService:
         )
         self._session.add(approval)
         await self._session.flush()
+        await self._announce(approval, EventType.APPROVAL_REQUESTED)
         return approval
+
+    async def _announce(self, approval: Approval, event_type: EventType) -> None:
+        from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+        await TaskRepository(self._session, self._org).emit(
+            event_type,
+            subject=approval.id,
+            actor_id=approval.decided_by or approval.requested_by,
+            data={
+                "approval_id": approval.id,
+                "task_id": approval.task_id,
+                "action_type": approval.action_type,
+                "status": approval.status,
+            },
+        )
 
     async def _check_authority(self, request: ApprovalRequest) -> None:
         """Route the request through the DOA matrix before it can become an approval.
@@ -391,6 +407,7 @@ class ApprovalService:
         approval.updated_at = utcnow()
         await self._session.flush()
 
+        await self._announce(approval, EventType.APPROVAL_DECIDED)
         if self._on_approved is not None and target is ApprovalStatus.APPROVED:
             # After the write, not before: a lesson drawn from a decision that
             # then failed to record is a lesson about something that did not
@@ -514,11 +531,29 @@ class ApprovalService:
                     details={"known": sorted(known)},
                 )
             stmt = stmt.where(Approval.status == status)
+            if status == ApprovalStatus.PENDING.value:
+                stmt = stmt.where(
+                    or_(Approval.expires_at.is_(None), Approval.expires_at >= utcnow())
+                )
         result = await self._session.execute(
             stmt.order_by(Approval.created_at.desc()).limit(limit).offset(offset)
         )
         rows: Sequence[Approval] = result.scalars().all()
         return rows
+
+    async def count(self, *, status: str | None = None) -> int:
+        stmt = (
+            select(func.count()).select_from(Approval).where(Approval.organization_id == self._org)
+        )
+        if status is not None:
+            if status not in {v.value for v in ApprovalStatus}:
+                raise ValidationError("Unknown approval status")
+            stmt = stmt.where(Approval.status == status)
+            if status == ApprovalStatus.PENDING.value:
+                stmt = stmt.where(
+                    or_(Approval.expires_at.is_(None), Approval.expires_at >= utcnow())
+                )
+        return int((await self._session.execute(stmt)).scalar_one())
 
     async def verify_payload(self, approval_id: str, action_payload: dict[str, Any]) -> None:
         """Confirm the payload about to run is the one that was approved.

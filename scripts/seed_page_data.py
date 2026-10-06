@@ -168,6 +168,8 @@ async def main() -> int:
                             # `make page` after the first one died on the harness's own
                             # test data.
                             " AND owner_agent_id IS NOT NULL"
+                            " AND NOT (input ?| ARRAY['business_workflow',"
+                            " 'agent_workflow', 'agent_blueprint_draft'])"
                         ),
                         {"o": org},
                     )

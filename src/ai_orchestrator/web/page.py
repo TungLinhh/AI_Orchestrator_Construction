@@ -9,6 +9,7 @@ SCRIPTS = (
     "stream.js",
     "management.js",
     "organization.js",
+    "agent-blueprints.js",
     "workflows.js",
     "library.js",
     "operations.js",

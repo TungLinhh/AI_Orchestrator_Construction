@@ -261,3 +261,40 @@ class TestTheFrameShape:
     def test_the_backfill_default_is_bounded(self) -> None:
         """A page load must not re-transmit a day of events."""
         assert 1 <= BACKFILL_LIMIT <= 500
+
+
+async def test_stream_cursor_is_independent_for_each_tenant(tenant, other_tenant):
+    from datetime import timedelta
+    from types import SimpleNamespace
+
+    from ai_orchestrator.api.stream_pump import publish_from_database
+    from ai_orchestrator.domain.ids import EventId
+    from ai_orchestrator.persistence.base import utcnow
+
+    ids = []
+    for context, age in ((tenant, 0), (other_tenant, 60)):
+        event_id = str(EventId.create())
+        ids.append(event_id)
+        context.session.add(
+            Event(
+                id=event_id,
+                organization_id=context.organization_id,
+                type="approval.requested",
+                source="control-plane",
+                subject="review",
+                data={},
+                occurred_at=utcnow() - timedelta(seconds=age),
+            )
+        )
+        await context.commit()
+    frames = []
+
+    async def publish(frame):
+        frames.append(frame)
+
+    fan = SimpleNamespace(db=tenant.db, publish=publish)
+    assert await publish_from_database(fan, tenant.organization_id) == 1
+    assert await publish_from_database(fan, other_tenant.organization_id) == 1
+    assert {f["id"] for f in frames} == set(ids)
+    assert await publish_from_database(fan, tenant.organization_id) == 0
+    assert await publish_from_database(fan, other_tenant.organization_id) == 0

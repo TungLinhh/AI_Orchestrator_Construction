@@ -377,7 +377,7 @@ document.addEventListener("click", async (e) => {
 
 async function decide(approvalId, action, extra) {
   try {
-    await apiPost(
+    const decision = await apiPost(
       `/approvals/${encodeURIComponent(approvalId)}/${action}`,
       extra,
     );
@@ -389,7 +389,10 @@ async function decide(approvalId, action, extra) {
           ? tr("appr.rejected", "Rejected.")
           : tr("appr.sentback", "Sent back with your question."),
     );
-    await refreshAfterAction();
+    await refreshNotificationInbox();
+    if (decision.provisioned)
+      go("#/processes/provision/workflow/" + decision.provisioned.workflow_id);
+    else await refreshAfterAction();
   } catch (err) {
     /* Said plainly, in the page. An approval that silently does nothing is worse
        than one that says it failed. */
@@ -1749,6 +1752,7 @@ async function renderApproval(id) {
     `${tr("need.approvals", "Approval")} · ${approval.action_type}`,
     `<div class="task-meta"><code>${esc(approval.id)}</code><span class="pill">${esc(approval.status)}</span></div>
     ${reasonBlock(approval.reason || "")}
+    ${approval.action_type === "agent.provision" ? `<a class="btn" href="#/processes/provision/${esc(approval.action_payload?.draft_id || "")}">${state.lang === "vi" ? "Chỉnh sửa kế hoạch trước khi duyệt" : "Edit the plan before approval"}</a>` : ""}
     <h3>${tr("appr.draft", "The exact draft requested for review")}</h3>${valueHTML(approval.action_payload || {})}
     ${approval.task_id ? `<a class="btn" href="#/give/${encodeURIComponent(approval.task_id)}/decisions">${tr("need.open", "Open task")}</a>` : ""}
     ${live ? `<div class="btn-row" style="margin-top:16px"><button class="btn primary" data-do="approve" data-id="${esc(id)}">${tr("appr.approve", "Approve")}</button><button class="btn danger" data-do="reject" data-id="${esc(id)}">${tr("appr.reject", "Reject")}</button></div>` : ""}`,
@@ -1830,7 +1834,8 @@ async function renderOneTask(id) {
   );
   $("runThisTask").hidden = !["created", "assigned"].includes(t.status);
   $("cancelTask").hidden = !(d.available_actions || []).includes("cancel");
-  if (t.workflow_id && t.workflow_id !== t.id) $("cancelTask").hidden = true;
+  if ((t.workflow_id && t.workflow_id !== t.id) ||
+      (t.agent_workflow_id && t.agent_workflow_id !== t.id)) $("cancelTask").hidden = true;
   $("runThisHint").hidden = $("runThisTask").hidden;
   setHTML(
     "runThisHint",
@@ -1843,6 +1848,16 @@ async function renderOneTask(id) {
       "runThisHint",
       `<a href="#/processes/workflows/${esc(t.workflow_id)}">${esc(state.lang === "vi" ? "Mở workflow để chạy đúng thứ tự và duyệt từng cổng" : "Open the workflow to run its ordered stages and reviews")}</a>`,
     );
+  }
+  if (t.agent_workflow_id) {
+    $("runThisTask").hidden = true;
+    $("runThisHint").hidden = false;
+    setHTML("runThisHint", `<a href="#/processes/provision/workflow/${esc(t.agent_workflow_id)}">${esc(state.lang === "vi" ? "Mở workflow agent để chạy và duyệt theo thứ tự" : "Open the agent workflow to run its ordered stages and reviews")}</a>`);
+  }
+  if (t.agent_blueprint_id) {
+    $("runThisTask").hidden = true;
+    $("runThisHint").hidden = false;
+    setHTML("runThisHint", `<a href="#/processes/provision/${esc(t.agent_blueprint_id)}">${esc(state.lang === "vi" ? "Mở bản thiết kế agent và nhật ký model" : "Open the agent plan and model log")}</a>`);
   }
   $("runThisState").textContent = statusName(t.status);
   taskNames.set(t.id, t.title);
@@ -1858,7 +1873,7 @@ async function renderOneTask(id) {
         t.status,
       );
   const rb = $("retryBtn");
-  rb.hidden = !retryable;
+  rb.hidden = !!t.agent_workflow_id || !!t.agent_blueprint_id || !retryable;
   if (retryable) {
     rb.title = t.last_error
       ? `Tạo một task MỚI cùng việc này. Lý do đã fail: ${String(t.last_error).slice(0, 160)}`

@@ -90,6 +90,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from ai_orchestrator.api.business_workflows import stop_business_runs
 
         await stop_business_runs()
+        from ai_orchestrator.api.agent_blueprints import stop_agent_workflows
+
+        await stop_agent_workflows()
         await database.dispose()
         if telemetry is not None:
             telemetry.shutdown()
@@ -181,6 +184,7 @@ def _install_error_handlers(app: FastAPI) -> None:
 
 
 def _install_routes(app: FastAPI) -> None:
+    from ai_orchestrator.api.agent_blueprints import router as agent_blueprints_router
     from ai_orchestrator.api.agents import router as agents_router
     from ai_orchestrator.api.agents_control import router as agents_control_router
     from ai_orchestrator.api.approvals import router as approvals_router
@@ -215,6 +219,7 @@ def _install_routes(app: FastAPI) -> None:
         console_router,
         business_workflows_router,
         organizations_router,
+        agent_blueprints_router,
         agents_router,
         tasks_router,
         skills_tools_router,

@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 
 class WorkflowEvidenceRuntime:
     name = "workflow_evidence"
+    output_token_limit = 6000
 
     def __init__(
         self,
@@ -145,6 +146,8 @@ class WorkflowEvidenceRuntime:
         for attempt in range(5):
             if self.requests_made >= context.budget.max_requests:
                 raise ValueError("CV/artifact runtime exhausted its shared model request budget")
+            if input_tokens + output_tokens + reasoning_tokens >= context.budget.max_tokens:
+                raise ValueError("Workflow artifact exhausted its token budget")
             self.requests_made += 1
             async with asyncio.timeout(
                 min(context.budget.max_runtime_s, get_settings().workflow_model_call_timeout_s)
@@ -172,7 +175,13 @@ class WorkflowEvidenceRuntime:
                         + feedback,
                         tools=[tool],
                         tool_choice={"type": "function", "function": {"name": "submit_evidence"}},
-                        max_output_tokens=min(6000, context.budget.max_tokens),
+                        max_output_tokens=min(
+                            self.output_token_limit,
+                            context.budget.max_tokens
+                            - input_tokens
+                            - output_tokens
+                            - reasoning_tokens,
+                        ),
                         remaining_budget_usd=context.budget.max_cost_usd - cost,
                         data_classification=context.data_classification,
                         attempt=attempt,

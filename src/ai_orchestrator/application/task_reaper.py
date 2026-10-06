@@ -107,6 +107,7 @@ SELECT id, status, updated_at, lease_expires_at, attempt_count,
        failure_category, title
 FROM tasks
 WHERE organization_id = CAST(:o AS varchar(40))
+  AND NOT (input ?| ARRAY['business_workflow', 'agent_workflow'])
   AND status IN ('running', 'blocked', 'waiting_for_input',
                  'waiting_for_approval', 'failed')
   AND (
@@ -312,16 +313,12 @@ STALE_RUNNING_EXECUTION_REASON = (
 #:
 #: `:since` rather than an interval literal, so the window is a parameter of the sweep and
 #: a caller can say "an hour" without this module owning the number.
-_ABANDONED_TASKS = """
-UPDATE tasks t
-SET status = 'failed',
-    last_error = :reason,
-    failure_category = 'infrastructure',
-    updated_at = :now
-WHERE t.id IN (
+# The maintenance post-check and mutation must select the same tasks.
+UNCLAIMED_TASKS_SQL = """
     SELECT t.id
     FROM tasks t
     WHERE t.organization_id = CAST(:o AS varchar(64))
+      AND NOT (t.input ?| ARRAY['business_workflow', 'agent_workflow'])
       AND t.status IN ('created', 'assigned', 'running')
       AND t.updated_at < :since
       AND NOT EXISTS (
@@ -332,9 +329,16 @@ WHERE t.id IN (
               AND e.status = 'running'
               AND e.started_at > :since
       )
-)
-RETURNING t.id
 """
+_ABANDONED_TASKS = f"""
+UPDATE tasks t
+SET status = 'failed',
+    last_error = :reason,
+    failure_category = 'infrastructure',
+    updated_at = :now
+WHERE t.id IN ({UNCLAIMED_TASKS_SQL})
+RETURNING t.id
+"""  # noqa: S608 — constant SQL fragment; runtime values use bound parameters
 
 #: The words a task fails with when nobody claimed it.
 #:
@@ -378,6 +382,10 @@ async def abandon_unclaimed_tasks(
     late: the default is an hour, the same `STUCK_AFTER_SECONDS` the fleet view already
     uses to draw a stranded box. **One window, two consumers** -- so "the console shows a
     stranded run" and "the sweep gave up on it" can never disagree.
+
+    Ordered workflow roots and stages are owned by their controllers, including
+    planned stages waiting behind input/review gates. Generic maintenance must not
+    abandon them or clear their ownership; stale execution diagnostics still run.
 
     Safe to run twice: the `UPDATE` matches only non-terminal rows, so a second sweep
     finds nothing. That is a consequence of the predicate rather than a coincidence, and
@@ -704,6 +712,7 @@ __all__ = [
     "ABANDONED_REASON",
     "REAPABLE_STATUSES",
     "STALE_EXECUTION_AFTER_SECONDS",
+    "UNCLAIMED_TASKS_SQL",
     "ReapReport",
     "abandon_unclaimed_tasks",
     "fail_stale_running_executions",

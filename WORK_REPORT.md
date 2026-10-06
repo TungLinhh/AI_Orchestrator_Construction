@@ -1,3 +1,58 @@
+# Current review and delivery — 2026-10-06
+
+This section is the current delivery record. The sections below it retain historical measurements and gate counts; they do not describe this release's final source.
+
+## Console, approvals and organisation coherence
+
+- Approval request/decision events and outbox records are written with the approval transaction. The bell restores all non-expired pending requests, uses tenant-scoped read markers and stable approval IDs, links to the exact review, and removes resolved requests. Stream refresh is debounced for 100 ms; a five-second durable inbox reconciliation recovers missed notifications. Fixed the hidden unread badge, double-offset pagination and a stream cursor shared across tenants. Timestamp event cursors still are not a guarantee of lossless delivery; the durable inbox is the recovery path.
+- Live browser observation found the HR version-2 request in both popup and bell within an upper bound of 5.798 seconds after the submit response. Reload retained one entry. This is one observation, not a latency percentile or SLA guarantee. The later local-console decision removed the resolved request from the bell.
+- The sidebar is 216 px with tighter spacing and icon/text gaps, and collapses to a persistent 64 px icon rail. Its toggle, tooltips, labels and notification controls are accessible. Both Vietnamese and English console paths are exercised by the page harness.
+- Generic Run/retry/individual cancellation cannot flatten or bypass business workflows or agent-owned workflows. Approval/rejection resumes the appropriate controller. Generic queue maintenance now excludes workflow-owned roots and planned stages, including work waiting for inputs or review; interrupted-driver and stale-execution diagnostics retain their separate responsibilities.
+
+## Free-model design, review and setup
+
+The new agent flow first requests a real OpenRouter `:free` model to expand the Boss mandate into an editable plan: responsibilities, instructions, source inputs, ordered tasks, outputs, criteria, source SOP codes/step references, and human review gates. The selected profile is reduced to explicitly zero-priced free candidates with no paid or scripted fallback. Errors, rejected artifacts and token usage remain recorded. Schema validation rejects missing source references, invented references, future-output inputs and stale edits; reference coverage alone does not prove semantic quality.
+
+The six enabled departments use the tenant SOP catalogue plus the explicit O-Nexus playbook mapping. This includes Sales sources filed under BD/CR, QA/QC-HSE sources under HSE/RSK and supporting mapped procedures for Design, Procurement and Finance. IT development is deferred; existing reference records and HR mail/onboarding support are retained. No new Bai Tram project work was started.
+
+Boss can edit every plan field and add, delete or reorder steps. Edits increment the revision and expire prior pending requests. Approval binds the exact reviewed configuration/plan hash. Setup is atomic with the decision: definition, agent at parent-review autonomy, published pinned skills, read-only tool bindings, workflow root, all stage tasks, review tasks and dependencies. Changed resource availability rolls the operation back. Sources arrive when their stage needs them; already supplied sources are immutable once a stage completes. Stages receive source inputs and preceding outputs, and later work waits for hash-bound human decisions. Local in-flight cancellation settles execution rows and stops descendants. Rework after a request for more information, durable controller recovery, owned retries and independent repeating department processes remain future work.
+
+## Actual HR authoring and local-console setup
+
+- Draft `tsk_01m48f9egjw00p1qrzrkwhf7zn` completed through the real free provider: three successful model responses, 55,971 total recorded tokens and zero USD model usage. No fake or paid provider was used. Earlier failed attempts remain failed in their historical rows.
+- The generated plan has 26 stages covering all 14 supplied step references from two HR SOPs. A system-authored editorial revision corrected criteria, source wiring and wording that could otherwise suggest interviews, offer transmission or payments had already occurred. The original model artifact remains in its execution record; the review is version 2.
+- Approval `apr_01m48fv39ej8ezped7k0frwg1v` was subsequently accepted through the local console at 2026-10-06 11:50:29 UTC (18:50:29 Asia/Saigon), recorded as `dev:no-auth:1fk2ahswkwhm`. This is a recorded local operator decision, not authenticated proof of the person's identity. The agent did not manufacture a human decision.
+- That decision actually created agent `agt_01m48gt2t1vdpfnr9z7dztktcb` and workflow `tsk_01m48gt2v1y0kyn9q1m6p3mf0k`: 26 stage tasks and 26 review tasks, all assigned. The root is `waiting_for_input`, with no supplied source inputs and no completed operational hiring stages. The source HR agent had no published pinned skills; its two read-only tools were copied, rather than claiming invented skills.
+- This generated workflow prepares and evaluates document artifacts. It does not itself send offers, conduct interviews, pay salaries or provision production accounts. It currently joins several HR procedures into one linear plan. This review fixed intake to wait at each stage rather than requiring future evidence up front. The next milestone splits recruitment, payroll, performance and offboarding into independent reusable workflows. The existing native MEP controller remains the concrete mail/evidence integration.
+
+Evidence under `.devdata/reports/`: `blueprint-hr-live.json`, `blueprint-hr-reviewed.json`, `blueprint-hr-live-audit.json`, `blueprint-review-request.json`, and `blueprint-latest-console-state.json`. The earlier pending-review audit is a dated snapshot; the last file records the subsequent decision and actual setup. Model credentials remain outside Git and reports.
+
+## Re-audit of the inherited business workflows
+
+The existing MEP root `tsk_01m47gke82xpv0savs9jc9akn1` still passes all 111 independent checks across 21/21 stages. SMTP/readonly IMAP and three synthetic CV hashes were real; scores remain 96/50/9 with only the strong CV shortlisted. Interviews, reviews and offer acceptance were explicit fixtures/system simulations. Five onboarding sandbox artifacts were written and read back; production provisioning remains false, and 30/60/90-day reviews are scheduled future work.
+
+The existing procurement root `tsk_01m47gke6va1a9x5246m6n3ewt` still passes all 75 independent checks across 13/13 stages, all three BOQ lines and an exact 77,000,000 VND fixture PO/GRN/invoice match. Materials reviews are simulated. No actual order, delivery or payment is claimed. Fresh reports are `review-mep-audit.json` and `review-procurement-audit.json`; this review did not repeat SMTP or supplier actions.
+
+## Additional review fixes and independent setup audit
+
+Source fields in the plan editor now support adding, removing and renaming keys, with duplicate-key feedback. Workflow detail shows only the current missing sources, accepts partial intake, preserves earlier evidence, exposes refresh, and links to the native business workflow controls. Integration coverage proves that screening can finish before interview evidence exists, later evidence resumes the workflow, and historical source text cannot be overwritten. A request for information no longer signals Temporal as a rejection; answering/resubmitting the review is still a future milestone.
+
+The page verifier had treated the seed's seven departments as an exact maximum. Operators had added an eighth unit, so this failed despite correct rendering. The check now uses the seed as a baseline; separate structural assertions still require every live department to appear in the correct office.
+
+`uv run python scripts/audit_agent_blueprint.py --org <org_id> --draft <draft_id> --output <report.json>` independently checks the saved approved revision, hash, agent autonomy, stage instructions/contracts, review tasks, exact dependency edges, read-only grants and real zero-cost model records. The actual HR setup passed 141 checks with zero completed stages; output explicitly says `agent_setup_only` and does not certify artifact quality. Evidence: `.devdata/reports/review-blueprint-provision.json`. The inherited MEP/procurement data were re-audited again at 111/75 checks without repeating email or supplier actions.
+
+## Release verification
+
+Verification passed: `make lint` (360 formatted files), `make typecheck` (162 source files), the full suite (3,336 passed, 3 skipped, 1 deselected), dedicated E2E (34 passed), and the final `make page` (exit 0). The full suite also includes E2E. Targeted checks passed 88 tests for blueprints/approvals/stream/maintenance and 54 for the final runner guard; after factoring the maintenance read-back selection, 43 maintenance/queue tests passed. The resulting mutation SQL was compared with its previous form and is unchanged apart from whitespace. Test model providers are fake/hash; actual authoring/model records are separately audited.
+
+The final page run initially exposed two maintenance integration defects: demo intake selected owned stages, and the sweep's read-back independently counted 52 protected HR tasks as abandoned after they aged past the queue window. The demo selector and runner now reject controller-owned work before scheduling; mutation and read-back share the same SQL selection and timestamp. The last page run started 0 of 0 ordinary runnable tasks, had no owned-workflow traceback, and passed all navigation checks. All 52 HR tasks remain assigned with no operational executions.
+
+API 8100 was refreshed and read back: primary is `dots-studio/dots-3-note-preview:free`; the HR root waits for `boss_brief` and `salary_band_policy` at its first stage, rather than every future source. This review executes the served UI against the live API in Node; it does not add a new browser screenshot of the final layout. The inherited browser bell observation above remains a separate measurement.
+
+Shadow readiness was rechecked: zero observations, zero elapsed weeks and no eligible deployment. The four-week/28-day, at-least-95-percent gate remains unmet. The ordered next milestones and acceptance conditions are maintained in FUTURE_WORK.md.
+
+---
+
 # Verification of the autonomous organisation, 2026-10-06
 
 The implementation continues the interrupted queue, approval, learning, and native deployment work. Reference files under `docs/` remain unchanged.

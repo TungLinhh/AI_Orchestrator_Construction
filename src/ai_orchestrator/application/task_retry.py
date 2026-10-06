@@ -76,7 +76,9 @@ RETRY_MARKER = " (lần chạy lại)"
 
 _READ = """
 SELECT id, title, goal, task_type, status, last_error, parent_task_id,
-       input->>'business_workflow' AS business_workflow
+       input->>'business_workflow' AS business_workflow,
+       input->>'agent_workflow' AS agent_workflow,
+       input->>'agent_blueprint_draft' AS agent_blueprint_draft
 FROM tasks
 WHERE id = CAST(:id AS varchar(64)) AND organization_id = CAST(:o AS varchar(64))
 """
@@ -131,6 +133,10 @@ async def retry_failed(
     )
     if original is None:
         raise NotFoundError(f"no task {task_id}")
+    if original["agent_blueprint_draft"]:
+        raise ConflictError("Generate model drafts through the agent blueprint controller")
+    if original["agent_workflow"]:
+        raise ConflictError("Agent workflow retries must preserve its owned stage tree")
     if original["business_workflow"]:
         raise ConflictError(
             "Ordered business work must be retried through its workflow controller",

@@ -25,6 +25,8 @@ $("skipContent").onclick = (event) => {
   // The bell restores its unread count from the last session, so a reload does not wipe
   // what has not been seen. Painted before the first render, not after the first event.
   paintBell();
+  await refreshNotificationInbox();
+  setInterval(refreshNotificationInbox, 5000);
   await route();
   if (state.es) state.es.abort();
   state.es = new AbortController();

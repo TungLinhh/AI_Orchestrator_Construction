@@ -45,6 +45,7 @@ from sqlalchemy import text  # noqa: E402
 
 from ai_orchestrator.application.fleet_view import STUCK_AFTER_SECONDS  # noqa: E402
 from ai_orchestrator.application.task_reaper import (  # noqa: E402
+    UNCLAIMED_TASKS_SQL,
     abandon_unclaimed_tasks,
     fail_stale_running_executions,
     reap_stranded_executions,
@@ -140,14 +141,10 @@ async def sweep(organization_id: str | None) -> int:
     async with Database.from_settings().tenant_session(organization_id) as session:
         still_open = (
             await session.execute(
-                text(
-                    "SELECT count(*) FROM tasks WHERE organization_id = CAST(:o AS"
-                    " varchar(64)) AND status IN ('created', 'assigned', 'running')"
-                    " AND updated_at < :since"
-                ),
+                text(f"SELECT count(*) FROM ({UNCLAIMED_TASKS_SQL}) unclaimed"),
                 {
                     "o": organization_id,
-                    "since": dt.datetime.now(tz=dt.UTC) - dt.timedelta(seconds=STUCK_AFTER_SECONDS),
+                    "since": now - dt.timedelta(seconds=STUCK_AFTER_SECONDS),
                 },
             )
         ).scalar()

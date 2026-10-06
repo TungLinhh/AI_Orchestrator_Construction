@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
-from ai_orchestrator.api.deps import ApiContext, get_context, paginate
+from ai_orchestrator.api.deps import ApiContext, get_context
 from ai_orchestrator.api.health import bump
 from ai_orchestrator.approvals import ApprovalService
 from ai_orchestrator.domain.human_exceptions import approval_class
@@ -81,7 +81,13 @@ async def list_approvals(
     """
     service = ApprovalService(ctx.session, ctx.organization_id)
     approvals = await service.listing(status=status_filter, limit=limit, offset=offset)
-    return paginate([_approval_dict(a) for a in approvals], limit, offset)
+    return {
+        "items": [_approval_dict(a) for a in approvals],
+        "limit": limit,
+        "offset": offset,
+        "returned": len(approvals),
+        "total": await service.count(status=status_filter),
+    }
 
 
 @router.get("/approvals/stats")
@@ -143,6 +149,16 @@ async def _decide(
     if ctx.actor.is_privileged_human:
         await ensure_local_operator(ctx.session, ctx.organization_id)
     service = ApprovalService(ctx.session, ctx.organization_id)
+    requested = await service.get(approval_id)
+    if requested.action_type == "agent.provision":
+        from ai_orchestrator.application.agent_blueprints import AgentBlueprintService
+
+        blueprints = AgentBlueprintService(ctx.session, ctx.organization_id)
+        draft = await blueprints.get(str(requested.task_id), lock=True)
+        if requested.action_payload != blueprints.payload(draft):
+            from ai_orchestrator.domain.errors import PreconditionError
+
+            raise PreconditionError("Blueprint changed; review the latest revision")
     decision = await service.decide(
         approval_id,
         approver=ctx.actor,
@@ -157,7 +173,7 @@ async def _decide(
     # that is still working.
     approval = await service.get(approval_id)
     signalled = False
-    if approval.workflow_id:
+    if approval.workflow_id and not body.needs_information:
         from ai_orchestrator.workflows.client import signal_approval_decision
 
         signalled = await signal_approval_decision(
@@ -193,23 +209,64 @@ async def _decide(
             task_id = str(approval.task_id)
             await ctx.session.commit()
             result["local_run"] = (await continue_goal(ctx.organization_id, task_id)).as_dict()
+    if approve and not body.needs_information and approval.action_type == "agent.provision":
+        result["provisioned"] = await blueprints.provision(approval_id, ctx.actor)
     return result
 
 
 @router.post("/approvals/{approval_id}/approve")
 async def approve(
-    approval_id: str, body: ApprovalDecisionRequest, ctx: ApiContext = Depends(get_context)
+    approval_id: str,
+    body: ApprovalDecisionRequest,
+    request: Request,
+    ctx: ApiContext = Depends(get_context),
 ) -> dict[str, Any]:
     """Approve. The decision is bound to a hash of the payload, verified
     immediately before the side effect runs."""
-    return await _decide(approval_id, body, ctx, approve=True)
+    approval = await ApprovalService(ctx.session, ctx.organization_id).get(approval_id)
+    action_type = approval.action_type
+    payload = dict(approval.action_payload or {})
+    result = await _decide(approval_id, body, ctx, approve=True)
+    await _resume_controller(action_type, payload, result, request, ctx)
+    return result
+
+
+async def _resume_controller(
+    action_type: str,
+    payload: dict[str, Any],
+    result: dict[str, Any],
+    request: Request,
+    ctx: ApiContext,
+) -> None:
+    if action_type == "agent.workflow.review" and result["status"] in {"approved", "rejected"}:
+        from ai_orchestrator.api.agent_blueprints import start_workflow
+
+        await ctx.session.commit()
+        result["workflow_started"] = start_workflow(
+            request.app.state.db, ctx.organization_id, payload["root_id"]
+        )
+    elif action_type == "workflow.review" and result["status"] in {"approved", "rejected"}:
+        from ai_orchestrator.api.business_workflows import start_workflow as start_business_workflow
+
+        await ctx.session.commit()
+        result["workflow_run"] = await start_business_workflow(
+            request.app.state.db, ctx.organization_id, payload["workflow_root"]
+        )
 
 
 @router.post("/approvals/{approval_id}/reject")
 async def reject(
-    approval_id: str, body: ApprovalDecisionRequest, ctx: ApiContext = Depends(get_context)
+    approval_id: str,
+    body: ApprovalDecisionRequest,
+    request: Request,
+    ctx: ApiContext = Depends(get_context),
 ) -> dict[str, Any]:
-    return await _decide(approval_id, body, ctx, approve=False)
+    approval = await ApprovalService(ctx.session, ctx.organization_id).get(approval_id)
+    action_type = approval.action_type
+    payload = dict(approval.action_payload or {})
+    result = await _decide(approval_id, body, ctx, approve=False)
+    await _resume_controller(action_type, payload, result, request, ctx)
+    return result
 
 
 @router.post("/approvals/{approval_id}/request-information")
@@ -221,7 +278,9 @@ async def request_information(
     Usually the right answer when a human is unsure: a rejection ends the task,
     whereas a question lets the agent gather what is missing and come back.
     """
-    return await _decide(approval_id, body, ctx, approve=False)
+    return await _decide(
+        approval_id, body.model_copy(update={"needs_information": True}), ctx, approve=False
+    )
 
 
 @router.get("/tasks/{task_id}/approvals")
