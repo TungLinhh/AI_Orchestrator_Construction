@@ -145,3 +145,59 @@ Acceptance artifacts: `.devdata/reports/finish-mep.json`, `finish-mep-audit.json
 The final UI check also caught generic task retry flattening business work into one task. Generic controls now preserve the workflow tree, duplicate retry returns the same active run, and individual stages cannot run or cancel around its controller. Cancellation publishes the root stop before interrupting the driver and cleaning up child rows; the in-flight cancellation regression test reproduced the former lock wait and now passes. One malformed retry created by the old UI verification was canceled with a system cleanup audit, preserving its historical row.
 
 Final verification: make lint passed (354 formatted files), make typecheck passed (159 source files), make test passed (3312 passed, 3 skipped, 1 deselected), make test-e2e passed (34), and make page passed after updating the legacy task-only retry assertion to check the owned workflow tree and its unstarted execution. Logs: `.devdata/logs/finish-release-gates.log` and `finish-release-page.log`. The UI was executed against the live API through the repository's Node harness; browser screenshot verification remains unavailable because the browser tool rejected access. The tests' source-corpus reads are regression checks, not a new Bãi Tràm workflow.
+
+## 2026-10-06 — Department evaluation and operational hardening
+
+Added a versioned 21-case synthetic corpus for seven departments with normal,
+missing-source and injection variants. The runner uses TaskExecutionService and
+records executions, model usage and independent grading audits. Gold values do
+not enter live prompts or numeric validator feedback. Reference playback is
+explicitly labeled as testing execution machinery, never model competence.
+Training observations create unpublished development proposals. Holdout creates
+no lessons; sandbox candidates use one successful proposal per training case
+and cannot promote skills or change production instructions. No Bãi Tràm data,
+real external actions or invented human approvals were added.
+
+The MEP integration test executes the original 21-stage controller with three
+file-drop CVs, six explicitly fake model stages and seven simulated system
+reviews. It writes and reads back five onboarding artifacts, records zero human
+approvals, keeps production access false and leaves future reviews scheduled.
+Procurement's original 13-stage controller tests remain active. These results
+do not replace the earlier separately recorded SMTP/IMAP acceptance.
+
+Fixed the scenario auditor selecting unrelated completed tasks elsewhere in
+the tenant. A new failed run cannot pass from historical Finance output. Fixed
+the reference-catalogue test selecting a blueprint fixture as the original SOP;
+it now reads the actual seeded holder using the RLS-protected app role.
+
+Changed the evidence runtime's single-tool choice to required after reproducing
+a provider incompatibility with named choice and schema references. Real Dots
+and free fallback calls now produce verified artifacts; upstream errors remain
+visible. The baseline scored 15/21, train 6/7 and candidate holdout 13/14. Sales
+revealed ambiguous status vocabulary, so protocol 2 declares a status enum;
+both Sales retests passed without changing gold answers. These are separate
+observations and do not establish causality or production readiness.
+
+The final protocol-2 holdout run passed 14/14 with one training proposal per
+case: 20 recorded real responses, zero fake, four error responses handled via
+free fallback, 65,512 tokens and 0 USD recorded. Task p50 was 19.874 seconds,
+p95 59.26 seconds. The final explicit mock playback passed 21/21. Both reports
+retain production_ready=false. Corpus data stayed unchanged; protocol and
+per-case schema hashes make the contract revision visible. Existing failures
+were not rewritten or included as successes in this run.
+
+Console colors and selected navigation were refined. Cached the migration stamp
+and moved its subprocess off the event loop. Local warm-cache UI p50 improved
+from 1999.31 to 23.47 ms; Departments from 4022.33 to 134.99 ms. Cold startup and
+larger workloads still require separate measurements. Browser inspection
+confirmed organization layout and task-specific log navigation; a screenshot
+was saved outside the repository.
+
+Verification: lint/format passed (367 files), mypy passed (162 source files),
+the fresh full suite passed (3374, 3 skipped, 1 deselected), E2E passed (34),
+related final contract/cache/proposal checks passed (38), and make page passed.
+Logs and JSON measurements are in `.devdata/reports/`; commands are documented
+in examples/organization_eval/README.md. Research and acceptance milestones are
+in RESEARCH_REPORT.md and FUTURE_WORK.md. Retain Pydantic/PydanticAI/Temporal;
+HR templates, controller lifecycle and relay aggregation are proposed refactors
+awaiting the owner's decision. No schema, dependency or major refactor changed.

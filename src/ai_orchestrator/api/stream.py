@@ -37,6 +37,7 @@ import re
 import sys
 from collections.abc import AsyncIterator
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -326,6 +327,7 @@ WEB_ROOT = Path(__file__).resolve().parents[1] / "web"
 _ORG_ID = re.compile(r"^org_[0-9a-z]{20,}$")
 
 
+@lru_cache(maxsize=1)
 def _build_stamp() -> str:
     """What to print in the corner of the page.
 
@@ -388,6 +390,10 @@ async def ui(org: str | None = Query(default=None, max_length=64)) -> HTMLRespon
             msg = "org must look like an organization id"
             raise ValidationError(msg, details={"field": "org"})
         organization = org
+    # Alembic is a blocking subprocess. Cache its result per server process and
+    # run cold reads in a thread to avoid stalling health and API requests.
+    # Restart the server after applying migrations to refresh this stamp.
+    build_stamp = await asyncio.to_thread(_build_stamp)
     html = (
         render_console(WEB_ROOT)
         .replace("__ORG_ID__", organization)
@@ -402,7 +408,7 @@ async def ui(org: str | None = Query(default=None, max_length=64)) -> HTMLRespon
         # is always the same is also not worth printing, so it carries the
         # migration head: the one thing that identifies this deployment against
         # another with the same code.
-        .replace("__BUILD__", _build_stamp())
+        .replace("__BUILD__", build_stamp)
         # The model provider behind Run. A console whose button promises "runs
         # on the free model" while the server answers with a scripted fake is
         # the exact lie this product exists to kill: every task the chairman

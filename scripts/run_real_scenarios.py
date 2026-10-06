@@ -224,12 +224,14 @@ async def run_scenario(session, org_id: str, scenario: Scenario) -> dict[str, ob
 
     # The verdict. Not "the loop ran" -- "the department that owns this finished".
     agent_name = agent_for(scenario.department)
+    subtree_ids = set(await tasks.subtree_statuses(str(root.id)))
     leaf = (
         (
             await session.execute(
                 select(Task)
                 .where(
                     Task.organization_id == org_id,
+                    Task.id.in_(subtree_ids),
                     Task.owner_agent_id.isnot(None),
                 )
                 .order_by(Task.created_at.desc())
@@ -249,6 +251,9 @@ async def run_scenario(session, org_id: str, scenario: Scenario) -> dict[str, ob
     reached = bool(owned)
     produced = bool(done)
     return {
+        "root_id": str(root.id),
+        "runtime": "scripted-routing-check",
+        "model_quality_verified": False,
         "key": scenario.key,
         "department": scenario.department,
         "agent": agent_name,

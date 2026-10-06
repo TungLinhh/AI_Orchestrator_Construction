@@ -5,9 +5,10 @@
 :root {
   --font: "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
-  --bg: #f2f5f8;
+  --bg: #f4f6f7;
   --surface: #fff;
-  --surface-2: #f8fafc;
+  --surface-2: #f8faf9;
+  --nav-bg: #edf3f2;
   --panel: var(--surface);
   --panel-2: var(--surface-2);
   --text: #172b3a;
@@ -16,9 +17,9 @@
   --text-3: #697b89;
   --line: #dce4ec;
   --line-strong: #b4c3cf;
-  --accent: #087f75;
-  --accent-2: #06665f;
-  --accent-soft: #e4f4f1;
+  --accent: #076c65;
+  --accent-2: #055a54;
+  --accent-soft: #dff1ec;
   --late: #b42336;
   --late-soft: #fff0f1;
   --bad: var(--late);
@@ -48,6 +49,7 @@
     --bg: #101a23;
     --surface: #17252f;
     --surface-2: #1c2d39;
+    --nav-bg: #14232b;
     --text: #e4edf4;
     --text-2: #b5c6d3;
     --text-3: #92a9ba;
@@ -185,7 +187,7 @@ button {
   padding: 24px 12px;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--nav-bg);
   border-right: 1px solid var(--line);
 }
 .brand {
@@ -242,6 +244,7 @@ button {
 .nav a[aria-current="page"] {
   background: var(--accent-soft);
   color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .nav .ic {
   width: 18px;
@@ -396,6 +399,7 @@ kbd {
   border-radius: var(--radius);
   overflow: hidden;
   min-width: 0;
+  box-shadow: 0 2px 8px #172b3a05;
 }
 .card > header {
   display: flex;
@@ -404,6 +408,7 @@ kbd {
   flex-wrap: wrap;
   padding: 18px 20px;
   border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
 }
 .card > .body {
   padding: 20px;

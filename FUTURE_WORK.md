@@ -1,5 +1,68 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
+## Hướng phát triển sau nghiên cứu ngày 2026-10-06
+
+Đây là file kế hoạch trong repository `/home/vutun/ai_orchestrator`. Báo cáo phân
+tích stack, chất lượng và học từ phản hồi nằm trong [RESEARCH_REPORT.md](RESEARCH_REPORT.md).
+Cách chạy corpus có trong [examples/organization_eval/README.md](examples/organization_eval/README.md).
+
+Giữ Pydantic, PydanticAI và Temporal ở thời điểm này. Chưa thực hiện chuyển sang
+LangGraph hoặc refactor lớn. Những phương án cần chủ dự án quyết định được liệt
+kê ở cuối báo cáo nghiên cứu. Các snapshot cũ ở phần dưới là lịch sử kiểm tra,
+không phải cam kết rằng hệ thống đã vận hành nghiệp vụ thật.
+
+### Việc đã bổ sung trong đợt củng cố
+
+- Corpus v1 gồm 21 tình huống cho bảy phòng ban, tách bảy ca train và 14 ca
+  holdout. Có đủ nguồn, thiếu nguồn và tài liệu chứa chỉ dẫn độc hại. Không dùng
+  dữ liệu Bãi Tràm hoặc người thật.
+- Công cụ chạy corpus qua TaskExecutionService, lưu execution, audit và báo cáo
+  chấm độc lập. Mock playback và model thật được ghi thành hai loại bằng chứng.
+- Đề xuất SkillVersion có nguồn task và hash corpus, chưa xuất bản. Có thể thử
+  candidate trên holdout trong sandbox, không đổi hướng dẫn production hoặc
+  tăng quyền tự chủ bằng kết quả mock.
+- Kiểm tra native workflow tuyển MEP đủ 21 bước với CV file-drop được ghi rõ và
+  năm hồ sơ onboarding được ghi/đọc lại trong sandbox. Procurement có kiểm tra
+  controller đủ 13 bước. Đây chưa phải nghiệm thu mail hoặc mua hàng thật.
+- Sửa công cụ kiểm tra delegation để chỉ đọc task thuộc lượt chạy hiện tại.
+  Kết quả cũ của tenant không thể làm lượt chạy mới được tính thành công.
+- Chỉnh nhẹ màu nền, thanh điều hướng, trạng thái mục được chọn và header thẻ.
+- Sửa nghẽn API do đọc migration stamp đồng bộ mỗi lần mở UI. Trong phép đo
+  cục bộ khi cache ấm, UI p50 giảm từ 1.999 ms xuống 23 ms; Departments từ
+  4.022 ms xuống 135 ms. Lần đầu sau restart vẫn có chi phí đọc stamp.
+
+**Kết quả và điều kiện còn thiếu:** baseline model thật đạt 15/21. Sau chuẩn
+hóa vocabulary và thử bài học, holdout cuối đạt 14/14 bằng model thật; mock
+release đạt 21/21. Giữ cả kết quả thất bại cũ. Chưa đủ điều kiện tự vận hành
+nghiệp vụ thật: cần corpus chuyên gia độc lập, nhiều lượt provider, recovery
+và canary tích hợp. Chi tiết/phạm vi phép đo có trong báo cáo nghiên cứu.
+Không lấy test kỹ thuật hoặc mock làm chứng nhận chất lượng model.
+
+### Các mốc cần hoàn thành tiếp
+
+| Ưu tiên | Việc | Điều kiện nghiệm thu |
+| --- | --- | --- |
+| 1 | Chuyên gia HR và Procurement duyệt corpus, bổ sung hồ sơ khó và ca lỗi | Đáp án có căn cứ SOP, phản ví dụ và phiên bản do người phụ trách xác nhận |
+| 2 | Đo model trên nhiều lượt và so sánh candidate với baseline | Báo cáo theo phòng ban về chất lượng, lỗi, p50/p95, token, chi phí và retry. Không nâng điểm bằng việc thay dữ liệu test |
+| 3 | Quyết định refactor template HR, lifecycle controller và tổng hợp relay | Có thiết kế cụ thể, phạm vi migration, rollback và phép đo trước/sau. Chờ quyết định của chủ dự án |
+| 4 | Nghiệm thu crash/restart, retry trùng, nguồn cập nhật và cổng hỏi thêm | Không mất bước, không chạy hành động hai lần, không dùng phê duyệt sai phiên bản |
+| 5 | Chuẩn hóa contract cho từng connector và kiểm tra sandbox | Có cursor, idempotency key, receipt, read-back, timeout, rate limit, quyền theo scope và log lỗi |
+| 6 | Nối nguồn thật theo từng canary read-only, bắt đầu từ tuyển MEP | Đối chiếu nguồn thực tế, đúng campaign và quyền. Sau đó mới duyệt mở từng write action |
+| 7 | Hoàn tất tuyển MEP thật rồi procurement thật | Đủ từng bước, sản phẩm và quyết định người thật. Onboarding và nhận hàng có chứng cứ độc lập |
+| 8 | Mở workflow dài cho Design, QA/QC-HSE, Finance rồi Sales | Có corpus chuyên gia, controller, negative cases và audit toàn quy trình. IT tiếp tục hỗ trợ mail/onboarding |
+
+### Quy tắc tăng tự chủ
+
+Chỉ coi là cải thiện khi candidate tốt hơn hoặc giữ chất lượng trên holdout,
+không tăng lỗi nghiêm trọng, và được người chuyên môn xác nhận. Giữ bài học có
+version, phạm vi áp dụng và điều kiện thu hồi. Phân biệt bài học quy trình với
+huấn luyện trọng số model. Dữ liệu tổng hợp không được tính vào 28 ngày shadow
+thực tế hoặc tự động xuất bản thành skill production.
+
+Trước khi mở tích hợp ghi dữ liệu, phải đo bằng canary thực tế, kiểm tra quyền,
+receipt và phục hồi. Thông qua lint, mypy và test là điều kiện kỹ thuật. Chất
+lượng sản phẩm, SLA và khả năng chịu tải cần các phép đo riêng.
+
 ## Ưu tiên hiện tại — cập nhật 2026-10-06
 
 **Thứ tự:** thông báo phê duyệt và UI → soạn agent bằng model free, Boss chỉnh sửa/duyệt, thiết lập workflow → tuyển MEP với hồ sơ thật → procurement → Design, QA/QC-HSE, Finance, Sales. Phát triển riêng phòng IT tạm hoãn; phần nhận CV và chứng cứ onboarding vẫn phục vụ HR. Không mở dự án Bãi Tràm.

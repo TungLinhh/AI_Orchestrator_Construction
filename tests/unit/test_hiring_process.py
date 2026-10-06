@@ -50,31 +50,35 @@ class TestItIsAnchoredToTheSopsThatExists:
 
     @staticmethod
     async def _catalogue_row() -> object | None:
-        """The SOP's row, from whichever organisation holds the catalogue.
+        """Read the seeded reference holder through its tenant-scoped app session.
 
-        `use_admin_role=True` because row-level security needs a tenant and this query has
-        none. The catalogue has one row per organisation that holds it -- **measured at 19
-        copies in the test database**, one per leaked test tenant -- so an RLS-scoped session
-        with no tenant set reads **zero** of them. That is the control working correctly, so
-        the fix is the connection, not the policy.
-
-        The first version of this file looked in the per-test tenant and skipped when it found
-        nothing, which made the test always pass and never run.
+        Blueprint fixtures also create SOP rows. Selecting an arbitrary tenant's
+        first row can mistake a test fixture for the reference catalogue.
+        Organizations are global; the catalogue remains protected by RLS.
         """
         from ai_orchestrator.persistence.session import Database
 
-        db = Database.from_settings(use_admin_role=True)
+        db = Database.from_settings()
         try:
             async with db.session() as session:
+                holder = await session.scalar(
+                    text(
+                        "SELECT id FROM organizations WHERE slug LIKE 'reference-%' "
+                        "ORDER BY created_at, id LIMIT 1"
+                    )
+                )
+            if holder is None:
+                return None
+            async with db.tenant_session(holder) as session:
                 return (
                     (
                         await session.execute(
                             text(
                                 "SELECT code, name_vi, department, owner_role_key "
                                 "FROM sop_definitions WHERE code = :c "
-                                "ORDER BY organization_id LIMIT 1"
+                                "AND organization_id = :org"
                             ),
-                            {"c": SOP_CODE},
+                            {"c": SOP_CODE, "org": holder},
                         )
                     )
                     .mappings()

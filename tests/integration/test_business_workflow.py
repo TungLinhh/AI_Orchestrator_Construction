@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from ai_orchestrator.application.business_workflow import BusinessWorkflowService, create_workflow
 from ai_orchestrator.application.task_execution import TaskExecutionService
-from ai_orchestrator.application.workflow_fixtures import procurement_fixture
+from ai_orchestrator.application.workflow_fixtures import hiring_fixture, procurement_fixture
 from ai_orchestrator.approvals.service import ApprovalService
 from ai_orchestrator.domain.contracts import Actor, AgentResult, AgentResultStatus
 from ai_orchestrator.domain.enums import ActorType
@@ -20,6 +20,202 @@ from ai_orchestrator.persistence.repositories.task import ExecutionRepository
 from ai_orchestrator.seed import seed
 
 pytestmark = pytest.mark.integration
+
+
+class HiringFixtureRuntime:
+    """Explicit fake content for exercising every native hiring stage offline."""
+
+    name = "workflow_evidence"
+
+    def __init__(self, stage, validator):
+        self.stage = stage
+        self.validator = validator
+
+    async def execute(self, task, context, *, record_usage=None, **kwargs):
+        from ai_orchestrator.domain.business_workflow import RUBRIC_SPEC
+        from ai_orchestrator.domain.hiring_process import JD_SECTIONS
+
+        prior = task.input["prior"]
+        key = self.stage.key
+        if key == "jd":
+            output = {
+                "sections": {
+                    name: "Synthetic MEP engineering duties and reviewed evidence."
+                    for name in JD_SECTIONS
+                },
+                "requirements": ["Verified MEP engineering experience"],
+                "kpis": ["Clash reports reviewed by the technical owner"],
+            }
+        elif key == "rubric":
+            output = {
+                "criteria": [
+                    {
+                        "key": k,
+                        "max_points": w,
+                        "description": "MEP criterion",
+                        "good": "Independent verified experience",
+                        "average": "Supervised",
+                        "poor": "Limited experience",
+                        "evidence_required": "Exact CV quote",
+                    }
+                    for k, w in RUBRIC_SPEC
+                ],
+                "threshold": 70,
+                "missing_evidence_rule": "Unverified evidence scores zero",
+            }
+        elif key == "scoring":
+            output = {
+                "candidates": [
+                    {
+                        "candidate_id": cv["candidate_id"],
+                        "criteria": [
+                            {
+                                "key": k,
+                                "level": "good"
+                                if cv["filename"] == "mep-test-a.txt"
+                                else "missing",
+                                "evidence_quote": cv["text"]
+                                if cv["filename"] == "mep-test-a.txt"
+                                else "",
+                                "reason": "Synthetic reference; model quality unmeasured",
+                            }
+                            for k, _ in RUBRIC_SPEC
+                        ],
+                        "strengths": ["Evidence checked"],
+                        "gaps": ["Verify during interview"],
+                        "interview_questions": ["Demonstrate a commissioning calculation"],
+                    }
+                    for cv in prior["cv_intake"]["cvs"]
+                ]
+            }
+        elif key == "selection":
+            candidate = next(
+                cv for cv in prior["cv_intake"]["cvs"] if cv["filename"] == "mep-test-a.txt"
+            )
+            output = {
+                "recommended_candidate_id": candidate["candidate_id"],
+                "rationale": "Verified two synthetic interviews and rubric",
+                "conditions": ["Boss must review"],
+                "alternatives": [],
+            }
+        elif key == "offer":
+            output = {
+                "candidate_id": prior["selection"]["recommended_candidate_id"],
+                "offer_draft": "SYNTHETIC offer draft; not sent",
+                "contract_draft": "SYNTHETIC contract draft; not signed",
+                "salary": 28000000,
+                "start_date": task.input["brief"]["start_date"],
+                "conditions": [],
+            }
+        else:
+            assert key == "onboarding_plan"
+            output = {
+                day: [
+                    {
+                        "owner": "HR Agent",
+                        "deliverable": "Mentor review",
+                        "acceptance": "Actual evidence at the due date",
+                    }
+                ]
+                for day in ("day_one", "day_30", "day_60", "day_90")
+            }
+            output.update(
+                {
+                    "mentor": "Synthetic mentor",
+                    "training": ["Sandbox HSE induction"],
+                    "access_request": {
+                        "workspace": "staging-mep",
+                        "permissions": ["read"],
+                        "production_access": False,
+                    },
+                }
+            )
+        self.validator(output)
+        if record_usage:
+            await record_usage(ModelResponse(provider="unit-fake", model_used="hiring-reference"))
+        return AgentResult(
+            status=AgentResultStatus.COMPLETED,
+            task_id=task.task_id,
+            execution_id=task.execution_id,
+            summary="Synthetic stage exercised",
+            output=output,
+        )
+
+
+async def test_all_hiring_stages_run_offline_with_actual_sandbox_files(
+    prepared, db, tmp_path, monkeypatch
+):
+    from ai_orchestrator.application import business_workflow
+    from ai_orchestrator.integrations import recruitment_mail
+
+    monkeypatch.setattr(business_workflow, "DEV_DATA_DIR", tmp_path)
+    monkeypatch.setattr(recruitment_mail, "DEV_DATA_DIR", tmp_path)
+    records = {}
+
+    class FileDropMailbox:
+        def __init__(self, org):
+            self.org = org
+
+        def send_tests(self, root, cvs):
+            records[root] = [
+                {
+                    **recruitment_mail.store_cv(
+                        cv["text"].encode(), cv["filename"], self.org, root
+                    ),
+                    "synthetic": True,
+                }
+                for cv in cvs
+            ]
+            return {
+                "sent": [{"sha256": cv["sha256"]} for cv in records[root]],
+                "transport": "mock-file-drop",
+                "synthetic": True,
+            }
+
+        def read_cvs(self, root):
+            return {
+                "cvs": records[root],
+                "count": len(records[root]),
+                "readonly": True,
+                "messages": [],
+                "rejected": [],
+                "protocol": "mock-file-drop",
+            }
+
+    root = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "simulation", hiring_fixture()
+    )
+    await prepared.commit()
+    service = BusinessWorkflowService(
+        db,
+        prepared.organization_id,
+        runtime_factory=HiringFixtureRuntime,
+        mailbox_factory=FileDropMailbox,
+    )
+    report = await service.run(root)
+    assert report["status"] == "completed", report
+    assert report["completed"] == report["total"] == 21
+    assert report["summary"]["simulated_reviews"] == 7
+    assert report["summary"]["human_approvals"] == 0
+    assert report["evidence"]["real_model_calls"] == 0
+    assert report["evidence"]["fake_model_calls"] == 6
+    assert [c["score"] for c in report["summary"]["candidates"]] == [100, 0, 0]
+    assert report["summary"]["future_day_30_60_90_completed"] is False
+    assert report["summary"]["onboarding"]["production_access"] is False
+    folder = tmp_path / "recruitment" / prepared.organization_id / root / "onboarding"
+    assert len(list(folder.glob("*.json"))) == 5
+    assert all(a["readback_verified"] for a in report["summary"]["onboarding"]["actions"])
+    assert (await service.run(root))["completed"] == 21
+    async with db.tenant_session(prepared.organization_id) as session:
+        assert (
+            not (
+                await session.execute(
+                    select(Approval).where(Approval.organization_id == prepared.organization_id)
+                )
+            )
+            .scalars()
+            .all()
+        )
 
 
 async def test_operator_creates_live_hiring_without_synthetic_evidence(client, prepared, db):

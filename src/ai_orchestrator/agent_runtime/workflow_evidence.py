@@ -174,7 +174,10 @@ class WorkflowEvidenceRuntime:
                         + json.dumps(task.input, ensure_ascii=False, default=str)
                         + feedback,
                         tools=[tool],
-                        tool_choice={"type": "function", "function": {"name": "submit_evidence"}},
+                        # There is exactly one tool. `required` enforces that same
+                        # tool while avoiding upstream rejection of named choice
+                        # combined with schemas containing $ref definitions.
+                        tool_choice="required",
                         max_output_tokens=min(
                             self.output_token_limit,
                             context.budget.max_tokens
