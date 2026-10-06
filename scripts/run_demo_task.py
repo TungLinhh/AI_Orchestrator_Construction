@@ -53,7 +53,7 @@ os.environ.setdefault("AO_NATS_ENABLED", "false")
 
 from sqlalchemy import text
 
-from ai_orchestrator.application.task_execution import TaskExecutionService
+from ai_orchestrator.application.task_attempt import TaskAttemptRunner
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.persistence.session import Database
 from ai_orchestrator.worker_runtime import build_runtime
@@ -79,7 +79,7 @@ async def run(*, goal: str, task_type: str, agent_name: str, budget: float) -> i
     runtime = build_runtime()
     database = Database.from_settings()
     try:
-        async with database.tenant_session(org) as session:
+        async with database.committing_tenant_session(org) as session:
             agent = (
                 (
                     await session.execute(
@@ -119,17 +119,15 @@ async def run(*, goal: str, task_type: str, agent_name: str, budget: float) -> i
                 )
                 task_id = str(created.id)
             await tasks.assign(task_id, agent["id"])
-            # No commit here. `tenant_session` wraps `session.begin()`, so a commit
-            # inside the block ends the transaction and the next statement raises
-            # "Can't operate on closed transaction" -- F102, third appearance. The
-            # context manager commits on the way out, and nothing after this point
-            # needs to be visible to a second connection.
+            # Persist preparation before the runner claims on its own session.
+            await session.commit()
+            await database.bind_tenant(session, org)
 
             print(f"  task      {task_id}  ({task_type})")
             print(f"  agent     {agent['name']}  profile={agent['model_profile']}")
             print("  running…\n")
 
-            service = TaskExecutionService(session, org, runtime=runtime)
+            service = TaskAttemptRunner(database, org, runtime=runtime)
             outcome = await service.execute_task(task_id, agent_id=agent["id"])
 
             await _report(session, org, task_id, outcome, budget)

@@ -147,6 +147,8 @@ class Settings(BaseSettings):
     temporal_build_id: str = "v1"
     # Each native controller holds a lock connection plus a stage connection.
     native_workflow_concurrency: int = Field(default=4, ge=1, le=32)
+    task_execution_lease_s: int = Field(default=120, ge=15, le=3600)
+    task_execution_heartbeat_s: int = Field(default=5, ge=1, le=60)
 
     # -------------------------------------------------------------- model --
     # 'fake' is a deterministic scripted provider: full pipeline, zero spend,

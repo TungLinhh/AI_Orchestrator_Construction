@@ -89,7 +89,14 @@ from ai_orchestrator.domain.output_contract import (
 )
 from ai_orchestrator.domain.procedure import describe
 from ai_orchestrator.domain.state_machines import Transition
-from ai_orchestrator.persistence.models import Agent, AgentDefinition, Approval, Role, Task
+from ai_orchestrator.persistence.models import (
+    Agent,
+    AgentDefinition,
+    Approval,
+    Execution,
+    Role,
+    Task,
+)
 from ai_orchestrator.persistence.repositories.organization import (
     AgentCapabilityRepository,
     AgentDefinitionRepository,
@@ -374,12 +381,16 @@ class TaskExecutionService:
         default_limits: Any = None,
         auto_approve: bool | None = None,
         model_usage_checkpoint: Any = None,
+        execution_checkpoint: Any = None,
+        lease_seconds: int | None = None,
     ) -> None:
         self._session = session
         self._org = organization_id
         self._runtime = runtime
         self._run_mode = run_mode
         self._model_usage_checkpoint = model_usage_checkpoint
+        self._execution_checkpoint = execution_checkpoint
+        self._lease_seconds = lease_seconds or self._LEASE_SECONDS
         self._default_limits = default_limits
         self._tasks = TaskRepository(session, organization_id)
         self._executions = ExecutionRepository(session, organization_id)
@@ -456,6 +467,19 @@ class TaskExecutionService:
             if not previous:
                 raise PreconditionError("Workflow stage has no verified predecessor artifacts")
 
+        # Transaction-scoped diagnostic callers must also refuse a committed
+        # active attempt owned by the durable runner or an ordered controller.
+        if task.status == TaskStatus.RUNNING.value and await self._session.scalar(
+            select(Execution.id)
+            .where(
+                Execution.organization_id == self._org,
+                Execution.task_id == task_id,
+                Execution.status == "running",
+            )
+            .limit(1)
+        ):
+            raise PreconditionError("This task already has an active execution")
+
         # Every entry point must honor the current review, including a direct
         # activity retry. A previous approval cannot authorize a later stage.
         if task.status == TaskStatus.WAITING_FOR_APPROVAL.value:
@@ -519,46 +543,15 @@ class TaskExecutionService:
             return await self._fail(task, exc.message, "planning_error")
 
         # --- state ---------------------------------------------------------
-        if task.status == TaskStatus.CREATED.value:
+        if task.status in {TaskStatus.CREATED.value, TaskStatus.QUEUED.value}:
             task = await self._tasks.transition(task_id, Transition.ASSIGN)
         if task.status == TaskStatus.ASSIGNED.value:
             task = await self._tasks.transition(task_id, Transition.BEGIN_WORK)
 
-        # --- lease ---------------------------------------------------------
-        # **Taken here, and this is the only place it is taken.**
-        #
-        # The reaper reclaims a task with
-        # `status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at <= now`.
-        # Measured before this line existed: **0 of 129 tasks held a lease.** So the reaper
-        # could never reclaim anything, ever -- its condition was unsatisfiable, and it was
-        # dead code that looked alive because it ran and reported "nothing found".
-        #
-        # **What the lease does NOT do, measured rather than argued.** Both callers wrap the
-        # run in `Database.tenant_session`, which is `session.begin()` -- one transaction for
-        # the whole run -- and there is **no `commit()` anywhere** in the run path: not in
-        # `task_execution`, not in the repositories, not in the audit service. Verified by
-        # count, not by reading: 0 occurrences across those three packages.
-        #
-        # So this write lands in an open transaction. No other connection can see it until the
-        # run commits, which is the moment a lease stops mattering. The reaper reads through
-        # its own connection, so **it cannot observe a run in flight** -- not its status, not
-        # its lease. Two consequences, and both are real:
-        #
-        # * the lease does not yet do the one thing its docstring claims, which is telling
-        #   "slow" from "dead";
-        # * a task is therefore never reaped *while working* (accidentally safe) and a task
-        #   whose worker was killed is also never reaped, because the rollback that removes
-        #   the lease removes the `running` status with it.
-        #
-        # A previous version of this comment claimed 30 minutes was "comfortable" for a run
-        # measured at 644 seconds. That was reasoning about a number while ignoring where the
-        # number is written. Fixing it properly means the lease has to be taken **and renewed
-        # on a connection of its own**, outside the run's transaction -- which is a change to
-        # the three call sites (`local_runner`, `worker_runtime`, `task_workflow`), not to
-        # this method, because committing here would end the caller's transaction. Recorded as
-        # F190 rather than half-done here: a lease that is written where nobody can read it is
-        # worse than one that is obviously absent, because it looks like the problem is solved.
-        await self._tasks.renew_lease(task_id, self._LEASE_SECONDS)
+        # Durable entrypoints commit this claim before calling the runtime, and
+        # renew it on a separate session. Transaction-scoped callers remain
+        # responsible for their own commit boundary; see task_attempt.py/F190.
+        await self._tasks.renew_lease(task_id, self._lease_seconds)
 
         execution = await self._executions.start(
             task_id=task_id,
@@ -656,6 +649,8 @@ class TaskExecutionService:
         task_id = str(task.id)
         execution_id = str(execution.id)
         agent_id = str(resolved.agent.id)
+        if self._execution_checkpoint:
+            await self._execution_checkpoint(execution_id)
         try:
             result = await self._runtime.execute(
                 agent_task,
@@ -690,6 +685,9 @@ class TaskExecutionService:
                 cause=exc,
             )
 
+        if self._execution_checkpoint:
+            await self._execution_checkpoint(execution_id, final=True)
+            await self._session.refresh(task)
         return await self._finish(task, resolved, context, result, execution_id, budget, started)
 
     async def _apply_delegations(
@@ -769,6 +767,8 @@ class TaskExecutionService:
             return ToolResult.failure("NO_CONTEXT", "no authorised context is active for this call")
 
         self._tool_calls += 1
+        if self._execution_checkpoint:
+            await self._execution_checkpoint(str(self._active_execution_id))
         invocation = await gateway.invoke(
             actor=context.actor,
             tool_name=tool_name,
@@ -791,6 +791,8 @@ class TaskExecutionService:
             arguments=arguments,
             invocation=invocation,
         )
+        if self._execution_checkpoint:
+            await self._execution_checkpoint(str(self._active_execution_id))
         # The caller — and the model — gets the `ToolResult`, not the wrapper. The
         # wrapper is the gateway's record; the result is the answer.
         return (
@@ -1356,6 +1358,8 @@ class TaskExecutionService:
                 update={"authorized_tools": (), "delegate_targets": (), "delegate_options": ()}
             )
             agent_task = self._to_agent_task(task, execution_id=str(context.task.execution_id))
+            if self._execution_checkpoint:
+                await self._execution_checkpoint(str(self._active_execution_id))
             result = await self._runtime.execute(agent_task, peer_context)
         except Exception as exc:
             logger.info("consultation.failed", target=agent_name, error=str(exc))

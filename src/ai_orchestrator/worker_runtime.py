@@ -87,9 +87,7 @@ def build_execution_service(
     db = database or _shared_database()
     runtime = build_runtime(settings)
 
-    # The service needs a session; the caller supplies one through the context
-    # variable set below. Kept as a function so both the worker and the API build
-    # the same object.
+    # The factory and callable interface share the same transaction owner.
     return _ServiceFactory(
         db=db,
         runtime=runtime,
@@ -115,28 +113,26 @@ class _ServiceFactory:
     settings: Settings
 
     def __call__(self) -> Any:
-        from ai_orchestrator.application.task_execution import TaskExecutionService
+        from temporalio import activity
 
-        return TaskExecutionService(
-            self.db.session_factory(),
+        from ai_orchestrator.application.task_attempt import TaskAttemptRunner
+
+        pulse = (
+            (lambda task, execution: activity.heartbeat(task, execution))
+            if activity.in_activity()
+            else None
+        )
+        return TaskAttemptRunner(
+            self.db,
             self.organization_id,
             runtime=self.runtime,
             run_mode=self.run_mode,
+            settings=self.settings,
+            heartbeat=pulse,
         )
 
-    # The workflow activity calls `.execute_task` directly; forward it through a
-    # real session rather than making the workflow know about sessions.
     async def execute_task(self, *args: Any, **kwargs: Any) -> Any:
-        async with self.db.tenant_session(self.organization_id) as session:
-            from ai_orchestrator.application.task_execution import TaskExecutionService
-
-            service = TaskExecutionService(
-                session,
-                self.organization_id,
-                runtime=self.runtime,
-                run_mode=self.run_mode,
-            )
-            return await service.execute_task(*args, **kwargs)
+        return await self().execute_task(*args, **kwargs)
 
 
 _shared: Database | None = None
@@ -193,26 +189,26 @@ async def run_worker(settings: Settings | None = None) -> None:
         attribute 'organization_id'`, five times, once per retry — fast enough each
         time to read as a crash rather than as a contract mismatch.
         """
-        from ai_orchestrator.application.task_execution import TaskExecutionService
+        from ai_orchestrator.application.task_attempt import TaskAttemptRunner
         from ai_orchestrator.domain.enums import RunMode
 
         if isinstance(data, dict):
             data = TaskWorkflowInput.model_validate(data)
 
-        async with db.tenant_session(data.organization_id) as session:
-            service = TaskExecutionService(
-                session,
-                data.organization_id,
-                runtime=runtime,
-                run_mode=RunMode(data.run_mode),
-            )
-            outcome = await service.execute_task(
-                data.task_id,
-                agent_id=data.agent_id,
-                attempt=data.attempt,
-                input_override=None,
-                retrieved_context=data.retrieved_context,
-            )
+        outcome = await TaskAttemptRunner(
+            db,
+            data.organization_id,
+            runtime=runtime,
+            settings=settings,
+            run_mode=RunMode(data.run_mode),
+            heartbeat=lambda task, execution: activity.heartbeat(task, execution),
+        ).execute_task(
+            data.task_id,
+            agent_id=data.agent_id,
+            attempt=data.attempt,
+            input_override=None,
+            retrieved_context=data.retrieved_context,
+        )
         from ai_orchestrator.workflows.task_workflow import ExecutionResult
 
         return ExecutionResult(

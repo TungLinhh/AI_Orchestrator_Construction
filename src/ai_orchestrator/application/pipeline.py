@@ -19,14 +19,13 @@ from typing import Any
 
 from sqlalchemy import select
 
-from ai_orchestrator.application.task_execution import TaskExecutionService
 from ai_orchestrator.application.work_review import review_office_work
 from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.domain.contracts import Actor
 from ai_orchestrator.domain.enums import ActorType, RunMode, TaskStatus
 from ai_orchestrator.domain.review import DEFAULT_MAX_ATTEMPTS
 from ai_orchestrator.domain.state_machines import Transition
-from ai_orchestrator.persistence.models import Agent, Approval, Task
+from ai_orchestrator.persistence.models import Agent, Approval, Execution, Task
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.persistence.session import Database
 from ai_orchestrator.security.auth import operator_id_for
@@ -266,51 +265,42 @@ async def _execute_claimed_step(
     auto_approve: bool,
     agent_id: str | None = None,
 ) -> StepLog | None:
-    """One worker, one session. A concurrent driver cannot claim the same row.
+    """Run through the shared attempt owner without a model-duration row lock."""
+    from ai_orchestrator.application.task_attempt import TaskAttemptRunner
+    from ai_orchestrator.domain.errors import ConflictError
 
-    Holding the row lock through the execution keeps two bills from racing; the
-    driver never holds a session while awaiting a batch of model calls.
-    """
     async with database.tenant_session(organization_id) as session:
-        task = (
-            await session.execute(
-                select(Task)
-                .where(
-                    Task.organization_id == organization_id,
-                    Task.id == task_id,
-                    Task.status.in_((*RUNNABLE, TaskStatus.WAITING_FOR_APPROVAL)),
-                )
-                .with_for_update(skip_locked=True)
-            )
-        ).scalar_one_or_none()
-        if task is None:
+        task = await TaskRepository(session, organization_id).get(task_id)
+        if task.status not in (*RUNNABLE, TaskStatus.WAITING_FOR_APPROVAL.value):
             return None
         if (
             task.status == TaskStatus.WAITING_FOR_APPROVAL.value
             and not await _approved_continuation(session, organization_id, task_id)
         ):
             return None
+        title = str(task.title)[:60]
         owner = await _owner_name(
             session, organization_id, str(agent_id or task.owner_agent_id or "")
         )
-        started = asyncio.get_running_loop().time()
-        service = TaskExecutionService(
-            session=session,
-            organization_id=organization_id,
+    started = asyncio.get_running_loop().time()
+    try:
+        outcome = await TaskAttemptRunner(
+            database,
+            organization_id,
+            runtime=build_runtime(),
             run_mode=run_mode,
             auto_approve=auto_approve,
-            runtime=build_runtime(),
-        )
-        await service.execute_task(task_id, agent_id=agent_id)
-        await session.flush()
-        return StepLog(
-            task_id=task_id,
-            title=str(task.title)[:60],
-            owner=owner,
-            status=str(task.status),
-            depth=depth,
-            seconds=asyncio.get_running_loop().time() - started,
-        )
+        ).execute_task(task_id, agent_id=agent_id)
+    except ConflictError:
+        return None
+    return StepLog(
+        task_id=task_id,
+        title=title,
+        owner=owner,
+        status=outcome.status.value,
+        depth=depth,
+        seconds=asyncio.get_running_loop().time() - started,
+    )
 
 
 async def _execute_step(
@@ -763,10 +753,21 @@ async def settle_finished(
     tasks_repo = TaskRepository(session, organization_id)
     result = Settled()
     tree = await _tree(session, organization_id, root_id)
+    active_attempts = set(
+        (
+            await session.scalars(
+                select(Execution.task_id).where(
+                    Execution.organization_id == organization_id,
+                    Execution.task_id.in_([t.id for t in tree]),
+                    Execution.status == "running",
+                )
+            )
+        ).all()
+    )
     for task in tree:
         # `!=`, not `is not`: two equal strings are usually two objects, and
         # `is not` on strings answers "same object?" not "same value?".
-        if str(task.status) != TaskStatus.RUNNING.value:
+        if str(task.status) != TaskStatus.RUNNING.value or task.id in active_attempts:
             continue
         if await tasks_repo.live_descendant_count(str(task.id)) > 0:
             continue

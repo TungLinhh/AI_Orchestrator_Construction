@@ -240,13 +240,13 @@ async def _reusable(session, org: str, goal: str) -> str | None:
 
 
 async def run_one(agent: str, task_type: str, project: str, goal: str, org: str) -> Result:
-    from ai_orchestrator.application.task_execution import TaskExecutionService
+    from ai_orchestrator.application.task_attempt import TaskAttemptRunner
     from ai_orchestrator.worker_runtime import build_runtime
 
     result = Result(agent=agent)
     db = Database.from_settings()
     try:
-        async with db.tenant_session(org) as session:
+        async with db.committing_tenant_session(org) as session:
             row = (
                 await session.execute(
                     text(
@@ -279,11 +279,13 @@ async def run_one(agent: str, task_type: str, project: str, goal: str, org: str)
             )
             await repo.assign(task_id, agent_id)
 
+            await session.commit()
+            await db.bind_tenant(session, org)
             started = time.time()
             try:
-                outcome = await TaskExecutionService(
-                    session, org, runtime=build_runtime()
-                ).execute_task(task_id, agent_id=agent_id)
+                outcome = await TaskAttemptRunner(db, org, runtime=build_runtime()).execute_task(
+                    task_id, agent_id=agent_id
+                )
             except Exception as exc:
                 result.crash = f"{type(exc).__name__}: {exc}"[:220]
                 result.seconds = time.time() - started
@@ -295,7 +297,7 @@ async def run_one(agent: str, task_type: str, project: str, goal: str, org: str)
             if outcome.blocked_reason:
                 result.refusal = outcome.blocked_reason[:300]
             elif outcome.failure_category:
-                result.refusal = f"{outcome.failure_category}: {outcome.last_error or ''}"[:300]
+                result.refusal = f"{outcome.failure_category}: {outcome.summary or ''}"[:300]
             count = (
                 await session.execute(
                     text("SELECT count(*) FROM delegations WHERE parent_task_id = :t"),

@@ -1,6 +1,29 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
-## Refactor ưu tiên đã triển khai — 2026-10-07
+## Tiếp tục triển khai — 2026-10-07
+
+Đã đọc và rà bàn giao `82a6c84`, giữ nguyên lifecycle đã nghiệm thu. Đợt tiếp
+triển khai owner transaction/attempt cho pipeline native, worker Temporal,
+fleet và demo: commit claim trước runtime, heartbeat độc lập, checkpoint usage,
+chặn kết quả về muộn sau Cancel và chặn coordinator settle khi execution vẫn
+đang chạy. Các phép thử và giới hạn có trong REFACTOR_PLAN.md/WORK_REPORT.md.
+Các script chẩn đoán lịch sử không mặc nhiên có heartbeat; external receipt và
+dispatch bền vững vẫn là mốc tiếp theo, trước khi mở write connector thật.
+
+**Hướng demo do Boss chọn:** Boss giao brief → theo dõi đợt tuyển → nhận việc
+cần duyệt → xem hồ sơ onboarding. Màn hình chính của mốc HR sẽ dẫn theo campaign,
+không bắt người vận hành mở từng agent rồi chạy task rời. Mỗi campaign có brief,
+JD/rubric phiên bản được duyệt, inbox CV riêng, timeline 21 bước, mục việc cần
+quyết định và hồ sơ onboarding có nguồn/receipt. Tạo campaign chưa đồng nghĩa
+với gửi offer hay cấp production; từng quyền write cần phạm vi và quyết định.
+
+**Thứ tự tiếp theo:** receipt/đối chiếu connector → dispatch bền vững → tách
+các template HR, nhận nguồn theo bước và rework/gửi lại ở gate → nghiệm thu một
+campaign MEP thật đến onboarding → procurement → các phòng ban đã ưu tiên.
+Corpus chuyên gia và đo baseline/candidate vẫn cần người chuyên môn xác nhận.
+Không làm tối ưu tenant, phát triển riêng IT hoặc mở Bãi Tràm trong đợt này.
+
+## Bàn giao controller trước đợt transaction — 2026-10-07
 
 Đã triển khai refactor vòng đời controller theo yêu cầu mới của chủ dự án.
 Thiết kế, phạm vi đã triển khai và thứ tự các đợt tiếp theo nằm trong
@@ -13,7 +36,8 @@ chứng minh phục hồi procurement đủ 13 bước mà không thực thi l�
 Blueprint phục hồi vẫn chờ người duyệt thật. Không có mail thật hoặc model thật
 được gọi trong các phép thử refactor.
 
-Tiếp theo là transaction và lease của task executor, receipt của connector,
+Tại bàn giao này, bước tiếp theo là transaction và lease của task executor
+(đã triển khai ở phần đầu file), receipt của connector,
 dispatch bền vững rồi template HR theo campaign. Việc chia nhỏ executor và state
 console đi sau các ranh giới vận hành đó. Phục hồi hiện cần lệnh Run hoặc tín hiệu
 tiếp tục mới; chưa tự chạy lại mọi workflow khi API khởi động.

@@ -1,6 +1,105 @@
+# General task attempt refactor — 2026-10-07
+
+Reviewed the handoff and committed source at `82a6c84`. Its native workflow
+lifecycle/recovery remains in place. This delivery implements the next executor
+transaction/lease milestone; the older sections retain their dated measurements.
+
+## Behaviour and ownership
+
+`application/task_attempt.py` now owns a general attempt for the native pipeline,
+local runner, both Temporal activity/factory paths, fleet and the Makefile demo
+entrypoint. TaskExecutionService remains the business executor. A PostgreSQL
+transaction advisory lock excludes another runner while short row transactions
+commit the claim and execution before the runtime is called. Context/skill
+snapshot and execution audit become visible with the claim.
+
+A separate tenant session renews a lease fenced by the exact running execution.
+Settings resolve the defaults once: 120-second lease and five-second heartbeat;
+the effective interval cannot exceed one third of the lease. Temporal receives
+activity heartbeats carrying the same task/execution IDs. A heartbeat failure
+interrupts the runtime and is reported rather than swallowed. Checkpoints commit
+model usage and internal tool records and restore the transaction-local tenant
+binding before subsequent database access.
+
+Another connection can update or cancel the task while the runtime waits.
+The final checkpoint locks and verifies task/attempt ownership through final
+commit, so a late model result cannot overwrite Cancel. Interruption preserves
+committed usage, closes the attempt and blocks unresolved general work for
+inspection. Already canceled work stays canceled. Process death releases the
+advisory lock and leaves its claim/execution visible; it does not prove that an
+external effect failed, so an unfinished general attempt is refused on retry.
+
+Visible claims also exposed a settlement race previously hidden by an open
+transaction: a running coordinator could be judged before its model finished.
+Settlement now ignores coordinators with a running execution. A diagnostic
+caller of the transaction-scoped service also refuses a committed active
+execution instead of billing a second run.
+
+No schema migration, framework change, tenant/relay optimization or new connector
+permission was introduced. Business/blueprint controllers keep their independently
+proved checkpoint recovery and human gates. Historical diagnostic scripts still
+calling the raw service remain transaction-scoped; they are not claimed to have
+this heartbeat protocol. Connector receipts, reconciliation UI, durable dispatch,
+pool/load measurements and further decomposition remain in REFACTOR_PLAN.md.
+
+## Verification
+
+Final frozen-source gates passed: lint and format (378 files), mypy (167 source
+files), targeted integration (49 passed), full suite (3,397 passed, three skipped,
+one deselected; 10 warnings), E2E (34 passed), and `make page` (exit 0). The page
+checker executed console routes, forms and workflow evidence against the API.
+`git diff --check` also passed. Direct browser inspection could not run because
+the desktop browser kernel failed sandbox initialization; no screenshot or
+visual inspection is claimed.
+
+One earlier targeted run had an invalid-JWT 403 in a blueprint test. Its log is
+retained as `attempt-refactor-targeted-token-failure.log`. Adjacent timestamps
+moved backwards by about one second; clock skew is a possible explanation,
+not a proven cause. The same case passed in isolation, then all 49 targeted tests
+and the full suite passed without weakening authentication or changing that test.
+
+A claim-commit failure test verifies that rolled-back execution IDs are not used
+as audit foreign keys: the original database error is retained and the runtime
+never starts. This protects failure reporting before the first durable claim.
+
+The new tests use separate PostgreSQL connections to read running task/execution,
+observe renewed leases and committed usage, update and cancel the row while the
+runtime waits, reject duplicate runners and late results, exercise the worker
+factory and a failing heartbeat, and kill a subprocess after a visible checkpoint.
+All runtime/model content in these tests is fake; this is operational verification,
+not a measurement of live model quality or real hiring completion.
+
+Logs: `.devdata/logs/attempt-refactor-{targeted,full,e2e,page}.log`.
+
+## Read-only audit of existing delivery evidence
+
+Fresh audits passed 141 HR setup checks, 111 MEP checks and 75 procurement checks.
+Reports are `.devdata/reports/attempt-{hr-setup,mep,proc}-audit.json`. No new mail,
+real model request, supplier order or production onboarding was performed in this
+refactor. The existing MEP evidence includes three synthetic SMTP self-mails and
+read-only IMAP retrieval, model assessments, and five sandbox onboarding files;
+interviews, reviews and offer acceptance remain fixtures or SYSTEM simulation.
+Procurement retains fixture PO/GRN/invoice matching and simulated reviews, with
+no real purchase, delivery or payment. Existing model-generated HR setup has an
+operator approval and provisioned resources, but its workflow is waiting for input
+with zero operational stages complete. Setup completion is not campaign completion.
+Before the local server restart, the development tenant had zero running executions.
+
+## Product direction
+
+The owner selected the demo journey: Boss submits a brief → follows the recruitment
+campaign → reviews decisions waiting for them → opens onboarding evidence.
+FUTURE_WORK.md now specifies this campaign experience and the next sequence:
+connector receipts/reconciliation, durable dispatch, independent HR templates
+and gate rework, then a real MEP campaign to onboarding and procurement. Expert
+corpus approval and real shadow evidence remain necessary. IT development is
+deferred and Bai Tram is outside this delivery.
+
+---
+
 # Workflow lifecycle refactor — 2026-10-07
 
-This is the current delivery record for the controller refactor. Earlier sections
+This is the preceding delivery record for the controller refactor. Earlier sections
 retain their original measurements.
 
 ## Behaviour and ownership

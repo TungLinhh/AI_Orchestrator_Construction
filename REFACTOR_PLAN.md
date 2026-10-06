@@ -5,7 +5,8 @@ hoặc procurement phải giữ được bước đã hoàn thành, quyết đ�
 chứng cứ khi API dừng. Việc chia file chỉ có ích nếu quyền sở hữu trạng thái rõ
 hơn và lỗi có thể được tái hiện.
 
-Đợt này triển khai phần vòng đời dùng chung. Không tối ưu tenant, đổi framework,
+Đợt 1 triển khai phần vòng đời dùng chung; đợt 2 bên dưới triển khai transaction
+và lease của đường chạy task chính. Không tối ưu tenant, đổi framework,
 đổi schema hoặc chuyển các bản kế hoạch đã được duyệt sang template khác.
 Các refactor tiếp theo được xếp theo rủi ro vận hành ở phần cuối.
 
@@ -114,11 +115,59 @@ root stop được ghi trong database nhưng worker khác chỉ quan sát ở ch
 Chưa chứng minh dừng tức thời lời gọi bên ngoài ở mọi process. General task lease
 trong F190 chưa được sửa bởi refactor controller này.
 
+## Đợt 2 — transaction và lease của executor, 2026-10-07
+
+Đã đưa pipeline native/local runner, cả hai đường Temporal activity/factory và
+entrypoint `make demo`/`make run-fleet` qua `application/task_attempt.py`.
+`TaskAttemptRunner` sở hữu session có thể commit; `TaskExecutionService` vẫn là
+đường thực thi nghiệp vụ một task. Controller business/blueprint giữ lifecycle
+riêng đã nghiệm thu ở đợt 1. Những script chẩn đoán cũ gọi service trực tiếp vẫn
+là caller transaction-scoped; không được coi chúng là đường có heartbeat mới.
+Guard của service từ chối execution đang hoạt động đã được commit, kể cả khi
+caller cũ không đi qua runner.
+
+- Advisory transaction lock riêng cho từng task, không giữ khóa dòng task qua
+  lời gọi model. Claim và execution thật, context/skill snapshot và audit được
+  commit trước runtime. Usage và tool records nội bộ được checkpoint trước lượt
+  model tiếp theo. Checkpoint áp lại tenant binding sau commit.
+- Heartbeat dùng session riêng, chỉ gia hạn khi task và đúng execution ID còn
+  running. Mặc định lease 120 giây, heartbeat 5 giây; cấu hình duy nhất tại
+  Settings qua `AO_TASK_EXECUTION_LEASE_S` và `AO_TASK_EXECUTION_HEARTBEAT_S`.
+  Chu kỳ được chặn không vượt một phần ba lease. Temporal nhận heartbeat cùng
+  ID task/execution; lỗi heartbeat dừng runtime và được báo, không nuốt.
+- Cancel từ connection/process khác không chờ khóa của model. Poll heartbeat
+  quan sát quyết định; checkpoint kiểm tra lại trước ghi sản phẩm. Finalization
+  giữ khóa dòng ngắn đến commit để quyết định hủy không bị ghi đè bởi kết quả
+  model về muộn. Không hứa dừng tức thời tác động bên ngoài đã gửi đi.
+- Tắt hoặc hủy coroutine giữ usage đã commit, đóng execution và đưa general task
+  chưa xong sang blocked/chờ đối chiếu. Task đã canceled giữ nguyên canceled.
+  Kill cứng để lại claim/lease/execution nhìn thấy từ connection khác, giải phóng
+  advisory lock nhưng không tự replay hành động chưa có receipt. General task
+  cần xử lý attempt bị bỏ lại trước retry; workflow business/blueprint vẫn có
+  cơ chế phục hồi theo từng loại bước đã được nghiệm thu ở đợt 1.
+- Claim hiện rõ cũng làm lộ race trong settlement: coordinator running chưa có
+  child không đồng nghĩa model đã kết thúc. `settle_finished` bỏ qua task có
+  execution còn running để không đánh dấu thất bại hoặc hoàn tất sớm.
+
+Phép thử đọc PostgreSQL từ session thứ hai khi runtime còn chờ, quan sát lease
+được gia hạn, cập nhật dòng và Cancel trong tối đa một giây, chạy hai runner,
+caller cũ, factory Temporal, lỗi heartbeat và subprocess bị kill. Nội dung/model
+đều là fixture, không dùng kết quả này làm chứng nhận chất lượng model thật.
+Lỗi commit claim cũng được kiểm tra: giữ lỗi gốc, không gọi runtime và không
+ghi audit với execution đã rollback. Gate phát hành và số phép thử cuối được
+ghi trong WORK_REPORT.md.
+
+Đây chưa phải contract receipt cho external write, dispatch bền vững hay migration
+mọi script lịch sử. Một connection khóa và session runtime/pulse làm tăng nhu cầu
+pool; cần đo pool wait và p95 dưới tải trước tăng concurrency. Context đọc và
+connector chuyên biệt vẫn cần được rà theo contract ở đợt 3. Không mở quyền mới,
+không sửa dữ liệu của campaign đã được duyệt.
+
 ## Thứ tự refactor tiếp theo
 
 | Thứ tự | Phạm vi | Vấn đề phải giải quyết | Điều kiện nghiệm thu |
 | --- | --- | --- | --- |
-| 2 | Transaction và attempt của `TaskExecutionService`, `local_runner`, worker runtime, Temporal activity | General lease có thể chưa nhìn thấy từ connection khác. Service còn trộn context, quyền, delegation, output, learning và persistence | Claim và heartbeat nhìn thấy trong khi model còn chạy. Kill và reaper không nhận nhầm worker sống. Không giữ transaction ghi qua network chậm. Cancellation không đợi khóa của model |
+| 2 — đã triển khai đường chạy chính | Transaction và attempt của `TaskExecutionService`, `local_runner`, worker runtime, Temporal activity | General lease có thể chưa nhìn thấy từ connection khác. Service còn trộn context, quyền, delegation, output, learning và persistence | Claim và heartbeat nhìn thấy trong khi model còn chạy. Kill và reaper không nhận nhầm worker sống. Không giữ transaction ghi qua network chậm. Cancellation không đợi khóa của model |
 | 3 | Contract và receipt của connector | SMTP, IMAP và các app tương lai có kết quả bên ngoài database. Retry theo task ID chưa chứng minh write không bị lặp | Action key ổn định, snapshot đầu vào, receipt, read-back, cursor, timeout và lỗi có kiểu. Test kill trước và sau external write. Có màn hình đối chiếu kết quả chưa rõ |
 | 4 | Dispatch bền vững cho business workflow | Lệnh native chờ chạy có thể mất khi process chết. Tín hiệu ở process khác chưa có đường bàn giao bền vững | Chọn một chủ sở hữu dispatch. Request ack gắn với lệnh đã lưu. Approval và Cancel không mất khi nhiều worker chạy. Worker restart tiếp tục đúng checkpoint với receipt đã đối chiếu |
 | 5 | Template HR theo campaign | Một blueprint HR hiện có thể gom tuyển dụng, payroll, performance và offboarding vào một lượt | Template riêng, required inputs theo bước, source SOP rõ. Campaign giữ snapshot đã duyệt. Bản cũ và quyết định đã ghi không bị sửa ngầm. MEP tuyển dụng được nghiệm thu trước |
