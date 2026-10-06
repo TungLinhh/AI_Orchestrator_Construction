@@ -123,6 +123,7 @@ function renderCrumbs(route) {
           documents: ["Documents", "Tài liệu"],
           catalogue: ["Procedure catalogue", "Danh mục quy trình"],
           hiring: ["Recruitment example", "Quy trình tuyển dụng mẫu"],
+          workflows: ["Business workflows", "Workflow nghiệp vụ"],
           definitions: ["Agent definitions", "Định nghĩa agent"],
           provision: ["Provision agent", "Tạo agent"],
           organization: ["Organization", "Tổ chức"],

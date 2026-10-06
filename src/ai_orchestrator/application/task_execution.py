@@ -373,11 +373,13 @@ class TaskExecutionService:
         run_mode: RunMode = RunMode.LIVE,
         default_limits: Any = None,
         auto_approve: bool | None = None,
+        model_usage_checkpoint: Any = None,
     ) -> None:
         self._session = session
         self._org = organization_id
         self._runtime = runtime
         self._run_mode = run_mode
+        self._model_usage_checkpoint = model_usage_checkpoint
         self._default_limits = default_limits
         self._tasks = TaskRepository(session, organization_id)
         self._executions = ExecutionRepository(session, organization_id)
@@ -433,6 +435,17 @@ class TaskExecutionService:
         """
         started = time.monotonic()
         task = await self._tasks.get(task_id)
+
+        # Ordered business stages cannot be started through an ordinary agent run:
+        # doing so could skip a workflow review or its independent evidence checks.
+        if task.input.get("business_workflow"):
+            if not task.input.get("stage_key") or self._runtime.name != "workflow_evidence":
+                raise PreconditionError(
+                    "Run this ordered task through its business workflow controller"
+                )
+            previous = task.input.get("prior", {})
+            if not previous:
+                raise PreconditionError("Workflow stage has no verified predecessor artifacts")
 
         # Every entry point must honor the current review, including a direct
         # activity retry. A previous approval cannot authorize a later stage.
@@ -2027,10 +2040,15 @@ class TaskExecutionService:
                 cost_usd=float(response.cost_usd or 0),
                 latency_ms=response.latency_ms,
                 routing_reason=decision.routing_reason if decision else "primary",
-                status="ok",
-                error_kind=None,
+                status="error" if getattr(response, "finish_reason", None) == "error" else "ok",
+                error_kind="provider_error"
+                if getattr(response, "finish_reason", None) == "error"
+                else None,
             )
         )
+
+        if self._model_usage_checkpoint:
+            await self._model_usage_checkpoint()
 
     # ------------------------------------------------------------ outcomes --
     async def _finish(
@@ -2487,6 +2505,17 @@ class TaskExecutionService:
         await self._tasks.transition(
             task.id, Transition.FAIL, error=message[:2000], failure_category=category
         )
+        if execution_id:
+            execution = await self._executions.get(execution_id)
+            if execution.status == "running":
+                await self._executions.finish(
+                    execution_id,
+                    status="failed",
+                    summary=message[:2000],
+                    error_category=category,
+                    error_message=message[:2000],
+                    duration_ms=int((time.monotonic() - (started or time.monotonic())) * 1000),
+                )
         from ai_orchestrator.application.learning_revert import revert_falsified_skills
 
         await revert_falsified_skills(self._session, self._org, task, execution_id)

@@ -195,7 +195,7 @@ test-live: ## The tests that call a real model. Slow, and their runtime is the p
 # of its tests. It skips *loudly*, with the reason, which is how the gap was found; but a
 # suite that needs a manual step to be complete is a suite nobody runs complete.
 test-fresh: reset-test-db seed-test-reference ## Empty the test database, seed the reference catalogue, run the suite
-	$(PY) pytest -q
+	$(MAKE) test
 
 test-unit: ## Run unit tests only
 	$(PY) pytest tests/unit -q

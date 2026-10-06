@@ -138,6 +138,7 @@ class ModelRequest:
     prompt: str = ""
     messages: list[dict[str, Any]] = field(default_factory=list)
     tools: list[dict[str, Any]] = field(default_factory=list)
+    tool_choice: str | dict[str, Any] = "auto"
     output_schema: dict[str, Any] | None = None
     max_output_tokens: int = 2_000
     temperature: float = 0.0
@@ -146,6 +147,8 @@ class ModelRequest:
     # Keyed by provider, because "fallback" is a property of the attempt, not
     # of the whole request.
     excluded_providers: frozenset[str] = frozenset()
+    # A bounded stage can reject a candidate whose artifact fails its contract.
+    excluded_candidates: frozenset[str] = frozenset()
     estimated_input_tokens: int = 0
     remaining_budget_usd: Money | None = None
     trace_id: str | None = None
@@ -175,7 +178,7 @@ class ModelRequest:
             payload["temperature"] = self.temperature
         if self.tools:
             payload["tools"] = self.tools
-            payload["tool_choice"] = "auto"
+            payload["tool_choice"] = self.tool_choice
         if self.output_schema is not None:
             payload["response_format"] = {
                 "type": "json_schema",
@@ -316,6 +319,9 @@ class ModelGateway:
 
         for index, candidate in enumerate(candidates):
             considered.append(candidate.key())
+            if candidate.key() in request.excluded_candidates:
+                errors.append(candidate.key() + ": excluded after artifact verification failure")
+                continue
             provider = self._providers.get(candidate.provider)
             if provider is None:
                 unservable.append(f"{candidate.key()}: no provider adapter registered")

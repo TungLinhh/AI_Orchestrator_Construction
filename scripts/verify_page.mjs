@@ -1335,9 +1335,18 @@ try {
     check("the new task says which failure it follows",
       typeof body.retried_from === "string" && body.retried_from.length > 0,
       `${body.title} <- ${body.retried_from}`);
-    check("it is created, not started",
-      body.status === "created",
-      "a person who presses this by accident must not spend 67,000 tokens");
+    if (body.business_workflow) {
+      const workflow = await (await fetch(`${BASE}/api/v1/workflows/${body.task_id}`, {
+        headers: { "x-organization-id": ORG },
+      })).json();
+      check("a business retry preserves its ordered stages and does not start execution",
+        body.started === false && workflow.total > 1 &&
+        (body.already_active || (workflow.completed === 0 &&
+          workflow.stages.every(stage => stage.status === "assigned") &&
+          workflow.evidence.real_model_calls === 0 && workflow.evidence.fake_model_calls === 0)),
+        `stages=${workflow.total}, started=${body.started}`);
+    } else check("it is created, not started", body.status === "created",
+      "retry creation must not start a model run");
   } else {
     check("a refusal names the task already on the work, so it can be opened",
       !alreadyRetried || /tsk_[a-z0-9]+/.test(said),
@@ -1377,7 +1386,7 @@ await new Promise(r => setTimeout(r, 500));
 check("browser Forward returns to the next console screen", sandbox.location.hash === "#/operations/models");
 /* Management routes use the real projections and preserve exact deep links. */
 console.log("management:");
-for (const destination of ["processes/catalogue", "processes/hiring", "processes/definitions", "processes/provision",
+for (const destination of ["processes/catalogue", "processes/workflows", "processes/hiring", "processes/definitions", "processes/provision",
   "library/skills", "library/tools", "library/memory", "business/projects", "business/documents",
   "operations/models", "operations/usage", "operations/events", "operations/decisions",
   "operations/audit", "operations/governance", "operations/system", "settings", "settings/units", "settings/roles"]) {
@@ -1389,6 +1398,7 @@ for (const destination of ["processes/catalogue", "processes/hiring", "processes
     check(destination + " renders from its API", !error && content.length > 0,
       error ? String(error).replace(/<[^>]*>/g, " ").slice(0,160) : `${content.length} characters`);
     if (destination === "processes/hiring") check("the example process explains its reference and recorded stage count", /JD reference|Tham chiếu JD/.test(content) && /Finished \/ recorded stages|Bước đã xong/.test(content));
+    if (destination === "processes/workflows") check("real hiring has a separate brief form and salary/date inputs", /id="hiring-brief"/.test(content) && /name="salary_min"/.test(content) && /name="start_date"/.test(content) && /id="create-mep"/.test(content));
     check(destination + " does not show missing JS values", !/\bundefined\b|\[object Object\]/.test(content));
     check(destination + " selects only the management surface", !$("view-management").hidden && $("view-give").hidden && $("view-departments").hidden);
   } catch (err) { check(destination + " did not throw", false, err.message); }
@@ -1418,5 +1428,21 @@ try {
     check("an event deep link opens its exact payload", $("managementBody").innerHTML.includes(event.id) && $("managementBody").innerHTML.includes(event.type));
   }
 } catch(err){check("management detail checks did not throw",false,err.message);}
+
+try {
+  const workflows = await (await fetch(`${BASE}/api/v1/workflows`, {headers:{"x-organization-id":ORG}})).json();
+  let selected = workflows.items.find(w => w.kind === "mep_hiring" && w.status === "completed") || workflows.items[0];
+  if (!selected) selected = await (await fetch(`${BASE}/api/v1/workflows/examples`, {method:"POST", headers:{"x-organization-id":ORG,"content-type":"application/json"}, body:JSON.stringify({kind:"mep_hiring"})})).json();
+  sandbox.__hash = "#/processes/workflows/" + selected.id;
+  await vm.runInContext("route()",sandbox);
+  const content = String($("managementBody").innerHTML);
+  const evidence = await (await fetch(`${BASE}/api/v1/workflows/${selected.id}`, {headers:{"x-organization-id":ORG}})).json();
+  check("business workflow deep link shows the exact root", content.includes(selected.id));
+  check("business workflow exposes every ordered stage and its task", evidence.stages.every(s => content.includes(s.id) && content.includes(s.title)));
+  check("business workflow states simulation and source references", /SIMULATION|MÔ PHỎNG/.test(content) && /ONX-/.test(content));
+  check("business workflow exposes execution evidence and refresh controls", !!$("workflow-refresh") && /Recorded events|Sự kiện \/ audit/.test(content));
+  if(evidence.status === "completed" && evidence.kind === "mep_hiring") check("completed hiring shows every CV and grounded score", evidence.stages.find(s=>s.key==="scoring").output.candidates.every(c=>content.includes(String(c.score)) && content.includes(c.candidate_id)));
+} catch(err) {check("business workflow detail did not throw",false,err.message);}
+
 check("management navigation produced no unhandled error",uncaught === null,uncaught?.message);
 process.exit(problems.length ? 1 : 0);

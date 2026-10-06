@@ -160,6 +160,16 @@ class Settings(BaseSettings):
     embedding_provider_default: str = "hash"
     embedding_dimensions: int = 512
 
+    # One explicitly connected mailbox; never expose its credentials in the API.
+    recruitment_mail_org: str = ""
+    recruitment_mail_address: str = ""
+    recruitment_mail_password: SecretStr = SecretStr("")
+    workflow_model_call_timeout_s: int = Field(default=180, ge=30, le=600)
+    recruitment_mail_poll_interval_s: int = Field(default=30, ge=10, le=3600)
+    recruitment_mail_timeout_s: int = Field(default=30, ge=1, le=120)
+    recruitment_mail_max_bytes: int = Field(default=5_000_000, ge=1024, le=20_000_000)
+    recruitment_mail_max_messages: int = Field(default=50, ge=1, le=200)
+
     # ------------------------------------------------------------- secrets --
     jwt_secret: SecretStr = SecretStr("")
     encryption_key: SecretStr = SecretStr("")

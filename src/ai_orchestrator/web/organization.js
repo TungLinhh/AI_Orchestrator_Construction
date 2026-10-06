@@ -301,8 +301,17 @@
       });
   });
   MANAGEMENT_VIEWS.set("processes", async (r, guard) => {
+    if (r.arg === "workflows") {
+      await BusinessWorkflows.render(r, guard);
+      return;
+    }
     const active = r.arg || "catalogue",
       tabs = [
+        [
+          "workflows",
+          L("Business workflows", "Workflow nghiệp vụ"),
+          "#/processes/workflows",
+        ],
         [
           "catalogue",
           L("Procedure catalogue", "Danh mục quy trình"),

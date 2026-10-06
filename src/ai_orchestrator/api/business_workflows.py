@@ -1,0 +1,306 @@
+"""Operator workflow controls. The same controller is used by CLI and console."""
+
+from __future__ import annotations
+
+import asyncio
+from typing import Any, Literal
+
+from fastapi import APIRouter, Depends, Request
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import func, select, text
+
+from ai_orchestrator.api.deps import ApiContext, get_context
+from ai_orchestrator.application.business_workflow import (
+    BusinessWorkflowService,
+    create_workflow,
+    payload_hash,
+)
+from ai_orchestrator.application.workflow_fixtures import hiring_fixture, procurement_fixture
+from ai_orchestrator.audit.service import AuditService
+from ai_orchestrator.config.settings import Environment, get_settings
+from ai_orchestrator.domain.business_workflow import RUBRIC_SPEC
+from ai_orchestrator.domain.errors import PreconditionError, ValidationError
+from ai_orchestrator.persistence.models import Task
+from ai_orchestrator.persistence.repositories.task import TaskRepository
+from ai_orchestrator.persistence.session import Database
+from ai_orchestrator.telemetry.logging import get_logger
+
+logger = get_logger(__name__)
+_mail_monitor: asyncio.Task[Any] | None = None
+
+router = APIRouter(tags=["business-workflows"])
+_running: dict[tuple[str, str], asyncio.Task[Any]] = {}
+
+
+class ExampleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["mep_hiring", "procurement"]
+
+
+class HiringRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    position: str = Field(min_length=3, max_length=200)
+    boss_brief: str = Field(min_length=20, max_length=10000)
+    salary_min: int = Field(gt=0)
+    salary_max: int = Field(gt=0)
+    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+@router.post("/workflows/hiring", status_code=201)
+async def hiring(body: HiringRequest, ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+    ctx.require_admin()
+    from datetime import date
+
+    try:
+        date.fromisoformat(body.start_date)
+    except ValueError as exc:
+        raise ValidationError("Start date must be a valid calendar date") from exc
+    brief = {
+        **body.model_dump(),
+        "synthetic": False,
+        "headcount": 1,
+        "rubric_spec": [{"key": key, "max_points": weight} for key, weight in RUBRIC_SPEC],
+    }
+    root = await create_workflow(ctx.session, ctx.organization_id, "mep_hiring", "live", brief)
+    return {"id": root, "mode": "live", "synthetic": False, "started": False}
+
+
+class EvidenceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    stage_key: Literal[
+        "interview_technical", "interview_hr", "offer_acceptance", "onboarding_evidence", "delivery"
+    ]
+    evidence: dict[str, Any]
+
+
+@router.get("/workflows")
+async def listing(
+    limit: int = 50, offset: int = 0, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    if not 1 <= limit <= 100 or offset < 0:
+        raise ValidationError("Invalid workflow pagination")
+    criteria = (
+        Task.organization_id == ctx.organization_id,
+        Task.parent_task_id.is_(None),
+        Task.input.has_key("business_workflow"),
+    )
+    total = (
+        await ctx.session.execute(select(func.count()).select_from(Task).where(*criteria))
+    ).scalar_one()
+    rows = (
+        (
+            await ctx.session.execute(
+                select(Task)
+                .where(*criteria)
+                .order_by(Task.created_at.desc(), Task.id)
+                .limit(limit)
+                .offset(offset)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "title": r.title,
+                "kind": r.input["business_workflow"],
+                "mode": r.input["mode"],
+                "status": r.status,
+                "created_at": r.created_at.isoformat(),
+            }
+            for r in rows
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post("/workflows/examples", status_code=201)
+async def example(body: ExampleRequest, ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+    ctx.require_admin()
+    brief = hiring_fixture() if body.kind == "mep_hiring" else procurement_fixture()
+    root = await create_workflow(ctx.session, ctx.organization_id, body.kind, "simulation", brief)
+    return {"id": root, "mode": "simulation", "synthetic": True, "started": False}
+
+
+@router.get("/workflows/{root_id}")
+async def detail(
+    root_id: str, request: Request, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    return await BusinessWorkflowService(request.app.state.db, ctx.organization_id).report(root_id)
+
+
+async def start_workflow(db: Database, org: str, root: str) -> dict[str, Any]:
+    key = (org, root)
+    if key in _running and not _running[key].done():
+        return {"id": root, "started": False, "already_running": True}
+
+    async def drive() -> None:
+        try:
+            await BusinessWorkflowService(db, org).run(root)
+        finally:
+            _running.pop(key, None)
+
+    _running[key] = asyncio.create_task(drive(), name="business-workflow:" + root)
+    return {"id": root, "started": True, "already_running": False}
+
+
+async def stop_business_runs() -> None:
+    global _mail_monitor
+    if _mail_monitor:
+        _mail_monitor.cancel()
+        await asyncio.gather(_mail_monitor, return_exceptions=True)
+        _mail_monitor = None
+    tasks = list(_running.values())
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    _running.clear()
+
+
+async def cancel_business_run(org: str, root: str) -> None:
+    active = _running.get((org, root))
+    if active and not active.done():
+        active.cancel()
+        await asyncio.gather(active, return_exceptions=True)
+
+
+@router.post("/workflows/{root_id}/run")
+async def run(
+    root_id: str, request: Request, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    ctx.require_admin()
+    root = await TaskRepository(ctx.session, ctx.organization_id).get(root_id)
+    if root.parent_task_id or not root.input.get("business_workflow"):
+        raise ValidationError("Run requires a workflow root")
+    if root.status in {"completed", "failed", "canceled", "expired"}:
+        raise PreconditionError("This workflow is terminal; create a new run for changed inputs")
+    return await start_workflow(request.app.state.db, ctx.organization_id, root_id)
+
+
+@router.post("/workflows/{root_id}/evidence")
+async def evidence(
+    root_id: str, body: EvidenceRequest, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
+    ctx.require_human()
+    root = await TaskRepository(ctx.session, ctx.organization_id).get(root_id)
+    if (
+        root.parent_task_id
+        or not root.input.get("business_workflow")
+        or root.status in {"completed", "failed", "canceled", "expired"}
+    ):
+        raise PreconditionError("Evidence requires an open workflow")
+    key = "onboarding_setup" if body.stage_key == "onboarding_evidence" else body.stage_key
+    stage = (
+        await ctx.session.execute(
+            select(Task).where(
+                Task.organization_id == ctx.organization_id,
+                Task.parent_task_id == root_id,
+                Task.input["stage_key"].astext == key,
+            )
+        )
+    ).scalar_one_or_none()
+    if stage is None or stage.status not in {"assigned", "waiting_for_input"}:
+        raise PreconditionError("Cannot replace evidence for an executed or in-flight stage")
+    brief = {**root.input["brief"], body.stage_key: body.evidence}
+    root.input = {**root.input, "brief": brief}
+    await AuditService(ctx.session, ctx.organization_id).record(
+        actor=ctx.actor,
+        action="workflow.evidence.submitted",
+        resource_type="task",
+        resource_id=stage.id,
+        task_id=stage.id,
+        context={"stage": body.stage_key, "evidence_hash": payload_hash(body.evidence)},
+    )
+    return {"id": root_id, "stage_key": body.stage_key, "recorded": True}
+
+
+@router.post("/workflows/{root_id}/retry", status_code=201)
+async def retry(root_id: str, ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+    ctx.require_admin()
+    source = await TaskRepository(ctx.session, ctx.organization_id).get(root_id)
+    if (
+        source.parent_task_id
+        or not source.input.get("business_workflow")
+        or source.status != "failed"
+    ):
+        raise PreconditionError("Retry requires a failed business workflow")
+    await ctx.session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:org), hashtext(:root))"),
+        {"org": ctx.organization_id, "root": "retry:" + root_id},
+    )
+    active = (
+        (
+            await ctx.session.execute(
+                select(Task).where(
+                    Task.organization_id == ctx.organization_id,
+                    Task.parent_task_id.is_(None),
+                    Task.input["reuse_source"].astext == root_id,
+                    Task.status.not_in(("completed", "failed", "canceled", "expired")),
+                )
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if active:
+        return {
+            "id": active.id,
+            "mode": active.input["mode"],
+            "source_root": root_id,
+            "started": False,
+            "already_active": True,
+        }
+    root = await create_workflow(
+        ctx.session,
+        ctx.organization_id,
+        source.input["business_workflow"],
+        source.input["mode"],
+        source.input["brief"],
+        reuse_source=root_id,
+    )
+    return {"id": root, "mode": source.input["mode"], "source_root": root_id, "started": False}
+
+
+async def pending_mail_intakes(db: Database, org: str) -> list[str]:
+    async with db.tenant_session(org) as session:
+        rows = await session.execute(
+            text(
+                "SELECT DISTINCT root.id FROM tasks root JOIN tasks child "
+                "ON child.parent_task_id=root.id AND child.organization_id=root.organization_id "
+                "WHERE root.organization_id=:org AND root.status='blocked' "
+                "AND root.input->>'mode'='live' "
+                "AND root.input->>'business_workflow'='mep_hiring' "
+                "AND child.input->>'stage_key'='cv_intake' "
+                "AND child.status='waiting_for_input' ORDER BY root.id LIMIT 10"
+            ),
+            {"org": org},
+        )
+        return [str(row[0]) for row in rows]
+
+
+def start_mail_monitor(db: Database) -> None:
+    global _mail_monitor
+    settings = get_settings()
+    if (
+        settings.environment == Environment.TEST
+        or settings.model_provider_default in {"fake", "scripted", "deterministic"}
+        or not settings.recruitment_mail_org
+    ):
+        return
+
+    async def watch() -> None:
+        while True:
+            try:
+                for root in await pending_mail_intakes(db, settings.recruitment_mail_org):
+                    await start_workflow(db, settings.recruitment_mail_org, root)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.error("workflow.mail_monitor_failed", error_type=type(exc).__name__)
+            await asyncio.sleep(settings.recruitment_mail_poll_interval_s)
+
+    _mail_monitor = asyncio.create_task(watch(), name="workflow-mail-intake-monitor")

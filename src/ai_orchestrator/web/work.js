@@ -287,7 +287,11 @@ async function retryTask(id, button) {
           ? tr("retry.queued", "Queued for another attempt.")
           : tr("retry.running", "Running the same work again as a new task."),
       );
-      go(`#/give/${encodeURIComponent(newId)}`);
+      go(
+        made.business_workflow
+          ? `#/processes/workflows/${encodeURIComponent(newId)}`
+          : `#/give/${encodeURIComponent(newId)}`,
+      );
       return;
     }
     toast(
@@ -1826,7 +1830,20 @@ async function renderOneTask(id) {
   );
   $("runThisTask").hidden = !["created", "assigned"].includes(t.status);
   $("cancelTask").hidden = !(d.available_actions || []).includes("cancel");
+  if (t.workflow_id && t.workflow_id !== t.id) $("cancelTask").hidden = true;
   $("runThisHint").hidden = $("runThisTask").hidden;
+  setHTML(
+    "runThisHint",
+    esc(tr("task.runhint", "Uses model quota; work runs in the background.")),
+  );
+  if (t.workflow_id) {
+    $("runThisTask").hidden = true;
+    $("runThisHint").hidden = false;
+    setHTML(
+      "runThisHint",
+      `<a href="#/processes/workflows/${esc(t.workflow_id)}">${esc(state.lang === "vi" ? "Mở workflow để chạy đúng thứ tự và duyệt từng cổng" : "Open the workflow to run its ordered stages and reviews")}</a>`,
+    );
+  }
   $("runThisState").textContent = statusName(t.status);
   taskNames.set(t.id, t.title);
   state.taskId = t.id || null;
@@ -1835,13 +1852,11 @@ async function renderOneTask(id) {
      was blocked. A task that has not failed has nothing to repeat — it needs running or
      deciding, and offering "run it again" there would invite a duplicate of work already in
      flight. Hidden by default in the markup too, so it cannot flash before the report lands. */
-  const retryable = [
-    "failed",
-    "canceled",
-    "cancelled",
-    "blocked",
-    "expired",
-  ].includes(t.status);
+  const retryable = t.workflow_id
+    ? t.workflow_id === t.id && t.status === "failed"
+    : ["failed", "canceled", "cancelled", "blocked", "expired"].includes(
+        t.status,
+      );
   const rb = $("retryBtn");
   rb.hidden = !retryable;
   if (retryable) {

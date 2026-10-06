@@ -171,6 +171,7 @@ _REPORT_TASK = """
 SELECT t.id, t.title, t.goal, t.task_type, t.status, t.priority, t.requester_type,
        t.created_at, t.started_at, t.completed_at, t.deadline_at, t.attempt_count,
        t.failure_category, t.last_error, t.output, t.constraints,
+       t.input->>'business_workflow' AS business_workflow,
        t.spent_tokens, t.budget_limit_tokens, t.root_task_id, t.parent_task_id,
        a.name AS owner_name
 FROM tasks t
@@ -433,6 +434,9 @@ async def task_report(
             "title": head["title"],
             "goal": head["goal"],
             "task_type": head["task_type"],
+            "workflow_id": (head["parent_task_id"] or head["id"])
+            if head["business_workflow"]
+            else None,
             "status": head["status"],
             "priority": head["priority"],
             "requester_type": head["requester_type"],

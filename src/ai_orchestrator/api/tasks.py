@@ -349,7 +349,9 @@ async def get_task(task_id: str, ctx: ApiContext = Depends(get_context)) -> dict
 
 
 @router.post("/tasks/{task_id}/cancel")
-async def cancel_task(task_id: str, ctx: ApiContext = Depends(get_context)) -> dict[str, Any]:
+async def cancel_task(
+    task_id: str, request: Request, ctx: ApiContext = Depends(get_context)
+) -> dict[str, Any]:
     """Cancel a task.
 
     A cancel also signals the running workflow, so the work actually stops rather
@@ -360,6 +362,27 @@ async def cancel_task(task_id: str, ctx: ApiContext = Depends(get_context)) -> d
 
     repo = TaskRepository(ctx.session, ctx.organization_id)
     task = await repo.get(task_id)
+    if task.input.get("business_workflow"):
+        ctx.require_admin()
+        if task.parent_task_id:
+            from ai_orchestrator.domain.errors import PreconditionError
+
+            raise PreconditionError("Cancel the workflow root to stop all its ordered stages")
+        from ai_orchestrator.api.business_workflows import cancel_business_run
+
+        task = await repo.transition(task_id, Transition.CANCEL)
+        result = _task_dict(task)
+        # Publish the root stop before interrupting the driver. Child rows may be
+        # locked by an in-flight model call; waiting on them first deadlocks stop.
+        await ctx.session.commit()
+        await cancel_business_run(ctx.organization_id, task_id)
+        async with request.app.state.db.tenant_session(ctx.organization_id) as cleanup_session:
+            cleanup = TaskRepository(cleanup_session, ctx.organization_id)
+            for stage_id, stage_status in (await cleanup.subtree_statuses(task_id)).items():
+                if stage_status not in {"completed", "failed", "canceled", "expired"}:
+                    await cleanup.transition(stage_id, Transition.CANCEL)
+        bump("tasks_canceled_total")
+        return result
     task = await repo.transition(task_id, Transition.CANCEL)
     bump("tasks_canceled_total")
 
@@ -552,6 +575,15 @@ async def run_task_now(task_id: str, ctx: ApiContext = Depends(get_context)) -> 
     """
     from ai_orchestrator.application.local_runner import start
 
+    task = await TaskRepository(ctx.session, ctx.organization_id).get(task_id)
+    if task.input.get("business_workflow"):
+        from ai_orchestrator.domain.errors import PreconditionError
+
+        raise PreconditionError(
+            "Run this task from Processes → Workflows to preserve its ordered review gates",
+            details={"workflow_id": task.parent_task_id or task.id},
+        )
+
     return (
         await start(
             ctx.session,
@@ -594,6 +626,19 @@ async def retry_task(task_id: str, ctx: ApiContext = Depends(get_context)) -> di
     import datetime as dt
 
     from ai_orchestrator.application.task_retry import retry_failed
+
+    task = await TaskRepository(ctx.session, ctx.organization_id).get(task_id)
+    if task.input.get("business_workflow"):
+        from ai_orchestrator.api.business_workflows import retry
+
+        result = await retry(task_id, ctx)
+        return {
+            **result,
+            "task_id": result["id"],
+            "retried_from": task.id,
+            "title": task.title,
+            "business_workflow": True,
+        }
 
     return await retry_failed(
         ctx.session,

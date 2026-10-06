@@ -25,6 +25,7 @@ import hashlib
 import json
 import secrets
 from collections.abc import Sequence
+from decimal import Decimal
 from typing import Any, cast
 
 from sqlalchemy import Select, and_, exists, func, select, text, update
@@ -1318,7 +1319,7 @@ class ExecutionRepository:
         execution.input_tokens = input_tokens
         execution.output_tokens = output_tokens
         execution.reasoning_tokens = reasoning_tokens
-        execution.cost_usd = execution.cost_usd + cost_usd
+        execution.cost_usd = float(Decimal(str(execution.cost_usd)) + Decimal(str(cost_usd)))
         execution.duration_ms = duration_ms
         execution.retry_count = retry_count
         execution.finished_at = utcnow()

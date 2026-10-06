@@ -71,6 +71,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from ai_orchestrator.api.stream_pump import start_stream_pump, stop_stream_pump
 
     start_stream_pump(app, database)
+    from ai_orchestrator.api.business_workflows import start_mail_monitor
+
+    start_mail_monitor(database)
     try:
         yield
     finally:
@@ -84,6 +87,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from ai_orchestrator.application.local_runner import shutdown as stop_local_runs
 
         await stop_local_runs()
+        from ai_orchestrator.api.business_workflows import stop_business_runs
+
+        await stop_business_runs()
         await database.dispose()
         if telemetry is not None:
             telemetry.shutdown()
@@ -178,6 +184,7 @@ def _install_routes(app: FastAPI) -> None:
     from ai_orchestrator.api.agents import router as agents_router
     from ai_orchestrator.api.agents_control import router as agents_control_router
     from ai_orchestrator.api.approvals import router as approvals_router
+    from ai_orchestrator.api.business_workflows import router as business_workflows_router
     from ai_orchestrator.api.console import router as console_router
     from ai_orchestrator.api.construction import router as construction_router
     from ai_orchestrator.api.documents import router as documents_router
@@ -206,6 +213,7 @@ def _install_routes(app: FastAPI) -> None:
     # declared above their `{id}` siblings rather than below them — see F123.
     for router in (
         console_router,
+        business_workflows_router,
         organizations_router,
         agents_router,
         tasks_router,

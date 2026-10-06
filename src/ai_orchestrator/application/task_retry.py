@@ -75,7 +75,8 @@ from ai_orchestrator.persistence.repositories.task import TaskRepository
 RETRY_MARKER = " (lần chạy lại)"
 
 _READ = """
-SELECT id, title, goal, task_type, status, last_error, parent_task_id
+SELECT id, title, goal, task_type, status, last_error, parent_task_id,
+       input->>'business_workflow' AS business_workflow
 FROM tasks
 WHERE id = CAST(:id AS varchar(64)) AND organization_id = CAST(:o AS varchar(64))
 """
@@ -130,6 +131,11 @@ async def retry_failed(
     )
     if original is None:
         raise NotFoundError(f"no task {task_id}")
+    if original["business_workflow"]:
+        raise ConflictError(
+            "Ordered business work must be retried through its workflow controller",
+            details={"workflow_id": original["parent_task_id"] or original["id"]},
+        )
     if original["status"] not in ("failed", "cancelled", "blocked"):
         raise ConflictError(
             f"this task is {original['status']}, and only failed work is retried. A task that "
