@@ -353,6 +353,6 @@
       );
       return;
     }
-    body(empty(), guard);
+    body(empty(L("Unknown business section. Choose Projects or Documents above.", "Không tìm thấy mục nghiệp vụ. Chọn Dự án hoặc Tài liệu ở trên.")), guard);
   });
 })();
