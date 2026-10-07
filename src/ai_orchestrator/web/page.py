@@ -23,6 +23,7 @@ SCRIPTS = (
     "work-ui.js",
     "issues-ui.js",
     "approvals-ui.js",
+    "commands.js",
     "boot.js",
 )
 
@@ -51,6 +52,7 @@ def render_console(root: Path) -> str:
     )
     css += "\n" + (root / "shell.css").read_text(encoding="utf-8")
     css += "\n" + (root / "work-ui.css").read_text(encoding="utf-8")
+    css += "\n" + (root / "commands.css").read_text(encoding="utf-8")
     javascript = "\n".join((root / name).read_text(encoding="utf-8") for name in SCRIPTS)
     prepaint = "\n".join(
         (root / name).read_text(encoding="utf-8") for name in ("palettes.js", "preferences.js")

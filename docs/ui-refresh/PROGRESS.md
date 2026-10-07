@@ -12,7 +12,11 @@
   Không đổi backend/API/schema hoặc hành vi nghiệp vụ.
 - **Giai đoạn 3 hoàn tất**: khung ứng dụng, browser gate và kiểm chứng cuối PASS.
 - **Giai đoạn 4 hoàn tất**: Công việc/detail/form, browser và kiểm chứng cuối PASS.
-- **Giai đoạn 5 đang triển khai**: trang Sự cố qua cổng cuối; tiếp theo là Phê duyệt.
+- **Giai đoạn 5 hoàn tất**: các trang còn lại đã chuyển sang presentation chung,
+  giữ liên kết sâu và hợp đồng thao tác. Mỗi trang có commit riêng.
+- **Giai đoạn 6 hoàn tất**: command palette, phím tắt, toast, motion và mobile
+  đã qua kiểm tra tương tác. Bằng chứng source cuối được tổng hợp tại Giai đoạn 7.
+- **Giai đoạn 7 đang chốt**: ma trận cuối, tài liệu và runtime sau khởi động lại.
 
 ## Quyết định và giả định
 
@@ -63,10 +67,9 @@
 
 ## Bước tiếp theo
 
-1. Giai đoạn 5: **Phê duyệt** tiếp theo, rồi Tổ chức/đơn vị;
-   mỗi trang một commit và cổng riêng.
-2. Từng trang → keyboard/mobile/a11y → nghiệm thu,
-   theo cổng trong `01-design-plan.md`.
+1. Đóng receipt tổng hợp Giai đoạn 7 khi mọi gate khớp hash source và đã passed.
+2. Khởi động lại runtime sản phẩm, kiểm health/readiness/UI/provider, mở console.
+3. Giữ các bước vận hành thật trong `FUTURE_WORK.md` riêng với nghiệm thu UI.
 
 ## Tự phản biện Giai đoạn 0
 
@@ -391,3 +394,71 @@
   authority. Không chạy E2E broker ngoài scope. Fixture không nghiệm thu live.
 - Giai đoạn 5 còn Phê duyệt, Tổ chức/đơn vị, Quy trình/màn con, Thư viện,
   Dữ liệu nghiệp vụ, Vận hành, Cài đặt. Mỗi trang một commit và gate riêng.
+
+## Tiếp quản Giai đoạn 5–7 — 2026-10-07
+
+- Người dùng yêu cầu trực tiếp hoàn thành phần đang dở của agent trước. Giữ nhánh
+  `ui/refresh` và toàn bộ thay đổi chưa commit trong các renderer, components và
+  approvals-ui; không reset hoặc ghi đè để tạo tree sạch giả.
+- Đọc BRIEF/PROGRESS và chat `01a10d25-f2e0-7d00-8b92-818679115e27`. Chat dừng
+  giữa GĐ5 vì hết credit. Trang Sự cố đã commit; các trang còn lại chưa đóng cổng.
+- Hoàn thiện shared Management presentation, xử lý GET lỗi và mobile table;
+  dialog phê duyệt dùng cùng đường API ở inbox và task detail. Server tiếp tục
+  quyết định quyền và hiệu lực. Bỏ handler kill/revive cũ không có caller; kiểm
+  lý do dừng tại form agent hiện hành. Phê duyệt không còn dùng native prompt.
+- Bổ sung command palette có search toàn register, điều hướng và tùy chọn thiết
+  bị; phím `?`, focus trap/restore và bộ đếm/lần vào Công việc một lần mỗi phiên.
+- Kiểm tra ban đầu bắt được target-size của tiêu đề Sự cố, aria-label không hợp
+  lệ ở campaign-progress và link chỉ phân biệt bằng màu. Sửa ở nguồn chung;
+  không tắt rule axe. Cổng toàn app và các fixture còn đang chạy, chưa nghiệm thu.
+- NATS/Temporal đã xác minh bằng socket và `make preflight-e2e`, tránh suy luận
+  từ dòng “started”. API kiểm tra ở 8100 dùng fake/hash; không gọi model/mail thật.
+- Tiếp theo: cổng từng trang, command/prefs/approval fixtures, toàn ma trận,
+  lint/type/tests/E2E, dọn CSS có caller audit, báo cáo và mở lại sản phẩm.
+
+## Giai đoạn 5 hoàn tất — 2026-10-07
+
+- Chuyển Management tại nguồn dùng chung, không chép CSS vào từng renderer.
+  Phê duyệt, Tổ chức, Quy trình, Thư viện, Dữ liệu nghiệp vụ, Vận hành và Cài đặt
+  có commit theo trang. Ảnh trước/draft của agent trước giữ tại `05-pages/` và
+  ghi rõ là checkpoint; ảnh nghiệm thu cuối lấy từ manifest `07-final/`.
+- Inbox có skeleton/empty/error/retry; dialog xác nhận giữ đúng payload, chờ
+  server, hiển thị từ chối quyền và cho thử lại. Drawer dẫn đúng task/dự thảo.
+  Agent → đơn vị nhận cả key và ID; log lỗi không còn bị cắt cố định 300 ký tự.
+- Tự phản biện: bỏ handler `data-kill` không có caller. Chuyển kiểm tra lý do
+  trim sang form thật thay vì giữ logic chết để test đọc thấy chuỗi. Browser
+  kiểm lý do khoảng trắng, payload trim và lỗi quyền; không dừng agent thật.
+- Full suite: **3.482 passed, 3 skipped, 1 deselected**, 10 cảnh báo openpyxl,
+  738,16s. Ba skip có lý do trong log, không coi là đã được thực thi. E2E:
+  **34 passed**, 108,17s; preflight PostgreSQL/NATS/Temporal thật passed.
+
+## Giai đoạn 6 hoàn tất — 2026-10-07
+
+- Command palette tìm ID/tên/người giữ trên register thật, mở đúng task và
+  navigation; lệnh giao diện có lưu, lệnh giao việc mở form. Ctrl/Cmd K và `?`
+  không cướp phím khi nhập liệu; Esc/Tab giữ focus đúng. 70 kiểm tra interaction
+  đã passed trên source cuối, gồm desktop/tablet/mobile, 200% reflow và reduced.
+- Counter/entry một lần mỗi phiên; tối đa 4 stats và 12 hàng, entry ≤376ms,
+  counter 480ms. Không chạy lại khi refresh/polling; reduced bỏ cả hai.
+- Toast dùng chung, có hover/focus pause, dismiss và link có underline. Preview
+  appearance chưa lưu được hoàn tác khi rời trang. Sáu bảng màu và hai mật độ
+  giữ nguyên khóa cài đặt hiện có; không thêm dữ liệu/trend giả.
+- Tự phản biện: bỏ toast cũ và scrollbar của bảng trên mobile; giữ danh sách
+  xếp chồng có nhãn cột. Sửa race khi đóng rồi mở command palette và giữ footer
+  của palette 360px trong viewport. Axe đo sau animation thực sự kết thúc thay
+  vì coi một timer là bằng chứng frame đã vẽ xong.
+- Đã xem ảnh mobile và sửa breadcrumb: label “Giao diện” thay tên route kỹ thuật;
+  mobile hiện phần cuối đường dẫn, vẫn có Back và đầy đủ breadcrumb ở desktop.
+
+## Giai đoạn 7 đang đóng cổng — 2026-10-07
+
+- Dọn `.manage-table`, `.manage-search`, `.toast` sau kiểm caller; alias `#toast`
+  chỉ giữ hidden cho client đọc cũ. Giữ `.card/.step/.stats` còn caller thực tế.
+- Công cụ `ui-style-contract.py` kiểm spacing CSS và inline HTML/JS; màu ngoài
+  token và `!important` làm thất bại. `ui-release-gate.py` kiểm từng receipt,
+  hash source, ảnh và log lint/type/test/E2E trước khi bật final_ui_acceptance.
+- Backend không đổi. `page.py` chỉ thêm manifest JS/CSS. Test-first run bắt được
+  kiểm tra lý do dừng đang nằm ở handler chết; đã sửa form hiện hành, rồi chạy
+  lại full suite xanh. Test DB được reset bằng target có sẵn `test-fresh`; không
+  seed/reset database vận hành. Credential probe OpenRouter valid; chưa phải
+  bằng chứng completion hoặc workflow thật.

@@ -47,7 +47,7 @@ __UI_ICONS__
       <div class="shell-connection">
         <span class="dot" id="dot"></span><span id="connText">connecting</span>
       </div>
-      <div id="build"></div>
+      <div id="build"></div><button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="shortcutBtn" type="button" aria-label="Phím tắt" title="Phím tắt"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-circle-help"></use></svg></button>
     </div>
   </nav>
 
@@ -68,6 +68,7 @@ __UI_ICONS__
           is still reachable. Clicking an entry jumps to the approval or the task and
           marks it read.
         -->
+        <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="commandBtn" type="button" aria-label="Tìm công việc và lệnh" title="Tìm công việc và lệnh"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-search"></use></svg></button>
         <span class="bellwrap">
           <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-bell"></use></svg>
             <span class="count shell-unread" id="notifCount" hidden></span></button>
@@ -173,7 +174,7 @@ __UI_ICONS__
             are the click-an-office filter for people who start from here instead of
             from a box. Both filter what is drawn, never what is fetched.
           -->
-          <div class="body" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div class="body" style="display:flex;gap:var(--space-8);flex-wrap:wrap;align-items:center">
             <input id="deptSearch" placeholder="Find a department or office…" autocomplete="off"
               style="flex:2;min-width:180px" aria-label="Find a department or office"
               data-i18n-ph="dept.search" data-i18n-aria="dept.search">
@@ -227,7 +228,7 @@ __UI_ICONS__
       <section class="view" id="view-give" hidden>
         <div class="page-heading"><div><div class="eyebrow">O-NEXUS</div><h1 data-i18n="give.page_title">Work, in one place</h1><p data-i18n="give.intro">Find a task, see who owns it, and open its results or activity.</p></div><button class="ui-btn ui-btn-primary ui-btn-md" id="newTaskBtn" aria-controls="newTaskForm" aria-expanded="false"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#ui-icon-plus"></use></svg><span id="newTaskLabel" data-i18n="give.new">New task</span><kbd>N</kbd></button></div>
         <div class="stats" id="workStats" role="group" aria-label="Work filters"></div>
-        <details class="ui-panel new-task" id="newTaskForm"><summary data-i18n="give.start">Start a task</summary><div class="ui-panel-body" style="display:flex;flex-direction:column;gap:16px">
+        <details class="ui-panel new-task" id="newTaskForm"><summary data-i18n="give.start">Start a task</summary><div class="ui-panel-body" style="display:flex;flex-direction:column;gap:var(--space-16)">
           <label class="ui-field"><span data-i18n="give.pick">Pick a piece of work</span><select class="ui-input" id="scenario"><option value="">loading work…</option></select></label>
           <label class="ui-field"><span data-i18n="give.what">What should the company work on?</span><textarea class="ui-input" aria-describedby="goalHelp goalError" required id="goal" placeholder="Describe the desired result and relevant context" data-i18n-ph="give.goal_ph"></textarea><span class="ui-help" id="goalHelp"></span><span class="ui-help ui-error" id="goalError" role="alert" hidden></span></label>
           <div class="legend" id="scenarioHint" hidden></div>
@@ -252,7 +253,7 @@ __UI_ICONS__
         <div class="page-heading"><div><div class="eyebrow" data-i18n="task.workspace">Task workspace</div><h1 id="taskTitle">Task</h1><div class="task-meta"><span id="taskSub"></span><span id="taskIdentity"></span></div><div class="task-meta" id="taskParentLinks"></div></div><div class="heading-actions"><button class="ui-btn ui-btn-secondary ui-btn-md" id="cancelTask" hidden data-i18n="task.cancel">Cancel task</button><button class="ui-btn ui-btn-secondary ui-btn-md" id="retryBtn" hidden data-i18n="need.retry">Run it again</button><button class="ui-btn ui-btn-primary ui-btn-md" id="runThisTask" data-i18n="task.runnow">Run this task now</button></div></div>
         <div id="taskDetailError" hidden></div><div id="taskDetailLoading" hidden></div><div id="taskBanner"></div><div class="stats" id="taskStats"></div><nav class="task-nav" id="taskTabs" aria-label="Task sections"></nav>
         <div class="task-panels">
-          <div data-task-panel="overview"><div class="ui-panel" id="taskAnswerCard"><header class="ui-section-header"><h2 data-i18n="task.answer">Answer</h2><span class="spacer"></span><span class="sub" id="taskAnswerSub"></span><button class="ui-btn ui-btn-ghost ui-btn-sm" id="taskAnswerCopy" hidden data-i18n="task.copy">Copy</button></header><div class="ui-panel-body" id="taskAnswer"></div><div class="empty" id="taskAnswerEmpty" hidden data-i18n="task.noanswer">No written result yet.</div></div><details class="ui-panel auxiliary" style="margin-top:20px"><summary data-i18n="task.request">Original request</summary><div class="ui-panel-body"><pre class="reason" id="taskRequest"></pre></div></details></div>
+          <div data-task-panel="overview"><div class="ui-panel" id="taskAnswerCard"><header class="ui-section-header"><h2 data-i18n="task.answer">Answer</h2><span class="spacer"></span><span class="sub" id="taskAnswerSub"></span><button class="ui-btn ui-btn-ghost ui-btn-sm" id="taskAnswerCopy" hidden data-i18n="task.copy">Copy</button></header><div class="ui-panel-body" id="taskAnswer"></div><div class="empty" id="taskAnswerEmpty" hidden data-i18n="task.noanswer">No written result yet.</div></div><details class="ui-panel auxiliary" style="margin-top:var(--space-20)"><summary data-i18n="task.request">Original request</summary><div class="ui-panel-body"><pre class="reason" id="taskRequest"></pre></div></details></div>
           <div class="ui-panel" data-task-panel="decisions"><header class="ui-section-header"><h2 data-i18n="task.decisions">Decisions</h2><span class="spacer"></span><span class="sub" id="taskApprovalsSub"></span></header><div class="list" id="taskApprovals"></div><div class="empty" id="taskApprovalsEmpty" hidden data-i18n="task.nodecision">Nothing needs a decision.</div></div>
           <div class="ui-panel" data-task-panel="steps"><header class="ui-section-header"><h2 data-i18n="task.steps">Steps</h2><span class="spacer"></span><span class="sub" id="taskStepsSub"></span></header><div class="list" id="taskSteps"></div><div class="empty" id="taskStepsEmpty" hidden data-i18n="task.nosteps">No execution yet. Start the task to see each step here.</div></div>
           <div class="grid2" data-task-panel="assignment"><div class="ui-panel"><header class="ui-section-header"><h2 data-i18n="task.who">Who did what</h2><span class="spacer"></span><span class="sub" id="taskGraphSub"></span></header><div class="ui-panel-body" id="taskGraph"></div><div class="empty" id="taskGraphEmpty" hidden data-i18n="task.nograph">Nothing has been delegated yet.</div></div><div class="ui-panel"><header class="ui-section-header"><h2 data-i18n="task.subtasks">Tasks and owners</h2></header><div class="list" id="taskTree"></div></div></div>
@@ -270,7 +271,8 @@ __UI_ICONS__
 
 <dialog id="sheet"><div class="dlg-body" id="sheetBody"></div>
   <div class="dlg-foot" id="sheetFoot"></div></dialog>
-<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<!-- Compatibility anchor for older read-only verification clients. Notifications use UI.toast. -->
+<div id="toast" hidden></div>
 
 <script>__CONSOLE_JS__</script>
 </body>

@@ -131,6 +131,7 @@ window.WorkUI = (() => {
       kind:all.length?'no-results':'empty',actions:UI.button({label:all.length?L('Clear filters','Xóa bộ lọc'):L('New task','Giao việc mới'),action:all.length?'clear-work-filters':'new-work-task'})});
     if(all.length<(q.total||0)) error(new Error(L('The register is incomplete. Retry loading the missing tasks.','Danh sách chưa tải đủ. Tải lại để nhận các công việc còn thiếu.')));
     sticky();
+    window.UIMotion?.enter();
     if(returning && savedScroll!==null) {
       returning=false;
       requestAnimationFrame(()=>{if(parseHash().name==='give' && !parseHash().arg) {window.scrollTo(0,savedScroll);rows.get(selected)?.node.querySelector('.work-open')?.focus({preventScroll:true});}});

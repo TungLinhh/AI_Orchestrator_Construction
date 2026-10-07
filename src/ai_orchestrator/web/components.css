@@ -832,5 +832,10 @@
   }
 }
 
+@layer components {
+  .ui-dialog[open], .ui-toast { animation:ui-overlay-in var(--motion-fast) var(--ease-enter); }
+  .ui-popover:popover-open { animation:ui-overlay-in var(--motion-fast) var(--ease-enter); }
+  @keyframes ui-overlay-in { from { opacity:0; transform:translateY(var(--space-4)); } to { opacity:1; transform:none; } }
+}
 
 @layer components { .ui-toast a { color:inherit; text-decoration:underline; text-underline-offset:.2em; } }

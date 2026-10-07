@@ -607,6 +607,7 @@ function langSet(v) {
   if (state.connection) setConn(...state.connection);
   paintSidebar();
   window.UIShell?.refresh();
+  window.UICommands?.refresh();
   window.WorkUI?.refresh();
 }
 function paintStatic() {
@@ -860,18 +861,8 @@ function ago(iso) {
 }
 
 /* ---------------- toasts: honest about failure ---------------- */
-let toastTimer = 0;
 function toast(message, bad) {
-  const el = $("toast");
-  el.textContent = message;
-  el.className = "toast show" + (bad ? " bad" : "");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(
-    () => {
-      el.className = "toast";
-    },
-    bad ? 7000 : 4000,
-  );
+  return UI.toast(message,{status:bad?'danger':'success',duration:bad?9000:6000});
 }
 
 /* Notifications reconcile with the durable pending inbox, including after reload. */
@@ -952,18 +943,9 @@ function notify({ id, kind, title, body, href, action, silent = false, at }) {
   }
   paintBell();
   if (silent || nt.read) return;
-  // The popup. Text plus one link — a popup with two actions is a dialog, and this is
-  // not the place for a decision, only for "go look".
-  const el = $("toast");
-  el.innerHTML =
-    `<span>${esc(title)}${body ? " — " + esc(String(body).slice(0, 110)) : ""}</span>` +
-    (href ? `<a href="${esc(href)}">${esc(action || "Open")}</a>` : "");
-  el.className =
-    "toast show" + (kind === "bad" ? " bad" : "") + (href ? " action" : "");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    el.className = "toast";
-  }, 9000);
+  UI.toast(title + (body ? " / " + String(body).slice(0,110) : ""), {
+    status:kind==='bad'?'danger':'info',duration:9000,actionLabel:action,actionHref:href
+  });
 }
 
 function markNotifRead(id) {
