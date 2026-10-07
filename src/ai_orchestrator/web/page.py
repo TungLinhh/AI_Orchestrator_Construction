@@ -19,6 +19,7 @@ SCRIPTS = (
     "business.js",
     "settings.js",
     "styleguide.js",
+    "shell.js",
     "boot.js",
 )
 
@@ -45,6 +46,7 @@ def render_console(root: Path) -> str:
         )
         + "\n}"
     )
+    css += "\n" + (root / "shell.css").read_text(encoding="utf-8")
     javascript = "\n".join((root / name).read_text(encoding="utf-8") for name in SCRIPTS)
     prepaint = "\n".join(
         (root / name).read_text(encoding="utf-8") for name in ("palettes.js", "preferences.js")

@@ -602,10 +602,11 @@ function langSet(v) {
     /* the harness document has no element to label */
   }
   const b = $("langBtn");
-  if (b) b.textContent = state.lang === "vi" ? "EN" : "VI";
+  if (b && !window.UIShell) b.textContent = state.lang === "vi" ? "EN" : "VI";
   paintStatic();
   if (state.connection) setConn(...state.connection);
   paintSidebar();
+  window.UIShell?.refresh();
 }
 function paintStatic() {
   const vi = state.lang === "vi";
@@ -905,6 +906,7 @@ function paintBell() {
     badge.textContent = n ? String(n) : "";
     badge.hidden = !n;
   }
+  window.UIShell?.bell(n);
   document.title = n ? `(${n}) Orchestrator` : "Orchestrator";
   const list = $("notifList");
   if (list) {
@@ -1152,6 +1154,7 @@ function paintSidebar() {
     : (collapsed ? "Expand sidebar" : "Collapse sidebar");
   btn.setAttribute("aria-label", btn.title);
   btn.setAttribute("aria-expanded", String(!collapsed));
+  window.UIShell?.indicator();
   document.querySelectorAll("#navItems a").forEach(a => {
     const label = a.querySelector("[data-i18n]")?.textContent || a.textContent;
     a.setAttribute("aria-label", label.trim());

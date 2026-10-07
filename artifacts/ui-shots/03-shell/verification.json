@@ -1,0 +1,34 @@
+{
+  "phase": 3,
+  "gate": "passed",
+  "final_ui_acceptance": false,
+  "verified_at": "2026-10-07T08:52:26.223101+00:00",
+  "browser": {
+    "receipt": "stage-3-gate.json",
+    "checks": 191,
+    "matrix_combinations": 24,
+    "gate_screenshots": 35,
+    "supplemental_screenshots": 3,
+    "axe_scope": "Shell, appearance/workspace menus and mobile drawer; not all legacy pages"
+  },
+  "lint": "passed; 415 files",
+  "typecheck": "passed; 177 source files",
+  "tests": {
+    "command": "make test",
+    "runs": 1,
+    "passed": 3477,
+    "skipped": 8,
+    "deselected": 1,
+    "warnings": 10,
+    "seconds": 601.83
+  },
+  "node_boot": {
+    "status": "passed",
+    "read_only_requests": 13,
+    "full_write_harness_run": false
+  },
+  "api_survey_server": "stopped; fake/hash only",
+  "business_data_writes": 0,
+  "real_model_mail_or_approval_acceptance": false,
+  "next_phase": 4
+}

@@ -10,6 +10,7 @@
   cuối. Thay đổi frontend và thêm GET font public; không đổi API nghiệp vụ/DB/schema.
 - **Giai đoạn 2 hoàn tất**: component API và style guide local-only đã qua cổng.
   Không đổi backend/API/schema hoặc hành vi nghiệp vụ.
+- **Giai đoạn 3 hoàn tất**: khung ứng dụng, browser gate và kiểm chứng cuối PASS.
 
 ## Quyết định và giả định
 
@@ -60,9 +61,9 @@
 
 ## Bước tiếp theo
 
-1. Giai đoạn 3: sidebar/topbar/banner/workspace switcher
-   và menu giao diện bằng các component đã kiểm chứng.
-2. Shell → Công việc/detail → từng trang → keyboard/mobile/a11y → nghiệm thu,
+1. Giai đoạn 4: trang Công việc và detail — dải chỉ số, form giao việc,
+   toolbar/filter/sort, hàng task, kết quả/log/approval và hiệu năng danh sách.
+2. Công việc/detail → từng trang → keyboard/mobile/a11y → nghiệm thu,
    theo cổng trong `01-design-plan.md`.
 
 ## Tự phản biện Giai đoạn 0
@@ -218,3 +219,65 @@
   không lấy test Python làm chứng nhận model hoặc a11y toàn app.
 - Server khảo sát fake/hash được dừng sau cổng; không seed/reset/submit business
   data, không dùng model/mail thật. Nhánh `ui/refresh`, commit theo giai đoạn.
+
+
+## Triển khai Giai đoạn 3 — 2026-10-07
+
+- Shell có sidebar 216/64px, icon gap 8px, nhãn sentence case, một indicator
+  trượt 2px và tooltip hover/focus khi thu gọn. Footer connection/schema mono.
+- Topbar sticky: ghost Back/Esc, breadcrumb, unread dot và số lượng ở aria-label,
+  segmented VI/EN, menu mode/sáu màu/density preview và lưu trên thiết bị.
+- Workspace lấy tên thật từ GET tổ chức; phiên có một mục. Tenant hiện tại tên
+  `Autonomous Demo Company`; không đổi tên backend hoặc thêm tổ chức giả để khớp
+  nhãn O-Nexus. Nếu GET lỗi, giữ ID và báo chưa tải được tên.
+- Auth-off callout ở trước mọi view, mở rộng có thông tin dev:no-auth và khuyến
+  nghị service token. Thu gọn details giữ cảnh báo; auth-on giữ nút Token.
+- Mobile drawer chuyển nguyên sidebar và workspace popover vào native dialog,
+  tránh ID trùng và popover bị inert ngoài modal. Esc đóng lớp trên trước;
+  Tab giữ trong drawer; chọn trang đưa focus vào main; đóng thường trả focus
+  về nút mở. Resize desktop trả node/focus phù hợp.
+- Giữ route/query org, kho prefs/locale/collapse, inbox và hành vi API cũ.
+  Không viết DB/seed/reset, đổi workflow/controller hoặc chạy model/mail thật.
+- Handoff `04-shell.md`; ảnh và receipt ở `artifacts/ui-shots/03-shell/`.
+  Corpus GET tại lúc chụp có 1.191 task; thay đổi corpus so với GĐ2 không phải
+  do gate (mọi phương thức ghi bị chặn).
+
+## Tự phản biện Giai đoạn 3
+
+- Không tạo KPI hoặc trang tổng quan mới; phần hàng task/metrics còn nguyên,
+  để GĐ4 thay đổi một cách nhất quán thay vì trộn hai giai đoạn.
+- Khi dọn CSS đã bỏ nhầm display:grid cùng rule khung cũ. Xem ảnh thực phát hiện
+  ngay; sửa vào shell và thêm assert vị trí/độ rộng desktop ở đủ 24 tổ hợp.
+  Không lấy axe sạch làm bằng chứng bố cục đã đúng.
+- Drawer.close phát sự kiện close sau click. Restore focus mặc định ghi đè focus
+  main khi chọn route; sửa theo điểm đến, gate chờ event thật rồi kiểm focus.
+- Chuyển workspace popover vào modal cùng node sidebar; không clone nav hoặc
+  đặt một popup bên ngoài dialog mà người dùng không thể thao tác.
+- Menu nhỏ gọn bằng block flow; không giữ khoảng trống 16px grid cho từng node
+  tiêu đề/fieldset. Gỡ các rule khung cũ đã thay thế, không thêm !important.
+- Browser gate ban đầu mất axe sau reload; instrument được nạp bằng init script
+  cho mỗi document. Không bỏ audit mobile hoặc vô hiệu hóa rule để đạt cổng.
+- Node harness thêm DOM methods/comment/microtask để boot được khung mới;
+  geometry shim bằng zero và không dùng làm bằng chứng layout/keyboard.
+  Chỉ chạy boot harness có guard GET, không chạy harness đầy đủ có POST thật.
+
+## Đóng cổng Giai đoạn 3 — 2026-10-07
+
+- Browser PASS: **191 checks, 24 tổ hợp, 35 ảnh**, cộng hai ảnh trước và một
+  ảnh sau desktop. Axe không violation trong shell/menu/drawer được audit.
+- Keyboard VI/EN/mode, Esc/focus/Tab, rail tooltip/indicator, Auto OS change,
+  reduced motion, reload prefs, drawer 390/320px, workspace GET lỗi và auth-on
+  frontend variant đều qua. Không chứng nhận Safari/Firefox hoặc toàn bộ app.
+- Notification fixture đi qua notify/paintBell thật ở browser nhưng không là
+  approval thật. Auth-on fixture không gửi token; GET tổ chức lỗi là fixture.
+- **PASS, sẵn sàng Giai đoạn 4**. Lint: 415 files formatted; typecheck: 177
+  source files không lỗi. Full suite một lượt: **3.477 passed, 8 skipped,
+  1 deselected**, 10 cảnh báo openpyxl, 601,83s. Các skip như GĐ2: NATS chưa
+  chạy và các nhánh cũ đã nêu trong hồ sơ trước.
+- Node boot PASS, 13 request chỉ đọc; syntax JS ghép PASS. Node DOM shim
+  không chứng minh hình học/keyboard; browser gate là bằng chứng phần này.
+- Receipt khớp hash source UI cuối. Sau gate chỉ gỡ một trailing space bên ngoài
+  string ở shell.js; receipt giữ hash trước/sau và ghi rõ thay đổi định dạng.
+  Không chạy lại full suite cho chỉnh sửa whitespace/tài liệu.
+- API khảo sát fake/hash đã dừng, không để server này giả làm runtime model thật.
+  GĐ4–7 chưa hoàn tất; không coi cổng shell là nghiệm thu toàn bộ sản phẩm.

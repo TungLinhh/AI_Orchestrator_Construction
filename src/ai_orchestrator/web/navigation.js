@@ -274,6 +274,7 @@ async function route() {
     else a.removeAttribute("aria-current");
   }
   renderCrumbs(r);
+  window.UIShell?.indicator();
   try {
     if (mine !== renderToken) return; // a newer navigation won
     await render(r, mine);

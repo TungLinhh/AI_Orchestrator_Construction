@@ -26,13 +26,30 @@ full suite 3.477 passed/8 skipped/1 deselected. Receipt:
 [stage-2-gate.json](artifacts/ui-shots/02-components/stage-2-gate.json).
 Hướng dẫn: [03-components.md](docs/ui-refresh/03-components.md).
 
-**Mốc kế tiếp:** Giai đoạn 3 — sidebar gọn và thu gọn, topbar/breadcrumb/back,
-VI/EN dạng nhóm, menu giao diện, workspace switcher và callout local environment.
-Giữ thông tin quyền/xác thực và route; chụp trước/sau, kiểm focus/keyboard và
-mobile shell. Dùng component GĐ2; không đổi workflow hoặc nhận CV/procurement.
-Sau đó làm Công việc/detail → từng trang →
-keyboard/mobile/a11y → đánh bóng và nghiệm thu. Các mục nghiệp vụ bên dưới là
-roadmap riêng, không được dùng để mở rộng phạm vi đợt refresh này.
+**Mốc đã hoàn tất:** Giai đoạn 3 — khung ứng dụng, browser
+PASS 191 checks/24 tổ hợp/35 ảnh; lint/typecheck đạt, full suite một lượt
+3.477 passed/8 skipped/1 deselected. Sidebar/rail,
+indicator/tooltip, topbar VI/EN, mode/sáu màu/density, workspace thật, callout
+xác thực và mobile drawer. Handoff: [04-shell.md](docs/ui-refresh/04-shell.md).
+
+**Mốc kế tiếp:** Giai đoạn 4 — Công việc và chi tiết task theo mục 8.3–8.4.
+
+1. Chuyển bốn chỉ số thành dải thống nhất, click lọc; nhấn mạnh Chờ bạn và giữ
+   nghĩa dữ liệu thật (settled không tự đổi thành thành công).
+2. Form giao việc disclosure, field/hint/error/loading; phím tắt và focus.
+3. Toolbar search/clear, segmented có count, sort, định dạng số theo locale.
+4. Hàng có vùng trạng thái, người giữ, ID sao chép, việc con, lý do lỗi mở rộng;
+   j/k/Enter và hành động nhanh chỉ cho khả năng sản phẩm đang hỗ trợ.
+5. Bỏ nested scroll, xử lý incremental/contain hoặc tải thêm để vài nghìn hàng
+   mượt; đo với corpus thật, giữ selection và scroll khi cập nhật.
+6. Detail cho input/output/log/approval; dùng controller workflow sẵn có,
+   không đổi authority hoặc tạo bước phê duyệt giả trong đợt UI refresh.
+7. Chụp trước/sau, kiểm keyboard/mobile/empty/error, đo hiệu năng rồi chạy cổng
+   cuối một lượt. GĐ5 chuyển từng trang; GĐ6 keyboard/mobile/a11y toàn app;
+   GĐ7 đánh bóng/nghiệm thu.
+
+Các mục nghiệp vụ bên dưới là roadmap riêng; không mở rộng phạm vi UI refresh.
+
 
 
 ## Trạng thái sau đợt 4 — 2026-10-06

@@ -83,3 +83,13 @@ uv run --with playwright python scripts/ui-foundation-gate.py --org ORG_ID --chr
 Gate chỉ đọc localhost, lưu ảnh/receipt tại `artifacts/ui-shots/01-foundation/`.
 Không chạy lại `ui-phase0-gate.py` trên source đã thay đổi: gate đó cố ý xác nhận
 source giữ nguyên baseline. Dùng receipt lịch sử Giai đoạn 0 để đối chiếu.
+
+Khung Giai đoạn 3: [hành vi và handoff](04-shell.md),
+[ảnh trước/sau và receipt](../../artifacts/ui-shots/03-shell/index.html).
+Chạy gate với API khảo sát chỉ đọc đã bật:
+
+```sh
+uv run --with playwright python scripts/ui-shell-gate.py --org ORG_ID --chromium CHROMIUM_PATH
+```
+
+Gate GĐ3 kiểm shell/menu/drawer; chưa thay thế nghiệm thu toàn app ở GĐ7.

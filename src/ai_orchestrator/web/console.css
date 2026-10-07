@@ -41,103 +41,8 @@
   border-radius: 20px;
   font-size: 12px;
 }
-.app {
-  display: grid;
-  grid-template-columns: var(--nav-w) minmax(0, 1fr);
-  min-height: 100vh;
-}
-.nav {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  padding: 24px 12px;
-  display: flex;
-  flex-direction: column;
-  background: var(--nav-bg);
-  border-right: 1px solid var(--line);
-}
-.brand {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 0 12px 24px;
-}
-.mark {
-  width: 36px;
-  height: 36px;
-  background: var(--accent);
-  color: var(--surface);
-  display: grid;
-  place-items: center;
-  font-weight: 600;
-  border-radius: 11px;
-}
-.brand .name {
-  font-size: 17px;
-  font-weight: 600;
-}
-.brand .sub {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--text-3);
-}
-.items {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-.nav .label {
-  padding: 18px 12px 4px;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  font-weight: 600;
-}
-.nav a {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 12px;
-  border-radius: 9px;
-  color: var(--text-2);
-  font-weight: 600;
-}
-.nav a:hover {
-  background: var(--fill);
-  text-decoration: none;
-}
-.nav a[aria-current="page"] {
-  background: var(--accent-soft);
-  color: var(--accent);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.nav .ic {
-  width: 18px;
-  text-align: center;
-}
-.nav .count {
-  margin-left: auto;
-}
-.nav .foot {
-  margin-top: auto;
-  padding: 16px 12px 0;
-  border-top: 1px solid var(--line);
-}
 .main {
   min-width: 0;
-}
-.crumbs {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 15px 32px;
-  min-height: 64px;
 }
 .back,
 .btn {
@@ -971,9 +876,6 @@ details.issue > summary::-webkit-details-marker {
   .content {
     padding: 24px;
   }
-  .crumbs {
-    padding: 14px 24px;
-  }
   .dept-tree {
     grid-template-columns: 1fr;
   }
@@ -989,45 +891,6 @@ details.issue > summary::-webkit-details-marker {
   }
 }
 @media (max-width: 760px) {
-  .app {
-    grid-template-columns: 1fr;
-  }
-  .nav {
-    height: auto;
-    position: static;
-    padding: 14px;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .brand {
-    padding: 0 0 12px;
-  }
-  .nav .items {
-    flex-direction: row;
-    gap: 5px;
-    flex-wrap: wrap;
-  }
-  .nav .label,
-  .nav .foot,
-  .brand .sub {
-    display: none;
-  }
-  .nav a {
-    padding: 8px 10px;
-    font-size: 12px;
-    gap: 5px;
-  }
-  .nav .ic {
-    display: none;
-  }
-  .crumbs {
-    padding: 12px 16px;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .crumbs .kbd {
-    display: none;
-  }
   .path .here {
     max-width: 48vw;
   }

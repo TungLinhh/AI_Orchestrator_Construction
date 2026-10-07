@@ -96,6 +96,12 @@ function makeNode(id, tag) {
     getAttribute(k) { return this.attributes[k] ?? null; },
     removeAttribute(k) { delete this.attributes[k]; },
     addEventListener() {}, removeEventListener() {},
+    // Non-layout DOM methods used by the shell. Geometry is browser-gated separately.
+    before(...siblings) { if (this.parentElement) siblings.forEach(c=>this.parentElement.insertBefore(c,this)); },
+    after(...siblings) { if (this.parentElement) siblings.forEach(c=>this.parentElement.appendChild(c)); },
+    append(...kids) { kids.forEach(c=>this.appendChild(c)); },
+    getBoundingClientRect() { return {x:0,y:0,top:0,left:0,right:0,bottom:0,width:0,height:0}; },
+    getClientRects() { return []; },
     appendChild(c) { c.parentElement = this; this.children.push(c); return c; },
     insertBefore(c) { c.parentElement = this; this.children.unshift(c); return c; },
     removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
@@ -267,6 +273,9 @@ function asDomNode(el, source) {
   const classes = new Set((el.attrs.class || "").split(/\s+/).filter(Boolean));
   const node = {
     tagName: el.tag.toUpperCase(),
+    style: {setProperty(k,v) {this[k]=v;}}, offsetLeft:0, offsetWidth:0,
+    getBoundingClientRect() { return {x:0,y:0,top:0,left:0,right:0,bottom:0,width:0,height:0}; },
+    getClientRects() { return []; },
     get name() { return el.attrs.name || ""; },
     get parentElement() { return el.parent && el.parent.tag !== "#root" ? asDomNode(el.parent, "") : null; },
     dataset: Object.fromEntries(
@@ -455,6 +464,7 @@ const document_ = {
   querySelectorAll(sel) { return queryAll(sel); },
   querySelector(sel) { return queryAll(sel)[0] ?? null; },
   createElement(tag) { return makeNode("", tag); },
+  createComment(text) { const n=makeNode("", "#comment"); n.textContent=text; return n; },
   body: makeNode("body", "body"),
   // **Wired, not a no-op.** The page routes its whole box-click flow through one
   // `document` click listener, so an inert stub meant "clicking an office" could not
@@ -489,6 +499,7 @@ const sandbox = {
   Set,
   Map,
   Promise,
+  queueMicrotask,
   setTimeout, clearTimeout, setInterval: () => 0, clearInterval() {},
   Event: class {},
   FormData: class {

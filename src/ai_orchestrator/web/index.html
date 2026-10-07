@@ -13,19 +13,20 @@
 </head>
 <body>
 __UI_ICONS__
+<dialog id="sidebarDrawer" class="shell-drawer" aria-label="Navigation"><button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="mobileNavClose" aria-label="Close navigation"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-x"></use></svg></button><div id="sidebarDrawerBody"></div></dialog>
 <a class="skip-link" id="skipContent" href="#mainContent">Skip to content</a>
-<div class="app">
+<div class="app app-shell">
 
   <!-- ======================= sidebar: always present ======================= -->
-  <nav class="nav" aria-label="Sections">
+  <nav class="nav" id="sidebar" aria-label="Sections">
     <div class="brand">
-      <div class="mark" aria-hidden="true">O</div>
-      <div>
-        <div class="name">Orchestrator</div>
-        <div class="sub">O-Nexus</div>
-      </div>
+      <button class="workspace-trigger ui-btn ui-btn-ghost ui-btn-md" id="workspaceBtn" popovertarget="workspacePanel" aria-label="Workspace">
+        <span class="mark" aria-hidden="true">O</span><span class="workspace-name"><span class="name">Orchestrator</span><span class="sub" id="workspaceName">O-Nexus</span></span>
+        <svg class="ui-icon workspace-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-chevron-down"></use></svg>
+      </button>
     </div>
-    <button class="btn ghost sm sidebar-toggle" id="sidebarToggle" aria-controls="navItems" aria-expanded="true" title="Collapse sidebar"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-panel-left-close"></use></svg></button>
+    <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn sidebar-toggle" id="sidebarToggle" aria-controls="navItems" aria-expanded="true" title="Collapse sidebar"></button>
+    <span id="navIndicator" aria-hidden="true"></span>
     <div class="items" id="navItems">
       <div class="label" data-i18n="nav.workspace">Workspace</div>
       <a href="#/give" data-nav="give"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-list-todo"></use></svg></span><span data-i18n="nav.give">Work</span></a>
@@ -43,10 +44,10 @@ __UI_ICONS__
       <span id="navWorkCount" hidden></span>
     </div>
     <div class="foot">
-      <div style="font-size:11.5px;color:var(--text-2);display:flex;align-items:center;gap:6px">
+      <div class="shell-connection">
         <span class="dot" id="dot"></span><span id="connText">connecting</span>
       </div>
-      <div style="font-size:10.5px;color:var(--text-3);margin-top:4px" id="build"></div>
+      <div id="build"></div>
     </div>
   </nav>
 
@@ -55,10 +56,11 @@ __UI_ICONS__
     <div class="crumbs" id="crumbs">
       <!-- The back control. Shown whenever there is somewhere to go back to, and it
            calls history.back() so the browser's own history stays correct. -->
-      <button class="back" id="backBtn" title="Back (Esc)" data-i18n-title="crumb.back" data-i18n="crumb.back_btn">‹ Back</button>
+      <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn shell-mobile-toggle" id="mobileNavBtn" aria-controls="sidebarDrawer" aria-expanded="false" aria-label="Navigation"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-panel-left-open"></use></svg></button>
+      <button class="ui-btn ui-btn-ghost ui-btn-sm" id="backBtn" title="Back (Esc)" data-i18n-title="crumb.back"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-arrow-left"></use></svg><span id="backLabel">Quay lại</span><kbd>Esc</kbd></button>
       <nav class="path" id="path" aria-label="Breadcrumb"></nav>
       <div class="hint">
-        <span class="kbd"><kbd>Esc</kbd> back</span>
+
         <!--
           **The bell: what you missed, kept.** Toasts vanish; this does not. Every
           notification the stream raises — a decision waiting, a task failed, a task
@@ -67,8 +69,8 @@ __UI_ICONS__
           marks it read.
         -->
         <span class="bellwrap">
-          <button class="btn ghost sm" id="notifBtn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-bell"></use></svg>
-            <span class="count" id="notifCount" hidden></span></button>
+          <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-bell"></use></svg>
+            <span class="count shell-unread" id="notifCount" hidden></span></button>
           <div class="bellpanel" id="notifPanel" hidden>
             <div class="bellhead"><b data-i18n="bell.title">Notifications</b>
               <button class="btn ghost sm" id="notifClear" data-i18n="bell.clear">Dismiss all</button></div>
@@ -79,15 +81,18 @@ __UI_ICONS__
             </div>
           </div>
         </span>
-        <button class="btn ghost sm" id="langBtn" title="Chuyển sang tiếng Việt / Switch to English">VI</button>
+        <div class="ui-tabs shell-language" id="languageGroup" role="group" aria-label="Language" data-ui-segmented><span class="ui-tab-indicator" aria-hidden="true"></span><button id="langBtn" type="button" data-shell-lang="vi" aria-pressed="true">VI</button><button id="langEnBtn" type="button" data-shell-lang="en" aria-pressed="false">EN</button></div>
+        <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="appearanceBtn" popovertarget="appearancePanel" aria-label="Appearance"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-sliders-horizontal"></use></svg></button>
         <button class="btn ghost sm" id="tokenBtn" title="Re-enter the service token">Token</button>
       </div>
     </div>
 
+    <div class="ui-popover shell-popover" id="appearancePanel" popover="auto" role="dialog" aria-labelledby="appearanceTitle"></div>
+    <div class="ui-popover shell-popover" id="workspacePanel" popover="auto" role="dialog" aria-labelledby="workspaceTitle"></div>
     <main class="content" id="mainContent" tabindex="-1">
+      <div class="shell-auth" id="authwarn" hidden><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-circle-alert"></use></svg><details id="authDetails"><summary data-i18n="auth.local">Local workspace · authentication off</summary><p data-i18n-html="auth.off_sub">Requests use <code>dev:no-auth</code>. This mode is for this local workspace.</p><p id="authRecommendation"></p></details></div>
       <section class="view" id="view-management" hidden><div id="managementContent" aria-live="polite"></div></section>
       <div class="note late" id="pageError" role="alert" hidden></div>
-      <div class="banner" id="authwarn" hidden><span>◉</span><details><summary data-i18n="auth.local">Local workspace · authentication off</summary><span data-i18n-html="auth.off_sub">Requests use <code>dev:no-auth</code>. This mode is for this local workspace.</span></details></div>
 
       <!-- ============================= dashboard ============================= -->
 
