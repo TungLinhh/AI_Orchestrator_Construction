@@ -27,6 +27,12 @@ const BusinessWorkflows = (() => {
           "MEP recruitment through onboarding, then procurement. Every stage has evidence and an explicit review mode.",
           "Tuyển MEP đến onboarding, rồi procurement. Mỗi bước có chứng cứ và chế độ duyệt rõ ràng.",
         ),
+        [["workflows",L("Business workflows","Workflow nghiệp vụ"),"#/processes/workflows"],
+         ["catalogue",L("Procedure catalogue","Danh mục quy trình"),"#/processes/catalogue"],
+         ["hiring",L("Recruitment example","Quy trình tuyển dụng mẫu"),"#/processes/hiring"],
+         ["definitions",L("Agent definitions","Định nghĩa agent"),"#/processes/definitions"],
+         ["provision",L("Provision agent","Tạo agent"),"#/processes/provision"]],
+        "workflows",
       ),
       guard,
     );
@@ -270,7 +276,7 @@ const BusinessWorkflows = (() => {
         .join("")}</nav>`;
       body(
         journey +
-          `<div class="campaign-progress" aria-label="${h.completed} / ${h.total}"><span style="width:${Math.round((h.completed / Math.max(h.total, 1)) * 100)}%"></span></div>` +
+          `<div class="campaign-progress" role="group" aria-label="${h.completed} / ${h.total}"><span style="width:${Math.round((h.completed / Math.max(h.total, 1)) * 100)}%"></span></div>` +
           `<div class="btn-row">${link("#/processes/workflows", L("All workflows", "Tất cả workflow"))}${link("#/give/" + h.id, L("Open task tree and events", "Mở cây task và sự kiện"))}${link("#/work/approvals", L("Human approval inbox", "Hộp thư cần người duyệt"))}<button class="btn" id="workflow-run" ${ctx.can_administer && canRun ? "" : "disabled"}>${esc(L("Run / resume workflow", "Chạy / tiếp tục workflow"))}</button><button class="btn sm" id="workflow-refresh">${esc(L("Refresh evidence", "Cập nhật chứng cứ"))}</button></div>` +
           card(
             h.title,
