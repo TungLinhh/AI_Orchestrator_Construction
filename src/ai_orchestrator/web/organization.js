@@ -67,7 +67,7 @@
       )
       .join("");
     body(
-      `<div class="card identity-card"><h2>${esc(a.name)}</h2><code>${esc(a.id)}</code><p>${esc(a.description)}</p><div class="btn-row">${link("#/dept/" + encodeURIComponent(a.id), L("Work in this unit", "Công việc của đơn vị"))}${a.parent_agent_id ? link("#/agent/" + encodeURIComponent(a.parent_agent_id), L("Parent agent", "Agent cấp trên")) : ""}</div></div><div class="manage-grid">` +
+      `<div class="card identity-card"><h2>${esc(a.name)}</h2>${UI.copyId(a.id)}<p>${esc(a.description)}</p><div class="btn-row">${link("#/dept/" + encodeURIComponent(a.id), L("Work in this unit", "Công việc của đơn vị"))}${a.parent_agent_id ? link("#/agent/" + encodeURIComponent(a.parent_agent_id), L("Parent agent", "Agent cấp trên")) : ""}</div></div><div class="manage-grid">` +
         card(
           L("State and authority", "Trạng thái và quyền hạn"),
           fields([
@@ -206,6 +206,9 @@
     wireForm(
       "agent-stop",
       async (v) => {
+        if(!c.kill_switch && (!v.reason || v.reason.trim().length < 3))
+          throw new Error(L("Enter a reason of at least three characters.","Nhập lý do dừng gồm ít nhất ba ký tự."));
+        if(v.reason) v.reason=v.reason.trim();
         const result = await apiPost(
           "/agents/" + r.arg + (c.kill_switch ? "/revive" : "/kill"),
           v,

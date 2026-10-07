@@ -347,87 +347,7 @@ async function decide(approvalId, action, extra, reportError = false) {
   }
 }
 
-/* ---------------- agents: the roster and the switch ---------------- */
-/* The kill switch, in the page, as a control. `kill_switch` existed for several
-   tranches with constraints around it and no code path that could set it. */
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest("button[data-kill]");
-  if (!btn) return;
-  const { id } = btn.dataset;
-  let control;
-  try {
-    control = await apiGet(`/agents/${encodeURIComponent(id)}/control`);
-  } catch (err) {
-    toast(
-      t_fmt("agent.couldnot_read", "Could not read that agent: {e}", {
-        e: err.message,
-      }),
-      true,
-    );
-    return;
-  }
-  if (control.kill_switch) {
-    await revive(id);
-    return;
-  }
-  const reason = window.prompt(
-    tr(
-      "agent.why_stop",
-      "Why is this agent being stopped?\n\nThe reason is required — the database refuses a " +
-        "kill without one, and it is written to the decision log.",
-    ),
-  );
-  if (reason === null) return;
-  if (!reason || reason.trim().length < 3) {
-    toast(
-      tr(
-        "agent.need_reason",
-        "A reason is required. A kill with no reason is indistinguishable from an accident.",
-      ),
-      true,
-    );
-    return;
-  }
-  try {
-    await apiPost(`/agents/${encodeURIComponent(id)}/kill`, {
-      reason: reason.trim(),
-    });
-    toast(tr("agent.stopped", "Stopped, and the decision logged."));
-    await refreshAfterAction();
-  } catch (err) {
-    toast(
-      t_fmt("agent.couldnot_stop", "Could not stop that agent: {e}", {
-        e: err.message,
-      }),
-      true,
-    );
-  }
-});
-
-async function revive(id) {
-  if (
-    !window.confirm(
-      tr(
-        "agent.revive_q",
-        "Start it again? It comes back at L1 — the old grant is not restored.",
-      ),
-    )
-  )
-    return;
-  try {
-    await apiPost(`/agents/${encodeURIComponent(id)}/revive`, {});
-    toast(tr("agent.running_l1", "Running again, at L1."));
-    await refreshAfterAction();
-  } catch (err) {
-    toast(
-      t_fmt("agent.couldnot_revive", "Could not revive that agent: {e}", {
-        e: err.message,
-      }),
-      true,
-    );
-  }
-}
-
+/* ---------------- organization navigation ---------------- */
 document.addEventListener("click", async (e) => {
   const box = e.target.closest("[data-agent-box]");
   if (box) {
@@ -584,10 +504,12 @@ async function loadDepartments() {
 
 async function renderDepartments(key) {
   const routeKey = location.hash;
+  Management.enhance($(key ? 'view-dept' : 'view-departments'));
+  $(key ? 'view-dept' : 'view-departments').classList.add('ui-page');
   const d = await loadDepartments();
   if (!d || location.hash !== routeKey) return;
 
-  if (key) return renderOneDepartment(d, key);
+  if (key) {await renderOneDepartment(d,key);Management.enhance($("view-dept"));return;}
 
   // **Every agent in the payload, all three tiers.** It used to be
   // `[chief, ...departments]`, which skipped the offices and then said
@@ -616,35 +538,11 @@ async function renderDepartments(key) {
     "The chief, {o} office(s) and {d} department(s)",
     { o: nOffices, d: d.offices.length },
   );
-  setHTML(
-    "deptStats",
-    statTile(
-      tr("tile.working", "Working now"),
-      num(running),
-      t_fmt("tile.of_agents", "of {n} agents", { n: num(boxes.length) }),
-      running ? "good" : "",
-    ) +
-      statTile(
-        tr("tile.open", "Open work"),
-        num(openTasks),
-        t_fmt("tile.across", "across {n} department(s)", {
-          n: num(d.offices.length),
-        }),
-        openTasks ? "warn" : "good",
-      ) +
-      statTile(
-        tr("tile.attention", "Needs attention"),
-        num(attention),
-        tr("tile.attention_sub", "failed or refused"),
-        attention ? "alarm" : "good",
-      ) +
-      statTile(
-        tr("tile.stranded", "Stranded runs"),
-        num(stranded),
-        tr("tile.stranded_sub", "started, never closed"),
-        stranded ? "warn" : "good",
-      ),
-  );
+  setHTML("deptStats",UI.metrics({label:UI.L('Organization activity','Hoạt động tổ chức'),items:[
+    {label:tr("tile.working","Working now"),value:running,note:t_fmt("tile.of_agents","of {n} agents",{n:num(boxes.length)}),interactive:false},
+    {label:tr("tile.open","Open work"),value:openTasks,interactive:false},
+    {label:tr("tile.attention","Needs attention"),value:attention,interactive:false},
+    {label:tr("tile.stranded","Stranded runs"),value:stranded,interactive:false}]}));
 
   $("deptSub").textContent = t_fmt(
     "dept.sub",
@@ -682,7 +580,7 @@ async function refreshAfterAction() {
 
 function agentBox(a, sel) {
   const cls =
-    "abox" +
+    "abox ui-panel" +
     (sel ? " sel" : "") +
     (a.running ? " on" : "") +
     (!a.running && a.stuck ? " stuck" : "");
@@ -799,7 +697,7 @@ function renderTree(target, offices, chief, selId, secondTier) {
 function unassignedNote(d) {
   const extra = (d.tree && d.tree.unassigned) || [];
   if (!extra.length) return "";
-  return `<div class="note" style="margin-top:10px">
+  return `<div class="note" style="margin-top:var(--space-12)">
     ${t_fmt(
       "dept.unassigned",
       "<b>{n} department(s) name no office</b> and are not in the tree above: {who}. They are counted in the totals.",
@@ -809,10 +707,10 @@ function unassignedNote(d) {
 }
 
 function findByKey(d, key) {
-  if (d.chief && d.chief.key === key) return d.chief;
-  const inOffices = (d.second_tier || []).find((x) => x.key === key);
+  if (d.chief && (d.chief.key === key || d.chief.id === key)) return d.chief;
+  const inOffices = (d.second_tier || []).find((x) => x.key === key || x.id === key);
   if (inOffices) return inOffices;
-  return d.offices.find((x) => x.key === key) || null;
+  return d.offices.find((x) => x.key === key || x.id === key) || null;
 }
 
 function tierOf(d, box) {
@@ -875,7 +773,7 @@ async function renderOneDepartment(d, key) {
     (o.runs || [])
       .map(
         (r) => `
-    <details class="step${r.running ? " live" : ""}">
+    <details class="ui-disclosure${r.running ? " live" : ""}">
       <summary>${esc(statusName(r.status))} · ${r.started_at ? esc(ago(r.started_at)) : ""} · ${t_fmt("dept.tok", "{n} tok", { n: num(r.tokens) })}</summary>
       ${r.task_id ? `<a href="#/give/${encodeURIComponent(r.task_id)}/steps/${encodeURIComponent(r.id)}">${tr("dept.open_run", "Open this execution")}</a>` : ""}
       <div class="h"><span>${esc(r.status)}</span>
@@ -885,7 +783,7 @@ async function renderOneDepartment(d, key) {
         <span>${r.started_at ? esc(ago(r.started_at)) : ""}${r.stuck ? tr("dept.stranded_flag", " · stranded") : ""}</span>
       </div>
       <div class="b">${readable(r.summary)}</div>
-      ${r.error_message ? `<div class="b" style="color:var(--bad)">${esc(r.error_message.slice(0, 300))}</div>` : ""}
+      ${r.error_message ? UI.logViewer({label:UI.L("Run error","Lỗi lượt chạy"),text:r.error_message,filter:false}) : ""}
     </details>`,
       )
       .join(""),
