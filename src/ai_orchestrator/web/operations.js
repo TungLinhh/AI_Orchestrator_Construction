@@ -49,7 +49,7 @@
     if (active === "models") {
       const p = await apiGet("/model-profiles");
       body(
-        p.items
+        (p.items.length ? p.items
           .map((profile) =>
             card(
               profile.name,
@@ -70,7 +70,7 @@
                 ),
             ),
           )
-          .join("") +
+          .join("") : empty(L("No model profiles are configured.","Chưa có cấu hình model."))) +
           (p.warnings?.length
             ? card(
                 L("Configuration warnings", "Cảnh báo cấu hình"),
@@ -103,7 +103,7 @@
                   "required maxlength=100000",
                 ),
               L("Send test call", "Gửi lệnh gọi thử"),
-              false,
+              !p.items.length,
               L(
                 "Uses the same tenant profiles as tasks. A real call consumes provider quota; errors and fallback routing appear in the result.",
                 "Dùng cùng hồ sơ tổ chức với task. Lệnh gọi thật sử dụng hạn mức nhà cung cấp; lỗi và định tuyến dự phòng hiển thị trong kết quả.",
