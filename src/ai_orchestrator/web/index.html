@@ -108,24 +108,32 @@ __UI_ICONS__
            not having an issues list. **Every row carries its reason inline, and expands to
            the full text.** -->
       <section class="view" id="view-work" hidden>
-        <div class="page-heading"><div><div class="eyebrow" data-i18n="nav.workspace">Workspace</div><h1 id="needsHeading">Needs you</h1><p data-i18n="need.intro">Open the affected work, read the reason, then decide what to do.</p></div><a class="btn" href="#/give" data-i18n="nav.give">Work</a></div><div class="stats" id="needStats"></div>
-        <div class="card" id="issuesCard">
-          <header>
+        <div class="page-heading"><div><div class="eyebrow" data-i18n="nav.workspace">Workspace</div><h1 id="needsHeading">Needs you</h1><p data-i18n="need.intro">Open the affected work, read the reason, then decide what to do.</p></div><a class="ui-btn ui-btn-ghost" href="#/give" data-i18n="nav.give">Work</a></div><div class="stats" id="needStats"></div>
+        <div class="ui-panel" id="issuesCard">
+          <header class="ui-section-header">
             <h2 data-i18n="need.issues">Issues</h2>
             <span class="sub" id="issueSub"></span>
             <span class="spacer"></span>
-            <span class="seg" id="issueFilter">
-              <button class="on" data-i="" data-i18n="flt.everything">Everything</button>
-              <button data-i="failed" data-i18n="flt.failed">Failed</button>
-              <button data-i="blocked" data-i18n="flt.blocked">Blocked</button>
-              <button data-i="waiting" data-i18n="flt.noowner">No owner</button>
-            </span>
           </header>
-          <div class="list" id="issueList"></div>
-          <div class="empty" id="issueEmpty" hidden>
-            <div class="big"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-circle-check"></use></svg></div> <span data-i18n="need.issues_empty">Nothing has gone wrong. Every task either finished or
-            is still being worked on.</span>
+          <div class="ui-panel-body">
+            <div class="ui-toolbar">
+              <label class="ui-field ui-search-field"><span id="issueSearchLabel">Tìm sự cố</span><input class="ui-input" id="issueSearch" type="search" autocomplete="off"></label>
+              <button class="ui-btn ui-btn-ghost ui-btn-sm" id="clearIssueSearch" type="button" hidden>Xóa tìm kiếm</button>
+              <span class="ui-tabs ui-wrap-segmented" id="issueFilter" role="group" aria-label="Lọc sự cố" data-ui-segmented>
+                <span class="ui-tab-indicator" aria-hidden="true"></span>
+                <button type="button" data-i="" aria-pressed="true">Tất cả</button>
+                <button type="button" data-i="failed" aria-pressed="false">Thất bại</button>
+                <button type="button" data-i="blocked" aria-pressed="false">Bị chặn</button>
+                <button type="button" data-i="waiting" aria-pressed="false">Chờ xử lý</button>
+              </span>
+              <button class="ui-btn ui-btn-ghost ui-btn-sm" id="refreshIssues" type="button">Tải lại</button>
+            </div>
+            <div id="issueError" hidden></div>
+            <div id="issueLoading" hidden></div>
           </div>
+          <div class="list" id="issueList" role="list" aria-label="Sự cố"></div>
+          <div id="issueEmpty" hidden></div>
+          <div class="ui-panel-body"><div class="ui-toolbar"><span class="ui-muted" id="issueVisibleCount" role="status" aria-live="polite"></span><button class="ui-btn ui-btn-ghost ui-btn-sm" id="loadMoreIssues" type="button" hidden>Tải thêm 100</button></div></div>
         </div>
         <div class="card" id="approvalsCard">
           <header>

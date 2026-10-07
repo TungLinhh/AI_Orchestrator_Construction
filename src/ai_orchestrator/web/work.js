@@ -42,95 +42,49 @@ function reasonBlock(text) {
  * and works without JavaScript wiring — the same reason it is used for the tooltip.
  */
 function renderIssues(q) {
-  const all = (q.items || []).filter(
-    (t) =>
-      ["failed", "blocked", "canceled", "cancelled"].includes(t.status) ||
-      (t.waiting_on === "you" && t.status === "created"),
-  );
-  const rows = !issueFilter
-    ? all
-    : all.filter((t) =>
-        issueFilter === "waiting"
-          ? t.status === "created"
-          : t.status === issueFilter,
-      );
-
-  const failed = all.filter((t) => t.status === "failed").length;
-  const blocked = all.filter((t) => t.status === "blocked").length;
-  const unowned = all.filter((t) => t.status === "created").length;
-  setHTML(
-    "needStats",
-    statTile(
-      tr("need.you", "Needs you"),
-      num(q.needs_you ?? 0),
-      tr("need.you_sub", "a decision, an owner, or a judgement"),
-      (q.needs_you ?? 0) ? "warn" : "good",
-    ) +
+  if (!(parseHash().name === "work" && parseHash().arg === "issues")) {
+    const all=(q.items || []).filter(t=>['failed','blocked','canceled','cancelled'].includes(t.status) || (t.waiting_on==='you' && t.status==='created'));
+    const failed=all.filter(t=>t.status==='failed').length;
+    const blocked=all.filter(t=>t.status==='blocked').length;
+    setHTML(
+      "needStats",
       statTile(
-        tr("need.failed", "Failed"),
-        num(failed),
-        tr("need.failed_sub", "the company could not finish them"),
-        failed ? "alarm" : "good",
+        tr("need.you", "Needs you"),
+        num(q.needs_you ?? 0),
+        tr("need.you_sub", "a decision, an owner, or a judgement"),
+        (q.needs_you ?? 0) ? "warn" : "good",
       ) +
-      statTile(
-        tr("need.blocked", "Blocked"),
-        num(blocked),
-        tr("need.blocked_sub", "waiting on something"),
-        blocked ? "warn" : "good",
-      ) +
-      statTile(
-        tr("need.approvals_t", "Approvals"),
-        num(state.inbox ? state.inbox.length : 0),
-        tr("need.approvals_sub", "pending a person"),
-        (state.inbox || []).length ? "warn" : "good",
-      ),
-  );
+        statTile(
+          tr("need.failed", "Failed"),
+          num(failed),
+          tr("need.failed_sub", "the company could not finish them"),
+          failed ? "alarm" : "good",
+        ) +
+        statTile(
+          tr("need.blocked", "Blocked"),
+          num(blocked),
+          tr("need.blocked_sub", "waiting on something"),
+          blocked ? "warn" : "good",
+        ) +
+        statTile(
+          tr("need.approvals_t", "Approvals"),
+          num(state.inbox ? state.inbox.length : 0),
+          tr("need.approvals_sub", "pending a person"),
+          (state.inbox || []).length ? "warn" : "good",
+        ),
+    );
 
-  $("issueSub").textContent = all.length
-    ? t_fmt("need.look", "{n} to look at", { n: all.length })
-    : tr(
-        "need.issues_empty",
-        "Nothing has gone wrong. Every task either finished or is still being worked on.",
-      );
-  $("issueEmpty").hidden = rows.length > 0;
-  setHTML(
-    "issueList",
-    rows
-      .map((it) => {
-        const short = it.last_error
-          ? String(it.last_error).slice(0, 150)
-          : tr("need.noreason_short", "no reason recorded");
-        return `
-    <details class="row issue" data-task="${esc(it.id)}">
-      <summary class="grow">
-        <div class="t"><span class="pill bad">${esc(it.status)}</span> ${esc(it.title)}</div>
-        <div class="s">${esc(it.task_type || tr("need.task", "task"))}${
-          it.owner_name
-            ? t_fmt("row.held", " · held by {n}", { n: esc(it.owner_name) })
-            : tr("row.noowner", " · nobody holds it")
-        }
-          ${it.children ? t_fmt("row.subs", " · {n} subtask(s)", { n: it.children }) : ""}</div>
-        <div class="s err">${esc(short)}${String(it.last_error || "").length > 150 ? "…" : ""}</div>
-      </summary>
-      <div class="issue-body">
-        ${
-          it.last_error
-            ? reasonBlock(it.last_error)
-            : `<div class="s">${tr("need.noreason", "No reason was recorded for this outcome.")}</div>`
-        }
-        <div class="btn-row">
-          <a class="btn sm" href="#/give/${encodeURIComponent(it.id)}/log">${tr("need.open", "Open it")}</a>
-          <button class="btn sm" data-retry="${esc(it.id)}">${tr("need.retry", "Run it again")}</button>
-        </div>
-      </div>
-    </details>`;
-      })
-      .join(""),
-  );
+  }
+  window.IssuesUI?.render(q);
 }
 
 /* ---------------- work: the queue you can actually act on ---------------- */
 async function renderWork() {
+  if (parseHash().name === "work" && parseHash().arg === "issues") return window.IssuesUI.load();
+  $("view-work").removeAttribute("data-page");
+  $("view-work").classList.remove("ui-page");
+  $("needStats").classList.remove("ui-metrics-host");
+  $("workNote").hidden=false;
   const routeKey = location.hash;
   const selected = parseHash().name === "work" ? parseHash().arg : null;
   $("issuesCard").hidden = selected === "approvals";
@@ -2020,8 +1974,7 @@ $("issueFilter").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-i]");
   if (!b) return;
   issueFilter = b.dataset.i || "";
-  for (const x of $("issueFilter").children) x.classList.toggle("on", x === b);
-  await renderWork();
+  window.IssuesUI.filter(issueFilter);
 });
 
 $("workFilter").addEventListener("click", async (e) => {

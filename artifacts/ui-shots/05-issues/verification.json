@@ -1,0 +1,45 @@
+{
+  "gate": "passed",
+  "phase": 5,
+  "page": "issues",
+  "phase_5_complete": false,
+  "final_ui_acceptance": false,
+  "browser": {
+    "checks": 88,
+    "gate_unique_screenshots": 16,
+    "all_unique_screenshots": 18,
+    "ui_source_sha256_matches": true
+  },
+  "lint": {
+    "status": "passed",
+    "formatted_files": 418
+  },
+  "typecheck": {
+    "status": "passed",
+    "source_files": 177
+  },
+  "pytest": {
+    "status": "passed",
+    "runs": 1,
+    "passed": 3477,
+    "skipped": 8,
+    "deselected": 1,
+    "warnings": 10,
+    "seconds": 493.28
+  },
+  "node": {
+    "syntax": "passed",
+    "boot": "passed",
+    "read_only_requests": 13
+  },
+  "operational_writes_by_browser": false,
+  "live_model_mail_workflow_acceptance": false,
+  "owned_api_pid": 168192,
+  "owned_api_stopped": true,
+  "next_page": "approvals",
+  "log_sha256": {
+    "lint.log": "8a686441dc659b40539e03ffac3a555370fb66a141a21cbc421e29b28f3f570a",
+    "typecheck.log": "e68792af43c0667696d069366b21aa98c2042c70d71ce1d85d8363247fed28ff",
+    "tests.log": "80a868bccd4499bcd75a12e1f29ace1b1dd002fedc9490b368bfb14d2b2b4faa"
+  }
+}

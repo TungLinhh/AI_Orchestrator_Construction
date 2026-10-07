@@ -21,6 +21,7 @@ SCRIPTS = (
     "styleguide.js",
     "shell.js",
     "work-ui.js",
+    "issues-ui.js",
     "boot.js",
 )
 

@@ -12,6 +12,7 @@
   Không đổi backend/API/schema hoặc hành vi nghiệp vụ.
 - **Giai đoạn 3 hoàn tất**: khung ứng dụng, browser gate và kiểm chứng cuối PASS.
 - **Giai đoạn 4 hoàn tất**: Công việc/detail/form, browser và kiểm chứng cuối PASS.
+- **Giai đoạn 5 đang triển khai**: trang Sự cố qua cổng cuối; tiếp theo là Phê duyệt.
 
 ## Quyết định và giả định
 
@@ -62,8 +63,8 @@
 
 ## Bước tiếp theo
 
-1. Giai đoạn 5: chuyển từng trang, mỗi trang một commit. Bắt đầu Sự cố,
-   rồi Phê duyệt và Tổ chức/đơn vị.
+1. Giai đoạn 5: **Phê duyệt** tiếp theo, rồi Tổ chức/đơn vị;
+   mỗi trang một commit và cổng riêng.
 2. Từng trang → keyboard/mobile/a11y → nghiệm thu,
    theo cổng trong `01-design-plan.md`.
 
@@ -346,3 +347,47 @@
 - Bước tiếp theo: **Giai đoạn 5, trang Sự cố trước**. Đọc BRIEF/PROGRESS,
   giữ nhánh `ui/refresh`, audit hooks rồi chuyển riêng trang và kiểm cổng.
   GĐ5–7 còn mở; UI refresh toàn app và nghiệp vụ live chưa được nghiệm thu.
+
+## Giai đoạn 5 — Sự cố, 2026-10-07
+
+- Bắt đầu từ tree sạch, commit `70af3b7`. Trang Sự cố chuyển riêng theo quy tắc
+  một trang một commit; không đánh dấu cả Giai đoạn 5 hoàn tất.
+- IssuesUI dùng register và predicate membership cũ. UI.metrics/disclosure/
+  metadata/list-row/log/badge/copy tái sử dụng components.css và có sample guide.
+- Search lỗi/tên/owner/ID, filter/count trên cache toàn corpus, 100 hàng ban đầu
+  và tải thêm. Lỗi GET giữ dữ liệu/cảnh báo khi lọc; initial error không thành 0.
+- Giữ route/org/prefs/i18n/data-task/data-i/data-retry, retryTask và controller
+  cũ. Label retry mô tả task mới và server vẫn kiểm quyền/workflow; không fake run.
+- Chờ xử lý là created/waiting_on you, không tự coi owner trống; badge Sự cố
+  được tính cùng membership danh sách. Phê duyệt cũ tiếp tục được giữ riêng.
+- Browser gate cuối PASS **88 checks/16 ảnh**, thêm 2 trước. 12 màu/mode,
+  VI/EN, 360/390/768px, loading/empty/no-results/error, stale warning và retry
+  409 fixture. Axe sạch trong scope, không lỗi console bất ngờ; 3 lỗi HTTP
+  console do fixture ghi riêng. Node syntax/boot PASS, 13 GET.
+- Corpus khi gate: 1.194 task/344 sự cố; không có phương thức ghi vào API.
+  Lint 418 files, typecheck 177 sources PASS; full suite một lượt đạt
+  **3.477 passed, 8 skipped, 1 deselected**, 10 cảnh báo openpyxl, **493,28s**.
+- Tự phản biện: bỏ meta nối chấm, chỉ số KPI ngoài phạm vi Sự cố và eyebrow
+  thừa; mobile filter 2×2 thay bốn ô hẹp; trạng thái hủy dùng neutral. Giữ cảnh
+  báo stale khi lọc cache. Gate sửa theme property/guide container rồi chạy lại
+  và assert mode thật, không tắt rule axe hoặc bỏ case.
+- Handoff `06-issues.md`, receipt/ảnh `artifacts/ui-shots/05-issues/`.
+  API khảo sát fake/hash đã dừng, giữ PostgreSQL; không đổi backend/schema/
+  broker/approval/delegation handlers, không thêm E2E nghiệp vụ không liên quan.
+- Mốc kế tiếp trong Giai đoạn 5 là **Phê duyệt**, gồm confirm dialog có ngữ cảnh,
+  toast, pending/error và đúng quyền hiện có; không ghi approval thật để chụp ảnh.
+
+## Đóng cổng trang Sự cố — Giai đoạn 5, 2026-10-07
+
+- **PASS, sẵn sàng trang Phê duyệt trong Giai đoạn 5**. Browser 88 checks,
+  16 ảnh cổng và hai ảnh trước. Receipt có 21 lượt chụp; loading phân trang
+  ghi đè cùng filename nên manifest deduplicate, không bịa thêm file ảnh.
+- Lint/typecheck PASS; full suite đúng một lượt **3.477 passed, 8 skipped,
+  1 deselected**, 10 cảnh báo openpyxl, 493,28s. Skip như GĐ4; không chạy lại
+  suite cho tài liệu hoặc chỉnh manifest ảnh. Source UI khớp hash gate cuối.
+- Node syntax/boot PASS, 13 GET. API fake/hash khảo sát đã dừng; PostgreSQL giữ
+  nguyên. Browser không gửi retry/approval/business write vào server.
+- Không đổi backend/API/schema, controller hoặc retry/delegation/approval
+  authority. Không chạy E2E broker ngoài scope. Fixture không nghiệm thu live.
+- Giai đoạn 5 còn Phê duyệt, Tổ chức/đơn vị, Quy trình/màn con, Thư viện,
+  Dữ liệu nghiệp vụ, Vận hành, Cài đặt. Mỗi trang một commit và gate riêng.

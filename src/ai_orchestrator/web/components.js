@@ -88,6 +88,8 @@ const UI = (() => {
         .join("")
         .toLocaleUpperCase(),
     )}</span>`;
+  const metrics = ({ label, items = [] } = {}) =>
+    `<div class="ui-metric-strip" role="group" aria-label="${E(label)}">${items.map(item => `<button type="button" data-ui-metric="${E(item.key || '')}" aria-pressed="${!!item.selected}"${item.emphasized ? ' data-emphasis="true"' : ''}><span>${E(item.label)}</span><strong${item.value === 0 ? ' data-zero="true"' : ''}>${E(item.value == null ? '—' : num(item.value))}</strong><small>${E(item.note || '')}</small></button>`).join('')}</div>`;
   const panel = ({
     title,
     description = "",
@@ -350,6 +352,9 @@ const UI = (() => {
     });
     if (!target || target.disabled) return;
     if (target.closest(".ui-tabs")) selectTab(target);
+    if (target.hasAttribute("data-ui-metric"))
+      target.closest(".ui-metric-strip").querySelectorAll("button").forEach(button =>
+        button.setAttribute("aria-pressed", String(button === target)));
     if (target.hasAttribute("data-ui-copy")) copy(target.dataset.uiCopy);
     if (target.dataset.uiAction === "copy-log")
       copy(logSource(target.closest(".ui-log")));
@@ -548,6 +553,7 @@ const UI = (() => {
     badge,
     avatar,
     panel,
+    metrics,
     toolbar,
     callout,
     empty,

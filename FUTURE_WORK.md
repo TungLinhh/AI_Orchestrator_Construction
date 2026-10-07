@@ -39,10 +39,16 @@ validation/loading, nhật ký có phạm vi trang và controller cũ. Handoff:
 [05-work.md](docs/ui-refresh/05-work.md). Lint/typecheck đạt; full suite một lượt
 **3.477 passed/8 skipped/1 deselected** (547,38s). Không nghiệm thu model/mail/workflow thật bằng fixture UI.
 
-**Mốc kế tiếp:** Giai đoạn 5 — chuyển từng trang, một trang một commit.
+**Mốc đã hoàn tất trong Giai đoạn 5:** trang Sự cố — browser PASS 88 checks/16
+ảnh, shared components, cache/search/filter, error/copy và retry refusal fixture.
+Lint/typecheck PASS; full suite một lượt
+**3.477 passed/8 skipped/1 deselected** (493,28s). Handoff:
+[06-issues.md](docs/ui-refresh/06-issues.md). Giai đoạn 5 chưa hoàn tất toàn bộ.
 
-1. Sự cố: hàng lỗi mở rộng/copy, filter/count, loading/empty/error, owner và
-   hướng xử lý; giữ route/action hiện có và dùng lại UI components.
+**Mốc kế tiếp:** Giai đoạn 5, trang Phê duyệt — một trang một commit.
+
+1. Sự cố đã chuyển: shared metric/list/log/badge/copy, 100 hàng/tải thêm,
+   search/filter/cache và trạng thái lỗi giữ dữ liệu. Cổng cuối đã PASS; không đổi handler retry/backend.
 2. Phê duyệt: giải thích yêu cầu, quyết định/authority, confirmation có context,
    trạng thái gửi/lỗi và thông báo đang có. Không giả phê duyệt, đổi quyền hoặc
    tạo cơ chế notification backend trong phạm vi refresh.

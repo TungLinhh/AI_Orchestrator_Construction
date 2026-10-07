@@ -107,3 +107,14 @@ ngay tại browser bằng `UI FIXTURE`; chúng không được chuyển tới AP
 chạy model hoặc xác nhận phê duyệt thật. Performance script dựng baseline từ
 commit `7a7c860` trong thư mục tạm, không sửa checkout. Cổng GĐ4 không thay thế
 nghiệm thu toàn app ở GĐ7.
+
+Trang Sự cố Giai đoạn 5: [hành vi và handoff](06-issues.md),
+[ảnh trước/sau và receipt](../../artifacts/ui-shots/05-issues/index.html).
+
+```sh
+uv run --with playwright python scripts/ui-issues-gate.py --org ORG_ID --chromium CHROMIUM_PATH
+```
+
+Retry POST của gate bị fulfill 409 ngay tại browser; không retry task vận hành.
+Empty/GET 503 và pending loading chỉ là fixture, không ghi DB. Cổng trang Sự cố
+không đánh dấu toàn Giai đoạn 5 hoặc toàn app hoàn tất.
