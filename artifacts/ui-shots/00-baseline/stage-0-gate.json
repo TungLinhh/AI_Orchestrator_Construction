@@ -1,0 +1,27 @@
+{
+  "phase": 0,
+  "gate": "passed",
+  "product_source_unchanged": true,
+  "baseline_commit": "68e4718ab9deacd220cdd354fed21f85b07035eb",
+  "observed_tasks": 1189,
+  "palette_density_cases": 24,
+  "baseline_tests": "3476 passed, 3 skipped, 1 deselected, 10 warnings in 621.98s (0:10:21)",
+  "route_urls": 57,
+  "captures": 338,
+  "font_candidates_verified": 6,
+  "business_api_writes": 0,
+  "baseline_defects": {
+    "axe": {
+      "nested-interactive": 4,
+      "aria-prohibited-attr": 8,
+      "link-in-text-block": 4,
+      "scrollable-region-focusable": 2
+    },
+    "horizontal_overflow_captures": 0,
+    "console_messages": 1,
+    "page_errors": 0,
+    "contrast_pairs_below_4_5": 0
+  },
+  "final_ui_acceptance": false,
+  "note": "Baseline defects are recorded; phases 1-7 remain."
+}

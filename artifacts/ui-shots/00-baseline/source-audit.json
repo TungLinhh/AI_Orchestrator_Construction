@@ -1,0 +1,404 @@
+{
+  "files": [
+    {
+      "file": "src/ai_orchestrator/web/__init__.py",
+      "bytes": 53,
+      "lines": 1,
+      "sha256": "fd86787081d457cd42fea2270fe880baf2599efd730112e2ba097e9e847ccd53"
+    },
+    {
+      "file": "src/ai_orchestrator/web/agent-blueprints.js",
+      "bytes": 22798,
+      "lines": 511,
+      "sha256": "2e74e4cd9d344ce85cd51e62bb7118c848a8773ddb72daa9643544b5bcb19f69"
+    },
+    {
+      "file": "src/ai_orchestrator/web/architecture.md",
+      "bytes": 4576,
+      "lines": 73,
+      "sha256": "61f8acc20cd4021a550f073d1f57bb229d5360271dc62d6b9c4e69b744289342"
+    },
+    {
+      "file": "src/ai_orchestrator/web/boot.js",
+      "bytes": 1143,
+      "lines": 35,
+      "sha256": "db0e71566401a940ccc83a905075297d2613999efd67f072272e65cadae68690"
+    },
+    {
+      "file": "src/ai_orchestrator/web/business.js",
+      "bytes": 13045,
+      "lines": 358,
+      "sha256": "0722e7d54789b21a7317bec80d9db1da512bae7b3832e79fbc6067b7196390e2"
+    },
+    {
+      "file": "src/ai_orchestrator/web/console.css",
+      "bytes": 26158,
+      "lines": 1537,
+      "sha256": "ea6760657fe2602e7bce6be725f3cce13d1f80211272b5e5677fd2680b74aab7"
+    },
+    {
+      "file": "src/ai_orchestrator/web/core.js",
+      "bytes": 50537,
+      "lines": 1170,
+      "sha256": "d1a66471eb6f6743a7d59dade8028da93fe0c837b2eb2ac1e66db964c4d85396"
+    },
+    {
+      "file": "src/ai_orchestrator/web/index.html",
+      "bytes": 20784,
+      "lines": 252,
+      "sha256": "bb92688eb1d0f2b93fdd36dde3f7b1a6f7dfaa0b70d97adc0810692287158459"
+    },
+    {
+      "file": "src/ai_orchestrator/web/library.js",
+      "bytes": 15975,
+      "lines": 458,
+      "sha256": "7b4269c60e2a28c51f4029ba1a75c0c0c38f8fcc66ca1b7d3a6872bfa5ae7416"
+    },
+    {
+      "file": "src/ai_orchestrator/web/management.css",
+      "bytes": 5970,
+      "lines": 254,
+      "sha256": "b5836c63e18a1450456b4df5dd2c6e2abfbf0b740e1fa7f510c7cea6545471a0"
+    },
+    {
+      "file": "src/ai_orchestrator/web/management.js",
+      "bytes": 13183,
+      "lines": 325,
+      "sha256": "d689e79107ce674cf39cf729b1b9b78363063a64d0eab50165ef6f5706cf00be"
+    },
+    {
+      "file": "src/ai_orchestrator/web/navigation.js",
+      "bytes": 10799,
+      "lines": 330,
+      "sha256": "09944007e1917e7445f3eb625aad93acce482faeb2686e9a3bbf2da36a92f3df"
+    },
+    {
+      "file": "src/ai_orchestrator/web/operations.js",
+      "bytes": 12700,
+      "lines": 377,
+      "sha256": "bccd18b5659bd3a81c150226b006a82032904f10dcff62c1f86e05920982551e"
+    },
+    {
+      "file": "src/ai_orchestrator/web/organization.js",
+      "bytes": 17726,
+      "lines": 525,
+      "sha256": "a83b5dca769980baf5b49f52c195b18f9cb473a797847230a5c872c38aeaed23"
+    },
+    {
+      "file": "src/ai_orchestrator/web/page.py",
+      "bytes": 849,
+      "lines": 31,
+      "sha256": "0da19fd33262c9f7f7de86b905b952700af8b446317dc260365e6aa322ed8d6f"
+    },
+    {
+      "file": "src/ai_orchestrator/web/palettes.js",
+      "bytes": 2637,
+      "lines": 103,
+      "sha256": "1d49cdac1619c278435f61326252de8bed9e1ed93906e9772164d2aa08402af2"
+    },
+    {
+      "file": "src/ai_orchestrator/web/preferences.js",
+      "bytes": 1847,
+      "lines": 68,
+      "sha256": "4c9137362ae0243778d6bf94a7807c50aa29d870f50e6a6b64a2cd9dcbb71aa8"
+    },
+    {
+      "file": "src/ai_orchestrator/web/procurement-intake.js",
+      "bytes": 11702,
+      "lines": 294,
+      "sha256": "8605bc773f736f4a70d5b9491291f5107218d2f667d6a17b986c856ac3446b91"
+    },
+    {
+      "file": "src/ai_orchestrator/web/settings.js",
+      "bytes": 13889,
+      "lines": 413,
+      "sha256": "800a93f8623bd848fea37c2ffaa00b1ca0b4601e63e814e57aea250ef4a99f4b"
+    },
+    {
+      "file": "src/ai_orchestrator/web/stream.js",
+      "bytes": 19278,
+      "lines": 492,
+      "sha256": "8b94b74a5c560ae5ff7a89b09000863e8cd991f9eb14512feaac48afca65c62a"
+    },
+    {
+      "file": "src/ai_orchestrator/web/work.js",
+      "bytes": 91268,
+      "lines": 2375,
+      "sha256": "aa8a89cfb912e46eda0d418524834ca94faf98f00fa6677f8a72a3a92731c80b"
+    },
+    {
+      "file": "src/ai_orchestrator/web/workflows.js",
+      "bytes": 37757,
+      "lines": 871,
+      "sha256": "2f3680a2281dbfb1cf3fd681085530b42a866f11dd8f21781ee309962ec09b5e"
+    }
+  ],
+  "enums": {
+    "AgentLifecycleStatus": [
+      "draft",
+      "provisioning",
+      "active",
+      "paused",
+      "degraded",
+      "suspended",
+      "retired"
+    ],
+    "AgentRuntimeStatus": [
+      "idle",
+      "ready",
+      "busy",
+      "waiting",
+      "degraded",
+      "blocked",
+      "unavailable"
+    ],
+    "AgentHealth": [
+      "healthy",
+      "degraded",
+      "unhealthy",
+      "unknown"
+    ],
+    "TaskStatus": [
+      "created",
+      "queued",
+      "assigned",
+      "running",
+      "blocked",
+      "waiting_for_input",
+      "waiting_for_approval",
+      "completed",
+      "failed",
+      "canceled",
+      "expired"
+    ],
+    "TaskPriority": [
+      "low",
+      "normal",
+      "high",
+      "urgent"
+    ],
+    "DelegationStatus": [
+      "proposed",
+      "accepted",
+      "rejected",
+      "in_progress",
+      "completed",
+      "failed",
+      "canceled",
+      "timed_out",
+      "blocked"
+    ],
+    "SubagentStatus": [
+      "spawning",
+      "running",
+      "completed",
+      "failed",
+      "canceled",
+      "expired"
+    ],
+    "ApprovalStatus": [
+      "pending",
+      "approved",
+      "rejected",
+      "needs_information",
+      "expired",
+      "canceled"
+    ],
+    "RiskLevel": [
+      "low",
+      "medium",
+      "high",
+      "critical",
+      "privileged"
+    ],
+    "PolicyDecisionType": [
+      "allow",
+      "deny",
+      "require_approval",
+      "escalate"
+    ],
+    "AutonomyLevel": [
+      "l0_suggest",
+      "l1_low_risk_autonomous",
+      "l2_parent_review",
+      "l3_human_approval",
+      "l4_bounded_autonomous"
+    ],
+    "AuthorityScope": [
+      "organization",
+      "department",
+      "task",
+      "data",
+      "tool",
+      "model",
+      "budget",
+      "delegation",
+      "deployment"
+    ],
+    "DataClassification": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted",
+      "secret"
+    ],
+    "EffectClass": [
+      "read",
+      "prepare",
+      "mutate_internal",
+      "approve",
+      "decide",
+      "external_send",
+      "destructive",
+      "privileged"
+    ],
+    "ToolRisk": [
+      "read_only",
+      "low_risk_write",
+      "external_side_effect",
+      "privileged",
+      "destructive"
+    ],
+    "SkillGovernanceState": [
+      "trusted",
+      "reviewed",
+      "experimental",
+      "deprecated",
+      "blocked"
+    ],
+    "MemoryTier": [
+      "run_context",
+      "working",
+      "task_episodic",
+      "agent",
+      "department",
+      "organization",
+      "semantic",
+      "audit"
+    ],
+    "ActorType": [
+      "human",
+      "service",
+      "agent",
+      "workflow",
+      "system"
+    ],
+    "TaskType": [
+      "research",
+      "analysis",
+      "report",
+      "review",
+      "decision",
+      "execution",
+      "coordination"
+    ],
+    "RunMode": [
+      "live",
+      "simulation",
+      "replay"
+    ],
+    "EventType": [
+      "organization.created",
+      "org_unit.created",
+      "agent.created",
+      "agent.status_changed",
+      "agent.retired",
+      "task.created",
+      "task.assigned",
+      "task.started",
+      "task.updated",
+      "task.completed",
+      "task.failed",
+      "task.canceled",
+      "delegation.created",
+      "delegation.accepted",
+      "delegation.rejected",
+      "delegation.completed",
+      "delegation.blocked",
+      "subagent.spawned",
+      "subagent.completed",
+      "subagent.failed",
+      "workflow.started",
+      "workflow.completed",
+      "workflow.failed",
+      "approval.requested",
+      "approval.decided",
+      "approval.expired",
+      "tool.invoked",
+      "tool.failed",
+      "a2a.call_sent",
+      "a2a.call_completed",
+      "a2a.call_failed",
+      "model.call_completed",
+      "model.call_failed",
+      "skill.proposed",
+      "skill.published",
+      "policy.denied",
+      "memory.written",
+      "agent.discovered"
+    ]
+  },
+  "css": {
+    "important": 6,
+    "literal_colors": 29,
+    "pixel_literals": 495,
+    "z_index_values": [
+      "30",
+      "100",
+      "200"
+    ],
+    "repeated_selectors": {
+      ".manage-body": 2,
+      ".record-fields > div": 2,
+      ".readable-text": 2,
+      ".workspace-tabs": 2,
+      ".workspace-tabs a": 2,
+      ".list-footer": 2,
+      ".nav .items": 3,
+      ".parameter-row": 2,
+      "#managementBody": 2,
+      ".nav": 3,
+      ".brand": 3,
+      ".brand .name": 2,
+      ".nav .label": 2,
+      ".nav a": 3,
+      ".nav .ic": 3,
+      ".nav .sidebar-toggle": 2,
+      ".sidebar-collapsed .brand": 2,
+      ".sidebar-collapsed .sidebar-toggle": 2,
+      ".notif": 2,
+      "h1": 3,
+      "h2": 2,
+      ".app": 2,
+      ".crumbs": 3,
+      ".path .here": 2,
+      ".hint": 2,
+      ".content": 3,
+      ".view": 2,
+      ".page-heading": 2,
+      ".stats": 2,
+      ".stat": 2,
+      ".stat .v": 2,
+      ".row": 2,
+      ".row .r": 2,
+      ".form-grid": 2,
+      ".toolbar": 2,
+      ".banner": 2,
+      ".reason": 2,
+      ".task-nav a": 2,
+      ".log-entry > summary": 2,
+      ".log-entry time": 2,
+      ".dept-tree": 2,
+      ".dept-tree > .abox": 2,
+      ".campaign-journey": 2,
+      ".campaign-journey a": 3,
+      ".campaign-journey a[aria-current=\"step\"]": 2,
+      ".palette-grid": 2,
+      ".manage-form .palette-option": 2,
+      ".campaign-workspace": 3,
+      ".campaign-controls": 2,
+      ".campaign-main": 2
+    },
+    "layers": 0
+  }
+}

@@ -1,0 +1,40 @@
+[
+  {
+    "model": "Agent",
+    "field": "autonomy_ceiling",
+    "values": [
+      "L1",
+      "L2",
+      "L3",
+      "L4"
+    ]
+  },
+  {
+    "model": "Agent",
+    "field": "granted_level",
+    "values": [
+      "L1",
+      "L2",
+      "L3",
+      "L4"
+    ]
+  },
+  {
+    "model": "WorkflowCommand",
+    "field": "kind",
+    "values": [
+      "business_workflow",
+      "agent_workflow"
+    ]
+  },
+  {
+    "model": "ConnectorAction",
+    "field": "state",
+    "values": [
+      "prepared",
+      "sending",
+      "confirmed",
+      "unknown"
+    ]
+  }
+]

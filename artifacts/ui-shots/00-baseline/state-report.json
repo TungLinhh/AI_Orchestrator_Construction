@@ -1,0 +1,582 @@
+{
+  "captures": [
+    {
+      "file": "alias-work-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-library-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/library",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-business-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-operations-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/operations",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "fixture-project-detail-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/projects/prj_ui_fixture",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "fixture-document-detail-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/documents/doc_ui_fixture",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "unit-chief-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/chief",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-front-office-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/front-office",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-design-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/design",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "cancel-confirmation-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m49pfqqn6xq5nat4zsjfar9m",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "issue-expanded-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work/issues",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "work-list-scrolled-light-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-work-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-library-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/library",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-business-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-operations-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/operations",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "fixture-project-detail-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/projects/prj_ui_fixture",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "fixture-document-detail-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/documents/doc_ui_fixture",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "unit-chief-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/chief",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-front-office-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/front-office",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-design-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/design",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "cancel-confirmation-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m49pfqqn6xq5nat4zsjfar9m",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "issue-expanded-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work/issues",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "work-list-scrolled-light-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-work-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-library-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/library",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-business-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-operations-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/operations",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "fixture-project-detail-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/projects/prj_ui_fixture",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "fixture-document-detail-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/documents/doc_ui_fixture",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "unit-chief-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/chief",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-front-office-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/front-office",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-design-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/design",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "cancel-confirmation-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m49pfqqn6xq5nat4zsjfar9m",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "issue-expanded-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work/issues",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "work-list-scrolled-dark-1440.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-work-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-library-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/library",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-business-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "alias-operations-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/operations",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "fixture-project-detail-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/projects/prj_ui_fixture",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "fixture-document-detail-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/business/documents/doc_ui_fixture",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": true,
+      "page_error": null
+    },
+    {
+      "file": "unit-chief-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/chief",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-front-office-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/front-office",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "unit-design-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/dept/design",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "cancel-confirmation-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m49pfqqn6xq5nat4zsjfar9m",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "issue-expanded-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/work/issues",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "work-list-scrolled-dark-390.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    },
+    {
+      "file": "state-fixture-empty.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null,
+      "expected_page_error": false,
+      "state": "empty"
+    },
+    {
+      "file": "state-fixture-all-zero.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null,
+      "expected_page_error": false,
+      "state": "all-zero"
+    },
+    {
+      "file": "state-fixture-no-results.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null,
+      "expected_page_error": false,
+      "state": "no-results"
+    },
+    {
+      "file": "state-fixture-long-title.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null,
+      "expected_page_error": false,
+      "state": "long-title"
+    },
+    {
+      "file": "state-fixture-long-error.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null,
+      "expected_page_error": false,
+      "state": "long-error"
+    },
+    {
+      "file": "state-fixture-error.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": "Không tải được màn này. 503 Service Unavailable\nTải lại\nCông việc",
+      "expected_page_error": true,
+      "state": "error"
+    },
+    {
+      "file": "fixture-loading-held-get.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": true,
+      "page_error": null,
+      "state": "loading"
+    },
+    {
+      "file": "zoom-200-percent.png",
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_get_fixture": false,
+      "page_error": null
+    }
+  ],
+  "blocked_requests": [],
+  "errors": [],
+  "fixture_only": true,
+  "os_reduced_motion_running_transforms": [],
+  "zoom_overflow": false
+}

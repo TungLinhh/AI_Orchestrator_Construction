@@ -1,0 +1,128 @@
+[
+  {
+    "family": "inter",
+    "package": "@fontsource/inter",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/inter/-/inter-5.3.0.tgz",
+    "sha256": "02034af8d41dcc67ac8eab88f642e129bb8a2e8922abf30229c32725f54d8fd6",
+    "files": [
+      "LICENSE",
+      "inter-latin-400-normal.woff2",
+      "inter-latin-500-normal.woff2",
+      "inter-latin-600-normal.woff2",
+      "inter-latin-ext-400-normal.woff2",
+      "inter-latin-ext-500-normal.woff2",
+      "inter-latin-ext-600-normal.woff2",
+      "inter-vietnamese-400-normal.woff2",
+      "inter-vietnamese-500-normal.woff2",
+      "inter-vietnamese-600-normal.woff2",
+      "metadata.json"
+    ]
+  },
+  {
+    "family": "geist",
+    "package": "@fontsource/geist",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/geist/-/geist-5.3.0.tgz",
+    "sha256": "62a48c4d780c68d8f8b1b7385ee508ea0e554afb921453537faa5b05e96e2663",
+    "files": [
+      "LICENSE",
+      "geist-latin-400-normal.woff2",
+      "geist-latin-500-normal.woff2",
+      "geist-latin-600-normal.woff2",
+      "geist-latin-ext-400-normal.woff2",
+      "geist-latin-ext-500-normal.woff2",
+      "geist-latin-ext-600-normal.woff2",
+      "geist-vietnamese-400-normal.woff2",
+      "geist-vietnamese-500-normal.woff2",
+      "geist-vietnamese-600-normal.woff2",
+      "metadata.json"
+    ]
+  },
+  {
+    "family": "be-vietnam-pro",
+    "package": "@fontsource/be-vietnam-pro",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/be-vietnam-pro/-/be-vietnam-pro-5.3.0.tgz",
+    "sha256": "f9e048a263d92f46fbf417aeb41e18bc3c22b3d85365f9347b06eebd3fc1f3ac",
+    "files": [
+      "LICENSE",
+      "be-vietnam-pro-latin-400-normal.woff2",
+      "be-vietnam-pro-latin-500-normal.woff2",
+      "be-vietnam-pro-latin-600-normal.woff2",
+      "be-vietnam-pro-latin-ext-400-normal.woff2",
+      "be-vietnam-pro-latin-ext-500-normal.woff2",
+      "be-vietnam-pro-latin-ext-600-normal.woff2",
+      "be-vietnam-pro-vietnamese-400-normal.woff2",
+      "be-vietnam-pro-vietnamese-500-normal.woff2",
+      "be-vietnam-pro-vietnamese-600-normal.woff2",
+      "metadata.json"
+    ]
+  },
+  {
+    "family": "jetbrains-mono",
+    "package": "@fontsource/jetbrains-mono",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/jetbrains-mono/-/jetbrains-mono-5.3.0.tgz",
+    "sha256": "1bbea47d1387406da5b6ccc4184cc61eae6851cc0db5c1d9bbd088ea9daa0b4a",
+    "files": [
+      "LICENSE",
+      "jetbrains-mono-latin-400-normal.woff2",
+      "jetbrains-mono-latin-500-normal.woff2",
+      "jetbrains-mono-latin-600-normal.woff2",
+      "jetbrains-mono-latin-ext-400-normal.woff2",
+      "jetbrains-mono-latin-ext-500-normal.woff2",
+      "jetbrains-mono-latin-ext-600-normal.woff2",
+      "jetbrains-mono-vietnamese-400-normal.woff2",
+      "jetbrains-mono-vietnamese-500-normal.woff2",
+      "jetbrains-mono-vietnamese-600-normal.woff2",
+      "metadata.json"
+    ]
+  },
+  {
+    "family": "geist-mono",
+    "package": "@fontsource/geist-mono",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/geist-mono/-/geist-mono-5.3.0.tgz",
+    "sha256": "1388ea1cc6f02ba10be011352d0c7cabbc29b59e587eaa9938dc63187b4a9169",
+    "files": [
+      "LICENSE",
+      "geist-mono-latin-400-normal.woff2",
+      "geist-mono-latin-500-normal.woff2",
+      "geist-mono-latin-600-normal.woff2",
+      "geist-mono-latin-ext-400-normal.woff2",
+      "geist-mono-latin-ext-500-normal.woff2",
+      "geist-mono-latin-ext-600-normal.woff2",
+      "geist-mono-vietnamese-400-normal.woff2",
+      "geist-mono-vietnamese-500-normal.woff2",
+      "geist-mono-vietnamese-600-normal.woff2",
+      "metadata.json"
+    ]
+  },
+  {
+    "family": "ibm-plex-mono",
+    "package": "@fontsource/ibm-plex-mono",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/ibm-plex-mono/-/ibm-plex-mono-5.3.0.tgz",
+    "sha256": "60d3c0cfa549cb06fcb8867ee83f994d78e212abfac3bef3275436acb5c4d029",
+    "files": [
+      "LICENSE",
+      "ibm-plex-mono-latin-400-normal.woff2",
+      "ibm-plex-mono-latin-500-normal.woff2",
+      "ibm-plex-mono-latin-600-normal.woff2",
+      "ibm-plex-mono-latin-ext-400-normal.woff2",
+      "ibm-plex-mono-latin-ext-500-normal.woff2",
+      "ibm-plex-mono-latin-ext-600-normal.woff2",
+      "ibm-plex-mono-vietnamese-400-normal.woff2",
+      "ibm-plex-mono-vietnamese-500-normal.woff2",
+      "ibm-plex-mono-vietnamese-600-normal.woff2",
+      "metadata.json"
+    ]
+  }
+]

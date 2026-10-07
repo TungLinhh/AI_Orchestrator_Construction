@@ -1,0 +1,38 @@
+{
+  "source": "Read-only GET /ceo/work; design study only",
+  "counts": {
+    "total": 1188,
+    "needs_you": 351,
+    "in_flight": 0,
+    "settled": 837
+  },
+  "items": [
+    {
+      "id": "tsk_01m49qy02cte3jhgz2kez3eje1",
+      "title": "Đề xuất lựa chọn sau hai vòng",
+      "owner_name": "HR Agent",
+      "status": "failed",
+      "task_type": "analysis",
+      "children": 0,
+      "last_error": "openrouter/dots-studio/dots-3-note-preview:free: the provider's content filter refused this prompt"
+    },
+    {
+      "id": "tsk_01m49qxzw9479yd9bdpt3rnmay",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "owner_name": "Executive Agent",
+      "status": "failed",
+      "task_type": "coordination",
+      "children": 21,
+      "last_error": "ValueError: Model stage did not complete: selection (failed)"
+    },
+    {
+      "id": "tsk_01m49pqe1wjrxh02rpjscjm8e0",
+      "title": "[MOCK EVAL] hr-injection-v1",
+      "owner_name": "HR Agent",
+      "status": "failed",
+      "task_type": "analysis",
+      "children": 0,
+      "last_error": "openrouter/dots-studio/dots-3-note-preview:free: request rejected (400): Provider returned error"
+    }
+  ]
+}

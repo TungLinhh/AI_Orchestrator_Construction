@@ -1,0 +1,7263 @@
+{
+  "time_utc": "2026-10-07T00:55:29.278259+00:00",
+  "base": "http://127.0.0.1:8100",
+  "organization": "org_01m3ycsehgwz7v1fk2ahswkwhm",
+  "source": {
+    "files": [
+      {
+        "file": "src/ai_orchestrator/web/__init__.py",
+        "bytes": 53,
+        "lines": 1,
+        "sha256": "fd86787081d457cd42fea2270fe880baf2599efd730112e2ba097e9e847ccd53"
+      },
+      {
+        "file": "src/ai_orchestrator/web/agent-blueprints.js",
+        "bytes": 22798,
+        "lines": 511,
+        "sha256": "2e74e4cd9d344ce85cd51e62bb7118c848a8773ddb72daa9643544b5bcb19f69"
+      },
+      {
+        "file": "src/ai_orchestrator/web/architecture.md",
+        "bytes": 4576,
+        "lines": 73,
+        "sha256": "61f8acc20cd4021a550f073d1f57bb229d5360271dc62d6b9c4e69b744289342"
+      },
+      {
+        "file": "src/ai_orchestrator/web/boot.js",
+        "bytes": 1143,
+        "lines": 35,
+        "sha256": "db0e71566401a940ccc83a905075297d2613999efd67f072272e65cadae68690"
+      },
+      {
+        "file": "src/ai_orchestrator/web/business.js",
+        "bytes": 13045,
+        "lines": 358,
+        "sha256": "0722e7d54789b21a7317bec80d9db1da512bae7b3832e79fbc6067b7196390e2"
+      },
+      {
+        "file": "src/ai_orchestrator/web/console.css",
+        "bytes": 26158,
+        "lines": 1537,
+        "sha256": "ea6760657fe2602e7bce6be725f3cce13d1f80211272b5e5677fd2680b74aab7"
+      },
+      {
+        "file": "src/ai_orchestrator/web/core.js",
+        "bytes": 50537,
+        "lines": 1170,
+        "sha256": "d1a66471eb6f6743a7d59dade8028da93fe0c837b2eb2ac1e66db964c4d85396"
+      },
+      {
+        "file": "src/ai_orchestrator/web/index.html",
+        "bytes": 20784,
+        "lines": 252,
+        "sha256": "bb92688eb1d0f2b93fdd36dde3f7b1a6f7dfaa0b70d97adc0810692287158459"
+      },
+      {
+        "file": "src/ai_orchestrator/web/library.js",
+        "bytes": 15975,
+        "lines": 458,
+        "sha256": "7b4269c60e2a28c51f4029ba1a75c0c0c38f8fcc66ca1b7d3a6872bfa5ae7416"
+      },
+      {
+        "file": "src/ai_orchestrator/web/management.css",
+        "bytes": 5970,
+        "lines": 254,
+        "sha256": "b5836c63e18a1450456b4df5dd2c6e2abfbf0b740e1fa7f510c7cea6545471a0"
+      },
+      {
+        "file": "src/ai_orchestrator/web/management.js",
+        "bytes": 13183,
+        "lines": 325,
+        "sha256": "d689e79107ce674cf39cf729b1b9b78363063a64d0eab50165ef6f5706cf00be"
+      },
+      {
+        "file": "src/ai_orchestrator/web/navigation.js",
+        "bytes": 10799,
+        "lines": 330,
+        "sha256": "09944007e1917e7445f3eb625aad93acce482faeb2686e9a3bbf2da36a92f3df"
+      },
+      {
+        "file": "src/ai_orchestrator/web/operations.js",
+        "bytes": 12700,
+        "lines": 377,
+        "sha256": "bccd18b5659bd3a81c150226b006a82032904f10dcff62c1f86e05920982551e"
+      },
+      {
+        "file": "src/ai_orchestrator/web/organization.js",
+        "bytes": 17726,
+        "lines": 525,
+        "sha256": "a83b5dca769980baf5b49f52c195b18f9cb473a797847230a5c872c38aeaed23"
+      },
+      {
+        "file": "src/ai_orchestrator/web/page.py",
+        "bytes": 849,
+        "lines": 31,
+        "sha256": "0da19fd33262c9f7f7de86b905b952700af8b446317dc260365e6aa322ed8d6f"
+      },
+      {
+        "file": "src/ai_orchestrator/web/palettes.js",
+        "bytes": 2637,
+        "lines": 103,
+        "sha256": "1d49cdac1619c278435f61326252de8bed9e1ed93906e9772164d2aa08402af2"
+      },
+      {
+        "file": "src/ai_orchestrator/web/preferences.js",
+        "bytes": 1847,
+        "lines": 68,
+        "sha256": "4c9137362ae0243778d6bf94a7807c50aa29d870f50e6a6b64a2cd9dcbb71aa8"
+      },
+      {
+        "file": "src/ai_orchestrator/web/procurement-intake.js",
+        "bytes": 11702,
+        "lines": 294,
+        "sha256": "8605bc773f736f4a70d5b9491291f5107218d2f667d6a17b986c856ac3446b91"
+      },
+      {
+        "file": "src/ai_orchestrator/web/settings.js",
+        "bytes": 13889,
+        "lines": 413,
+        "sha256": "800a93f8623bd848fea37c2ffaa00b1ca0b4601e63e814e57aea250ef4a99f4b"
+      },
+      {
+        "file": "src/ai_orchestrator/web/stream.js",
+        "bytes": 19278,
+        "lines": 492,
+        "sha256": "8b94b74a5c560ae5ff7a89b09000863e8cd991f9eb14512feaac48afca65c62a"
+      },
+      {
+        "file": "src/ai_orchestrator/web/work.js",
+        "bytes": 91268,
+        "lines": 2375,
+        "sha256": "aa8a89cfb912e46eda0d418524834ca94faf98f00fa6677f8a72a3a92731c80b"
+      },
+      {
+        "file": "src/ai_orchestrator/web/workflows.js",
+        "bytes": 37757,
+        "lines": 871,
+        "sha256": "2f3680a2281dbfb1cf3fd681085530b42a866f11dd8f21781ee309962ec09b5e"
+      }
+    ],
+    "enums": {
+      "AgentLifecycleStatus": [
+        "draft",
+        "provisioning",
+        "active",
+        "paused",
+        "degraded",
+        "suspended",
+        "retired"
+      ],
+      "AgentRuntimeStatus": [
+        "idle",
+        "ready",
+        "busy",
+        "waiting",
+        "degraded",
+        "blocked",
+        "unavailable"
+      ],
+      "AgentHealth": [
+        "healthy",
+        "degraded",
+        "unhealthy",
+        "unknown"
+      ],
+      "TaskStatus": [
+        "created",
+        "queued",
+        "assigned",
+        "running",
+        "blocked",
+        "waiting_for_input",
+        "waiting_for_approval",
+        "completed",
+        "failed",
+        "canceled",
+        "expired"
+      ],
+      "TaskPriority": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+      ],
+      "DelegationStatus": [
+        "proposed",
+        "accepted",
+        "rejected",
+        "in_progress",
+        "completed",
+        "failed",
+        "canceled",
+        "timed_out",
+        "blocked"
+      ],
+      "SubagentStatus": [
+        "spawning",
+        "running",
+        "completed",
+        "failed",
+        "canceled",
+        "expired"
+      ],
+      "ApprovalStatus": [
+        "pending",
+        "approved",
+        "rejected",
+        "needs_information",
+        "expired",
+        "canceled"
+      ],
+      "RiskLevel": [
+        "low",
+        "medium",
+        "high",
+        "critical",
+        "privileged"
+      ],
+      "PolicyDecisionType": [
+        "allow",
+        "deny",
+        "require_approval",
+        "escalate"
+      ],
+      "AutonomyLevel": [
+        "l0_suggest",
+        "l1_low_risk_autonomous",
+        "l2_parent_review",
+        "l3_human_approval",
+        "l4_bounded_autonomous"
+      ],
+      "AuthorityScope": [
+        "organization",
+        "department",
+        "task",
+        "data",
+        "tool",
+        "model",
+        "budget",
+        "delegation",
+        "deployment"
+      ],
+      "DataClassification": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+        "secret"
+      ],
+      "EffectClass": [
+        "read",
+        "prepare",
+        "mutate_internal",
+        "approve",
+        "decide",
+        "external_send",
+        "destructive",
+        "privileged"
+      ],
+      "ToolRisk": [
+        "read_only",
+        "low_risk_write",
+        "external_side_effect",
+        "privileged",
+        "destructive"
+      ],
+      "SkillGovernanceState": [
+        "trusted",
+        "reviewed",
+        "experimental",
+        "deprecated",
+        "blocked"
+      ],
+      "MemoryTier": [
+        "run_context",
+        "working",
+        "task_episodic",
+        "agent",
+        "department",
+        "organization",
+        "semantic",
+        "audit"
+      ],
+      "ActorType": [
+        "human",
+        "service",
+        "agent",
+        "workflow",
+        "system"
+      ],
+      "TaskType": [
+        "research",
+        "analysis",
+        "report",
+        "review",
+        "decision",
+        "execution",
+        "coordination"
+      ],
+      "RunMode": [
+        "live",
+        "simulation",
+        "replay"
+      ],
+      "EventType": [
+        "organization.created",
+        "org_unit.created",
+        "agent.created",
+        "agent.status_changed",
+        "agent.retired",
+        "task.created",
+        "task.assigned",
+        "task.started",
+        "task.updated",
+        "task.completed",
+        "task.failed",
+        "task.canceled",
+        "delegation.created",
+        "delegation.accepted",
+        "delegation.rejected",
+        "delegation.completed",
+        "delegation.blocked",
+        "subagent.spawned",
+        "subagent.completed",
+        "subagent.failed",
+        "workflow.started",
+        "workflow.completed",
+        "workflow.failed",
+        "approval.requested",
+        "approval.decided",
+        "approval.expired",
+        "tool.invoked",
+        "tool.failed",
+        "a2a.call_sent",
+        "a2a.call_completed",
+        "a2a.call_failed",
+        "model.call_completed",
+        "model.call_failed",
+        "skill.proposed",
+        "skill.published",
+        "policy.denied",
+        "memory.written",
+        "agent.discovered"
+      ]
+    },
+    "css": {
+      "important": 6,
+      "literal_colors": 29,
+      "pixel_literals": 495,
+      "z_index_values": [
+        "30",
+        "100",
+        "200"
+      ],
+      "repeated_selectors": {
+        ".manage-body": 2,
+        ".record-fields > div": 2,
+        ".readable-text": 2,
+        ".workspace-tabs": 2,
+        ".workspace-tabs a": 2,
+        ".list-footer": 2,
+        ".nav .items": 3,
+        ".parameter-row": 2,
+        "#managementBody": 2,
+        ".nav": 3,
+        ".brand": 3,
+        ".brand .name": 2,
+        ".nav .label": 2,
+        ".nav a": 3,
+        ".nav .ic": 3,
+        ".nav .sidebar-toggle": 2,
+        ".sidebar-collapsed .brand": 2,
+        ".sidebar-collapsed .sidebar-toggle": 2,
+        ".notif": 2,
+        "h1": 3,
+        "h2": 2,
+        ".app": 2,
+        ".crumbs": 3,
+        ".path .here": 2,
+        ".hint": 2,
+        ".content": 3,
+        ".view": 2,
+        ".page-heading": 2,
+        ".stats": 2,
+        ".stat": 2,
+        ".stat .v": 2,
+        ".row": 2,
+        ".row .r": 2,
+        ".form-grid": 2,
+        ".toolbar": 2,
+        ".banner": 2,
+        ".reason": 2,
+        ".task-nav a": 2,
+        ".log-entry > summary": 2,
+        ".log-entry time": 2,
+        ".dept-tree": 2,
+        ".dept-tree > .abox": 2,
+        ".campaign-journey": 2,
+        ".campaign-journey a": 3,
+        ".campaign-journey a[aria-current=\"step\"]": 2,
+        ".palette-grid": 2,
+        ".manage-form .palette-option": 2,
+        ".campaign-workspace": 3,
+        ".campaign-controls": 2,
+        ".campaign-main": 2
+      },
+      "layers": 0
+    }
+  },
+  "routes": [
+    {
+      "route": "give",
+      "pattern": "give",
+      "title": [
+        "Theo dõi mọi công việc"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "console",
+      "pattern": "console",
+      "title": [
+        "Theo dõi mọi công việc"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "work/issues",
+      "pattern": "work/issues",
+      "title": [
+        "Sự cố"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "work/approvals",
+      "pattern": "work/approvals",
+      "title": [
+        "Phê duyệt"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "work",
+      "pattern": "work",
+      "title": [
+        "Cần bạn"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "departments",
+      "pattern": "departments",
+      "title": [
+        "Tổ chức và trách nhiệm"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "agent",
+      "pattern": "agent",
+      "title": [
+        "Tổ chức và trách nhiệm"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes",
+      "pattern": "processes",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/workflows",
+      "pattern": "processes/workflows",
+      "title": [
+        "Workflow nghiệp vụ"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/catalogue",
+      "pattern": "processes/catalogue",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/hiring",
+      "pattern": "processes/hiring",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/definitions",
+      "pattern": "processes/definitions",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/provision",
+      "pattern": "processes/provision",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "library/skills",
+      "pattern": "library/skills",
+      "title": [
+        "Thư viện"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "library/tools",
+      "pattern": "library/tools",
+      "title": [
+        "Thư viện"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "library/memory",
+      "pattern": "library/memory",
+      "title": [
+        "Thư viện"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "library",
+      "pattern": "library",
+      "title": [
+        "Thư viện"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "business/projects",
+      "pattern": "business/projects",
+      "title": [
+        "Dữ liệu nghiệp vụ"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "business/documents",
+      "pattern": "business/documents",
+      "title": [
+        "Dữ liệu nghiệp vụ"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "business",
+      "pattern": "business",
+      "title": [
+        "Dữ liệu nghiệp vụ"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/models",
+      "pattern": "operations/models",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/usage",
+      "pattern": "operations/usage",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/events",
+      "pattern": "operations/events",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/decisions",
+      "pattern": "operations/decisions",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/audit",
+      "pattern": "operations/audit",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/governance",
+      "pattern": "operations/governance",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/system",
+      "pattern": "operations/system",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations",
+      "pattern": "operations",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "settings",
+      "pattern": "settings",
+      "title": [
+        "Cài đặt tổ chức"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "settings/appearance",
+      "pattern": "settings/appearance",
+      "title": [
+        "Cài đặt tổ chức"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "settings/organization",
+      "pattern": "settings/organization",
+      "title": [
+        "Cài đặt tổ chức"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "settings/units",
+      "pattern": "settings/units",
+      "title": [
+        "Cài đặt tổ chức"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "settings/roles",
+      "pattern": "settings/roles",
+      "title": [
+        "Cài đặt tổ chức"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "give/tsk_01m49qy02cte3jhgz2kez3eje1/overview",
+      "pattern": "give/:id/overview",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "pattern": "give/:id/steps",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "give/tsk_01m49qy02cte3jhgz2kez3eje1/assignment",
+      "pattern": "give/:id/assignment",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "give/tsk_01m49qy02cte3jhgz2kez3eje1/decisions",
+      "pattern": "give/:id/decisions",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "give/tsk_01m49qy02cte3jhgz2kez3eje1/log",
+      "pattern": "give/:id/log",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "give/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "pattern": "give/:id",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "task/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "pattern": "task/:id",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "give/tsk_01m49qy02cte3jhgz2kez3eje1/log/page/200",
+      "pattern": "give/:id/log/page/200",
+      "title": [
+        "Đề xuất lựa chọn sau hai vòng"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "approval/apr_01m48pgpy88gah2tkyt13pt02t",
+      "pattern": "approval/:id",
+      "title": [
+        "Cần bạn"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "agent/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "pattern": "agent/:id",
+      "title": [
+        "Điều khiển agent"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "library/skills/skl_01m49pe2wk5ap17d2shmq63mme",
+      "pattern": "library/skills/:id",
+      "title": [
+        "Thư viện"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "library/tools/tool_01m3ycsej1fs5cgeskgmrrz4ze",
+      "pattern": "library/tools/:id",
+      "title": [
+        "Thư viện"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/workflows/tsk_01m49rbvz150bgarv6zaetx28m",
+      "pattern": "processes/workflows/:id",
+      "title": [
+        "Workflow nghiệp vụ"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/workflows/tsk_01m49qyv1fv2naxt39acw0rz7j",
+      "pattern": "processes/workflows/:id",
+      "title": [
+        "Workflow nghiệp vụ"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/catalogue/spd_01m46rjfkj7br2w3n0jthy26jc",
+      "pattern": "processes/catalogue/:id",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/definitions/adef_01m3ycsemmky0wcx3ax0v0yech",
+      "pattern": "processes/definitions/:id",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/provision/tsk_01m48f9egjw00p1qrzrkwhf7zn",
+      "pattern": "processes/provision/:id",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/events/evt_01m49vf40r0zmcqj0ba2qcfff8",
+      "pattern": "operations/events/:id",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "settings/units/unit_01m3ycsem6kza0m6x5tajehyfj",
+      "pattern": "settings/units/:id",
+      "title": [
+        "Cài đặt tổ chức"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "settings/roles/role_01m3ycsetgf30pavstc23mwhr7",
+      "pattern": "settings/roles/:id",
+      "title": [
+        "Cài đặt tổ chức"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "dept/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "pattern": "dept/:id",
+      "title": [
+        "Tổ chức và trách nhiệm"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/decisions/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "pattern": "operations/decisions/:id",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "operations/usage/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "pattern": "operations/usage/:id",
+      "title": [
+        "Vận hành"
+      ],
+      "page_error": null
+    },
+    {
+      "route": "processes/provision/workflow/tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "pattern": "processes/provision/workflow/:id",
+      "title": [
+        "Quy trình"
+      ],
+      "page_error": null
+    }
+  ],
+  "captures": [
+    {
+      "file": "route-00-light-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-01-light-1440.png",
+      "route": "/console",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-02-light-1440.png",
+      "route": "/work/issues",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-03-light-1440.png",
+      "route": "/work/approvals",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-04-light-1440.png",
+      "route": "/work",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-05-light-1440.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-06-light-1440.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-07-light-1440.png",
+      "route": "/processes",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-08-light-1440.png",
+      "route": "/processes/workflows",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-09-light-1440.png",
+      "route": "/processes/catalogue",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-10-light-1440.png",
+      "route": "/processes/hiring",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-11-light-1440.png",
+      "route": "/processes/definitions",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-12-light-1440.png",
+      "route": "/processes/provision",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-13-light-1440.png",
+      "route": "/library/skills",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-14-light-1440.png",
+      "route": "/library/tools",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-15-light-1440.png",
+      "route": "/library/memory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-16-light-1440.png",
+      "route": "/library",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-17-light-1440.png",
+      "route": "/business/projects",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-18-light-1440.png",
+      "route": "/business/documents",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-19-light-1440.png",
+      "route": "/business",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-20-light-1440.png",
+      "route": "/operations/models",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-21-light-1440.png",
+      "route": "/operations/usage",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-22-light-1440.png",
+      "route": "/operations/events",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-23-light-1440.png",
+      "route": "/operations/decisions",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-24-light-1440.png",
+      "route": "/operations/audit",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-25-light-1440.png",
+      "route": "/operations/governance",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-26-light-1440.png",
+      "route": "/operations/system",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-27-light-1440.png",
+      "route": "/operations",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-28-light-1440.png",
+      "route": "/settings",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-29-light-1440.png",
+      "route": "/settings/appearance",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-30-light-1440.png",
+      "route": "/settings/organization",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-31-light-1440.png",
+      "route": "/settings/units",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-32-light-1440.png",
+      "route": "/settings/roles",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-33-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/overview",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-34-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-35-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/assignment",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "nested-interactive",
+          "impact": "serious",
+          "help": "Interactive controls must not be nested",
+          "nodes": [
+            {
+              "target": [
+                "svg[viewBox=\"0 0 900 114\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-36-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/decisions",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-37-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-38-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-39-light-1440.png",
+      "route": "/task/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-40-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log/page/200",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-41-light-1440.png",
+      "route": "/approval/apr_01m48pgpy88gah2tkyt13pt02t",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-42-light-1440.png",
+      "route": "/agent/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-43-light-1440.png",
+      "route": "/library/skills/skl_01m49pe2wk5ap17d2shmq63mme",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-44-light-1440.png",
+      "route": "/library/tools/tool_01m3ycsej1fs5cgeskgmrrz4ze",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-45-light-1440.png",
+      "route": "/processes/workflows/tsk_01m49rbvz150bgarv6zaetx28m",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-46-light-1440.png",
+      "route": "/processes/workflows/tsk_01m49qyv1fv2naxt39acw0rz7j",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-47-light-1440.png",
+      "route": "/processes/catalogue/spd_01m46rjfkj7br2w3n0jthy26jc",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-48-light-1440.png",
+      "route": "/processes/definitions/adef_01m3ycsemmky0wcx3ax0v0yech",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-49-light-1440.png",
+      "route": "/processes/provision/tsk_01m48f9egjw00p1qrzrkwhf7zn",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-50-light-1440.png",
+      "route": "/operations/events/evt_01m49vf40r0zmcqj0ba2qcfff8",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-51-light-1440.png",
+      "route": "/settings/units/unit_01m3ycsem6kza0m6x5tajehyfj",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-52-light-1440.png",
+      "route": "/settings/roles/role_01m3ycsetgf30pavstc23mwhr7",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-53-light-1440.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-54-light-1440.png",
+      "route": "/operations/decisions/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-55-light-1440.png",
+      "route": "/operations/usage/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-56-light-1440.png",
+      "route": "/processes/provision/workflow/tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "nodes": [
+            {
+              "target": [
+                "p > a[href$=\"#/processes/workflows\"]"
+              ],
+              "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.93:1 with the surrounding text. (Minimum contrast is 3:1, link text: #275781, surrounding text: #1b293b)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "notifications-light-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "auth-warning-light-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "create-work-light-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "task-sheet-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "sidebar-collapsed-light-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-00-light-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-01-light-390.png",
+      "route": "/console",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-02-light-390.png",
+      "route": "/work/issues",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-03-light-390.png",
+      "route": "/work/approvals",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-04-light-390.png",
+      "route": "/work",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-05-light-390.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-06-light-390.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-07-light-390.png",
+      "route": "/processes",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-08-light-390.png",
+      "route": "/processes/workflows",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-09-light-390.png",
+      "route": "/processes/catalogue",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-10-light-390.png",
+      "route": "/processes/hiring",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-11-light-390.png",
+      "route": "/processes/definitions",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-12-light-390.png",
+      "route": "/processes/provision",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-13-light-390.png",
+      "route": "/library/skills",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-14-light-390.png",
+      "route": "/library/tools",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-15-light-390.png",
+      "route": "/library/memory",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-16-light-390.png",
+      "route": "/library",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-17-light-390.png",
+      "route": "/business/projects",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-18-light-390.png",
+      "route": "/business/documents",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-19-light-390.png",
+      "route": "/business",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-20-light-390.png",
+      "route": "/operations/models",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-21-light-390.png",
+      "route": "/operations/usage",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-22-light-390.png",
+      "route": "/operations/events",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-23-light-390.png",
+      "route": "/operations/decisions",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-24-light-390.png",
+      "route": "/operations/audit",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-25-light-390.png",
+      "route": "/operations/governance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-26-light-390.png",
+      "route": "/operations/system",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-27-light-390.png",
+      "route": "/operations",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-28-light-390.png",
+      "route": "/settings",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-29-light-390.png",
+      "route": "/settings/appearance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-30-light-390.png",
+      "route": "/settings/organization",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-31-light-390.png",
+      "route": "/settings/units",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-32-light-390.png",
+      "route": "/settings/roles",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-33-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/overview",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-34-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-35-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/assignment",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "nested-interactive",
+          "impact": "serious",
+          "help": "Interactive controls must not be nested",
+          "nodes": [
+            {
+              "target": [
+                "svg[viewBox=\"0 0 900 114\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-36-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/decisions",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-37-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-38-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-39-light-390.png",
+      "route": "/task/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-40-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log/page/200",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-41-light-390.png",
+      "route": "/approval/apr_01m48pgpy88gah2tkyt13pt02t",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-42-light-390.png",
+      "route": "/agent/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-43-light-390.png",
+      "route": "/library/skills/skl_01m49pe2wk5ap17d2shmq63mme",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-44-light-390.png",
+      "route": "/library/tools/tool_01m3ycsej1fs5cgeskgmrrz4ze",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-45-light-390.png",
+      "route": "/processes/workflows/tsk_01m49rbvz150bgarv6zaetx28m",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-46-light-390.png",
+      "route": "/processes/workflows/tsk_01m49qyv1fv2naxt39acw0rz7j",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-47-light-390.png",
+      "route": "/processes/catalogue/spd_01m46rjfkj7br2w3n0jthy26jc",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-48-light-390.png",
+      "route": "/processes/definitions/adef_01m3ycsemmky0wcx3ax0v0yech",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "help": "Scrollable region must have keyboard access",
+          "nodes": [
+            {
+              "target": [
+                ".readable-text"
+              ],
+              "summary": "Fix any of the following:\n  Element should have focusable content\n  Element should be focusable"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-49-light-390.png",
+      "route": "/processes/provision/tsk_01m48f9egjw00p1qrzrkwhf7zn",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-50-light-390.png",
+      "route": "/operations/events/evt_01m49vf40r0zmcqj0ba2qcfff8",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-51-light-390.png",
+      "route": "/settings/units/unit_01m3ycsem6kza0m6x5tajehyfj",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-52-light-390.png",
+      "route": "/settings/roles/role_01m3ycsetgf30pavstc23mwhr7",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-53-light-390.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-54-light-390.png",
+      "route": "/operations/decisions/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-55-light-390.png",
+      "route": "/operations/usage/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-56-light-390.png",
+      "route": "/processes/provision/workflow/tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "nodes": [
+            {
+              "target": [
+                "p > a[href$=\"#/processes/workflows\"]"
+              ],
+              "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.93:1 with the surrounding text. (Minimum contrast is 3:1, link text: #275781, surrounding text: #1b293b)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "notifications-light-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "auth-warning-light-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "create-work-light-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "task-sheet-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "sidebar-collapsed-light-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-00-dark-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-01-dark-1440.png",
+      "route": "/console",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-02-dark-1440.png",
+      "route": "/work/issues",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-03-dark-1440.png",
+      "route": "/work/approvals",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-04-dark-1440.png",
+      "route": "/work",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-05-dark-1440.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-06-dark-1440.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-07-dark-1440.png",
+      "route": "/processes",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-08-dark-1440.png",
+      "route": "/processes/workflows",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-09-dark-1440.png",
+      "route": "/processes/catalogue",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-10-dark-1440.png",
+      "route": "/processes/hiring",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-11-dark-1440.png",
+      "route": "/processes/definitions",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-12-dark-1440.png",
+      "route": "/processes/provision",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-13-dark-1440.png",
+      "route": "/library/skills",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-14-dark-1440.png",
+      "route": "/library/tools",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-15-dark-1440.png",
+      "route": "/library/memory",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-16-dark-1440.png",
+      "route": "/library",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-17-dark-1440.png",
+      "route": "/business/projects",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-18-dark-1440.png",
+      "route": "/business/documents",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-19-dark-1440.png",
+      "route": "/business",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-20-dark-1440.png",
+      "route": "/operations/models",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-21-dark-1440.png",
+      "route": "/operations/usage",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-22-dark-1440.png",
+      "route": "/operations/events",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-23-dark-1440.png",
+      "route": "/operations/decisions",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-24-dark-1440.png",
+      "route": "/operations/audit",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-25-dark-1440.png",
+      "route": "/operations/governance",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-26-dark-1440.png",
+      "route": "/operations/system",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-27-dark-1440.png",
+      "route": "/operations",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-28-dark-1440.png",
+      "route": "/settings",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-29-dark-1440.png",
+      "route": "/settings/appearance",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-30-dark-1440.png",
+      "route": "/settings/organization",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-31-dark-1440.png",
+      "route": "/settings/units",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-32-dark-1440.png",
+      "route": "/settings/roles",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-33-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/overview",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-34-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-35-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/assignment",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "nested-interactive",
+          "impact": "serious",
+          "help": "Interactive controls must not be nested",
+          "nodes": [
+            {
+              "target": [
+                "svg[viewBox=\"0 0 900 114\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-36-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/decisions",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-37-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-38-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-39-dark-1440.png",
+      "route": "/task/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-40-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log/page/200",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-41-dark-1440.png",
+      "route": "/approval/apr_01m48pgpy88gah2tkyt13pt02t",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-42-dark-1440.png",
+      "route": "/agent/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-43-dark-1440.png",
+      "route": "/library/skills/skl_01m49pe2wk5ap17d2shmq63mme",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-44-dark-1440.png",
+      "route": "/library/tools/tool_01m3ycsej1fs5cgeskgmrrz4ze",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-45-dark-1440.png",
+      "route": "/processes/workflows/tsk_01m49rbvz150bgarv6zaetx28m",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-46-dark-1440.png",
+      "route": "/processes/workflows/tsk_01m49qyv1fv2naxt39acw0rz7j",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-47-dark-1440.png",
+      "route": "/processes/catalogue/spd_01m46rjfkj7br2w3n0jthy26jc",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-48-dark-1440.png",
+      "route": "/processes/definitions/adef_01m3ycsemmky0wcx3ax0v0yech",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-49-dark-1440.png",
+      "route": "/processes/provision/tsk_01m48f9egjw00p1qrzrkwhf7zn",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-50-dark-1440.png",
+      "route": "/operations/events/evt_01m49vf40r0zmcqj0ba2qcfff8",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-51-dark-1440.png",
+      "route": "/settings/units/unit_01m3ycsem6kza0m6x5tajehyfj",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-52-dark-1440.png",
+      "route": "/settings/roles/role_01m3ycsetgf30pavstc23mwhr7",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-53-dark-1440.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-54-dark-1440.png",
+      "route": "/operations/decisions/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-55-dark-1440.png",
+      "route": "/operations/usage/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-56-dark-1440.png",
+      "route": "/processes/provision/workflow/tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "nodes": [
+            {
+              "target": [
+                "p > a[href$=\"#/processes/workflows\"]"
+              ],
+              "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.54:1 with the surrounding text. (Minimum contrast is 3:1, link text: #9cc9f1, surrounding text: #edf2f8)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "notifications-dark-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "auth-warning-dark-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "create-work-dark-1440.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "task-sheet-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "sidebar-collapsed-dark-1440.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-00-dark-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-01-dark-390.png",
+      "route": "/console",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-02-dark-390.png",
+      "route": "/work/issues",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-03-dark-390.png",
+      "route": "/work/approvals",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-04-dark-390.png",
+      "route": "/work",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-05-dark-390.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-06-dark-390.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-07-dark-390.png",
+      "route": "/processes",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-08-dark-390.png",
+      "route": "/processes/workflows",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-09-dark-390.png",
+      "route": "/processes/catalogue",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-10-dark-390.png",
+      "route": "/processes/hiring",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-11-dark-390.png",
+      "route": "/processes/definitions",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-12-dark-390.png",
+      "route": "/processes/provision",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-13-dark-390.png",
+      "route": "/library/skills",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-14-dark-390.png",
+      "route": "/library/tools",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-15-dark-390.png",
+      "route": "/library/memory",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-16-dark-390.png",
+      "route": "/library",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-17-dark-390.png",
+      "route": "/business/projects",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-18-dark-390.png",
+      "route": "/business/documents",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-19-dark-390.png",
+      "route": "/business",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-20-dark-390.png",
+      "route": "/operations/models",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-21-dark-390.png",
+      "route": "/operations/usage",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-22-dark-390.png",
+      "route": "/operations/events",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-23-dark-390.png",
+      "route": "/operations/decisions",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-24-dark-390.png",
+      "route": "/operations/audit",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-25-dark-390.png",
+      "route": "/operations/governance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-26-dark-390.png",
+      "route": "/operations/system",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-27-dark-390.png",
+      "route": "/operations",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-28-dark-390.png",
+      "route": "/settings",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-29-dark-390.png",
+      "route": "/settings/appearance",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-30-dark-390.png",
+      "route": "/settings/organization",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-31-dark-390.png",
+      "route": "/settings/units",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-32-dark-390.png",
+      "route": "/settings/roles",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-33-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/overview",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-34-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-35-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/assignment",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "nested-interactive",
+          "impact": "serious",
+          "help": "Interactive controls must not be nested",
+          "nodes": [
+            {
+              "target": [
+                "svg[viewBox=\"0 0 900 114\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has focusable descendants"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-36-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/decisions",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-37-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-38-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-39-dark-390.png",
+      "route": "/task/tsk_01m49qy02cte3jhgz2kez3eje1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-40-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/log/page/200",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-41-dark-390.png",
+      "route": "/approval/apr_01m48pgpy88gah2tkyt13pt02t",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-42-dark-390.png",
+      "route": "/agent/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-43-dark-390.png",
+      "route": "/library/skills/skl_01m49pe2wk5ap17d2shmq63mme",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-44-dark-390.png",
+      "route": "/library/tools/tool_01m3ycsej1fs5cgeskgmrrz4ze",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-45-dark-390.png",
+      "route": "/processes/workflows/tsk_01m49rbvz150bgarv6zaetx28m",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-46-dark-390.png",
+      "route": "/processes/workflows/tsk_01m49qyv1fv2naxt39acw0rz7j",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "aria-prohibited-attr",
+          "impact": "serious",
+          "help": "Elements must only use permitted ARIA attributes",
+          "nodes": [
+            {
+              "target": [
+                ".campaign-progress"
+              ],
+              "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-47-dark-390.png",
+      "route": "/processes/catalogue/spd_01m46rjfkj7br2w3n0jthy26jc",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-48-dark-390.png",
+      "route": "/processes/definitions/adef_01m3ycsemmky0wcx3ax0v0yech",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "help": "Scrollable region must have keyboard access",
+          "nodes": [
+            {
+              "target": [
+                ".readable-text"
+              ],
+              "summary": "Fix any of the following:\n  Element should have focusable content\n  Element should be focusable"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "route-49-dark-390.png",
+      "route": "/processes/provision/tsk_01m48f9egjw00p1qrzrkwhf7zn",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-50-dark-390.png",
+      "route": "/operations/events/evt_01m49vf40r0zmcqj0ba2qcfff8",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-51-dark-390.png",
+      "route": "/settings/units/unit_01m3ycsem6kza0m6x5tajehyfj",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-52-dark-390.png",
+      "route": "/settings/roles/role_01m3ycsetgf30pavstc23mwhr7",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-53-dark-390.png",
+      "route": "/departments",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-54-dark-390.png",
+      "route": "/operations/decisions/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-55-dark-390.png",
+      "route": "/operations/usage/agt_01m3ycsetphtt5fkpqd6ragxvg",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "route-56-dark-390.png",
+      "route": "/processes/provision/workflow/tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": [
+        {
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "nodes": [
+            {
+              "target": [
+                "p > a[href$=\"#/processes/workflows\"]"
+              ],
+              "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.54:1 with the surrounding text. (Minimum contrast is 3:1, link text: #9cc9f1, surrounding text: #edf2f8)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+            }
+          ],
+          "total_nodes": 1
+        }
+      ]
+    },
+    {
+      "file": "notifications-dark-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "auth-warning-dark-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "create-work-dark-390.png",
+      "route": "/give",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "task-sheet-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [
+        "sheet"
+      ],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "sidebar-collapsed-dark-390.png",
+      "route": "/give/tsk_01m49qy02cte3jhgz2kez3eje1/steps",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "work-navy-light-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-navy-light-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-teal-light-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-teal-light-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-indigo-light-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-indigo-light-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-forest-light-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-forest-light-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-copper-light-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-copper-light-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-graphite-light-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-graphite-light-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-navy-dark-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-navy-dark-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-teal-dark-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-teal-dark-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-indigo-dark-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-indigo-dark-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-forest-dark-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-forest-dark-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-copper-dark-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-copper-dark-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-graphite-dark-compact.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-graphite-dark-comfortable.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "work-extra-768.png",
+      "route": "/give",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "work-extra-360.png",
+      "route": "/give",
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "work-extra-1920.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false,
+      "axe": []
+    },
+    {
+      "file": "fixture-empty.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "fixture-no-results.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "fixture-long-error.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "fixture-long-title.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "fixture-all-zero.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "fixture-error.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    },
+    {
+      "file": "fixture-loading.png",
+      "route": "/give",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "open_dialogs": [],
+      "horizontal_overflow": false
+    }
+  ],
+  "errors": [],
+  "blocked_writes": [],
+  "external_requests": [],
+  "console": [
+    {
+      "route": "http://127.0.0.1:8100/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    }
+  ],
+  "palette_matrix": [
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "navy",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(39, 87, 129)",
+          "ratio": 7.590706762904931
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "navy",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(39, 87, 129)",
+          "ratio": 7.590706762904931
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "teal",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(8, 103, 95)",
+          "ratio": 6.740126338472237
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "teal",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(8, 103, 95)",
+          "ratio": 6.740126338472237
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "indigo",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(80, 82, 160)",
+          "ratio": 6.8725708989350505
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "indigo",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(80, 82, 160)",
+          "ratio": 6.8725708989350505
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "forest",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(53, 101, 69)",
+          "ratio": 6.7768536135379325
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "forest",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(53, 101, 69)",
+          "ratio": 6.7768536135379325
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "copper",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(138, 76, 46)",
+          "ratio": 6.658459587238365
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "copper",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(138, 76, 46)",
+          "ratio": 6.658459587238365
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "graphite",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(73, 85, 102)",
+          "ratio": 7.568780797568087
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "light",
+        "palette": "graphite",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(27, 41, 59)",
+          "background": "rgb(244, 246, 249)",
+          "ratio": 13.593395548748703
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(80, 97, 118)",
+          "background": "rgb(255, 255, 255)",
+          "ratio": 6.339481941144502
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(73, 85, 102)",
+          "ratio": 7.568780797568087
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "navy",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(156, 201, 241)",
+          "ratio": 10.232843458444835
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "navy",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(156, 201, 241)",
+          "ratio": 10.232843458444835
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "teal",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(131, 214, 199)",
+          "ratio": 10.547326930420333
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "teal",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(131, 214, 199)",
+          "ratio": 10.547326930420333
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "indigo",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(184, 184, 245)",
+          "ratio": 9.531039354958327
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "indigo",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(184, 184, 245)",
+          "ratio": 9.531039354958327
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "forest",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(163, 211, 173)",
+          "ratio": 10.606869047056287
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "forest",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(163, 211, 173)",
+          "ratio": 10.606869047056287
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "copper",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(233, 183, 149)",
+          "ratio": 9.92147505940612
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "copper",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(233, 183, 149)",
+          "ratio": 9.92147505940612
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "graphite",
+        "density": "compact",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(188, 202, 217)",
+          "ratio": 10.700368761900837
+        }
+      ]
+    },
+    {
+      "preferences": {
+        "theme": "dark",
+        "palette": "graphite",
+        "density": "comfortable",
+        "motion": "reduced",
+        "home": "campaigns"
+      },
+      "checks": [
+        {
+          "selector": "body",
+          "color": "rgb(237, 242, 248)",
+          "background": "rgb(17, 24, 33)",
+          "ratio": 15.858930298385157
+        },
+        {
+          "selector": "#giveList .s",
+          "color": "rgb(191, 204, 217)",
+          "background": "rgb(25, 35, 47)",
+          "ratio": 9.717586565844114
+        },
+        {
+          "selector": ".btn.primary",
+          "color": "rgb(17, 24, 33)",
+          "background": "rgb(188, 202, 217)",
+          "ratio": 10.700368761900837
+        }
+      ]
+    }
+  ],
+  "fixtures": [
+    {
+      "state": "empty",
+      "browser_only": true,
+      "verified": true
+    },
+    {
+      "state": "no-results",
+      "browser_only": true,
+      "verified": true
+    },
+    {
+      "state": "long-error",
+      "browser_only": true,
+      "verified": true
+    },
+    {
+      "state": "long-title",
+      "browser_only": true,
+      "verified": true
+    },
+    {
+      "state": "all-zero",
+      "browser_only": true,
+      "verified": true
+    },
+    {
+      "state": "error",
+      "browser_only": true,
+      "verified": true
+    },
+    {
+      "state": "loading",
+      "browser_only": true,
+      "verified": true
+    }
+  ],
+  "performance": {
+    "initial_work_ms": 588.2,
+    "real_rows": 1189,
+    "scroll": {
+      "elapsed_ms": 977.7999999998137,
+      "frames": [
+        7.099999999860302,
+        4.699999999953434,
+        15.900000000139698,
+        16.699999999953434,
+        16.800000000046566,
+        16.399999999906868,
+        16.699999999953434,
+        17.100000000093132,
+        16.600000000093132,
+        16.5999999998603,
+        16.800000000046566,
+        16.300000000046566,
+        16.699999999953434,
+        17,
+        16.300000000046566,
+        16.700000000186265,
+        16.5999999998603,
+        16.5,
+        16.5999999998603,
+        16.800000000046566,
+        16.600000000093132,
+        16.800000000046566,
+        16.899999999906868,
+        16.600000000093132,
+        16.9000000001397,
+        15.899999999906868,
+        17.399999999906868,
+        16.100000000093132,
+        16.699999999953434,
+        16.600000000093132,
+        16.699999999953434,
+        16.600000000093132,
+        16.699999999953434,
+        16.5999999998603,
+        16.700000000186265,
+        16.5999999998603,
+        16.9000000001397,
+        16.699999999953434,
+        16.800000000046566,
+        16.5,
+        16.5,
+        16.699999999953434,
+        16.699999999953434,
+        16.600000000093132,
+        16.699999999953434,
+        16.699999999953434,
+        16.600000000093132,
+        16.5999999998603,
+        16.699999999953434,
+        16.700000000186265,
+        16.699999999953434,
+        16.699999999953434,
+        16.800000000046566,
+        16.699999999953434,
+        16.5,
+        16.5,
+        16.699999999953434,
+        16.699999999953434,
+        16.800000000046566,
+        16.5
+      ],
+      "long_tasks": [],
+      "list_height": 121034,
+      "viewport_height": 576
+    }
+  },
+  "browser": "151.0.7922.34",
+  "register": {
+    "total": 1189,
+    "needs_you": 351,
+    "in_flight": 0,
+    "settled": 838,
+    "statuses": [
+      "failed",
+      "created",
+      "assigned",
+      "waiting_for_approval",
+      "completed",
+      "canceled",
+      "waiting_for_input"
+    ],
+    "types": [
+      "analysis",
+      "coordination",
+      "research"
+    ],
+    "rows": 1189,
+    "list_style": {
+      "maxHeight": "576px",
+      "overflow": "auto"
+    },
+    "task_id": "tsk_01m49qy02cte3jhgz2kez3eje1"
+  },
+  "reduced_motion_transform_animations": [],
+  "css_rule_usage": [
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1009,
+      "endOffset": 1040,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1041,
+      "endOffset": 1115,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 110,
+      "endOffset": 1007,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22157,
+      "endOffset": 22205,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30155,
+      "endOffset": 30180,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24943,
+      "endOffset": 25000,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 21225,
+      "endOffset": 21435,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1116,
+      "endOffset": 1201,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1243,
+      "endOffset": 1297,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1812,
+      "endOffset": 1855,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18422,
+      "endOffset": 18582,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2306,
+      "endOffset": 2406,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2407,
+      "endOffset": 2595,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30181,
+      "endOffset": 30214,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2596,
+      "endOffset": 2683,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30215,
+      "endOffset": 30256,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2684,
+      "endOffset": 2861,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2862,
+      "endOffset": 2917,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30257,
+      "endOffset": 30290,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1902,
+      "endOffset": 1966,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2918,
+      "endOffset": 3002,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1340,
+      "endOffset": 1392,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1393,
+      "endOffset": 1440,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4008,
+      "endOffset": 4265,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4510,
+      "endOffset": 4580,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4618,
+      "endOffset": 4669,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30474,
+      "endOffset": 30736,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3003,
+      "endOffset": 3068,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29129,
+      "endOffset": 29181,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30291,
+      "endOffset": 30316,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3069,
+      "endOffset": 3227,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30317,
+      "endOffset": 30372,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3228,
+      "endOffset": 3374,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30373,
+      "endOffset": 30444,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3577,
+      "endOffset": 3626,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30445,
+      "endOffset": 30473,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2168,
+      "endOffset": 2305,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3627,
+      "endOffset": 3663,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1202,
+      "endOffset": 1242,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3444,
+      "endOffset": 3576,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 75,
+      "endOffset": 109,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29182,
+      "endOffset": 29216,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3664,
+      "endOffset": 3759,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5131,
+      "endOffset": 5244,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5245,
+      "endOffset": 5281,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3760,
+      "endOffset": 3785,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3786,
+      "endOffset": 4007,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4670,
+      "endOffset": 4747,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4873,
+      "endOffset": 4911,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4748,
+      "endOffset": 4872,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4912,
+      "endOffset": 4995,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4996,
+      "endOffset": 5047,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5048,
+      "endOffset": 5130,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16542,
+      "endOffset": 16577,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31401,
+      "endOffset": 31466,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16705,
+      "endOffset": 16963,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5362,
+      "endOffset": 5438,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5439,
+      "endOffset": 5504,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5505,
+      "endOffset": 5613,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5614,
+      "endOffset": 5766,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1441,
+      "endOffset": 1471,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1472,
+      "endOffset": 1545,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22206,
+      "endOffset": 22261,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5767,
+      "endOffset": 5849,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22347,
+      "endOffset": 22400,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28612,
+      "endOffset": 28702,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28703,
+      "endOffset": 28849,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28850,
+      "endOffset": 29003,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22297,
+      "endOffset": 22346,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30029,
+      "endOffset": 30078,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5953,
+      "endOffset": 6128,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6129,
+      "endOffset": 6313,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1546,
+      "endOffset": 1591,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22262,
+      "endOffset": 22296,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26331,
+      "endOffset": 26380,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27189,
+      "endOffset": 27250,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27251,
+      "endOffset": 27429,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27430,
+      "endOffset": 27475,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27476,
+      "endOffset": 27537,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29587,
+      "endOffset": 29629,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29630,
+      "endOffset": 29685,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 5850,
+      "endOffset": 5952,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1682,
+      "endOffset": 1733,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4581,
+      "endOffset": 4617,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26381,
+      "endOffset": 26479,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26480,
+      "endOffset": 26593,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26866,
+      "endOffset": 26909,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8740,
+      "endOffset": 8934,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8935,
+      "endOffset": 8988,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26594,
+      "endOffset": 26865,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26910,
+      "endOffset": 26969,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4346,
+      "endOffset": 4455,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26970,
+      "endOffset": 27104,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6453,
+      "endOffset": 6505,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7816,
+      "endOffset": 8031,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9604,
+      "endOffset": 9749,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9828,
+      "endOffset": 9894,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9750,
+      "endOffset": 9827,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9895,
+      "endOffset": 10022,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10023,
+      "endOffset": 10069,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16067,
+      "endOffset": 16277,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 17432,
+      "endOffset": 17844,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 17845,
+      "endOffset": 17954,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 17955,
+      "endOffset": 18020,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6506,
+      "endOffset": 6609,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6610,
+      "endOffset": 6743,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6744,
+      "endOffset": 6874,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6875,
+      "endOffset": 6973,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7108,
+      "endOffset": 7147,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6974,
+      "endOffset": 7029,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18245,
+      "endOffset": 18351,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1856,
+      "endOffset": 1901,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9191,
+      "endOffset": 9337,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9338,
+      "endOffset": 9387,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8352,
+      "endOffset": 8473,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8474,
+      "endOffset": 8635,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8636,
+      "endOffset": 8739,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9388,
+      "endOffset": 9443,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7148,
+      "endOffset": 7327,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7328,
+      "endOffset": 7365,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1967,
+      "endOffset": 1993,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7433,
+      "endOffset": 7513,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7734,
+      "endOffset": 7815,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7514,
+      "endOffset": 7594,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7595,
+      "endOffset": 7684,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 2062,
+      "endOffset": 2095,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9444,
+      "endOffset": 9522,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10070,
+      "endOffset": 10180,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16964,
+      "endOffset": 17051,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9523,
+      "endOffset": 9603,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7030,
+      "endOffset": 7069,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7070,
+      "endOffset": 7107,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 11329,
+      "endOffset": 11378,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 11379,
+      "endOffset": 11512,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8032,
+      "endOffset": 8108,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1994,
+      "endOffset": 2031,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 11764,
+      "endOffset": 11840,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10181,
+      "endOffset": 10398,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6314,
+      "endOffset": 6348,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12621,
+      "endOffset": 12717,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12718,
+      "endOffset": 12890,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12994,
+      "endOffset": 13181,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12891,
+      "endOffset": 12993,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 13274,
+      "endOffset": 13325,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 13326,
+      "endOffset": 13400,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 13401,
+      "endOffset": 13529,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 13530,
+      "endOffset": 13665,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 13987,
+      "endOffset": 14179,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 14180,
+      "endOffset": 14242,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 14243,
+      "endOffset": 14401,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 14402,
+      "endOffset": 14440,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 14441,
+      "endOffset": 14484,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 14485,
+      "endOffset": 14562,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8989,
+      "endOffset": 9074,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9075,
+      "endOffset": 9111,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 9112,
+      "endOffset": 9190,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 15274,
+      "endOffset": 15340,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 15435,
+      "endOffset": 15603,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 15799,
+      "endOffset": 15857,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 15676,
+      "endOffset": 15798,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 8109,
+      "endOffset": 8180,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 15858,
+      "endOffset": 15914,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 11841,
+      "endOffset": 11948,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 11993,
+      "endOffset": 12034,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10817,
+      "endOffset": 10942,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1618,
+      "endOffset": 1681,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10399,
+      "endOffset": 10522,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10523,
+      "endOffset": 10648,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10649,
+      "endOffset": 10743,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 10744,
+      "endOffset": 10816,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16034,
+      "endOffset": 16066,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16354,
+      "endOffset": 16422,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1592,
+      "endOffset": 1617,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29686,
+      "endOffset": 29756,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29757,
+      "endOffset": 29855,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16423,
+      "endOffset": 16541,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 11513,
+      "endOffset": 11637,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27538,
+      "endOffset": 27610,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27611,
+      "endOffset": 27692,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27693,
+      "endOffset": 27817,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27818,
+      "endOffset": 27968,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 27969,
+      "endOffset": 28034,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29004,
+      "endOffset": 29128,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25533,
+      "endOffset": 25639,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25640,
+      "endOffset": 25702,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25703,
+      "endOffset": 25801,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25842,
+      "endOffset": 25894,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25802,
+      "endOffset": 25841,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28404,
+      "endOffset": 28441,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28442,
+      "endOffset": 28534,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29856,
+      "endOffset": 29942,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22401,
+      "endOffset": 22528,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22529,
+      "endOffset": 22615,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22616,
+      "endOffset": 22735,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22736,
+      "endOffset": 22977,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 22978,
+      "endOffset": 23126,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23127,
+      "endOffset": 23275,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23276,
+      "endOffset": 23340,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23341,
+      "endOffset": 23428,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23429,
+      "endOffset": 23526,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23527,
+      "endOffset": 23584,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 6400,
+      "endOffset": 6452,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 15971,
+      "endOffset": 16033,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 15915,
+      "endOffset": 15970,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12081,
+      "endOffset": 12135,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12136,
+      "endOffset": 12276,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12277,
+      "endOffset": 12366,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12367,
+      "endOffset": 12469,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 12470,
+      "endOffset": 12509,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 11949,
+      "endOffset": 11992,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 16278,
+      "endOffset": 16353,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1734,
+      "endOffset": 1811,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28535,
+      "endOffset": 28570,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28571,
+      "endOffset": 28611,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 26232,
+      "endOffset": 26330,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28100,
+      "endOffset": 28354,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 28355,
+      "endOffset": 28403,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 21436,
+      "endOffset": 21523,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24504,
+      "endOffset": 24538,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 21524,
+      "endOffset": 21718,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24539,
+      "endOffset": 24620,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 21719,
+      "endOffset": 21828,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24621,
+      "endOffset": 24709,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 21829,
+      "endOffset": 21953,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 21954,
+      "endOffset": 22044,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23677,
+      "endOffset": 23814,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23815,
+      "endOffset": 23899,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23900,
+      "endOffset": 23955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24884,
+      "endOffset": 24942,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 23956,
+      "endOffset": 24007,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24008,
+      "endOffset": 24168,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24169,
+      "endOffset": 24232,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24332,
+      "endOffset": 24447,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24448,
+      "endOffset": 24503,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24710,
+      "endOffset": 24786,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 24787,
+      "endOffset": 24883,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31923,
+      "endOffset": 32008,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 32009,
+      "endOffset": 32073,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31876,
+      "endOffset": 31922,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 32074,
+      "endOffset": 32126,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 4266,
+      "endOffset": 4345,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18352,
+      "endOffset": 18421,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30737,
+      "endOffset": 30818,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30819,
+      "endOffset": 30856,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30857,
+      "endOffset": 30923,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 30924,
+      "endOffset": 31103,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31104,
+      "endOffset": 31196,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31197,
+      "endOffset": 31289,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31290,
+      "endOffset": 31400,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18959,
+      "endOffset": 19001,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19004,
+      "endOffset": 19136,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19139,
+      "endOffset": 19174,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31836,
+      "endOffset": 31872,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31502,
+      "endOffset": 31521,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19257,
+      "endOffset": 19322,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31525,
+      "endOffset": 31593,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31502,
+      "endOffset": 31521,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19177,
+      "endOffset": 19254,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19325,
+      "endOffset": 19395,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19398,
+      "endOffset": 19431,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18684,
+      "endOffset": 18721,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18624,
+      "endOffset": 18644,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19434,
+      "endOffset": 19506,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19549,
+      "endOffset": 19587,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19590,
+      "endOffset": 19615,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19509,
+      "endOffset": 19546,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18648,
+      "endOffset": 18681,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18624,
+      "endOffset": 18644,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19618,
+      "endOffset": 19661,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19664,
+      "endOffset": 19690,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20432,
+      "endOffset": 20466,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18886,
+      "endOffset": 18926,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18624,
+      "endOffset": 18644,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19693,
+      "endOffset": 19722,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20376,
+      "endOffset": 20429,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20162,
+      "endOffset": 20218,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19725,
+      "endOffset": 19791,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19794,
+      "endOffset": 19824,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19827,
+      "endOffset": 19862,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20296,
+      "endOffset": 20336,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19865,
+      "endOffset": 19959,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18823,
+      "endOffset": 18883,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18624,
+      "endOffset": 18644,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 1298,
+      "endOffset": 1339,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 3375,
+      "endOffset": 3443,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20221,
+      "endOffset": 20254,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20257,
+      "endOffset": 20293,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 19962,
+      "endOffset": 19997,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29495,
+      "endOffset": 29541,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29224,
+      "endOffset": 29243,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29316,
+      "endOffset": 29353,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29224,
+      "endOffset": 29243,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29420,
+      "endOffset": 29492,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29224,
+      "endOffset": 29243,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29247,
+      "endOffset": 29313,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29224,
+      "endOffset": 29243,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20339,
+      "endOffset": 20373,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18724,
+      "endOffset": 18772,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18624,
+      "endOffset": 18644,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18775,
+      "endOffset": 18820,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18624,
+      "endOffset": 18644,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20000,
+      "endOffset": 20048,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29356,
+      "endOffset": 29417,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29224,
+      "endOffset": 29243,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29544,
+      "endOffset": 29583,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29224,
+      "endOffset": 29243,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29973,
+      "endOffset": 30025,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 29950,
+      "endOffset": 29969,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25257,
+      "endOffset": 25330,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25234,
+      "endOffset": 25253,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25333,
+      "endOffset": 25421,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25234,
+      "endOffset": 25253,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20051,
+      "endOffset": 20117,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20120,
+      "endOffset": 20159,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 18936,
+      "endOffset": 18955,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25424,
+      "endOffset": 25486,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25234,
+      "endOffset": 25253,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25032,
+      "endOffset": 25100,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25008,
+      "endOffset": 25028,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25489,
+      "endOffset": 25529,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25234,
+      "endOffset": 25253,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25103,
+      "endOffset": 25164,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25008,
+      "endOffset": 25028,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25167,
+      "endOffset": 25224,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 25008,
+      "endOffset": 25028,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 7366,
+      "endOffset": 7432,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31713,
+      "endOffset": 31781,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31502,
+      "endOffset": 31521,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31648,
+      "endOffset": 31710,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31502,
+      "endOffset": 31521,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31784,
+      "endOffset": 31833,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31502,
+      "endOffset": 31521,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31596,
+      "endOffset": 31645,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 31502,
+      "endOffset": 31521,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20951,
+      "endOffset": 21110,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20513,
+      "endOffset": 20616,
+      "used": true
+    },
+    {
+      "styleSheetId": "style-sheet-9246-272",
+      "startOffset": 20476,
+      "endOffset": 20509,
+      "used": true
+    }
+  ]
+}

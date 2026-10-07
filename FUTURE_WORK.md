@@ -1,5 +1,26 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
+## UI refresh theo brief — 2026-10-07
+
+**Giai đoạn 0 đã hoàn tất**, trên nhánh `ui/refresh`: 57 URL, 338 ảnh,
+24 trường hợp màu/mật độ, sáu font được kiểm tra. Receipt
+[stage-0-gate.json](artifacts/ui-shots/00-baseline/stage-0-gate.json) đã PASS. Theo yêu cầu
+mới, ưu tiên đi đúng thứ tự brief; chưa triển khai lại UI hoặc thay nghiệp vụ.
+Nguồn đặc tả giữ nguyên tại [BRIEF.md](docs/ui-refresh/BRIEF.md).
+
+- Khảo sát: [00-audit.md](docs/ui-refresh/00-audit.md).
+- Quyết định và cổng kiểm chứng: [PROGRESS.md](docs/ui-refresh/PROGRESS.md).
+- Thiết kế và thứ tự tiếp theo: [01-design-plan.md](docs/ui-refresh/01-design-plan.md).
+- Ảnh hiện trạng: [index.html](artifacts/ui-shots/00-baseline/index.html).
+
+**Mốc kế tiếp:** Giai đoạn 1 — layers, tokens cho 12 tổ hợp, font/icon cục bộ,
+mật độ, motion tokens và áp preferences trước khi vẽ. Phải giữ hash routes,
+VI/EN, phím Esc và khóa cài đặt hiện có; cổng tương phản đạt trước Giai đoạn 2.
+Sau đó làm component/style guide → shell → Công việc/detail → từng trang →
+keyboard/mobile/a11y → đánh bóng và nghiệm thu. Các mục nghiệp vụ bên dưới là
+roadmap riêng, không được dùng để mở rộng phạm vi đợt refresh này.
+
+
 ## Trạng thái sau đợt 4 — 2026-10-06
 
 Đợt này tiếp nối commit `b5c9e82`. Các phần lịch sử bên dưới giữ nguyên phạm vi

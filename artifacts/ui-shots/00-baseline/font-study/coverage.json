@@ -1,0 +1,107 @@
+{
+  "families": {
+    "inter": {
+      "missing": [],
+      "glyph_count": 1032,
+      "nfd_unmapped_before_shaping": [
+        "U+0302",
+        "U+0306",
+        "U+031B"
+      ],
+      "nfd_browser_fonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ]
+    },
+    "geist": {
+      "missing": [],
+      "glyph_count": 469,
+      "nfd_unmapped_before_shaping": [
+        "U+0302",
+        "U+0306",
+        "U+031B"
+      ],
+      "nfd_browser_fonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ]
+    },
+    "be-vietnam-pro": {
+      "missing": [],
+      "glyph_count": 418,
+      "nfd_unmapped_before_shaping": [
+        "U+0302",
+        "U+0306",
+        "U+031B"
+      ],
+      "nfd_browser_fonts": [
+        {
+          "familyName": "Be Vietnam Pro",
+          "postScriptName": "BeVietnamPro-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ]
+    },
+    "jetbrains-mono": {
+      "missing": [],
+      "glyph_count": 487,
+      "nfd_unmapped_before_shaping": [
+        "U+0302",
+        "U+0306",
+        "U+031B"
+      ],
+      "nfd_browser_fonts": [
+        {
+          "familyName": "JetBrains Mono",
+          "postScriptName": "JetBrainsMono-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ]
+    },
+    "geist-mono": {
+      "missing": [],
+      "glyph_count": 467,
+      "nfd_unmapped_before_shaping": [
+        "U+0302",
+        "U+0306",
+        "U+031B"
+      ],
+      "nfd_browser_fonts": [
+        {
+          "familyName": "Geist Mono",
+          "postScriptName": "GeistMono-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ]
+    },
+    "ibm-plex-mono": {
+      "missing": [],
+      "glyph_count": 507,
+      "nfd_unmapped_before_shaping": [
+        "U+0302",
+        "U+0306",
+        "U+031B"
+      ],
+      "nfd_browser_fonts": [
+        {
+          "familyName": "IBM Plex Mono",
+          "postScriptName": "IBMPlexMono-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ]
+    }
+  },
+  "external_requests": []
+}
