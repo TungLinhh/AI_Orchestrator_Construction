@@ -14,10 +14,15 @@ from an older version of the seed, so building a context for any agent raised
 and **no task could run at all**. Every acceptance test still passed, because
 those tests build their own agents and tools inside a test tenant rather than
 using the company an operator would actually get.
+
+The default suite runs the real seed/runtime in an isolated test company. The
+operator's existing company is reserved for explicit live smoke tests; an
+ordinary pytest invocation must not add demo tasks to it.
 """
 
 from __future__ import annotations
 
+import asyncio
 import subprocess
 import sys
 from pathlib import Path
@@ -34,6 +39,7 @@ from ai_orchestrator.persistence.models import (
     Agent,
     Organization,
     OrgUnit,
+    Task,
     Tool,
     ToolVersion,
 )
@@ -217,10 +223,9 @@ def test_the_real_demo_script_runs_end_to_end() -> None:
     import subprocess
     import sys
 
-    # Pointed at the *development* database, for the same reason as the
-    # deterministic demo below: the question is whether the company an operator
-    # actually gets works, and that is a question about `ai_orchestrator` and not
-    # about a fixture. `AO_TEST_DB_NAME` is set alongside `AO_POSTGRES_DB` because
+    # This opt-in live_model test targets the developer company. It is excluded
+    # from make test, unlike the deterministic subprocess test below.
+    # `AO_TEST_DB_NAME` is set alongside `AO_POSTGRES_DB` because
     # `Settings` exposes a separate test DSN, and leaving the suite's override in
     # place would point the child at the test schema while the environment claimed
     # otherwise.
@@ -288,7 +293,7 @@ def test_the_real_demo_script_runs_end_to_end() -> None:
     assert "children still open:" in result.stdout, result.stdout[-1500:]
 
 
-def test_the_demo_script_reports_the_truth_about_delegation() -> None:
+async def test_the_demo_script_reports_the_truth_about_delegation(seeded) -> None:
     """`demo_hierarchy_run.py` is the answer to "have the departments worked yet?".
 
     Asserted rather than trusted: the script must actually run against the real
@@ -300,24 +305,29 @@ def test_the_demo_script_reports_the_truth_about_delegation() -> None:
     """
     import os
 
-    # Deliberately pointed at the *development* database. The question is "does
-    # the company an operator actually gets work?", and that question is about
-    # `ai_orchestrator`, not about a fixture — pointing it at the test database
-    # would answer a different question while appearing to answer this one.
-    #
-    # The suite forces `AO_ENVIRONMENT=test`, `AO_POSTGRES_DB` and
-    # `AO_TEST_DB_NAME` for itself; the child gets the developer's values for
-    # all three. `AO_TEST_DB_NAME` matters because `Settings` exposes a separate
-    # test DSN, and leaving the suite's override in place would point the demo at
-    # the test schema while the environment claimed otherwise.
+    from ai_orchestrator.config.settings import get_settings
+
+    # The subprocess runs the real seeder/runtime/database path, in the same
+    # isolated test company as this test. Ordinary pytest must never create demo
+    # tasks in an operator's organization merely to prove a script can execute.
+    settings = get_settings()
+    assert settings.test_db_name == "ai_orchestrator_test"
+    slug = await seeded.session.scalar(
+        select(Organization.slug).where(Organization.id == seeded.organization_id)
+    )
+    assert slug
+    await seeded.commit()  # A second process needs committed, tenant-bound seed data.
     env = {
         **os.environ,
-        "AO_POSTGRES_DB": "ai_orchestrator",
-        "AO_TEST_DB_NAME": "ai_orchestrator",
-        "AO_ENVIRONMENT": "local",
+        "AO_POSTGRES_DB": settings.test_db_name,
+        "AO_TEST_DB_NAME": settings.test_db_name,
+        "AO_ENVIRONMENT": "test",
+        "AO_SEED_ORGANIZATION_SLUG": slug,
         "AO_MODEL_PROVIDER_DEFAULT": "fake",
+        "AO_EMBEDDING_PROVIDER_DEFAULT": "hash",
     }
-    result = subprocess.run(
+    result = await asyncio.to_thread(
+        subprocess.run,
         [sys.executable, "scripts/demo_hierarchy_run.py"],
         capture_output=True,
         text=True,
@@ -325,19 +335,20 @@ def test_the_demo_script_reports_the_truth_about_delegation() -> None:
         check=False,
         env=env,
     )
-    if "no organisation with slug" in result.stdout:
-        pytest.skip("the development database has no demo company; run `make seed --reset`")
-    assert result.returncode == 0, result.stderr[-2000:]
-    # 16, not 9. The development schema carries the nine block-level placeholder agents
-    # seeded by an earlier tranche *and* the eight of the dossier's register, and they
-    # overlap by one name: `Finance Agent` is both a block agent and a register agent, so
-    # the count is 9 + 8 - 1.
-    #
-    # The overlap is a real finding rather than a coincidence -- the placeholder set was
-    # named after the blocks, and the dossier's register uses the same names where the
-    # blocks and the agents coincide. The assertion is a range rather than an exact number
-    # so it does not become the thing that breaks every time an agent is added, and the
-    # per-agent assertions below are what actually pin the register down.
+    assert result.returncode == 0, (result.stdout + result.stderr)[-2000:]
+    # Query the actual shared test database, not only the child's self-report.
+    written = (
+        (
+            await seeded.session.execute(
+                select(Task.id).where(
+                    Task.organization_id == seeded.organization_id, Task.title == "Board pack"
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(written) == 1, "the demo did not persist its root task in the isolated test company"
     bound = next(
         (
             int(line.split(":", 1)[1].split()[0])
