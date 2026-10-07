@@ -1,5 +1,9 @@
 @layer tokens {
 :root {
+  --command-width: 640px;
+  --color-overlay: #0b1a2980;
+  --shadow-control: 0 2px 8px #172b3a05;
+  --shadow-small: 0 1px 4px #0001;
   --primitive-bg: #f2f3f2;
   --primitive-surface: #fbfcfc;
   --primitive-surface-2: #eceeed;
@@ -107,8 +111,9 @@
   --space-20: 20px; --space-24: 24px; --space-32: 32px; --space-40: 40px; --space-56: 56px;
   --text-xs: 12px; --text-sm: 13px; --text-base: 14px; --text-md: 16px;
   --text-lg: 20px; --text-xl: 24px; --text-2xl: 32px;
-  --btn-height: 40px; --field-height: 42px; --field-padding: 10px 12px;
-  --row-min-height: 56px; --row-padding: 14px 20px; --cell-padding: 13px 12px;
+  --ui-touch-target: 44px;
+  --btn-height: 40px; --field-height: 42px; --field-padding: 12px 12px;
+  --row-min-height: 56px; --row-padding: 16px 20px; --cell-padding: 12px 12px;
   --panel-padding: 20px; --label-size: 13px;
   --motion-instant: 80ms; --motion-fast: 140ms; --motion-base: 200ms;
   --motion-slow: 320ms; --motion-emphasized: 480ms;
@@ -116,8 +121,8 @@
   --ease-exit: cubic-bezier(.4,0,1,1); --ease-spring: cubic-bezier(.2,.8,.2,1);
 }
 :root[data-density="compact"] {
-  --btn-height: 32px; --field-height: 34px; --field-padding: 6px 10px;
-  --row-min-height: 36px; --row-padding: 8px 16px; --cell-padding: 6px 12px;
+  --btn-height: 32px; --field-height: 34px; --field-padding: 8px 12px;
+  --row-min-height: 36px; --row-padding: 8px 16px; --cell-padding: 8px 12px;
   --panel-padding: 12px 16px; --label-size: 12px;
 }
 @supports (transition-timing-function: linear(0, 1)) {

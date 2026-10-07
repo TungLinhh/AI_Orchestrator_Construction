@@ -3,24 +3,17 @@ const Management = (() => {
   const host = () => document.getElementById("managementContent");
   const L = (en, vi) => (state.lang === "vi" ? vi : en);
   const record = valueHTML;
-  const empty = (message) =>
-    `<div class="empty">${esc(message || L("No records yet.", "Chưa có bản ghi."))}</div>`;
-  const badge = (value) => `<span class="pill">${esc(value ?? "—")}</span>`;
+  const empty = (message) => UI.empty({title: L("No records yet", "Chưa có bản ghi"), description: message || L("Records will appear here when available.", "Bản ghi sẽ hiển thị ở đây khi có dữ liệu.")});
+  const badge = (value) => UI.badge(value ?? "—");
   const link = (href, name) => `<a href="${esc(href)}">${esc(name)}</a>`;
-  const card = (title, content) =>
-    `<section class="card"><header><h2>${esc(title)}</h2></header><div class="manage-body">${content}</div></section>`;
-  const details = (title, value) =>
-    `<details class="record-details"><summary>${esc(title)}</summary>${record(value)}</details>`;
-  const fields = (entries) =>
-    `<dl class="record-fields">${entries.map(([name, value]) => `<div><dt>${esc(name)}</dt><dd>${record(value)}</dd></div>`).join("")}</dl>`;
-  const input = (name, title, value = "", type = "text", attrs = "") =>
-    `<label>${esc(title)}<input name="${esc(name)}" type="${type}" value="${esc(value ?? "")}" ${attrs}></label>`;
-  const area = (name, title, value = "", attrs = "") =>
-    `<label class="wide">${esc(title)}<textarea name="${esc(name)}" rows="5" ${attrs}>${esc(value)}</textarea></label>`;
-  const select = (name, title, options, selected = "") =>
-    `<label>${esc(title)}<select name="${esc(name)}">${options.map(([v, t]) => `<option value="${esc(v)}"${v === selected ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>`;
-  const form = (id, content, title, disabled = false, note = "") =>
-    `<form id="${id}" class="manage-form">${content}<div class="wide form-notice">${esc(note)}</div><div class="wide"><button class="btn primary" type="submit" ${disabled ? "disabled" : ""}>${esc(title)}</button></div><div class="wide form-result" role="status" hidden></div></form>`;
+  const card = (title, content) => UI.panel({title, content});
+  const details = (title, value) => `<details class="ui-disclosure"><summary>${UIIcon('chevron-down')}<span>${esc(title)}</span></summary><div class="ui-disclosure-body">${record(value)}</div></details>`;
+  const fields = (entries) => `<dl class="ui-record-fields">${entries.map(([name, value]) => `<div><dt>${esc(name)}</dt><dd>${record(value)}</dd></div>`).join("")}</dl>`;
+  // Attribute strings are trusted, existing form contracts (min/max/pattern/required).
+  const input = (name, title, value = "", type = "text", attrs = "") => UI.field({name, label:title, value, type}).replace('class="ui-input"', `class="ui-input" ${attrs}`);
+  const area = (name, title, value = "", attrs = "") => `<div class="wide">${UI.textarea({name, label:title, value}).replace('class="ui-input"', `class="ui-input" ${attrs}`)}</div>`;
+  const select = (name, title, options, selected = "") => UI.select({name, label:title, value:selected, options:options.map(([value,label]) => ({value,label}))});
+  const form = (id, content, title, disabled = false, note = "") => `<form id="${id}" class="manage-form ui-form">${content}${note ? `<div class="wide ui-muted">${esc(note)}</div>` : ''}<div class="wide ui-toolbar">${UI.button({label:title,variant:'primary',disabled}).replace('type="button"', 'type="submit"')}</div><div class="wide form-result" role="status" aria-live="polite" hidden></div></form>`;
   const adminNote = (ctx) =>
     ctx.can_administer
       ? ""
@@ -28,22 +21,47 @@ const Management = (() => {
           "Changing configuration requires a privileged human credential. Use Token to select one.",
           "Thay đổi cấu hình cần thông tin xác thực của người có quyền quản trị. Dùng nút Token để chọn.",
         );
-  const page = (title, intro, tabs = [], active = "") =>
-    `<div class="page-heading"><div><div class="eyebrow">${esc(L("Organization management", "Quản lý tổ chức"))}</div><h1>${esc(title)}</h1><p>${esc(intro)}</p></div><button class="btn" data-manage-refresh>${esc(L("Refresh", "Làm mới"))}</button></div>${tabs.length ? `<nav class="workspace-tabs" aria-label="${esc(title)}">${tabs.map(([key, label, href]) => `<a href="${href}"${key === active ? ' aria-current="page"' : ""}>${esc(label)}</a>`).join("")}</nav>` : ""}<div id="managementBody"><div class="empty">${esc(L("Loading…", "Đang tải…"))}</div></div>`;
+  const page = (title, intro, tabs = [], active = "") => `<div class="page-heading"><div><h1>${esc(title)}</h1><p>${esc(intro)}</p></div>${UI.button({label:L("Refresh", "Làm mới"),icon:'loader-circle'}).replace('<button ', '<button data-manage-refresh ')}</div>${tabs.length ? `<nav class="ui-route-tabs" aria-label="${esc(title)}">${tabs.map(([key,label,href]) => `<a href="${esc(href)}"${key === active ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('')}</nav>` : ''}<div id="managementBody" aria-busy="true">${UI.skeleton(L("Loading records", "Đang tải bản ghi"))}</div>`;
   function paint(html, guard) {
     if (!guard.current()) return false;
+    host().classList.add('ui-page');
+    host().dataset.page = parseHash().name;
     host().innerHTML = html;
     host().querySelector("[data-manage-refresh]").onclick = () => route();
     return true;
   }
   function body(html, guard) {
-    if (guard.current())
-      document.getElementById("managementBody").innerHTML = html;
+    if (!guard.current()) return;
+    const target = document.getElementById("managementBody");
+    target.setAttribute('aria-busy','false');
+    target.innerHTML = html;
+    enhance(target);
   }
-  const table = (headers, rows) =>
-    rows.length
-      ? `<div class="table-scroll"><table class="manage-table"><thead><tr>${headers.map((h) => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((c) => `<tr>${c.map((v) => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody></table>`
-      : empty();
+  // Upgrade legacy action markup without replacing nodes or bound listeners.
+  function enhance(target) {
+    target.querySelectorAll(".readable-text").forEach(el=>{el.tabIndex=0;});
+    target.querySelectorAll('.btn').forEach(el => {
+      el.classList.add('ui-btn', el.classList.contains('danger') ? 'ui-btn-danger' : el.classList.contains('primary') ? 'ui-btn-primary' : 'ui-btn-secondary', el.classList.contains('sm') ? 'ui-btn-sm' : 'ui-btn-md');
+      el.classList.remove('btn','primary','danger','sm');
+      if(el.tagName === 'BUTTON' && !el.hasAttribute('type')) el.type='button';
+    });
+    target.querySelectorAll('.card').forEach(el => {el.classList.remove('card');el.classList.add('ui-panel');});
+    target.querySelectorAll('.ui-panel > header').forEach(el => el.classList.add('ui-section-header'));
+    target.querySelectorAll('.ui-panel > .body').forEach(el => {el.classList.remove('body');el.classList.add('ui-panel-body');el.removeAttribute('style');});
+    target.querySelectorAll('.dept-tree').forEach(el => el.classList.add('ui-hierarchy'));
+    target.querySelectorAll('.stats').forEach(el => el.classList.add('ui-metrics-host'));
+    target.querySelectorAll('details:not(.ui-disclosure)').forEach(el => el.classList.add('ui-disclosure'));
+    target.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]),select,textarea').forEach(el => el.classList.add('ui-input'));
+  }
+  const table = (headers, rows) => rows.length ? UI.table({label:headers.join(' / '),columns:headers.map(label=>({label})),rows:rows.map(cells=>({cells}))}) + '<div class="ui-table-feedback ui-muted" data-table-feedback role="status" aria-live="polite"></div>' : empty();
+  function failure(err, guard) {
+    if (!guard.current()) return;
+    const target = document.getElementById('managementBody');
+    if(!target) return;
+    target.setAttribute('aria-busy','false');
+    target.innerHTML=UI.callout({title:L('Could not load records','Chưa tải được bản ghi'),description:err.message || String(err),status:'danger',actions:UI.button({label:L('Retry loading','Tải lại danh sách'),action:'reload-management'})});
+    target.querySelector('[data-ui-action="reload-management"]').onclick=()=>route();
+  }
   function offset() {
     const parts = location.hash.split("/");
     const i = parts.indexOf("page");
@@ -67,16 +85,22 @@ const Management = (() => {
         .forEach((row) => {
           row.hidden = !row.textContent.toLocaleLowerCase().includes(term);
         });
+      host().querySelectorAll('[data-table-feedback]').forEach(el => {
+        const rows=[...el.previousElementSibling.querySelectorAll('tbody tr')];
+        const count=rows.filter(row=>!row.hidden).length;
+        el.textContent=count ? L(`${num(count)} records on this page`, `${num(count)} bản ghi trong trang này`) : L('No matching records on this page. Clear the search or use pagination.','Không có bản ghi phù hợp trong trang này. Xóa tìm kiếm hoặc dùng phân trang.');
+      });
     };
   }
-  const search = () =>
-    `<label class="manage-search">${esc(L("Search this page", "Tìm trong trang này"))}<input type="search" data-table-search placeholder="${esc(L("Name, ID or status", "Tên, ID hoặc trạng thái"))}"></label>`;
+  const search = () => UI.field({label:L("Search this page", "Tìm trong trang này"),type:'search',hint:L('Search the records on this page. Use pagination for other records.','Tìm trong các bản ghi của trang này. Dùng phân trang để xem bản ghi khác.')}).replace('<input ', '<input data-table-search ');
   function wireForm(id, action, guard, renderResult = record) {
     const el = document.getElementById(id);
     if (!el || !guard.current()) return;
     el.onsubmit = async (event) => {
       event.preventDefault();
-      if (!el.reportValidity()) return;
+      if (el.dataset.submitting === "true" || !el.reportValidity()) return;
+      el.dataset.submitting = "true";
+      el.setAttribute("aria-busy", "true");
       const submit = el.querySelector('button[type="submit"]'),
         result = el.querySelector(".form-result");
       submit.disabled = true;
@@ -101,6 +125,8 @@ const Management = (() => {
         result.textContent = err.message || String(err);
       } finally {
         submit.disabled = false;
+        el.dataset.submitting = "false";
+        el.setAttribute("aria-busy", "false");
       }
     };
   }
@@ -310,6 +336,8 @@ const Management = (() => {
     page,
     paint,
     body,
+    enhance,
+    failure,
     table,
     offset,
     pager,

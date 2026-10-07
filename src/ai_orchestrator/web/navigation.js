@@ -297,9 +297,9 @@ function showError(err) {
 
 async function render(r, mine) {
   if (MANAGEMENT_VIEWS.has(r.name)) {
-    await MANAGEMENT_VIEWS.get(r.name)(r, {
-      current: () => mine === renderToken,
-    });
+    const guard = {current: () => mine === renderToken};
+    try { await MANAGEMENT_VIEWS.get(r.name)(r, guard); }
+    catch(err) { Management.failure(err, guard); }
     return;
   }
   switch (r.name) {

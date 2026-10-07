@@ -60,7 +60,7 @@ const UI = (() => {
         ? `<select class="ui-input"${attributes}>${options.map((o) => `<option value="${E(o.value)}"${String(o.value) === String(value) ? " selected" : ""}>${E(o.label)}</option>`).join("")}</select>`
         : kind === "textarea"
           ? `<textarea class="ui-input" rows="3"${attributes}>${E(value)}</textarea>`
-          : `<input class="ui-input" type="${["text", "search", "email", "number", "password"].includes(type) ? type : "text"}" value="${E(value)}"${attributes}>`;
+          : `<input class="ui-input" type="${["text", "search", "email", "number", "password", "date", "datetime-local", "url"].includes(type) ? type : "text"}" value="${E(value)}"${attributes}>`;
     return `<div class="ui-field"><label for="${key}">${E(label)}${required ? ` <span class="ui-muted">(${L("required", "bắt buộc")})</span>` : ""}</label>${control}${description ? `<p class="ui-help${error ? " ui-error" : ""}" id="${key}-help">${E(description)}</p>` : ""}</div>`;
   }
   function choice({
@@ -89,7 +89,10 @@ const UI = (() => {
         .toLocaleUpperCase(),
     )}</span>`;
   const metrics = ({ label, items = [] } = {}) =>
-    `<div class="ui-metric-strip" role="group" aria-label="${E(label)}">${items.map(item => `<button type="button" data-ui-metric="${E(item.key || '')}" aria-pressed="${!!item.selected}"${item.emphasized ? ' data-emphasis="true"' : ''}><span>${E(item.label)}</span><strong${item.value === 0 ? ' data-zero="true"' : ''}>${E(item.value == null ? '—' : num(item.value))}</strong><small>${E(item.note || '')}</small></button>`).join('')}</div>`;
+    `<div class="ui-metric-strip" data-count="${items.length}" role="group" aria-label="${E(label)}">${items.map(item => {
+      const interactive=item.interactive !== false, tag=interactive?'button':'div';
+      return `<${tag}${interactive?` type="button" data-ui-metric="${E(item.key || '')}" aria-pressed="${!!item.selected}"`:' class="ui-metric-static"'}${item.emphasized ? ' data-emphasis="true"' : ''}><span>${E(item.label)}</span><strong${item.value === 0 ? ' data-zero="true"' : ''}>${E(item.value == null ? '—' : num(item.value))}</strong><small>${E(item.note || '')}</small></${tag}>`;
+    }).join('')}</div>`;
   const panel = ({
     title,
     description = "",
@@ -130,7 +133,7 @@ const UI = (() => {
   } = {}) =>
     `<article class="ui-list-row"${selected ? ' data-selected="true"' : ""}><div class="ui-row-main"><h3>${url ? `<a href="${E(href(url))}">${E(title)}</a>` : E(title)}</h3><p class="ui-muted">${E(meta)}</p>${error ? `<p class="ui-error">${E(error)}</p>` : ""}</div><div class="ui-row-actions">${status ? badge(status, statusTone) : ""}${actions}</div></article>`;
   const table = ({ label, columns = [], rows = [] } = {}) =>
-    `<div class="ui-table-scroll" role="region" tabindex="0" aria-label="${E(label)}"><table class="ui-table"><caption class="ui-sr">${E(label)}</caption><thead><tr>${columns.map((c, i) => `<th scope="col"${c.sortable ? ' aria-sort="none"' : ""}>${c.sortable ? `<button type="button" data-ui-sort="${i}" aria-label="${E(L("Sort by ", "Sắp xếp theo ") + c.label)}">${E(c.label)}${icon("chevron-down")}</button>` : E(c.label)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr${row.selected ? ' data-selected="true"' : ""}>${row.cells.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    `<div class="ui-table-scroll" role="region" tabindex="0" aria-label="${E(label)}"><table class="ui-table"><caption class="ui-sr">${E(label)}</caption><thead><tr>${columns.map((c, i) => `<th scope="col"${c.sortable ? ' aria-sort="none"' : ""}>${c.sortable ? `<button type="button" data-ui-sort="${i}" aria-label="${E(L("Sort by ", "Sắp xếp theo ") + c.label)}">${E(c.label)}${icon("chevron-down")}</button>` : E(c.label)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr${row.selected ? ' data-selected="true"' : ""}>${row.cells.map((cell,i) => `<td data-label="${E(columns[i]?.label || "")}">${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   function tabs({ label, items = [], selected = 0, segmented = false } = {}) {
     const key = id("tabs");
     if (segmented)
@@ -170,7 +173,7 @@ const UI = (() => {
     if (!logs.has(root)) logs.set(root, root.querySelector("code").textContent);
     return logs.get(root);
   };
-  function toast(message, { status = "info", duration = 6000 } = {}) {
+  function toast(message, { status = "info", duration = 6000, actionLabel = "", actionHref = "" } = {}) {
     let host = document.getElementById("uiToastRegion");
     if (!host) {
       host = document.createElement("div");
@@ -184,7 +187,7 @@ const UI = (() => {
     item.className = "ui-toast";
     item.dataset.tone = tone(status);
     item.setAttribute("role", status === "danger" ? "alert" : "status");
-    item.innerHTML = `${icon(status === "danger" ? "circle-alert" : "circle-check")}<span>${E(message)}</span>${iconButton({ label: L("Dismiss notification", "Đóng thông báo"), icon: "x" })}`;
+    item.innerHTML = `${icon(status === "danger" ? "circle-alert" : "circle-check")}<span>${E(message)}${actionHref ? ` <a href="${E(href(actionHref))}">${E(actionLabel || L("Open","Mở"))}</a>` : ""}</span>${iconButton({ label: L("Dismiss notification", "Đóng thông báo"), icon: "x" })}`;
     host.append(item);
     let timer;
     const close = () => {
@@ -265,6 +268,7 @@ const UI = (() => {
       if (action === "close-modal") close();
       if (action === "confirm-modal") {
         const control = event.target.closest("button");
+        if(control.disabled) return;
         control.disabled = true;
         control.setAttribute("aria-busy", "true");
         try {
