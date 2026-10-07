@@ -159,9 +159,9 @@ const UI = (() => {
       icon: "arrow-left",
       action: "back",
     });
-  const logViewer = ({ label, text } = {}) => {
+  const logViewer = ({ label, text, filter = true, copyLabel } = {}) => {
     const key = id("log");
-    return `<section class="ui-log" aria-labelledby="${key}"><h3 id="${key}">${E(label)}</h3><div class="ui-toolbar"><label>${E(L("Filter lines", "Lọc dòng"))}<input class="ui-input" type="search" data-ui-log-filter></label><label class="ui-choice"><input type="checkbox" data-ui-log-wrap checked><span>${E(L("Wrap lines", "Xuống dòng"))}</span></label>${button({ label: L("Copy all", "Sao chép toàn bộ"), icon: "copy", action: "copy-log" })}</div><pre data-wrap="true" tabindex="0" role="region" aria-label="${E(L("Log content: ", "Nội dung nhật ký: ") + label)}"><code>${E(text)}</code></pre><p class="ui-muted" data-ui-log-count aria-live="polite"></p></section>`;
+    return `<section class="ui-log" aria-labelledby="${key}"><h3 id="${key}">${E(label)}</h3><div class="ui-toolbar">${filter ? `<label>${E(L("Filter lines", "Lọc dòng"))}<input class="ui-input" type="search" data-ui-log-filter></label>` : ""}<label class="ui-choice"><input type="checkbox" data-ui-log-wrap checked><span>${E(L("Wrap lines", "Xuống dòng"))}</span></label>${button({ label: copyLabel || L("Copy all", "Sao chép toàn bộ"), icon: "copy", action: "copy-log" })}</div><pre data-wrap="true" tabindex="0" role="region" aria-label="${E(L("Log content: ", "Nội dung nhật ký: ") + label)}"><code>${E(text)}</code></pre><p class="ui-muted" data-ui-log-count aria-live="polite"></p></section>`;
   };
   const logs = new WeakMap();
   const logSource = (root) => {

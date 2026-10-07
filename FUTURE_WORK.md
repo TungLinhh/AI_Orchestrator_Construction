@@ -32,21 +32,29 @@ PASS 191 checks/24 tổ hợp/35 ảnh; lint/typecheck đạt, full suite một 
 indicator/tooltip, topbar VI/EN, mode/sáu màu/density, workspace thật, callout
 xác thực và mobile drawer. Handoff: [04-shell.md](docs/ui-refresh/04-shell.md).
 
-**Mốc kế tiếp:** Giai đoạn 4 — Công việc và chi tiết task theo mục 8.3–8.4.
+**Mốc đã hoàn tất:** Giai đoạn 4 — Công việc/detail/form. Browser PASS
+131 checks/24 tổ hợp/44 ảnh, supplement PASS 14 checks. Register keyed,
+100 hàng ban đầu/tải thêm, search/filter/sort toàn corpus, copy lỗi/ID,
+validation/loading, nhật ký có phạm vi trang và controller cũ. Handoff:
+[05-work.md](docs/ui-refresh/05-work.md). Lint/typecheck đạt; full suite một lượt
+**3.477 passed/8 skipped/1 deselected** (547,38s). Không nghiệm thu model/mail/workflow thật bằng fixture UI.
 
-1. Chuyển bốn chỉ số thành dải thống nhất, click lọc; nhấn mạnh Chờ bạn và giữ
-   nghĩa dữ liệu thật (settled không tự đổi thành thành công).
-2. Form giao việc disclosure, field/hint/error/loading; phím tắt và focus.
-3. Toolbar search/clear, segmented có count, sort, định dạng số theo locale.
-4. Hàng có vùng trạng thái, người giữ, ID sao chép, việc con, lý do lỗi mở rộng;
-   j/k/Enter và hành động nhanh chỉ cho khả năng sản phẩm đang hỗ trợ.
-5. Bỏ nested scroll, xử lý incremental/contain hoặc tải thêm để vài nghìn hàng
-   mượt; đo với corpus thật, giữ selection và scroll khi cập nhật.
-6. Detail cho input/output/log/approval; dùng controller workflow sẵn có,
-   không đổi authority hoặc tạo bước phê duyệt giả trong đợt UI refresh.
-7. Chụp trước/sau, kiểm keyboard/mobile/empty/error, đo hiệu năng rồi chạy cổng
-   cuối một lượt. GĐ5 chuyển từng trang; GĐ6 keyboard/mobile/a11y toàn app;
-   GĐ7 đánh bóng/nghiệm thu.
+**Mốc kế tiếp:** Giai đoạn 5 — chuyển từng trang, một trang một commit.
+
+1. Sự cố: hàng lỗi mở rộng/copy, filter/count, loading/empty/error, owner và
+   hướng xử lý; giữ route/action hiện có và dùng lại UI components.
+2. Phê duyệt: giải thích yêu cầu, quyết định/authority, confirmation có context,
+   trạng thái gửi/lỗi và thông báo đang có. Không giả phê duyệt, đổi quyền hoặc
+   tạo cơ chế notification backend trong phạm vi refresh.
+3. Tổ chức/đơn vị: hierarchy, hồ sơ agent, form và trạng thái; sửa deep link
+   `#/dept/<agent_id>` thành key phòng ban thật sau khi xác minh mapping.
+4. Quy trình cùng màn campaign/workflow/blueprint/intake: giữ thứ tự stage,
+   human gates và mode simulation/live; input/output/log dùng cùng component.
+5. Thư viện, Dữ liệu nghiệp vụ, Vận hành, Cài đặt: từng trang và màn con, giữ
+   thao tác thật; tiếng Việt/EN, error/loading/empty, mobile và keyboard.
+6. Mỗi commit có ảnh trước/sau và gate đúng scope. GĐ6 làm command palette,
+   shortcut help, responsive/a11y/motion toàn app; GĐ7 tự phản biện, CSS cleanup,
+   ma trận nghiệm thu và FINAL-REPORT. Chưa coi GĐ0–4 là toàn app đã hoàn tất.
 
 Các mục nghiệp vụ bên dưới là roadmap riêng; không mở rộng phạm vi UI refresh.
 

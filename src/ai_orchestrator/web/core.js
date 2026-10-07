@@ -607,6 +607,7 @@ function langSet(v) {
   if (state.connection) setConn(...state.connection);
   paintSidebar();
   window.UIShell?.refresh();
+  window.WorkUI?.refresh();
 }
 function paintStatic() {
   const vi = state.lang === "vi";
@@ -842,7 +843,7 @@ function setHTML(id, html) {
 }
 function num(v, dp) {
   if (v === null || v === undefined) return "—";
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(state.lang === "vi" ? "vi-VN" : "en-GB", {
     maximumFractionDigits: dp ?? 0,
   }).format(v);
 }

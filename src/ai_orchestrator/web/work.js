@@ -1091,8 +1091,7 @@ function waitingTone(w) {
 
    An SVG rather than nested divs, because a delegation graph is a
    graph: the edges are the evidence, and a list of edges is a table
-   of a tree. `role="img"` with a label, so a screen reader gets the
-   shape rather than eight empty rectangles. */
+   of a tree. A labelled group exposes the task links to screen readers. */
 function delegationGraph(root, tree, delegations) {
   if (!root) return "";
   /* The **structure** comes from `tasks.parent_task_id`, not from
@@ -1188,7 +1187,7 @@ function delegationGraph(root, tree, delegations) {
     .join("");
 
   const h = 56 + placed.size * ROW;
-  return `<svg viewBox="0 0 ${W} ${h}" width="100%" height="${h}" role="img"
+  return `<svg viewBox="0 0 ${W} ${h}" width="100%" height="${h}" role="group"
       aria-label="${t_fmt("task.graph_aria", "Delegation graph: {t} tasks, {d} delegations", { t: placed.size, d: delegations.length })}">
     <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
       markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -1232,104 +1231,30 @@ async function renderGive(id, refresh = true) {
   if (_ac) _ac.hidden = true;
   const _ae = $("taskAnswerEmpty");
   if (_ae) _ae.hidden = true;
+  state.taskId = null;
+  taskReport = null;
   $("taskTitle").textContent = "Task";
   $("taskSub").textContent = "";
   $("runThisState").textContent = "";
 
-  let q = {};
+  let q;
+  window.WorkUI?.loading(!registerSnapshot);
   try {
     q = refresh || !registerSnapshot ? await loadRegister() : registerSnapshot;
     registerSnapshot = q;
   } catch (err) {
-    showError(err);
-  }
-
-  if (parseHash().arg || !["give", "console"].includes(parseHash().name))
+    window.WorkUI?.error(err);
+    if (!window.WorkUI) showError(err);
+    watchGive();
     return;
-  const needsYou = q.needs_you ?? 0;
-  setHTML(
-    "workStats",
-    statTile(
-      tr("reg.waiting", "Waiting on you"),
-      num(needsYou),
-      tr("reg.waiting_sub", "need a decision or an owner"),
-      needsYou ? "warn" : "good",
-    ) +
-      statTile(
-        tr("reg.agent", "With an agent"),
-        num(q.in_flight ?? 0),
-        tr("reg.agent_sub", "running or assigned"),
-      ) +
-      statTile(
-        tr("reg.settled", "Settled"),
-        num(q.settled ?? 0),
-        tr("reg.settled_sub", "finished and reported"),
-      ) +
-      statTile(
-        tr("reg.total", "Total"),
-        num(q.total ?? 0),
-        tr("reg.total_sub", "tasks on the register"),
-      ),
-  );
-
-  const badge = $("navWorkCount");
-  if (badge) {
-    badge.textContent = needsYou ? String(needsYou) : "";
-    badge.hidden = true;
+  } finally {
+    window.WorkUI?.loading(false);
   }
-
-  const all = q.items || [];
-  for (const t of all) taskNames.set(t.id, t.title);
-  const filtered = !giveFilter
-    ? all
-    : all.filter((t) =>
-        giveFilter === "you"
-          ? t.waiting_on === "you"
-          : giveFilter === "in_flight"
-            ? t.waiting_on === "an_agent"
-            : t.waiting_on === "nobody",
-      );
-  const query = $("taskSearch").value.trim().toLocaleLowerCase();
-  const rows = filtered.filter(
-    (t) =>
-      !query ||
-      [t.title, t.owner_name, t.id].some((v) =>
-        String(v || "")
-          .toLocaleLowerCase()
-          .includes(query),
-      ),
-  );
-  $("registerCount").textContent = `${num(rows.length)} / ${num(q.total || 0)}`;
-
-  $("giveEmpty").hidden = rows.length > 0;
-  $("giveList").hidden = rows.length === 0;
-  // Dựng feed ngay khi mở màn hình, không chờ khi có frame. Nếu không, một người mở
-  // Give work lúc không ai làm việc gì thấy trống trơn rồi tưởng hỏng — và nếu chờ
-  // frame thì lúc đang có việc thì mới thấy, tức là feed chỉ hữu ích đúng lúc
-  // không cần đến nó nhất.
+  if (parseHash().arg || !["give", "console"].includes(parseHash().name)) return;
+  for (const item of q.items || []) taskNames.set(item.id, item.title);
+  const badge=$("navWorkCount"); if(badge) badge.hidden=true;
+  window.WorkUI?.list(q);
   renderActivity();
-  setHTML(
-    "giveList",
-    rows
-      .map(
-        (it) => `
-    <a class="row" data-task="${esc(it.id)}" href="#/give/${encodeURIComponent(it.id)}">
-      <div class="grow">
-        <div class="t">${esc(it.title)}</div><div class="task-id">${esc(it.id)}</div>
-        <div class="s">${esc(it.task_type)} · ${esc(statusName(it.status))}
-          ${it.owner_name ? t_fmt("row.held", " · held by {n}", { n: esc(it.owner_name) }) : tr("row.noowner", " · nobody holds it")}
-          ${it.delegated ? t_fmt("row.handed", " · handed to {n}", { n: it.delegated }) : ""}
-          ${it.children ? t_fmt("row.subs", " · {n} subtask(s)", { n: it.children }) : ""}</div>
-        ${it.last_error ? `<div class="s">${t_fmt("row.refused", "refused: {e}", { e: esc(String(it.last_error).slice(0, 120)) })}</div>` : ""}
-      </div>
-      <div class="r">
-        ${it.approvals_waiting ? `<span class="pill bad">${t_fmt("row.todecide", "{n} to decide", { n: it.approvals_waiting })}</span>` : ""}
-        <span class="t-${waitingTone(it.waiting_on) || "muted"}">${esc(it.waiting_on === "you" ? tr("row.you", "you") : it.waiting_on === "an_agent" ? tr("row.agent", "an agent") : tr("row.settled", "settled"))}</span>
-      </div>
-    </a>`,
-      )
-      .join(""),
-  );
   // Keep watching while the list is on screen; route() stops it on leave.
   watchGive();
 }
@@ -1346,13 +1271,16 @@ async function renderGive(id, refresh = true) {
 let givePoll = null;
 function watchGive() {
   if (givePoll) return;
+  let pending = false;
   givePoll = setInterval(async () => {
     if (parseHash().name !== "give" || parseHash().arg) return;
+    if (pending) return;
+    pending = true;
     try {
       await renderGive();
     } catch {
       /* the next tick retries */
-    }
+    } finally { pending = false; }
   }, 10000);
 }
 
@@ -1439,81 +1367,20 @@ function humanKey(k) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 function renderBanner(t, s) {
-  const el = $("taskBanner");
-  if (!el) return;
-  const status = t.status || "unknown";
-  if (
-    ["failed", "blocked", "canceled", "cancelled", "expired"].includes(status)
-  ) {
-    const kind = t.failure_category || "failed";
-    const explanation =
-      kind === "model_error"
-        ? tr(
-            "task.model_unavailable",
-            "No model could answer this attempt. Open the error details for each provider's reason.",
-          )
-        : tr(
-            "task.stopped",
-            "This attempt stopped. Read the reason and recorded steps before retrying.",
-          );
-    setHTML(
-      "taskBanner",
-      `<div class="card alarm"><div class="body">
-      <div class="t"><span class="pill bad">${esc(statusName(status))}</span> ${explanation}</div>
-      ${t.last_error ? `<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--text-2)">${tr("task.error_details", "Error details")}</summary>${reasonBlock(t.last_error)}</details>` : ""}
-      <a href="#/give/${encodeURIComponent(t.id)}/steps">${tr("task.read_steps", "Read the recorded steps")}</a>
-    </div></div>`,
-    );
-    return;
-  }
-  if (status === "completed") {
-    const keys =
-      t.output && typeof t.output === "object" ? Object.keys(t.output) : [];
-    setHTML(
-      "taskBanner",
-      `
-      <div class="card good">
-        <div class="body">
-          <div class="t"><span class="pill ok">finished</span>
-            <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
-          <div class="s">${
-            keys.length
-              ? tr("task.answered_with", "Answered with: ") +
-                keys.map((k) => `<code>${esc(k)}</code>`).join(", ")
-              : tr(
-                  "task.finished_steps",
-                  "Finished. The steps below say what each hand did.",
-                )
-          }</div>
-        </div>
-      </div>`,
-    );
-    return;
-  }
-  setHTML(
-    "taskBanner",
-    `
-    <div class="card">
-      <div class="body">
-        <div class="t"><span class="pill">${esc(status)}</span>
-          <span style="font-weight:650">${esc(t.title || "This task")}</span></div>
-        <div class="s">${t.owner_name ? t_fmt("task.held", "Held by {n}. ", { n: esc(t.owner_name) }) : ""}
-          ${
-            (s.in_flight ?? 0)
-              ? tr(
-                  "task.inflight",
-                  "Work is in flight — this page keeps watching. ",
-                )
-              : status === "waiting_for_approval"
-                ? tr(
-                    "task.waiting",
-                    "Waiting for a human decision. Open Decisions to read the draft.",
-                  )
-                : tr("task.idle", "Ready to start when an owner is assigned.")
-          }</div>
-      </div>
-    </div>`,
-  );
+  const stopped=["failed","blocked","canceled","cancelled","expired"].includes(t.status);
+  const simulated=t.output?.scripted===true;
+  const description=stopped
+    ? (t.failure_category==="model_error" ? tr("task.model_unavailable","No model could answer this attempt.") : tr("task.stopped","This attempt stopped. Read the reason before retrying."))
+    : simulated ? UI.L("The recorded output is simulated. Review the results and steps before relying on it.","Đầu ra được ghi là mô phỏng. Xem kết quả và các bước trước khi sử dụng.")
+    : t.status==="completed" ? tr("task.finished_steps","Finished. The steps say what each hand did.")
+    : t.status==="waiting_for_approval" ? tr("task.waiting","Waiting for a human decision. Open Decisions to read the draft.")
+    : s.in_flight ? tr("task.inflight","Work is in flight; this page follows its status.")
+    : tr("task.idle","Ready to start when an owner is assigned.");
+  setHTML("taskBanner", UI.callout({title:statusName(t.status),description,
+    status:stopped?"danger":simulated?"warning":t.status==="completed"?"success":"info",
+    actions:stopped?`<a href="#/give/${encodeURIComponent(t.id)}/steps">${tr("task.read_steps","Read the recorded steps")}</a>`:""})+
+    (t.last_error?`<details class="work-detail-error"><summary>${tr("task.error_details","Error details")}</summary>${UI.logViewer({label:UI.L("Full error","Lỗi đầy đủ"),text:String(t.last_error),filter:false,copyLabel:UI.L("Copy error","Sao chép lỗi")})}</details>`:""));
+  UI.hydrate($("taskBanner"));
 }
 
 /** Full texts of step summaries, by index. Stored rather than embedded because a 10KB
@@ -1650,19 +1517,23 @@ function renderSteps(d) {
 function statusName(status) {
   return tr(`status.${status}`, String(status || "—").replaceAll("_", " "));
 }
-async function loadRegister() {
-  const first = await apiGet("/ceo/work", { limit: 200 });
-  const items = [...(first.items || [])];
-  while (items.length < first.total) {
-    const next = await apiGet("/ceo/work", {
-      limit: 200,
-      offset: items.length,
-    });
-    if (!next.items?.length) break;
-    items.push(...next.items);
-  }
-  return { ...first, items };
+let registerLoad = null;
+function loadRegister() {
+  if (registerLoad) return registerLoad;
+  registerLoad = (async () => {
+    const first = await apiGet("/ceo/work", { limit: 200 });
+    const items = [...(first.items || [])];
+    while (items.length < first.total) {
+      const next = await apiGet("/ceo/work", {limit:200, offset:items.length});
+      if (!next.items?.length) throw new Error(UI.L("The register stopped loading before all tasks arrived.", "Danh sách dừng tải trước khi nhận đủ công việc."));
+      items.push(...next.items);
+    }
+    return {...first, items:[...new Map(items.map(item=>[item.id,item])).values()]};
+  })();
+  registerLoad.finally(() => {registerLoad = null;}).catch(() => {});
+  return registerLoad;
 }
+
 function renderTaskSections(id) {
   const r = parseHash();
   const sections = [
@@ -1729,18 +1600,14 @@ function renderTaskLog() {
         : ""),
   );
   $("taskLogEmpty").hidden = events.length > 0;
-  setHTML(
-    "taskLog",
-    events
-      .map(
-        (e) => `<details class="log-entry" data-event="${esc(e.id)}">
-    <summary><span class="feed-dot ${feedKind(e)}"></span><time datetime="${esc(e.occurred_at || "")}">${esc(e.occurred_at ? new Date(e.occurred_at).toLocaleString(state.lang === "vi" ? "vi-VN" : "en-GB") : "—")}</time>
-    <div class="grow">${eventLine(e)}<span class="event-type">${esc(e.type || e.event_type || "—")}</span></div></summary>
-    <div class="event-body">${e.view?.task_id && e.view.task_id !== state.taskId ? `<a href="#/give/${encodeURIComponent(e.view.task_id)}/log">${esc(e.view.title || e.view.task_id)}</a>` : ""}
-    ${valueHTML({ id: e.id, actor: e.actor_id, subject: e.subject, data: e.data })}</div></details>`,
-      )
-      .join(""),
-  );
+  setHTML("taskLog", UI.logViewer({
+    label: UI.L("Displayed events on this page", "Sự kiện đang hiển thị trên trang này"),
+    text: events.map(e => `${e.occurred_at || "—"} · ${e.type || e.event_type || "—"}\n${JSON.stringify(e, null, 2)}`).join("\n\n"),
+    filter: false,
+    copyLabel: UI.L("Copy displayed events", "Sao chép sự kiện đang hiển thị"),
+  }));
+  UI.hydrate($("taskLog"));
+
 }
 async function renderApproval(id) {
   if (!id) return;
@@ -1796,6 +1663,7 @@ async function renderOneTask(id) {
     $("cancelTask").hidden = true;
     $("runThisHint").hidden = true;
   }
+  window.WorkUI?.detailLoading(!taskReport);
   let d = null;
   const eventOffset = parseHash().eventOffset || 0;
   try {
@@ -1803,7 +1671,10 @@ async function renderOneTask(id) {
       event_offset: eventOffset,
     });
   } catch (err) {
-    if (request === taskRenderRequest && parseHash().arg === id) showError(err);
+    if (request === taskRenderRequest && parseHash().arg === id) {
+      window.WorkUI?.detailError(err);
+      if (!window.WorkUI) showError(err);
+    }
     return;
   }
   if (
@@ -1816,9 +1687,10 @@ async function renderOneTask(id) {
     $("logSearch").value = "";
     $("logKind").value = "";
   }
+  window.WorkUI?.detailLoading(false);
   taskReport = d;
   const t = d.task || {};
-  $("taskIdentity").textContent = t.id || "";
+  setHTML("taskIdentity", UI.copyId(t.id || ""));
   $("taskRequest").textContent = t.goal || "";
   setHTML(
     "taskParentLinks",
@@ -1882,40 +1754,7 @@ async function renderOneTask(id) {
   }
 
   const s = d.summary || {};
-  setHTML(
-    "taskStats",
-    statTile(
-      tr("task.outcome", "Outcome"),
-      statusName(t.status),
-      t.task_type || "",
-      t.status === "completed" ? "good" : t.status === "failed" ? "alarm" : "",
-    ) +
-      statTile(
-        tr("task.handed", "Handed to"),
-        num(s.delegated_to ?? 0),
-        tr("task.handed_sub", "departments or agents"),
-      ) +
-      statTile(
-        tr("task.ran", "Ran"),
-        num(s.executed ?? 0),
-        t_fmt("task.ran_sub", "{n} failed", { n: s.failed ?? 0 }),
-        s.failed ? "alarm" : "good",
-      ) +
-      statTile(
-        tr("task.inflight_t", "In flight"),
-        num(s.in_flight ?? 0),
-        t_fmt("task.inflight_sub", "of {n} attempt(s)", { n: s.attempts ?? 0 }),
-        (s.in_flight ?? 0) ? "warn" : "good",
-      ) +
-      statTile(
-        tr("task.decisions_t", "Decisions"),
-        num(s.approvals_total ?? 0),
-        t_fmt("task.decisions_sub", "{n} waiting on a person", {
-          n: s.approvals_pending ?? 0,
-        }),
-        s.approvals_pending ? "warn" : "good",
-      ),
-  );
+  window.WorkUI?.taskStats(t,s);
 
   $("taskTitle").textContent = t.title || "Task";
   $("taskSub").textContent = [t.owner_name, statusName(t.status), t.task_type]
@@ -2196,9 +2035,7 @@ $("workFilter").addEventListener("click", async (e) => {
 $("giveFilter").addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-w]");
   if (!b) return;
-  giveFilter = b.dataset.w || "";
-  for (const x of $("giveFilter").children) x.classList.toggle("on", x === b);
-  await renderGive();
+  window.WorkUI?.filter(b.dataset.w || "");
 });
 
 document.addEventListener("click", async (e) => {

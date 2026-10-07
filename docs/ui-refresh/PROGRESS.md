@@ -11,6 +11,7 @@
 - **Giai đoạn 2 hoàn tất**: component API và style guide local-only đã qua cổng.
   Không đổi backend/API/schema hoặc hành vi nghiệp vụ.
 - **Giai đoạn 3 hoàn tất**: khung ứng dụng, browser gate và kiểm chứng cuối PASS.
+- **Giai đoạn 4 hoàn tất**: Công việc/detail/form, browser và kiểm chứng cuối PASS.
 
 ## Quyết định và giả định
 
@@ -61,9 +62,9 @@
 
 ## Bước tiếp theo
 
-1. Giai đoạn 4: trang Công việc và detail — dải chỉ số, form giao việc,
-   toolbar/filter/sort, hàng task, kết quả/log/approval và hiệu năng danh sách.
-2. Công việc/detail → từng trang → keyboard/mobile/a11y → nghiệm thu,
+1. Giai đoạn 5: chuyển từng trang, mỗi trang một commit. Bắt đầu Sự cố,
+   rồi Phê duyệt và Tổ chức/đơn vị.
+2. Từng trang → keyboard/mobile/a11y → nghiệm thu,
    theo cổng trong `01-design-plan.md`.
 
 ## Tự phản biện Giai đoạn 0
@@ -281,3 +282,67 @@
   Không chạy lại full suite cho chỉnh sửa whitespace/tài liệu.
 - API khảo sát fake/hash đã dừng, không để server này giả làm runtime model thật.
   GĐ4–7 chưa hoàn tất; không coi cổng shell là nghiệm thu toàn bộ sản phẩm.
+
+## Triển khai Giai đoạn 4 — 2026-10-07
+
+- Dải chỉ số bốn ô thống nhất, Chờ bạn nhấn 32px, 0 yên tĩnh, click lọc;
+  giữ nghĩa settled gồm cả thất bại. Search/clear, count, sort trên toàn corpus.
+- Register dựng 100 hàng rồi tải thêm 100; hàng keyed theo ID giữ node/focus/
+  disclosure khi dữ liệu không đổi. Bỏ nested scroll danh sách chính, toolbar
+  sticky; j/k/Enter, / và N tắt khi nhập liệu hoặc có overlay.
+- Hàng có badge, mã sao chép, owner từ tên thật, việc con/thời gian tương đối,
+  lỗi rút gọn mở rộng và sao chép toàn bộ. Empty/no-results/loading/error có
+  hướng xử lý; GET lỗi không thành KPI 0. Request đọc đồng thời được gộp.
+- Form giữ contract create/start_workflow:false/run, scenario/owner/type; có
+  validation, input retention, aria-busy/disabled, toast và inline lỗi. Không
+  ghi dữ liệu vận hành để thử form, model/mail/broker không được chạy nghiệm thu.
+- Detail dùng panel/callout/summary/copy-ID, request/output và nhật ký shared;
+  output scripted ghi rõ mô phỏng. Copy/filter sự kiện ghi rõ phạm vi trang.
+  Giữ các handler/thẩm quyền retry/cancel/decision và liên kết workflow cũ.
+- Handoff `05-work.md`; ảnh/receipt `artifacts/ui-shots/04-work/`. Cổng chính
+  đọc 1.192 task; phép đo sau đó đọc 1.193. Gate không có request ghi tới API;
+  corpus có thể thay đổi do hoạt động bên ngoài, không gán cho đợt refresh.
+
+## Tự phản biện Giai đoạn 4
+
+- Bỏ bốn thẻ KPI rời và khoảng trống margin cộng với gap của view; không tạo
+  thêm dashboard hay minh họa/avatar người giả. Một tiêu điểm ở Chờ bạn.
+- Search icon bị utility padding ghi đè; sửa qua component token field padding,
+  xem lại screenshot thật. Log toolbar bỏ margin mặc định để có nhịp gọn.
+- Axe phát hiện article không chấp nhận role listitem; đổi thành div/listitem.
+  SVG role img chứa task links tạo nested-interactive; chuyển labelled group,
+  giữ các liên kết và không vô hiệu hóa rule axe.
+- Gate kiểm return-selection quá sớm, khi hàng cũ còn đó trước GET. Chờ node
+  được đánh dấu sau render thật; không bỏ yêu cầu giữ selection/focus.
+- Dùng incremental rendering phù hợp zero-build và DOM keyed; không gọi đó là
+  virtualization. Search vẫn trên mọi trang API, không chỉ 100 hàng đang thấy.
+- Đo thực tế có startup long task và frame p95 mẫu sau cao hơn mẫu trước
+  (20,6 so với 16,9ms); chỉ báo chính xác: cached render 31→5,1ms, 0 long task
+  trong đoạn cuộn, không cuộn lồng. Không suy diễn SLA hoặc browser khác.
+- Harness đo baseline phải thay server placeholders org/auth/build/provider;
+  fixture run failure dùng error.message đúng contract. Sửa instrument, không
+  chỉnh backend để khớp dữ liệu giả. Node boot chỉ đọc, không full harness POST.
+- Browser PASS 131 checks/44 ảnh/24 tổ hợp; supplement PASS 14 checks gồm
+  create→run→detail, run lỗi, skeleton pending GET và 1920px. Axe sạch trong
+  scope audit, chưa thay cho GĐ6–7 toàn app. Full suite một lượt đã đạt (xem cổng cuối bên dưới).
+
+## Đóng cổng Giai đoạn 4 — 2026-10-07
+
+- **PASS, sẵn sàng Giai đoạn 5**. Browser 131 checks/24 tổ hợp/44 ảnh;
+  supplement 14 checks PASS, tổng thư mục có 50 ảnh gồm baseline và fixture.
+  Axe không violation trong các vùng đã audit; chưa nghiệm thu mọi trang.
+- Lint: **417 files formatted**, typecheck **177 source files** không lỗi.
+  Full suite đúng một lượt: **3.477 passed, 8 skipped, 1 deselected**, 10
+  cảnh báo openpyxl, **547,38s**. Skip như GĐ3: NATS chưa chạy và các nhánh cũ.
+- Node syntax/boot PASS với 13 request chỉ đọc. Receipt hash khớp source UI
+  cuối; không sửa sản phẩm sau gate để suy diễn bằng chứng cho source khác.
+- Browser form fixture chạy create→run→detail, busy/disabled và create thành
+  công/run lỗi. Mọi POST được fulfill local, không tạo task/run model thật.
+  Loading fixture chặn GET đang chờ; không viết vào DB để tạo trạng thái.
+- Baseline/cached/scroll measurement và giới hạn ghi ở `05-work.md` cùng
+  `performance-and-form.json`; không tuyên bố SLA hay live workflow acceptance.
+- API khảo sát fake/hash đã dừng; PostgreSQL được giữ nguyên. Không thêm E2E
+  broker vì không đổi event/delegation/approval handler hoặc boundary A2A.
+- Bước tiếp theo: **Giai đoạn 5, trang Sự cố trước**. Đọc BRIEF/PROGRESS,
+  giữ nhánh `ui/refresh`, audit hooks rồi chuyển riêng trang và kiểm cổng.
+  GĐ5–7 còn mở; UI refresh toàn app và nghiệp vụ live chưa được nghiệm thu.

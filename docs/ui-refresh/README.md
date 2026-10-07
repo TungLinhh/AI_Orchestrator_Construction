@@ -93,3 +93,17 @@ uv run --with playwright python scripts/ui-shell-gate.py --org ORG_ID --chromium
 ```
 
 Gate GĐ3 kiểm shell/menu/drawer; chưa thay thế nghiệm thu toàn app ở GĐ7.
+
+Trang Công việc Giai đoạn 4: [hành vi và handoff](05-work.md),
+[ảnh trước/sau và receipt](../../artifacts/ui-shots/04-work/index.html).
+
+```sh
+uv run --with playwright python scripts/ui-work-gate.py --org ORG_ID --chromium CHROMIUM_PATH
+uv run --with playwright python scripts/ui-work-performance.py --org ORG_ID --chromium CHROMIUM_PATH
+```
+
+Hai script này chỉ đọc dữ liệu server. Một số POST của form được route.fulfill
+ngay tại browser bằng `UI FIXTURE`; chúng không được chuyển tới API, tạo task,
+chạy model hoặc xác nhận phê duyệt thật. Performance script dựng baseline từ
+commit `7a7c860` trong thư mục tạm, không sửa checkout. Cổng GĐ4 không thay thế
+nghiệm thu toàn app ở GĐ7.

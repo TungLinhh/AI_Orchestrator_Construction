@@ -252,9 +252,10 @@ function handleFrame(payload) {
 
 /* ---------------- start a task ---------------- */
 $("runBtn").onclick = async () => {
+  const notice=(message,bad=false)=>UI.toast(message,{status:bad?"danger":"success"});
   const goal = $("goal").value.trim();
   if (!goal) {
-    toast(tr("give.saywhat", "Say what the company should work on."), true);
+    notice(tr("give.saywhat", "Say what the company should work on."), true);
     return;
   }
   const btn = $("runBtn");
@@ -306,7 +307,8 @@ $("runBtn").onclick = async () => {
     try {
       started = await apiPost(`/tasks/${encodeURIComponent(taskId)}/run`, {});
     } catch (err) {
-      toast(
+      if ($("formError")) { $("formError").hidden=false; $("formError").textContent=err.message; }
+      notice(
         t_fmt(
           "give.exists_not_running",
           "The task exists but nothing is running it: {e}",
@@ -320,12 +322,12 @@ $("runBtn").onclick = async () => {
     // The handle carries `started`, `already_running` and a cost estimate, and all three
     // change what a person should be told. "Running" on a refusal is the one that lies.
     if (started.already_running) {
-      toast(
+      notice(
         tr("give.already", "Already running — not starting a second one."),
         true,
       );
     } else if (started.started === false) {
-      toast(
+      notice(
         t_fmt(
           "give.queued_not_running",
           "Queued, but nothing is running it: {e}",
@@ -334,7 +336,7 @@ $("runBtn").onclick = async () => {
         true,
       );
     } else if (started.estimate_tokens) {
-      toast(
+      notice(
         t_fmt(
           "give.running_here",
           "Running here. About {s}s and {tok} tokens — this panel fills in as they report.",
@@ -345,7 +347,7 @@ $("runBtn").onclick = async () => {
         ),
       );
     } else {
-      toast(
+      notice(
         tr(
           "give.running_panel",
           "Running. This panel fills in as the agents report.",
@@ -357,7 +359,8 @@ $("runBtn").onclick = async () => {
     if (taskId) go(`#/give/${encodeURIComponent(taskId)}`);
     else go("#/give");
   } catch (err) {
-    toast(
+    if ($("formError")) { $("formError").hidden=false; $("formError").textContent=err.message; }
+    notice(
       t_fmt("run.couldnot_r", "Could not start: {e}", { e: err.message }),
       true,
     );

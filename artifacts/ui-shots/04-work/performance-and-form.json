@@ -1,0 +1,125 @@
+{
+  "baseline_revision": "7a7c860",
+  "measurements": {
+    "before": {
+      "initial": {
+        "corpus": 1193,
+        "rows": 1193,
+        "navigation_to_rows_ms": 1881.699999999255,
+        "startup_long_tasks": [
+          {
+            "start": 102.80000000074506,
+            "duration": 68
+          },
+          {
+            "start": 1190,
+            "duration": 614
+          }
+        ]
+      },
+      "cached_render_ms": 31,
+      "scroll": {
+        "duration_ms": 1099,
+        "frame_p95_ms": 16.899999998509884,
+        "long_tasks": [],
+        "rows": 1193,
+        "nested_scroll": true
+      }
+    },
+    "after": {
+      "initial": {
+        "corpus": 1193,
+        "rows": 100,
+        "navigation_to_rows_ms": 1326,
+        "startup_long_tasks": [
+          {
+            "start": 87.40000000223517,
+            "duration": 106
+          },
+          {
+            "start": 863,
+            "duration": 118
+          },
+          {
+            "start": 984.9000000022352,
+            "duration": 278
+          }
+        ]
+      },
+      "cached_render_ms": 5.100000001490116,
+      "scroll": {
+        "duration_ms": 1122.2999999970198,
+        "frame_p95_ms": 20.600000001490116,
+        "long_tasks": [],
+        "rows": 1193,
+        "nested_scroll": false
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "before-read-only-no-errors",
+      "passed": true,
+      "blocked": [],
+      "errors": []
+    },
+    {
+      "name": "after-read-only-no-errors",
+      "passed": true,
+      "blocked": [],
+      "errors": []
+    },
+    {
+      "name": "create-busy-state",
+      "passed": true
+    },
+    {
+      "name": "create-then-run-and-detail",
+      "passed": true
+    },
+    {
+      "name": "create-busy-state",
+      "passed": true
+    },
+    {
+      "name": "created-but-run-failed-visible",
+      "passed": true
+    },
+    {
+      "name": "width-1920-no-overflow",
+      "passed": true
+    },
+    {
+      "name": "pending-get-loading-state",
+      "passed": true
+    },
+    {
+      "name": "pending-get-loading-state",
+      "passed": true
+    },
+    {
+      "name": "pending-get-loading-state",
+      "passed": true
+    },
+    {
+      "name": "pending-get-loading-state",
+      "passed": true
+    },
+    {
+      "name": "pending-get-loading-state",
+      "passed": true
+    },
+    {
+      "name": "pending-get-loading-state",
+      "passed": true
+    },
+    {
+      "name": "fixture-writes-local-only",
+      "passed": true,
+      "blocked": [],
+      "errors": []
+    }
+  ],
+  "scope": "Single Chromium sample; local POST fixtures are not real execution",
+  "gate": "passed"
+}

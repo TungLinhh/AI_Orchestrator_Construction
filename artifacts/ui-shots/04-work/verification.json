@@ -1,0 +1,46 @@
+{
+  "gate": "passed",
+  "phase": 4,
+  "final_ui_acceptance": false,
+  "browser": {
+    "primary_checks": 131,
+    "primary_screenshots": 44,
+    "supplement_checks": 14,
+    "all_screenshots": 50,
+    "ui_source_sha256_matches": true
+  },
+  "lint": {
+    "status": "passed",
+    "formatted_files": 417
+  },
+  "typecheck": {
+    "status": "passed",
+    "source_files": 177
+  },
+  "pytest": {
+    "status": "passed",
+    "runs": 1,
+    "passed": 3477,
+    "skipped": 8,
+    "deselected": 1,
+    "warnings": 10,
+    "seconds": 547.38
+  },
+  "node": {
+    "syntax": "passed",
+    "boot": "passed",
+    "read_only_requests": 13
+  },
+  "operational_data_written_by_browser": false,
+  "model_mail_live_acceptance": false,
+  "owned_api_pid": 152101,
+  "owned_api_stopped": true,
+  "next_phase": 5,
+  "next_page": "Sự cố",
+  "note": "Only fixture wording in receipt corrected after gate; UI source remains identical.",
+  "log_sha256": {
+    "lint.log": "d91cd0ad997478f6b043a5cabff9163559f3c7c16cb8cbc25d70392bde01f2b5",
+    "typecheck.log": "e68792af43c0667696d069366b21aa98c2042c70d71ce1d85d8363247fed28ff",
+    "tests.log": "2b4e0e792661a092bfa7da13adfa955f42f1707468ccbd6cd70d61474e6df153"
+  }
+}
