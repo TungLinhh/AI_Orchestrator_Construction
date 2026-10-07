@@ -28,6 +28,7 @@ const UIPreferences = (() => {
     );
   } catch {}
   let current = normalize(saved);
+  let persisted = {...current};
   const system = window.matchMedia?.("(prefers-color-scheme: dark)");
   let revision = 0;
   const nextFrame = callback => window.requestAnimationFrame
@@ -62,6 +63,7 @@ const UIPreferences = (() => {
   document.addEventListener('DOMContentLoaded',ready,{once:true});
   function save(values) {
     current = normalize(values);
+    persisted = {...current};
     try {
       window.localStorage?.setItem(
         "onx-ui-preferences-v1",
@@ -72,7 +74,10 @@ const UIPreferences = (() => {
   }
   system?.addEventListener("change", apply);
   apply();
+  const resetPreview=()=>{current={...persisted};apply();};
+  window.addEventListener("hashchange",resetPreview);
   return {
+    resetPreview,
     ready,
     get: () => ({ ...current }),
     save,

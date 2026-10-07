@@ -121,6 +121,19 @@
         guard,
       );
       const preferenceForm = document.getElementById("ui-preferences");
+      const savedPreferences = {...prefs,language:state.lang};
+
+      const revert = document.createElement('button');
+      revert.type='button'; revert.className='ui-btn ui-btn-ghost ui-btn-md';
+      revert.textContent=L('Reset preview','Bỏ thay đổi xem trước');
+      preferenceForm.querySelector('.ui-toolbar').append(revert);
+      revert.onclick=()=>{
+        Object.entries(savedPreferences).forEach(([key,value])=>{
+          const field=preferenceForm.elements.namedItem(key);
+          if(field) field.value=value;
+        });
+        UIPreferences.preview(savedPreferences);
+      };
       preferenceForm.addEventListener("change", () => {
         UIPreferences.preview(Object.fromEntries(new FormData(preferenceForm)));
       });
@@ -128,6 +141,7 @@
         "ui-preferences",
         async (values) => {
           UIPreferences.save(values);
+          Object.assign(savedPreferences,UIPreferences.get(),{language:values.language});
           langSet(values.language);
         },
         guard,
