@@ -41,9 +41,9 @@ def _page(text: str) -> str:
     substring search over the whole document cannot tell a comment recording a mistake
     from code making one.
     """
-    body = re.search(r"<script[^>]*>(.*)</script>", text, re.S)
-    assert body is not None, "the page has no script"
-    return re.sub(r"/\*.*?\*/", "", body.group(1), flags=re.S)
+    bodies = re.findall(r"<script[^>]*>(.*?)</script>", text, re.S)
+    assert bodies, "the page has no script"
+    return re.sub(r"/\*.*?\*/", "", "\n".join(bodies), flags=re.S)
 
 
 def _interpolations(script: str) -> list[str]:

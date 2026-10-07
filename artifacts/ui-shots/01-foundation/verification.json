@@ -1,0 +1,39 @@
+{
+  "phase": 1,
+  "lint": "passed: 413 files formatted",
+  "typecheck": "passed: 177 source files",
+  "full_suite": {
+    "command": "make test",
+    "passed": 3477,
+    "skipped": 8,
+    "deselected": 1,
+    "warnings": 10,
+    "seconds": 630.98,
+    "skip_nodes": [
+      "tests/e2e/test_event_pipeline.py::TestRelayAndBus::test_relay_publishes_and_marks_published",
+      "tests/e2e/test_event_pipeline.py::TestRelayAndBus::test_duplicate_delivery_is_processed_once",
+      "tests/e2e/test_event_pipeline.py::TestRelayAndBus::test_failing_handler_dead_letters",
+      "tests/e2e/test_event_pipeline.py::TestRelayAndBus::test_non_retryable_failure_terminates_immediately",
+      "tests/e2e/test_event_pipeline.py::TestRelayResilience::test_quarantine_after_repeated_failure",
+      "tests/integration/test_event_stream.py::TestTheViewBlockSaysWhoAndWhat::test_a_delegation_frame_resolves_both_agent_names",
+      "tests/integration/test_process_spine.py::TestTheForbiddenZones::test_the_dossier_zones_are_recorded_as_hard_blocks",
+      "tests/integration/test_task_api_and_ui.py::TestTheConsoleCanSeeAnything::test_the_page_renders_a_delegation_event"
+    ]
+  },
+  "focused_ui_suite": {
+    "passed": 74,
+    "skipped": 1
+  },
+  "node_syntax": "passed: ordered head + body scripts",
+  "harness_boot": "passed: 12 read-only requests; full write-capable harness not run",
+  "browser_gate": "stage-1-gate.json",
+  "final_ui_acceptance": false,
+  "logs": {
+    "lint.log": "6c6a8a0ce68d538a3267334717a29e9ae4f9b3f6eb6f984e420fca8af7b3dcf8",
+    "typecheck.log": "e68792af43c0667696d069366b21aa98c2042c70d71ce1d85d8363247fed28ff",
+    "full-tests.log": "3aaee6c9c0ee31684546f03b4acd3e391358355cb50aa6087157d40f9a207201",
+    "targeted-tests.log": "47dc2e492ca4e28b89210c53aaa3e4b2605a7a93cf2b7a3b1e17306e8a8c7a9a",
+    "harness-boot.log": "ca80793c896969ffd8a7b59c873914a32c431ad6d79dbde6d77f158fb2f3dcdd",
+    "browser-gate.log": "57ef1f029999ed356ac898359b87b334299ec757b03bf916dfa3d36b44195236"
+  }
+}

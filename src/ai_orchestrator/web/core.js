@@ -583,9 +583,9 @@ Object.assign(STR.vi, {
 function langGet() {
   try {
     const v = window.localStorage && window.localStorage.getItem("ao-lang-v1");
-    return v === "vi" ? "vi" : "en";
+    return v === "en" ? "en" : "vi";
   } catch {
-    return "en";
+    return "vi";
   }
 }
 function langSet(v) {
@@ -1146,7 +1146,7 @@ async function apiPost(path, body) {
 function paintSidebar() {
   const collapsed = document.documentElement.classList.contains("sidebar-collapsed");
   const btn = $("sidebarToggle");
-  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="${collapsed ? "M6 3l5 5-5 5" : "M10 3L5 8l5 5"}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  btn.innerHTML = UIIcon(collapsed ? "panel-left-open" : "panel-left-close");
   btn.title = state.lang === "vi"
     ? (collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên")
     : (collapsed ? "Expand sidebar" : "Collapse sidebar");

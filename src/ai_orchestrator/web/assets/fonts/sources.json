@@ -1,0 +1,62 @@
+[
+  {
+    "family": "inter",
+    "package": "@fontsource/inter",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/inter/-/inter-5.3.0.tgz",
+    "sha256": "02034af8d41dcc67ac8eab88f642e129bb8a2e8922abf30229c32725f54d8fd6",
+    "files": [
+      "inter-latin-400-normal.woff2",
+      "inter-latin-500-normal.woff2",
+      "inter-latin-600-normal.woff2",
+      "inter-latin-ext-400-normal.woff2",
+      "inter-latin-ext-500-normal.woff2",
+      "inter-latin-ext-600-normal.woff2",
+      "inter-vietnamese-400-normal.woff2",
+      "inter-vietnamese-500-normal.woff2",
+      "inter-vietnamese-600-normal.woff2"
+    ],
+    "asset_sha256": {
+      "inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "inter-latin-500-normal.woff2": "f3779f1efccc4bdcdf9c0a02ab95bf6bd092ed09c48c08cedc725889edd1d19f",
+      "inter-latin-600-normal.woff2": "f9a06e79cd3a2a20951c0f0e28f66dd0e6d3fda73911d640a2125c8fcb78f21a",
+      "inter-latin-ext-400-normal.woff2": "6744a7f509ebc6ab220a6cd4ea77e898adf014f03d88dcda5d45d8a9feefb4e9",
+      "inter-latin-ext-500-normal.woff2": "2c6fbc42d315528beb06c1096df45487bf4186c4b78b8111d12c9c951f8acca2",
+      "inter-latin-ext-600-normal.woff2": "e4bdf67b0cd15ca9e184509275be95db942195d3cc2b17f6a0452f2adf75d0bf",
+      "inter-vietnamese-400-normal.woff2": "547ad9fdaeb0ae43487f4b8a02e47c36553c0c0cb73c8aa98f93b7b615f6b55d",
+      "inter-vietnamese-500-normal.woff2": "44e36aa5a8f12130029a29bb0e6695d0262b67446ce321e878b1fb56162b5de6",
+      "inter-vietnamese-600-normal.woff2": "1aeb94ae9db052a4a2fe6f3046f928cff1fdbd7abdf870a9a01c13cae6faeba5"
+    }
+  },
+  {
+    "family": "jetbrains-mono",
+    "package": "@fontsource/jetbrains-mono",
+    "version": "5.3.0",
+    "license": "OFL-1.1",
+    "tarball": "https://registry.npmjs.org/@fontsource/jetbrains-mono/-/jetbrains-mono-5.3.0.tgz",
+    "sha256": "1bbea47d1387406da5b6ccc4184cc61eae6851cc0db5c1d9bbd088ea9daa0b4a",
+    "files": [
+      "jetbrains-mono-latin-400-normal.woff2",
+      "jetbrains-mono-latin-500-normal.woff2",
+      "jetbrains-mono-latin-600-normal.woff2",
+      "jetbrains-mono-latin-ext-400-normal.woff2",
+      "jetbrains-mono-latin-ext-500-normal.woff2",
+      "jetbrains-mono-latin-ext-600-normal.woff2",
+      "jetbrains-mono-vietnamese-400-normal.woff2",
+      "jetbrains-mono-vietnamese-500-normal.woff2",
+      "jetbrains-mono-vietnamese-600-normal.woff2"
+    ],
+    "asset_sha256": {
+      "jetbrains-mono-latin-400-normal.woff2": "14425ba9c695763c1547f48a206b7aa60350a33ae23de09f0407877f3fcd89eb",
+      "jetbrains-mono-latin-500-normal.woff2": "cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a",
+      "jetbrains-mono-latin-600-normal.woff2": "400c6bfda18d5d14acad1c15d6dcb9f8e13c015e7286317e0b9a482539bef147",
+      "jetbrains-mono-latin-ext-400-normal.woff2": "505dfba8ecbe77e82765f36d317ed7ef4ac42719dc5f4ae68d1c483fd22d0d14",
+      "jetbrains-mono-latin-ext-500-normal.woff2": "879df9319f1cbf633bee1dd489e376a9e1e8c458f4abddcfe381cb83b5e6b027",
+      "jetbrains-mono-latin-ext-600-normal.woff2": "90899aac1c15552c028fd205376bb537a2a5205164fe8626efabad77d7260c20",
+      "jetbrains-mono-vietnamese-400-normal.woff2": "efc9e0df126ca6dd1c37a022bfe1d664d23b3fcaa32979d2028ecb4c074306c8",
+      "jetbrains-mono-vietnamese-500-normal.woff2": "bb7b98e92899b511e8f3e99c924142f4421896b2cbc9406c3727c25427662cc9",
+      "jetbrains-mono-vietnamese-600-normal.woff2": "3591494d22e7993ea776a7f3a6442f9fefe4cc84f88c025245dcbe1f0ef743d3"
+    }
+  }
+]

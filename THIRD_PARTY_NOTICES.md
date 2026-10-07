@@ -30,5 +30,25 @@ Corresponding source: https://github.com/dequelabs/axe-core/tree/v4.10.3.
 Distribution package: https://registry.npmjs.org/axe-core/-/axe-core-4.10.3.tgz.
 No changes were made to axe-core.
 
-Production font and icon assets will receive their own location and version
-entries when they are introduced in Giai đoạn 1.
+## Product fonts
+
+`src/ai_orchestrator/web/assets/fonts/` contains unmodified Inter and JetBrains
+Mono WOFF2 subsets from Fontsource 5.3.0 (latin, latin-ext, vietnamese;
+weights 400, 500, 600). Both use SIL Open Font License 1.1. Exact notices are
+preserved in `inter-LICENSE` and `jetbrains-mono-LICENSE`; package/archive and
+individual asset hashes are in `sources.json` alongside the assets.
+
+Fallback font metrics were measured locally. Arial and Courier New are not
+redistributed; the CSS uses a local font if available, then a system fallback.
+
+## Product icon sprite
+
+`src/ai_orchestrator/web/assets/icons/` retains 30 unmodified SVG source files
+from `lucide-static` 0.468.0, the complete LICENSE and `sources.json` with the
+pinned package URL/archive hash and individual SVG hashes. Lucide uses ISC;
+its license also includes MIT notices for Feather-derived portions.
+Upstream: https://lucide.dev/license and https://github.com/lucide-icons/lucide.
+
+`web/icons.svg` combines those paths into local symbols. Presentation uses
+currentColor and 1.5px stroke; original raw sources and notices are retained.
+No runtime package download, CDN or icon font is required.

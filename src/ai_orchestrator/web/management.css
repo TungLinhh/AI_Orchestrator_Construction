@@ -216,7 +216,7 @@
 }
 
 /* Compact navigation with a persistent, keyboard-accessible icon rail. */
-:root { --nav-w: 216px; }
+
 .nav { padding: 18px 10px 14px; }
 .brand { padding: 0 8px 14px; gap: 9px; }
 .brand .name { font-size: 15px; }
@@ -250,5 +250,5 @@
 
 .blueprint-steps { display: grid; gap: 10px; }
 .blueprint-step { border: 1px solid var(--line); border-radius: 9px; padding: 12px; }
-.blueprint-step > summary { cursor: pointer; font-weight: 650; }
+.blueprint-step > summary { cursor: pointer; font-weight: 600; }
 .blueprint-step > .manage-form { margin-top: 14px; }

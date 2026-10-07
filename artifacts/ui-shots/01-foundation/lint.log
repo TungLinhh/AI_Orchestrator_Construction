@@ -1,0 +1,4 @@
+uv run ruff check src tests scripts examples
+All checks passed!
+uv run ruff format --check src tests scripts examples
+413 files already formatted

@@ -2,48 +2,7 @@
 #navWorkCount {
   display: none;
 }
-:root {
-  --font: "Segoe UI", system-ui, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-  --bg: #f4f6f7;
-  --surface: #fff;
-  --surface-2: #f8faf9;
-  --nav-bg: #edf3f2;
-  --panel: var(--surface);
-  --panel-2: var(--surface-2);
-  --text: #172b3a;
-  --text-1: var(--text);
-  --text-2: #536777;
-  --text-3: #697b89;
-  --line: #dce4ec;
-  --line-strong: #b4c3cf;
-  --accent: #076c65;
-  --accent-2: #055a54;
-  --accent-soft: #dff1ec;
-  --late: #b42336;
-  --late-soft: #fff0f1;
-  --bad: var(--late);
-  --bad-soft: var(--late-soft);
-  --ok: #18794e;
-  --ok-soft: #e8f6ee;
-  --warn: #975a12;
-  --warn-soft: #fff5de;
-  --fill: #f0f4f8;
-  --fill-hover: #e8eef4;
-  --sunken: #f3f6f9;
-  --radius: 14px;
-  --radius-s: 8px;
-  --shadow: 0 10px 35px #172b3a12;
-  --nav-w: 224px;
-  --s1: 4px;
-  --s2: 8px;
-  --s3: 12px;
-  --s4: 16px;
-  --s5: 24px;
-  --s6: 32px;
-  --s7: 48px;
-  --font-mono: var(--mono);
-}
+
 
 * {
   box-sizing: border-box;
@@ -60,7 +19,7 @@ body {
   color: var(--text);
 }
 [hidden] {
-  display: none !important;
+  display: none;
 }
 a {
   color: var(--accent);
@@ -126,7 +85,7 @@ button {
   color: var(--text-2);
 }
 .t {
-  font-weight: 650;
+  font-weight: 600;
 }
 .t-bad,
 .err {
@@ -179,12 +138,12 @@ button {
   color: var(--surface);
   display: grid;
   place-items: center;
-  font-weight: 800;
+  font-weight: 600;
   border-radius: 11px;
 }
 .brand .name {
   font-size: 17px;
-  font-weight: 750;
+  font-weight: 600;
 }
 .brand .sub {
   font-size: 11px;
@@ -202,7 +161,7 @@ button {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-3);
-  font-weight: 700;
+  font-weight: 600;
 }
 .nav a {
   display: flex;
@@ -352,7 +311,7 @@ kbd {
 .eyebrow {
   color: var(--accent);
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.13em;
   margin-bottom: 6px;
@@ -413,14 +372,14 @@ kbd {
 }
 .stat .k {
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text-2);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 .stat .v {
   font-size: 27px;
-  font-weight: 750;
+  font-weight: 600;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
@@ -483,7 +442,7 @@ kbd {
   display: inline-block;
   border-radius: 6px;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 600;
   padding: 3px 8px;
   line-height: 1.5;
   background: var(--fill);
@@ -676,7 +635,7 @@ textarea {
   background: var(--surface-2);
 }
 .answer-row dt {
-  font-weight: 700;
+  font-weight: 600;
   font-size: 12px;
   color: var(--accent);
 }
@@ -772,7 +731,7 @@ details.issue > summary::-webkit-details-marker {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-3);
   margin-top: 8px;
 }
@@ -799,7 +758,7 @@ details.issue > summary::-webkit-details-marker {
 }
 .abox .n {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .abox .r {
   font-size: 12px;
@@ -1037,7 +996,7 @@ dialog::backdrop {
   background: transparent;
 }
 .nt {
-  font-weight: 650;
+  font-weight: 600;
   font-size: 13px;
 }
 .ns {
@@ -1094,7 +1053,7 @@ dialog::backdrop {
 .auxiliary > summary {
   padding: 18px 20px;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
 }
 .new-task[open] > summary {
   border-bottom: 1px solid var(--line);
@@ -1238,14 +1197,7 @@ dialog::backdrop {
     font-size: 11px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition: none !important;
-  }
-}
+
 .bar .track {
   height: 16px;
   background: var(--fill);
@@ -1266,23 +1218,6 @@ dialog::backdrop {
   display: none;
 }
 
-:root[data-density="compact"] .card > header,
-:root[data-density="compact"] .card > .body,
-:root[data-density="compact"] .manage-body {
-  padding: 12px 16px;
-}
-:root[data-density="compact"] td,
-:root[data-density="compact"] th {
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-:root[data-motion="reduced"] *,
-:root[data-motion="reduced"] *::before,
-:root[data-motion="reduced"] *::after {
-  animation: none !important;
-  transition: none !important;
-  scroll-behavior: auto !important;
-}
 .campaign-journey {
   display: flex;
   flex-wrap: wrap;
@@ -1319,10 +1254,7 @@ dialog::backdrop {
 }
 
 /* Workspace rhythm and curated appearance controls. */
-:root {
-  --radius: 12px;
-  --on-accent: #fff;
-}
+
 h1 {
   letter-spacing: -0.025em;
   line-height: 1.25;
@@ -1347,7 +1279,7 @@ h2 {
 }
 .palette-field legend {
   font-size: 17px;
-  font-weight: 650;
+  font-weight: 600;
   margin-bottom: 6px;
 }
 .palette-grid {
@@ -1506,7 +1438,7 @@ h2 {
   min-width: 0;
 }
 .intake-group legend {
-  font-weight: 650;
+  font-weight: 600;
   padding: 0 8px;
 }
 .intake-line {

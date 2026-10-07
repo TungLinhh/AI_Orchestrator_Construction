@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from sqlalchemy import select
 
 from ai_orchestrator.api.deps import ApiContext, get_context
@@ -350,6 +350,24 @@ def _build_stamp() -> str:
         return f"schema {head.split()[0]}" if head else "schema unknown"
     except Exception:
         return "schema unknown"
+
+
+@router.get("/ui/assets/{filename}", include_in_schema=False)
+async def ui_font(filename: str) -> FileResponse:
+    """Only the pinned, public WOFF2 subsets are served; never arbitrary web files."""
+    if not re.fullmatch(
+        r"(?:inter|jetbrains-mono)-(?:latin|latin-ext|vietnamese)-(?:400|500|600)-normal\.woff2",
+        filename,
+    ):
+        raise NotFoundError("unknown UI font")
+    path = WEB_ROOT / "assets" / "fonts" / filename
+    if not path.is_file():
+        raise NotFoundError("UI font is not installed")
+    return FileResponse(
+        path,
+        media_type="font/woff2",
+        headers={"Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @router.get("/ui", include_in_schema=False)

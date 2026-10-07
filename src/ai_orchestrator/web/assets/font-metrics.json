@@ -1,0 +1,20 @@
+{
+  "inter": {
+    "units": 2048,
+    "ascent": 1984,
+    "descent": 494,
+    "line_gap": 0,
+    "fallback": "arial.ttf",
+    "fallback_sha256": "b3658eadae55e682b5f69eb64c439c1ecc8f196c0bb8d4756d145d13bc86476a",
+    "size_adjust": 1.0527306967984935
+  },
+  "jetbrains-mono": {
+    "units": 1000,
+    "ascent": 1020,
+    "descent": 300,
+    "line_gap": 0,
+    "fallback": "cour.ttf",
+    "fallback_sha256": "e4a66a0259718d0c8f4b6e14319b4803ced45afbddf3abba8b8c3e2006856206",
+    "size_adjust": 0.9998372660699756
+  }
+}

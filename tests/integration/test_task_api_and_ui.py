@@ -231,7 +231,7 @@ def _js_without_comments(html: str) -> str:
     """
     import re
 
-    body = html.split("<script>")[-1].split("</script>")[0]
+    body = "\n".join(re.findall(r"<script[^>]*>(.*?)</script>", html, re.S))
     without_blocks = re.sub(r"/\*.*?\*/", " ", body, flags=re.S)
     return "\n".join(
         line for line in without_blocks.split("\n") if not line.strip().startswith("//")

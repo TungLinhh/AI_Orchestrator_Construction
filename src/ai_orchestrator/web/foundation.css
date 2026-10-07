@@ -1,0 +1,37 @@
+/* Foundation overrides; legacy pages migrate to component files in later phases. */
+@layer base {
+  body { font: var(--text-base)/1.6 var(--font); font-synthesis: none; }
+  :where(h1,h2,h3) { font-weight: 600; }
+  :where(code,pre,kbd,.mono) { font-family: var(--mono); }
+  :where(.v,.count,.task-id) { font-variant-numeric: tabular-nums; }
+}
+@layer utilities {
+  [hidden] { display: none; }
+  :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  .ui-icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+  .ui-icon { width: 20px; height: 20px; flex: 0 0 20px; vertical-align: middle; }
+  .big .ui-icon { width: 32px; height: 32px; }
+  .btn, .back, .seg button { min-height: var(--btn-height); transition: background-color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea,
+  .manage-form input:not([type="checkbox"]):not([type="radio"]), .manage-form select,
+  .manage-form textarea, .manage-search input { min-height: var(--field-height); padding: var(--field-padding); border-color: var(--color-border-control); }
+  .row { min-height: var(--row-min-height); padding: var(--row-padding); flex-shrink: 0; }
+  .card > header, .card > .body, .manage-body { padding: var(--panel-padding); }
+  .manage-table th, .manage-table td { padding: var(--cell-padding); }
+  .btn.primary:hover { color: var(--color-on-accent); }
+  .sidebar-collapsed { --nav-w: 64px; }
+  :root[data-ui-initializing] *, :root[data-ui-switching] *,
+  :root[data-ui-initializing] *::before, :root[data-ui-initializing] *::after,
+  :root[data-ui-switching] *::before, :root[data-ui-switching] *::after {
+    transition: none; animation: none;
+  }
+  :root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before,
+  :root[data-motion="reduced"] *::after { transition: none; animation: none; scroll-behavior: auto; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none; transition: none; scroll-behavior: auto; }
+  }
+  @media (max-width: 760px) {
+    input, select, textarea, .manage-form input, .manage-form select, .manage-form textarea,
+    .manage-search input { font-size: 16px; }
+  }
+}

@@ -51,9 +51,9 @@ const html = await readFile(PAGE, "utf8");
 const pageSource = html
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/(^|[^:])\/\/.*$/gm, "$1");
-const match = html.match(/<script[^>]*>([\s\S]*)<\/script>/);
-if (!match) { console.error("no script in the page"); process.exit(1); }
-const source = match[1];
+const scripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)];
+if (!scripts.length) { console.error("no script in the page"); process.exit(1); }
+const source = scripts.map(m => m[1]).join("\n");
 
 /* ------------------------------------------------------------------ the DOM shim
    Deliberately small and deliberately strict: `getElementById` on an id the page does
@@ -474,6 +474,8 @@ const failed = [];
 const sandbox = {
   document: document_,
   console,
+  // Existing English assertions use a saved locale; product defaults to Vietnamese.
+  localStorage: { getItem: key => key === "ao-lang-v1" ? "en" : null, setItem() {} },
   sessionStorage: { getItem: () => "", setItem() {}, removeItem() {} },
   URL,
   Intl,

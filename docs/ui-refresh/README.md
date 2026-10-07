@@ -5,7 +5,10 @@ chụp giao diện thật và thiết kế trước khi sửa sản phẩm.
 
 Giai đoạn 0 đã hoàn tất: 57 URL, 338 ảnh có metadata, sáu font đã kiểm tra và
 baseline tests đã chạy. [Receipt đóng cổng](../../artifacts/ui-shots/00-baseline/stage-0-gate.json)
-ghi nhận các lỗi hiện trạng; Giai đoạn 1 chưa triển khai.
+ghi nhận các lỗi hiện trạng. Nền tảng Giai đoạn 1 đã triển khai; xem
+[kiến trúc foundation](02-foundation.md) và [browser gate](../../artifacts/ui-shots/01-foundation/stage-1-gate.json).
+[Ảnh và bảng tương phản foundation](../../artifacts/ui-shots/01-foundation/index.html)
+đọc được offline.
 
 - [Bản brief gốc được lưu trong repo](BRIEF.md)
 - [Khảo sát và baseline](00-audit.md)
@@ -64,3 +67,13 @@ vào navigation sản phẩm.
 Giai đoạn 1 bổ sung layer/token/font/icon và prepaint preferences. Giai đoạn 2
 chốt API component và style guide; khi ấy tài liệu này sẽ được bổ sung bằng
 ví dụ lấy trực tiếp từ component đã chạy, tránh hướng dẫn một API chưa tồn tại.
+
+Kiểm tra nền tảng sau Giai đoạn 1, với API khảo sát đã chạy:
+
+```sh
+uv run --with playwright python scripts/ui-foundation-gate.py --org ORG_ID --chromium CHROMIUM_PATH
+```
+
+Gate chỉ đọc localhost, lưu ảnh/receipt tại `artifacts/ui-shots/01-foundation/`.
+Không chạy lại `ui-phase0-gate.py` trên source đã thay đổi: gate đó cố ý xác nhận
+source giữ nguyên baseline. Dùng receipt lịch sử Giai đoạn 0 để đối chiếu.

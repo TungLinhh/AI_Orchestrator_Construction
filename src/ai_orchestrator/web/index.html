@@ -1,13 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="auto">
+<html lang="vi" data-theme="auto">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta name="theme-color" id="themeColor" content="#f6f6f4">
 <title>Orchestrator</title>
+<script data-ui-prepaint>__UI_PREPAINT__</script>
+<link rel="preload" href="/api/v1/ui/assets/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/api/v1/ui/assets/inter-vietnamese-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>__CONSOLE_CSS__</style>
 </head>
 <body>
+__UI_ICONS__
 <a class="skip-link" id="skipContent" href="#mainContent">Skip to content</a>
 <div class="app">
 
@@ -20,21 +25,21 @@
         <div class="sub">O-Nexus</div>
       </div>
     </div>
-    <button class="btn ghost sm sidebar-toggle" id="sidebarToggle" aria-controls="navItems" aria-expanded="true" title="Collapse sidebar">‹</button>
+    <button class="btn ghost sm sidebar-toggle" id="sidebarToggle" aria-controls="navItems" aria-expanded="true" title="Collapse sidebar"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-panel-left-close"></use></svg></button>
     <div class="items" id="navItems">
       <div class="label" data-i18n="nav.workspace">Workspace</div>
-      <a href="#/give" data-nav="give"><span class="ic">▤</span><span data-i18n="nav.give">Work</span></a>
-      <a href="#/work/issues" data-nav="work"><span class="ic">!</span><span data-i18n="need.issues">Issues</span><span class="count" id="navIssueCount" hidden></span></a>
-      <a href="#/work/approvals" data-nav="work"><span class="ic">✓</span><span data-i18n="need.approvals">Approvals</span><span class="count" id="navApprovalCount" hidden></span></a>
+      <a href="#/give" data-nav="give"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-list-todo"></use></svg></span><span data-i18n="nav.give">Work</span></a>
+      <a href="#/work/issues" data-nav="work"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-circle-alert"></use></svg></span><span data-i18n="need.issues">Issues</span><span class="count" id="navIssueCount" hidden></span></a>
+      <a href="#/work/approvals" data-nav="work"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-circle-check"></use></svg></span><span data-i18n="need.approvals">Approvals</span><span class="count" id="navApprovalCount" hidden></span></a>
       <div class="label" data-i18n="nav.org">The organisation</div>
-      <a href="#/departments" data-nav="departments"><span class="ic">⬡</span><span data-i18n="nav.departments">Departments</span></a>
-      <a href="#/processes" data-nav="processes"><span class="ic">⇢</span><span data-i18n="nav.processes">Processes</span></a>
+      <a href="#/departments" data-nav="departments"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-network"></use></svg></span><span data-i18n="nav.departments">Departments</span></a>
+      <a href="#/processes" data-nav="processes"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-workflow"></use></svg></span><span data-i18n="nav.processes">Processes</span></a>
       <div class="label" data-i18n="nav.resources">Resources</div>
-      <a href="#/library/skills" data-nav="library"><span class="ic">▧</span><span data-i18n="nav.library">Library</span></a>
-      <a href="#/business/projects" data-nav="business"><span class="ic">▦</span><span data-i18n="nav.business">Business records</span></a>
+      <a href="#/library/skills" data-nav="library"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-library"></use></svg></span><span data-i18n="nav.library">Library</span></a>
+      <a href="#/business/projects" data-nav="business"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-database"></use></svg></span><span data-i18n="nav.business">Business records</span></a>
       <div class="label" data-i18n="nav.manage">Administration</div>
-      <a href="#/operations/models" data-nav="operations"><span class="ic">◉</span><span data-i18n="nav.operations">Operations</span></a>
-      <a href="#/settings" data-nav="settings"><span class="ic">⚙</span><span data-i18n="nav.settings">Settings</span></a>
+      <a href="#/operations/models" data-nav="operations"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-activity"></use></svg></span><span data-i18n="nav.operations">Operations</span></a>
+      <a href="#/settings" data-nav="settings"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-settings"></use></svg></span><span data-i18n="nav.settings">Settings</span></a>
       <span id="navWorkCount" hidden></span>
     </div>
     <div class="foot">
@@ -62,7 +67,7 @@
           marks it read.
         -->
         <span class="bellwrap">
-          <button class="btn ghost sm" id="notifBtn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+          <button class="btn ghost sm" id="notifBtn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-bell"></use></svg>
             <span class="count" id="notifCount" hidden></span></button>
           <div class="bellpanel" id="notifPanel" hidden>
             <div class="bellhead"><b data-i18n="bell.title">Notifications</b>
@@ -113,7 +118,7 @@
           </header>
           <div class="list" id="issueList"></div>
           <div class="empty" id="issueEmpty" hidden>
-            <div class="big">✓</div> <span data-i18n="need.issues_empty">Nothing has gone wrong. Every task either finished or
+            <div class="big"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-circle-check"></use></svg></div> <span data-i18n="need.issues_empty">Nothing has gone wrong. Every task either finished or
             is still being worked on.</span>
           </div>
         </div>
@@ -129,7 +134,7 @@
           </header>
           <div class="list" id="workList"></div>
           <div class="empty" id="workEmpty" hidden>
-            <div class="big">✓</div>
+            <div class="big"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-circle-check"></use></svg></div>
             <span data-i18n="need.approvals_empty">Nothing is waiting on a person.</span>
           </div>
         </div>

@@ -29,22 +29,37 @@ const UIPreferences = (() => {
   } catch {}
   let current = normalize(saved);
   const system = window.matchMedia?.("(prefers-color-scheme: dark)");
-  function apply() {
-    const root = document.documentElement;
-    if (!root) return;
-    const resolved =
-      current.theme === "auto"
-        ? system?.matches
-          ? "dark"
-          : "light"
-        : current.theme;
-    Object.assign(root.dataset, current, { colorMode: resolved });
-    root.style.colorScheme = resolved;
-    for (const [key, value] of Object.entries(
-      UIPalettes.tokens(current.palette, resolved),
-    ))
-      root.style.setProperty("--" + key, value);
+  let revision = 0;
+  const nextFrame = callback => window.requestAnimationFrame
+    ? window.requestAnimationFrame(callback) : setTimeout(callback, 0);
+  function ready() {
+    nextFrame(()=>nextFrame(()=>{ delete document.documentElement.dataset.uiInitializing; }));
   }
+  const root = document.documentElement;
+  if(root) {
+    root.dataset.uiInitializing='true';
+    try {
+      const language=window.localStorage?.getItem('ao-lang-v1');
+      root.lang=language==='en'?'en':'vi';
+      if(window.localStorage?.getItem('ao-sidebar-collapsed')==='true')
+        root.classList.add('sidebar-collapsed');
+    } catch { root.lang='vi'; }
+  }
+  function apply() {
+    if (!root) return;
+    const ticket=++revision;
+    root.dataset.uiSwitching='true';
+    const resolved=current.theme==='auto'?(system?.matches?'dark':'light'):current.theme;
+    Object.assign(root.dataset,current,{colorMode:resolved});
+    root.style.colorScheme=resolved;
+    const values=UIPalettes.tokens(current.palette,resolved);
+    for(const [key,value] of Object.entries(values))
+      root.style.setProperty('--primitive-'+key,value);
+    const meta=document.getElementById('themeColor');
+    if(meta) meta.setAttribute('content',values.bg);
+    nextFrame(()=>nextFrame(()=>{if(ticket===revision) delete root.dataset.uiSwitching;}));
+  }
+  document.addEventListener('DOMContentLoaded',ready,{once:true});
   function save(values) {
     current = normalize(values);
     try {
@@ -58,6 +73,7 @@ const UIPreferences = (() => {
   system?.addEventListener("change", apply);
   apply();
   return {
+    ready,
     get: () => ({ ...current }),
     save,
     preview: (values) => {

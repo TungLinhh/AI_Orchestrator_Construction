@@ -5,7 +5,8 @@
 **Giai đoạn 0 đã hoàn tất**, trên nhánh `ui/refresh`: 57 URL, 338 ảnh,
 24 trường hợp màu/mật độ, sáu font được kiểm tra. Receipt
 [stage-0-gate.json](artifacts/ui-shots/00-baseline/stage-0-gate.json) đã PASS. Theo yêu cầu
-mới, ưu tiên đi đúng thứ tự brief; chưa triển khai lại UI hoặc thay nghiệp vụ.
+mới, ưu tiên đi đúng thứ tự brief. Giai đoạn 1 đã triển khai nền tảng, browser
+gate PASS và kiểm chứng cuối đã qua; chưa thay nghiệp vụ.
 Nguồn đặc tả giữ nguyên tại [BRIEF.md](docs/ui-refresh/BRIEF.md).
 
 - Khảo sát: [00-audit.md](docs/ui-refresh/00-audit.md).
@@ -13,9 +14,16 @@ Nguồn đặc tả giữ nguyên tại [BRIEF.md](docs/ui-refresh/BRIEF.md).
 - Thiết kế và thứ tự tiếp theo: [01-design-plan.md](docs/ui-refresh/01-design-plan.md).
 - Ảnh hiện trạng: [index.html](artifacts/ui-shots/00-baseline/index.html).
 
-**Mốc kế tiếp:** Giai đoạn 1 — layers, tokens cho 12 tổ hợp, font/icon cục bộ,
-mật độ, motion tokens và áp preferences trước khi vẽ. Phải giữ hash routes,
-VI/EN, phím Esc và khóa cài đặt hiện có; cổng tương phản đạt trước Giai đoạn 2.
+**Mốc đã hoàn tất:** Giai đoạn 1 — layers, tokens cho 12 tổ
+hợp, Inter/JetBrains Mono và Lucide cục bộ, density/motion/prepaint. Browser gate
+đã đạt 170 checks; [receipt](artifacts/ui-shots/01-foundation/stage-1-gate.json).
+Lint/typecheck đạt; full suite 3.477 passed, 8 skipped (5 cần NATS, 3 skip cũ),
+1 deselected. Giữ bằng chứng và giới hạn thực thi tại PROGRESS.md.
+
+**Mốc kế tiếp:** Giai đoạn 2 — API component dùng semantic tokens, đủ variant/
+state và style guide ẩn local-only. Kiểm keyboard, VI/EN, 12 màu × 2 mật độ;
+axe sạch trên style guide trước khi chuyển shell. Không dùng cổng token để
+tuyên bố mọi trang legacy đã đạt a11y. Kiến trúc: [02-foundation.md](docs/ui-refresh/02-foundation.md).
 Sau đó làm component/style guide → shell → Công việc/detail → từng trang →
 keyboard/mobile/a11y → đánh bóng và nghiệm thu. Các mục nghiệp vụ bên dưới là
 roadmap riêng, không được dùng để mở rộng phạm vi đợt refresh này.

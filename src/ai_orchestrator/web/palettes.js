@@ -1,4 +1,4 @@
-/* Curated semantic colors. Contrast is checked by verify_console_browser.py. */
+/* Curated semantic colors. Contrast is checked by scripts/ui-foundation-gate.py. */
 const UIPalettes = (() => {
   const items = [
     {
@@ -40,64 +40,51 @@ const UIPalettes = (() => {
       id: "graphite",
       en: "Graphite",
       vi: "Than chì",
-      light: ["#495566", "#343f50", "#edf0f4"],
-      dark: ["#bccad9", "#dce5ee", "#2d3947"],
+      light: ["#303030", "#181818", "#ececec"],
+      dark: ["#eeeeee", "#ffffff", "#303030"],
     },
   ];
+  // Values here are palette primitives. CSS maps them to semantic/component tokens.
   const neutral = {
-    light: {
-      bg: "#f4f6f9",
-      surface: "#ffffff",
-      "surface-2": "#f8fafc",
-      "nav-bg": "#eef2f6",
-      text: "#1b293b",
-      "text-2": "#506176",
-      "text-3": "#5b6a7d",
-      line: "#dbe2eb",
-      "line-strong": "#a5b3c5",
-      fill: "#edf1f6",
-      "fill-hover": "#e3eaf2",
-      sunken: "#f0f3f8",
-      late: "#a52236",
-      "late-soft": "#fff0f2",
-      ok: "#246746",
-      "ok-soft": "#e9f5ed",
-      warn: "#86520e",
-      "warn-soft": "#fff5df",
-      "on-accent": "#ffffff",
-    },
-    dark: {
-      bg: "#111821",
-      surface: "#19232f",
-      "surface-2": "#1f2b39",
-      "nav-bg": "#151e29",
-      text: "#edf2f8",
-      "text-2": "#bfccd9",
-      "text-3": "#9eafc3",
-      line: "#334354",
-      "line-strong": "#5d738b",
-      fill: "#253343",
-      "fill-hover": "#304256",
-      sunken: "#131d28",
-      late: "#ffa0aa",
-      "late-soft": "#432831",
-      ok: "#9cddb5",
-      "ok-soft": "#243d31",
-      warn: "#efcc8e",
-      "warn-soft": "#403624",
-      "on-accent": "#111821",
-    },
+    light: {bg:'#f6f6f4',surface:'#ffffff','surface-2':'#f0f1ef','surface-3':'#e8e9e6',
+      'nav-bg':'#f0f1ef',text:'#20252b','text-2':'#59616b','text-3':'#5c646e',
+      line:'#d2d6da','line-strong':'#737b86',fill:'#eff0ed','fill-hover':'#e5e7e4',sunken:'#edefeb',
+      late:'#a32235','late-soft':'#fceef0','late-border':'#ad606d',
+      ok:'#256342','ok-soft':'#e9f4ec','ok-border':'#598365',
+      warn:'#7a4a08','warn-soft':'#fff4dd','warn-border':'#957034',
+      info:'#205782','info-soft':'#eaf2fa','info-border':'#64819d',
+      pending:'#525962','pending-soft':'#eff0ed','pending-border':'#737b86',
+      'on-accent':'#ffffff','shadow-color':'#20252b0d'},
+    dark: {bg:'#141619',surface:'#191c20','surface-2':'#20242a','surface-3':'#292d33',
+      'nav-bg':'#191c20',text:'#e7e9ed','text-2':'#c0c7d0','text-3':'#a6afb9',
+      line:'#343a43','line-strong':'#808b99',fill:'#252a31','fill-hover':'#30363e',sunken:'#111417',
+      late:'#ffadb7','late-soft':'#40252c','late-border':'#b97983',
+      ok:'#a3e1b8','ok-soft':'#20372b','ok-border':'#739f83',
+      warn:'#f1d29b','warn-soft':'#3a3020','warn-border':'#a38756',
+      info:'#a6d2f9','info-soft':'#223344','info-border':'#7095b6',
+      pending:'#c0c7d0','pending-soft':'#2c3036','pending-border':'#808b99',
+      'on-accent':'#141619','shadow-color':'#00000000'},
   };
-  function tokens(id, mode) {
-    const palette = items.find((p) => p.id === id) || items[0];
-    const resolved = mode === "dark" ? "dark" : "light";
-    const [accent, hover, soft] = palette[resolved];
-    return {
-      ...neutral[resolved],
-      accent,
-      "accent-2": hover,
-      "accent-soft": soft,
-    };
+  function tint(value, accent, amount) {
+    const rgb = s => [1,3,5].map(i=>parseInt(s.slice(i,i+2),16));
+    const base=rgb(value), hue=rgb(accent);
+    return '#' + base.map((v,i)=>Math.round(v*(1-amount)+hue[i]*amount)
+      .toString(16).padStart(2,'0')).join('');
   }
-  return { items, tokens };
+  function tokens(id, mode) {
+    const palette=items.find(p=>p.id===id)||items[0], resolved=mode==='dark'?'dark':'light';
+    const [accent,hover,soft]=palette[resolved];
+    const values={...neutral[resolved],accent,'accent-2':hover,'accent-soft':soft,
+      'accent-border':accent,focus:resolved==='light'?accent:hover};
+    const surfaces=['bg','surface','surface-2','surface-3','nav-bg','fill','fill-hover','sunken'];
+    if(palette.id==='graphite') {
+      // All structural colors are achromatic; semantic status colors stay independent.
+      for(const key of [...surfaces,'text','text-2','text-3','line','line-strong','on-accent']) {
+        const hex=values[key], n=Math.round([1,3,5].reduce((sum,i)=>sum+parseInt(hex.slice(i,i+2),16),0)/3);
+        values[key]='#'+n.toString(16).padStart(2,'0').repeat(3);
+      }
+    } else for(const key of surfaces) values[key]=tint(values[key],accent,0.02);
+    return values;
+  }
+  return {items,tokens};
 })();
