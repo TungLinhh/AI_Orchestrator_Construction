@@ -20,11 +20,17 @@ hợp, Inter/JetBrains Mono và Lucide cục bộ, density/motion/prepaint. Brow
 Lint/typecheck đạt; full suite 3.477 passed, 8 skipped (5 cần NATS, 3 skip cũ),
 1 deselected. Giữ bằng chứng và giới hạn thực thi tại PROGRESS.md.
 
-**Mốc kế tiếp:** Giai đoạn 2 — API component dùng semantic tokens, đủ variant/
-state và style guide ẩn local-only. Kiểm keyboard, VI/EN, 12 màu × 2 mật độ;
-axe sạch trên style guide trước khi chuyển shell. Không dùng cổng token để
-tuyên bố mọi trang legacy đã đạt a11y. Kiến trúc: [02-foundation.md](docs/ui-refresh/02-foundation.md).
-Sau đó làm component/style guide → shell → Công việc/detail → từng trang →
+**Mốc đã hoàn tất:** Giai đoạn 2 — component API và style guide ẩn local-only.
+148 checks browser, 24 tổ hợp, 34 ảnh, axe sạch trên style guide/overlays;
+full suite 3.477 passed/8 skipped/1 deselected. Receipt:
+[stage-2-gate.json](artifacts/ui-shots/02-components/stage-2-gate.json).
+Hướng dẫn: [03-components.md](docs/ui-refresh/03-components.md).
+
+**Mốc kế tiếp:** Giai đoạn 3 — sidebar gọn và thu gọn, topbar/breadcrumb/back,
+VI/EN dạng nhóm, menu giao diện, workspace switcher và callout local environment.
+Giữ thông tin quyền/xác thực và route; chụp trước/sau, kiểm focus/keyboard và
+mobile shell. Dùng component GĐ2; không đổi workflow hoặc nhận CV/procurement.
+Sau đó làm Công việc/detail → từng trang →
 keyboard/mobile/a11y → đánh bóng và nghiệm thu. Các mục nghiệp vụ bên dưới là
 roadmap riêng, không được dùng để mở rộng phạm vi đợt refresh này.
 

@@ -1,0 +1,55 @@
+@layer pages {
+  .ui-guide {
+    display: grid;
+    gap: var(--space-24);
+    max-width: 1120px;
+    margin-inline: auto;
+    min-width: 0;
+  }
+  .ui-guide-heading {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .ui-guide-heading h1 {
+    font-size: var(--text-xl);
+    line-height: 1.5;
+  }
+  .ui-guide-controls {
+    display: flex;
+    align-items: end;
+    gap: var(--space-12);
+    flex-wrap: wrap;
+  }
+  .ui-guide-controls .ui-field {
+    flex: 1 1 160px;
+  }
+  .ui-guide-section {
+    display: grid;
+    gap: var(--space-16);
+    padding-top: var(--space-24);
+    border-top: 1px solid var(--color-border-subtle);
+    min-width: 0;
+  }
+  .ui-guide-section > .ui-btn {
+    justify-self: start;
+  }
+  .ui-guide-section > h2 {
+    font-size: var(--text-md);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .ui-guide-section > .ui-toolbar:has(.ui-field) {
+    align-items: start;
+  }
+  .ui-guide-section .ui-field {
+    flex: 1 1 240px;
+  }
+  .ui-guide-radio {
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-control);
+    padding: var(--space-8) var(--space-16);
+  }
+  .ui-guide-radio legend {
+    font-size: var(--text-sm);
+  }
+}

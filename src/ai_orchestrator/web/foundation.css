@@ -14,7 +14,7 @@
   .btn, .back, .seg button { min-height: var(--btn-height); transition: background-color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
   input:not([type="checkbox"]):not([type="radio"]), select, textarea,
   .manage-form input:not([type="checkbox"]):not([type="radio"]), .manage-form select,
-  .manage-form textarea, .manage-search input { min-height: var(--field-height); padding: var(--field-padding); border-color: var(--color-border-control); }
+  .manage-form textarea, .manage-search input { min-height: var(--field-height); padding: var(--field-padding); }
   .row { min-height: var(--row-min-height); padding: var(--row-padding); flex-shrink: 0; }
   .card > header, .card > .body, .manage-body { padding: var(--panel-padding); }
   .manage-table th, .manage-table td { padding: var(--cell-padding); }

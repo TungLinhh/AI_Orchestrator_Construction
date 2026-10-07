@@ -1,0 +1,33 @@
+{
+  "phase": 2,
+  "lint": "passed: 414 files formatted",
+  "typecheck": "passed: 177 source files",
+  "full_suite": {
+    "command": "make test",
+    "passed": 3477,
+    "skipped": 8,
+    "deselected": 1,
+    "warnings": 10,
+    "seconds": 474.67,
+    "skip_conditions": "five require NATS; three pre-existing delegation stream/UI and hard-block catalogue skips"
+  },
+  "component_contract": "passed: local route guard, escaping, unsafe normalized links, icon whitelist, loading",
+  "node_syntax": "passed; ordered scripts",
+  "node_boot": "passed; 12 read-only requests, not full write-capable harness",
+  "browser": {
+    "checks": 148,
+    "matrix": 24,
+    "screenshots": 34,
+    "violations": 0,
+    "scope": "style guide and tested overlays; not shell/full-app a11y"
+  },
+  "final_ui_acceptance": false,
+  "logs": {
+    "lint.log": "9b3293a805b5eb3011c4a3470fc3d0d2b85e14b782d3ab709f0c557cae71685c",
+    "typecheck.log": "e68792af43c0667696d069366b21aa98c2042c70d71ce1d85d8363247fed28ff",
+    "full-tests.log": "cecd9402386f7adfde56c05e599238714c188b3f7cd36e015a942432553fd8d6",
+    "harness-boot.log": "ca80793c896969ffd8a7b59c873914a32c431ad6d79dbde6d77f158fb2f3dcdd",
+    "component-contract.log": "6a8cc4251ce1c28043b455c0bac5b1b5562292f21a94118d7dcd40106ad14f7f",
+    "browser-gate.log": "55c70590e9e1a5e241863dbd05853112d7bccf4d55e2c914de7d95381e2c5f62"
+  }
+}

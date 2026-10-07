@@ -10,6 +10,12 @@ ghi nhận các lỗi hiện trạng. Nền tảng Giai đoạn 1 đã triển k
 [Ảnh và bảng tương phản foundation](../../artifacts/ui-shots/01-foundation/index.html)
 đọc được offline.
 
+[API component Giai đoạn 2](03-components.md) mô tả helper, trust boundary,
+dialog/callback, log/copy và cách mở style guide local-only. Trang sản phẩm sẽ
+chuyển dần sang các component này từ Giai đoạn 3.
+[Ảnh và receipt Giai đoạn 2](../../artifacts/ui-shots/02-components/index.html)
+ghi 24 tổ hợp, overlays và mobile đã kiểm tra.
+
 - [Bản brief gốc được lưu trong repo](BRIEF.md)
 - [Khảo sát và baseline](00-audit.md)
 - [Kế hoạch thiết kế](01-design-plan.md)
@@ -65,8 +71,8 @@ evidence và test baseline đã có. Không đưa tài liệu hay prototype nghi
 vào navigation sản phẩm.
 
 Giai đoạn 1 bổ sung layer/token/font/icon và prepaint preferences. Giai đoạn 2
-chốt API component và style guide; khi ấy tài liệu này sẽ được bổ sung bằng
-ví dụ lấy trực tiếp từ component đã chạy, tránh hướng dẫn một API chưa tồn tại.
+có API `UI` và style guide local-only; ví dụ/helper và cách kiểm chứng nằm ở
+`03-components.md`. Từ Giai đoạn 3 dùng lại API này để chuyển từng vùng/từng trang.
 
 Kiểm tra nền tảng sau Giai đoạn 1, với API khảo sát đã chạy:
 

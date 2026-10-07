@@ -8,6 +8,8 @@
 - **Giai đoạn 0 hoàn tất**: khảo sát, baseline thật, thử font và kế hoạch thiết kế.
 - **Giai đoạn 1 hoàn tất**: foundation và browser gate PASS, đã qua kiểm chứng
   cuối. Thay đổi frontend và thêm GET font public; không đổi API nghiệp vụ/DB/schema.
+- **Giai đoạn 2 hoàn tất**: component API và style guide local-only đã qua cổng.
+  Không đổi backend/API/schema hoặc hành vi nghiệp vụ.
 
 ## Quyết định và giả định
 
@@ -58,7 +60,8 @@
 
 ## Bước tiếp theo
 
-1. Giai đoạn 2: component API và style guide local-only, đủ variant/state/axe.
+1. Giai đoạn 3: sidebar/topbar/banner/workspace switcher
+   và menu giao diện bằng các component đã kiểm chứng.
 2. Shell → Công việc/detail → từng trang → keyboard/mobile/a11y → nghiệm thu,
    theo cổng trong `01-design-plan.md`.
 
@@ -154,3 +157,64 @@
 - Không đổi schema, workflow, model, mail hoặc approval; không seed/reset dữ liệu
   vận hành. Server khảo sát fake/hash được dừng sau khi đóng cổng.
 - Giai đoạn 2–7 còn nguyên. Giai đoạn 1 không phải bản UI refresh hoàn chỉnh.
+
+## Triển khai Giai đoạn 2 — 2026-10-07
+
+- API `UI` cho bộ thành phần trong mục 8.1: control/form/choice, status/initials,
+  panel/row/table/toolbar, tabs/segmented với sliding indicator, overlay/dialog/
+  drawer/popover/menu/tooltip, toast/skeleton/empty/callout, breadcrumb/back/kbd,
+  code/log và ID sao chép. Hướng dẫn/trust boundary tại `03-components.md`.
+- `#/_styleguide` chỉ đăng ký khi hostname loopback; không thêm nav item. Host
+  remote không có route. Specimen ghi rõ dữ liệu mẫu; không submit business API.
+  Palette/mode/density chỉ preview và được khôi phục khi rời route.
+- Không chuyển hàng loạt renderer sang component ở giai đoạn này; GĐ3–5 dùng
+  lại API đã kiểm chứng. Source CSS mới ở layer components; defaults cũ của
+  button/input/heading/dialog/kbd chuyển xuống base, giữ class/id cũ.
+- Phát hiện generic legacy ở layer pages ghi đè foreground nút primary và error
+  border. Chuyển defaults xuống base và gỡ override border utility quá rộng;
+  không dùng !important để thắng selector.
+- Dialog trap Tab, trả focus, Escape đóng trước navigation; nested modal giữ
+  scroll lock đến lúc cuối. Confirm đang chờ khóa nút/aria-busy; khi lỗi giữ
+  input, mở lại nút và hiển thị alert trong modal, tránh toast ngoài top layer.
+- Menu bỏ disabled item và hỗ trợ Tab/Escape; tooltip định vị trong viewport.
+  Clipboard dùng API thật trong context browser; thất bại được báo lỗi, không
+  ghi toast thành công giả. Log copy cả source kể cả đang lọc.
+- Axe dùng bản cục bộ 4.10.3 đã lưu từ GĐ0. Audit root style guide và overlays;
+  không tuyên bố shell/trang legacy hoặc Safari/Firefox đã đạt a11y.
+
+## Tự phản biện Giai đoạn 2
+
+- Dùng section/đường chia để trình bày specimen; không bọc mỗi nhóm trong card
+  giống nhau, không thêm KPI/ảnh avatar giả hoặc dashboard mới.
+- Khi xem ảnh đã sửa tooltip làm tràn ngang và drawer mobile có khoảng trống
+  bên phải do legacy/native max-width. Bottom sheet phải đủ chiều rộng viewport,
+  vừa chiều cao nội dung; gate kiểm cả width thay vì chỉ kiểm vị trí đáy.
+- Bỏ chữ monospace nhỏ thêm 0,9 lần do base `code`; log mới giữ đúng 12px.
+- Compact điều khiển cả padding nút, không chỉ minimum height: sm/md/lg có
+  kích thước riêng, md thực tế 32/40px; coarse pointer giữ control ≥44px.
+- Link helper kiểm cùng origin sau khi URL được normalize, bao gồm biến thể
+  backslash/control-character, thay vì chỉ nhìn ký tự đầu của href.
+- Lỗi landmark-unique giữa vùng log và nội dung log được sửa bằng tên riêng;
+  không tắt rule axe. Tooltip được audit sau khi fade đã ổn định; không dùng
+  trạng thái đang mờ giữa animation để coi là palette sai hoặc tắt contrast rule.
+
+## Đóng cổng Giai đoạn 2 — 2026-10-07
+
+- **PASS, sẵn sàng Giai đoạn 3**. Browser gate: 148 checks, 24 palette/mode/
+  density combinations, 34 ảnh. Axe không có violation ở root style guide của
+  ma trận, bản EN/mobile, dialog/drawer và tooltip/popover/toast khi mở.
+- Lint: 414 file formatted; typecheck: 177 source file, không lỗi. Full suite
+  một lượt: **3.477 passed, 8 skipped, 1 deselected**, 10 cảnh báo openpyxl,
+  474,67s. Skip như GĐ1: 5 cần NATS chưa chạy, 3 nhánh cũ được ghi rõ ở trên.
+- Node contract: text/attribute escaping, loading/disabled, whitelist icon,
+  link an toàn và route không đăng ký trên remote host đã qua. Node syntax và
+  boot harness PASS (12 request chỉ đọc); không chạy full harness có POST.
+- Browser kiểm thao tác bằng selector thật của guide; không chỉnh JSON prefs
+  để chụp ảnh lệch lựa chọn hiển thị. Confirm lỗi giữ input; nested modal/Tab/
+  Escape/restore focus, clipboard, sort/log filter/wrap/copy, reduced-motion,
+  mobile bottom sheet vừa nội dung/full width và coarse Compact đều đạt.
+- Các tinh chỉnh UI cuối được xác minh bằng browser; không chạy lại full suite
+  cho thay đổi CSS/trình bày sau khi suite bắt đầu. Receipt lưu hash source;
+  không lấy test Python làm chứng nhận model hoặc a11y toàn app.
+- Server khảo sát fake/hash được dừng sau cổng; không seed/reset/submit business
+  data, không dùng model/mail thật. Nhánh `ui/refresh`, commit theo giai đoạn.
