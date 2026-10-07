@@ -33,7 +33,7 @@ window.UICommands = (() => {
     current=modal;
     modal.element.classList.add('ui-command-dialog');
     const input=modal.element.querySelector('input'),host=modal.element.querySelector('#commandResults'),status=modal.element.querySelector('#commandStatus');
-    const norm=value=>String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase();
+    const norm=value=>String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLocaleLowerCase();
     function highlight() {
       [...host.children].forEach((el,i)=>el.setAttribute('aria-selected',String(i===selected)));
       if(visible.length) input.setAttribute('aria-activedescendant','command-option-'+selected);

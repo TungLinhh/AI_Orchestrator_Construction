@@ -168,28 +168,30 @@ def main():
         page.keyboard.press("Tab")
         check(
             "menu-tab-to-next-control",
-            page.locator(".ui-popover-host > button").evaluate("e=>e===document.activeElement"),
+            page.locator("#uiStyleguide .ui-popover-host > button").evaluate(
+                "e=>e===document.activeElement"
+            ),
         )
-        tooltip = page.locator(".ui-tooltip-host button")
+        tooltip = page.locator("#uiStyleguide .ui-tooltip-host button")
         tooltip.focus()
         page.wait_for_function(
-            "getComputedStyle(document.querySelector('.ui-tooltip')).opacity==='1'"
+            "getComputedStyle(document.querySelector('#uiStyleguide .ui-tooltip')).opacity==='1'"
         )
         check(
             "tooltip-focus",
-            page.locator('[role="tooltip"]').evaluate(
+            page.locator('#uiStyleguide [role="tooltip"]').evaluate(
                 "e=>getComputedStyle(e).visibility==='visible'"
             ),
         )
         audit = page.evaluate(
-            "async()=> (await axe.run(document.querySelector('.ui-tooltip-host')))"
+            "async()=> (await axe.run(document.querySelector('#uiStyleguide .ui-tooltip-host')))"
             ".violations.map(v=>v.id)"
         )
         check("tooltip-open-axe", not audit, audit)
         page.keyboard.press("Escape")
         check(
             "tooltip-escape",
-            page.locator('[role="tooltip"]').evaluate(
+            page.locator('#uiStyleguide [role="tooltip"]').evaluate(
                 "e=>getComputedStyle(e).visibility==='hidden'"
             ),
         )
@@ -198,6 +200,7 @@ def main():
             opener.click()
             modal = page.locator("dialog[data-ui-modal][open]")
             check(action + "-opens", modal.count() == 1)
+            page.wait_for_timeout(180)
             page.add_script_tag(content=axe)
             audit = page.evaluate(
                 "async()=> (await axe.run(document.querySelector('dialog[data-ui-modal][open]')))"
@@ -227,7 +230,7 @@ def main():
                 and page.locator("dialog[data-ui-modal]").count() == 0
                 and page.url.endswith("#/_styleguide"),
             )
-        popover = page.locator(".ui-popover-host > button")
+        popover = page.locator("#uiStyleguide .ui-popover-host > button")
         page.evaluate("UI.dialog({title:'Mẫu ngoài'}); UI.dialog({title:'Mẫu trong'})")
         page.keyboard.press("Escape")
         page.wait_for_function("document.querySelectorAll('dialog[data-ui-modal]').length===1")
@@ -242,9 +245,13 @@ def main():
             page.evaluate("document.documentElement.style.overflow!=='hidden'"),
         )
         popover.click()
-        check("popover-open", page.locator(".ui-popover").evaluate('e=>e.matches(":popover-open")'))
+        page.wait_for_timeout(180)
+        check(
+            "popover-open",
+            page.locator("#uiStyleguide .ui-popover").evaluate('e=>e.matches(":popover-open")'),
+        )
         audit = page.evaluate(
-            "async()=> (await axe.run(document.querySelector('.ui-popover')))"
+            "async()=> (await axe.run(document.querySelector('#uiStyleguide .ui-popover')))"
             ".violations.map(v=>v.id)"
         )
         check("popover-open-axe", not audit, audit)
@@ -254,7 +261,7 @@ def main():
             popover.evaluate("e=>e===document.activeElement")
             and page.url.endswith("#/_styleguide"),
         )
-        log = page.locator(".ui-log")
+        log = page.locator("#uiStyleguide .ui-log")
         check(
             "log-font-size",
             float(log.locator("code").evaluate("e=>parseFloat(getComputedStyle(e).fontSize)"))
@@ -279,7 +286,7 @@ def main():
         check("toast-axe", not audit, audit)
         page.locator("#uiToastRegion button").first.click()
         page.locator("#uiToastRegion").evaluate("e=>e.remove()")
-        table = page.locator(".ui-table")
+        table = page.locator("#uiStyleguide .ui-table")
         table.locator('[data-ui-sort="2"]').click()
         check(
             "table-sort",
@@ -318,6 +325,7 @@ def main():
             page.screenshot(path=str(args.out / top))
             report["screenshots"].append(top)
         page.locator('#uiStyleguide [data-ui-action="drawer"]').click()
+        page.wait_for_timeout(180)
         rect = page.locator("dialog[data-ui-modal]").bounding_box()
         check(
             "mobile-bottom-sheet",

@@ -1,0 +1,1050 @@
+{
+  "gate": "passed",
+  "scope": "Phase 3 shell only",
+  "final_ui_acceptance": false,
+  "captured_at": "2026-10-07T11:44:51.359961+00:00",
+  "checks": [
+    {
+      "name": "navy-light-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "navy-light-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "navy-light-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "navy-dark-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "navy-dark-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "teal-light-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "teal-light-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "teal-dark-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "teal-dark-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "indigo-light-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "indigo-light-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "indigo-dark-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "indigo-dark-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "forest-light-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "forest-light-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "forest-dark-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "forest-dark-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "copper-light-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "copper-light-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "copper-dark-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "copper-dark-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "graphite-light-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "graphite-light-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-comfortable-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-comfortable-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-comfortable-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-comfortable-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "graphite-dark-comfortable-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-comfortable-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-compact-saved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-compact-desktop-layout",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-compact-menu-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-compact-shell-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "graphite-dark-compact-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-compact-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "collapsed-width",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "collapsed-persisted",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "collapsed-keyboard-tooltip",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "tooltip-escape-keeps-route",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "sliding-indicator",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "one-current-no-double-border",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "keyboard-language-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "language-preserves-url-org",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "keyboard-appearance-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auth-details-security",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auth-still-visible",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "workspace-one-real-entry",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "workspace-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "workspace-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "unread-real-render-path",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "bell-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "bell-escape-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reload-language-preferences",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auth-reload-visible",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-header-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-drawer-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-desktop-collapse-unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-focus-trap",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-drawer-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "mobile-390-workspace-in-modal",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-popover-escape-before-drawer",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-restore",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-route-closes-drawer",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-390-appearance-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-header-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-drawer-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-desktop-collapse-unchanged",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-focus-trap",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-drawer-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "mobile-320-workspace-in-modal",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-popover-escape-before-drawer",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-restore",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-route-closes-drawer",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mobile-320-appearance-fit",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-follows-system",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reduced-motion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-system-change",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auth-on-token",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "collapse-survives-reload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "workspace-failure-honest",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "no-browser-errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "no-write-or-external-request",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "screenshots": [
+    "navy-light-comfortable.png",
+    "navy-light-compact.png",
+    "navy-dark-comfortable.png",
+    "navy-dark-compact.png",
+    "teal-light-comfortable.png",
+    "teal-light-compact.png",
+    "teal-dark-comfortable.png",
+    "teal-dark-compact.png",
+    "indigo-light-comfortable.png",
+    "indigo-light-compact.png",
+    "indigo-dark-comfortable.png",
+    "indigo-dark-compact.png",
+    "forest-light-comfortable.png",
+    "forest-light-compact.png",
+    "forest-dark-comfortable.png",
+    "forest-dark-compact.png",
+    "copper-light-comfortable.png",
+    "copper-light-compact.png",
+    "copper-dark-comfortable.png",
+    "copper-dark-compact.png",
+    "graphite-light-comfortable.png",
+    "graphite-light-compact.png",
+    "graphite-dark-comfortable.png",
+    "graphite-dark-compact.png",
+    "collapsed.png",
+    "english.png",
+    "auth-expanded.png",
+    "workspace.png",
+    "notification-fixture.png",
+    "mobile-390.png",
+    "mobile-390-drawer.png",
+    "mobile-390-appearance.png",
+    "mobile-320.png",
+    "mobile-320-drawer.png",
+    "mobile-320-appearance.png"
+  ],
+  "errors": [],
+  "blocked_requests": [],
+  "fixtures": [
+    "One browser-only unread notification",
+    "Auth-on HTML variant; no credentials submitted",
+    "Workspace-name GET failure"
+  ],
+  "source_sha256": {
+    "src/ai_orchestrator/web/business.js": "6953dc786a10baacf980f0fb82d2832520722cc0488ca0a0b5d00cafbcd0e1d8",
+    "src/ai_orchestrator/web/tokens.css": "6ee3b5ad653f7dc14256774cffea2ab1456a46c1b255f99634dfdd958ea98a22",
+    "src/ai_orchestrator/web/foundation.css": "3d32105344a88079b8aac94ac0bb504500a46c96609a6989f1cd01e0af402cf7",
+    "src/ai_orchestrator/web/navigation.js": "c1da180cb26c9eca66d3eeb74a285968d550241b973a377e05da99ee652a9da6",
+    "src/ai_orchestrator/web/work-ui.css": "7128a446b773fbe652b8472cf506549ec0e539b57ab51a6777f94efb95875b8b",
+    "src/ai_orchestrator/web/legacy-base.css": "566b471a3564b8826e6bed70e9396952734ce003dfa5837a5e9adfe133688b18",
+    "src/ai_orchestrator/web/management.js": "42aa0d0108bee62d5c23bbdda61f96405e6240838b73678b164d23aff59e724e",
+    "src/ai_orchestrator/web/__init__.py": "fd86787081d457cd42fea2270fe880baf2599efd730112e2ba097e9e847ccd53",
+    "src/ai_orchestrator/web/commands.js": "20f233f488997c0d18056e828ecf618518e7f44fc3802ffca99910c4783f6fbe",
+    "src/ai_orchestrator/web/procurement-intake.js": "8605bc773f736f4a70d5b9491291f5107218d2f667d6a17b986c856ac3446b91",
+    "src/ai_orchestrator/web/palettes.js": "361f8711597b797dcd8d96b83d3f586cd5a7559920b1c377edbe17ee71cb4426",
+    "src/ai_orchestrator/web/architecture.md": "61f8acc20cd4021a550f073d1f57bb229d5360271dc62d6b9c4e69b744289342",
+    "src/ai_orchestrator/web/organization.js": "eda13da8ffc1cff822f56d561b85b7b16e80ed3ca1573af2b63386538d0e6ca8",
+    "src/ai_orchestrator/web/styleguide.js": "0d1b5acd7853195d0f6ec3f96f86321a262c03c6ac4db0c0b14fedb0945b5d19",
+    "src/ai_orchestrator/web/agent-blueprints.js": "2e74e4cd9d344ce85cd51e62bb7118c848a8773ddb72daa9643544b5bcb19f69",
+    "src/ai_orchestrator/web/icons.js": "c7c01bc05067098e14740d10c50c979bd52b2aaaa92f04c36b6ea5845e4bf020",
+    "src/ai_orchestrator/web/components.js": "f6fca8f9439d6525efa0569b225b97bd8e86c70d3fb82d67e2fb179f7fa06cc2",
+    "src/ai_orchestrator/web/icons.svg": "62c7d0bf383cd872fa19665acb6d8e67cf8d5f974a2ecfff9974294d566a32ef",
+    "src/ai_orchestrator/web/work-ui.js": "52d5bb3f64d0ca88048208c5a6cee915fc267cefb7d1493ab1198e5e2ebc4167",
+    "src/ai_orchestrator/web/shell.css": "6039ad79fbd08a6cd5d6d1d03ba388755aff14d75f6d2598558e59bbcf1229d0",
+    "src/ai_orchestrator/web/commands.css": "0f036f0c4b59d94c7d6464648efda643d95ce2190ef59efd4d503ea10097f942",
+    "src/ai_orchestrator/web/page.py": "d9d981e8ceb6dc87a4018f2c3f39bf5860b4849388f75cd40055d41005c42587",
+    "src/ai_orchestrator/web/management.css": "0228e3f33f966e69bf0a105ac55ce5ae0cb71e94f1208d424e6ab50cb1e11366",
+    "src/ai_orchestrator/web/shell.js": "2d7f9e6a64f8c20e7a1262bcf4beb9e51f3cfff0b241aa364982ee562002d67d",
+    "src/ai_orchestrator/web/boot.js": "db0e71566401a940ccc83a905075297d2613999efd67f072272e65cadae68690",
+    "src/ai_orchestrator/web/issues-ui.js": "6fc9e49ea3fd69d627b69417c4f6120fa377e40ab413beb18bdcb03b4529d200",
+    "src/ai_orchestrator/web/styleguide.css": "49be388dd34d64e4f5a9e05359632d63be3a69f52d85864c27ddde2ec53d6448",
+    "src/ai_orchestrator/web/console.css": "f530203b839ca6d7920ea076af4b79f5c93983e82e2380da13705e04e4fb7389",
+    "src/ai_orchestrator/web/workflows.js": "e1c93f06eb2726c215f6264014315b5d42ffe3c67bc2ee6796321c2b13af688e",
+    "src/ai_orchestrator/web/fonts.css": "55a8cfb50e6e0208648ee9cfc0fa0a85b8c31fdd81e720d8b22b057f7e1497e7",
+    "src/ai_orchestrator/web/preferences.js": "6105937b06f88dd90137bbec439f165a97efe355ebca8bd36a7fe9e80a1e1470",
+    "src/ai_orchestrator/web/index.html": "db16c5b2004c0588b51aeb4c27eb5354aacde0052adb929b56926354a8a87615",
+    "src/ai_orchestrator/web/components.css": "5fe2e2a799d762010362372214422f7000a5dcfbc77b14839cccd1432f8e7bda",
+    "src/ai_orchestrator/web/settings.js": "8062e9eed819ca5614ddfdbeb338c08fcb833fdc1cb1fcd5ffdc004eac910ee3",
+    "src/ai_orchestrator/web/stream.js": "83103e78b2857bdc6ea13b9c9b259ad2e3d2df5640a9970f98cc263da0e02640",
+    "src/ai_orchestrator/web/reset.css": "188663957aca9d24ea02cbe69f654a8b7628b87e730324d988dc6bcd771f6ae1",
+    "src/ai_orchestrator/web/approvals-ui.js": "e1ca9a9bef493770536099cd0013170239cea05e123ad4912b7735d5291d3e63",
+    "src/ai_orchestrator/web/work.js": "2a149d123b048e8abb4b32e03b9222eafd4de390e80ec29900e27bddcc66dd31",
+    "src/ai_orchestrator/web/library.js": "2a3e5a2afcdd185013d2c010c2d6ad039c4281d3a2840d63f7b1d4c152f5b025",
+    "src/ai_orchestrator/web/core.js": "4a017da0573143bef83fd8b55f1ca8570029239c47f64af15e57af6dc1c115ed",
+    "src/ai_orchestrator/web/operations.js": "140a08d74c28bd235ef930bc59d008d5cf40b50089eb14c64b0480a92dd190a3"
+  }
+}

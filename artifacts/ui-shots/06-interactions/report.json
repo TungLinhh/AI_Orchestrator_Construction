@@ -27,6 +27,11 @@
       "detail": null
     },
     {
+      "name": "search-vietnamese-uppercase-d-without-diacritics",
+      "passed": true,
+      "detail": "Màu nhấn: Đồng ấm"
+    },
+    {
       "name": "active-descendant",
       "passed": true,
       "detail": null
@@ -510,7 +515,7 @@
     "src/ai_orchestrator/web/legacy-base.css": "566b471a3564b8826e6bed70e9396952734ce003dfa5837a5e9adfe133688b18",
     "src/ai_orchestrator/web/management.js": "42aa0d0108bee62d5c23bbdda61f96405e6240838b73678b164d23aff59e724e",
     "src/ai_orchestrator/web/__init__.py": "fd86787081d457cd42fea2270fe880baf2599efd730112e2ba097e9e847ccd53",
-    "src/ai_orchestrator/web/commands.js": "e6e8475d8665397bc8898bf277ce6522d120ea8d90bad842fb7485dbda150986",
+    "src/ai_orchestrator/web/commands.js": "20f233f488997c0d18056e828ecf618518e7f44fc3802ffca99910c4783f6fbe",
     "src/ai_orchestrator/web/procurement-intake.js": "8605bc773f736f4a70d5b9491291f5107218d2f667d6a17b986c856ac3446b91",
     "src/ai_orchestrator/web/palettes.js": "361f8711597b797dcd8d96b83d3f586cd5a7559920b1c377edbe17ee71cb4426",
     "src/ai_orchestrator/web/architecture.md": "61f8acc20cd4021a550f073d1f57bb229d5360271dc62d6b9c4e69b744289342",

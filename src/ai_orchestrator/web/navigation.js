@@ -56,7 +56,7 @@ function renderCrumbs(route) {
     items.push(
       href
         ? `<a href="${href}">${esc(label)}</a>`
-        : `<span class="here">${esc(label)}</span>`,
+        : `<span class="here" title="${esc(label)}">${esc(label)}</span>`,
     );
   switch (route.name) {
     case "approval":
@@ -127,6 +127,7 @@ function renderCrumbs(route) {
           definitions: ["Agent definitions", "Định nghĩa agent"],
           provision: ["Provision agent", "Tạo agent"],
           organization: ["Organization", "Tổ chức"],
+          appearance: ["Appearance", "Giao diện"],
           units: ["Units", "Đơn vị"],
           roles: ["Roles", "Vai trò"],
         };

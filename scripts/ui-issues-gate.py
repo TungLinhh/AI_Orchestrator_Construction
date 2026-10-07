@@ -13,8 +13,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--org", required=True)
     parser.add_argument("--chromium", required=True)
+    parser.add_argument("--out", type=Path, default=Path("artifacts/ui-shots/05-issues"))
     args = parser.parse_args()
-    out = Path("artifacts/ui-shots/05-issues")
+    out = args.out
     out.mkdir(parents=True, exist_ok=True)
     result = {
         "gate": "failed",
@@ -203,7 +204,7 @@ def main():
         )
         check(
             "retry-refusal-visible",
-            "UI FIXTURE workflow retry refused" in page.locator("#toast").inner_text(),
+            "UI FIXTURE workflow retry refused" in page.locator(".ui-toast").last.inner_text(),
         )
         context.unroute("**/api/v1/tasks/*/retry", failed_retry)
 
@@ -256,12 +257,19 @@ def main():
         context.unroute("**/api/v1/ceo/work?*", pending_queue)
         page.evaluate("go('#/work/approvals')")
         page.wait_for_selector("#approvalsCard")
-        page.wait_for_function("!!document.querySelector('#needStats .stat')")
+        page.wait_for_function("!!document.querySelector('#needStats .ui-metric-strip')")
         check(
-            "legacy-approvals-preserved",
+            "approvals-route-preserved",
             page.locator("#issuesCard").is_hidden()
-            and page.locator("#needStats .stat").count() == 4,
+            and page.locator("#needStats [data-ui-metric]").count() == 2
+            and page.evaluate(
+                "Number(document.querySelector('#needStats [data-ui-metric=all] strong')"
+                ".textContent.replace(/[^0-9]/g,''))===state.inbox.length"
+            ),
         )
+        page.evaluate("go('#/work')")
+        page.wait_for_function("!!document.querySelector('#needStats .stat')")
+        check("legacy-combined-route-preserved", page.locator("#needStats .stat").count() == 4)
         page.evaluate("go('#/give')")
         page.wait_for_selector("#giveList .work-row")
         check("work-page-regression", page.locator("#workStats strong").count() == 4)

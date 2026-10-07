@@ -121,6 +121,13 @@ def main():
         )
         page.locator("#commandInput").fill(task["id"])
         check("search-id", page.locator("#commandResults [role=option]").count() == 1)
+        page.locator("#commandInput").fill("dong am")
+        check(
+            "search-vietnamese-uppercase-d-without-diacritics",
+            page.locator("#commandResults [role=option]").filter(has_text="Đồng ấm").count() == 1,
+            page.locator("#commandResults").inner_text(),
+        )
+        page.locator("#commandInput").fill(task["id"])
         check(
             "active-descendant",
             page.locator("#commandInput").get_attribute("aria-activedescendant")

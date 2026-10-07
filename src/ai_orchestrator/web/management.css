@@ -2,35 +2,33 @@
 .manage-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: var(--space-20);
 }
 .manage-body {
-  padding: 20px;
+  padding: var(--space-20);
   min-width: 0;
 }
 .manage-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--space-16);
 }
-.manage-form label,
-.manage-search {
+.manage-form label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-8);
   font-weight: 600;
 }
 .manage-form input,
 .manage-form select,
-.manage-form textarea,
-.manage-search input {
+.manage-form textarea {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  padding: 10px;
+  padding: var(--space-12);
   font: inherit;
 }
 .manage-form .wide {
@@ -42,7 +40,7 @@
 }
 .form-result {
   border-left: 3px solid var(--accent);
-  padding: 12px;
+  padding: var(--space-12);
   background: var(--accent-soft);
   overflow-wrap: anywhere;
 }
@@ -53,14 +51,14 @@
 .record-fields {
   margin: 0;
   display: grid;
-  gap: 12px;
+  gap: var(--space-12);
 }
 .record-fields > div {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr);
-  gap: 12px;
+  gap: var(--space-12);
   border-bottom: 1px solid var(--line);
-  padding-bottom: 10px;
+  padding-bottom: var(--space-12);
 }
 .record-fields dt {
   color: var(--text-2);
@@ -72,50 +70,22 @@
 .table-scroll {
   overflow-x: auto;
   width: 100%;
-  margin-top: 16px;
-}
-.manage-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-.manage-table th {
-  font-size: 12px;
-  text-transform: uppercase;
-  color: var(--text-2);
-  background: var(--surface-2);
-}
-.manage-table th,
-.manage-table td {
-  padding: 13px 12px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-.manage-table a {
-  font-weight: 600;
-  color: var(--accent-2);
-}
-.manage-table tbody tr:hover {
-  background: var(--surface-2);
+  margin-top: var(--space-16);
 }
 .readable-text {
-  margin: 12px 0;
+  margin: var(--space-12) 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
   max-height: 480px;
   overflow: auto;
   background: var(--surface-2);
-  padding: 16px;
+  padding: var(--space-16);
   border-radius: 8px;
-  font: 12px/1.7 var(--mono);
-}
-.readable-text {
-  font: 14px/1.7 var(--font);
+  font: var(--text-base)/1.7 var(--font);
 }
 .record-details {
-  margin: 12px 0;
+  margin: var(--space-12) 0;
 }
 .record-details summary {
   cursor: pointer;
@@ -123,19 +93,19 @@
   font-weight: 600;
 }
 .identity-card {
-  padding: 20px;
+  padding: var(--space-20);
 }
 .identity-card h2 {
-  margin: 0 0 6px;
+  margin: 0 0 var(--space-8);
 }
 .workspace-tabs {
   display: flex;
-  gap: 6px;
+  gap: var(--space-8);
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-20);
 }
 .workspace-tabs a {
-  padding: 9px 14px;
+  padding: var(--space-8) var(--space-16);
   border-radius: 8px;
   text-decoration: none;
   color: var(--text-2);
@@ -150,8 +120,8 @@
 .list-footer {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 18px;
+  gap: var(--space-16);
+  margin-top: var(--space-20);
   color: var(--text-2);
 }
 .nav .items {
@@ -167,18 +137,14 @@
     grid-template-columns: 1fr;
   }
   .manage-body {
-    padding: 14px;
-  }
-  .manage-table th,
-  .manage-table td {
-    padding: 10px;
+    padding: var(--space-16);
   }
   .record-fields > div {
     grid-template-columns: 1fr;
-    gap: 4px;
+    gap: var(--space-4);
   }
   .workspace-tabs a {
-    padding: 8px 10px;
+    padding: var(--space-8) var(--space-12);
   }
   .list-footer {
     flex-wrap: wrap;
@@ -189,11 +155,11 @@
   white-space: pre-wrap;
 }
 .record-list {
-  padding-left: 20px;
-  margin: 8px 0;
+  padding-left: var(--space-20);
+  margin: var(--space-8) 0;
 }
 .record-fields .record-fields {
-  padding: 6px 0;
+  padding: var(--space-8) 0;
   font-size: 13px;
 }
 .record-fields .record-fields > div {
@@ -202,7 +168,7 @@
 .parameter-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
-  gap: 12px;
+  gap: var(--space-12);
 }
 @media (max-width: 760px) {
   .parameter-row {
@@ -212,12 +178,12 @@
 
 #managementBody {
   display: grid;
-  gap: 20px;
+  gap: var(--space-20);
 }
 
 .notif { cursor: pointer; }
 
-.blueprint-steps { display: grid; gap: 10px; }
-.blueprint-step { border: 1px solid var(--line); border-radius: 9px; padding: 12px; }
+.blueprint-steps { display: grid; gap: var(--space-12); }
+.blueprint-step { border: 1px solid var(--line); border-radius: 9px; padding: var(--space-12); }
 .blueprint-step > summary { cursor: pointer; font-weight: 600; }
-.blueprint-step > .manage-form { margin-top: 14px; }
+.blueprint-step > .manage-form { margin-top: var(--space-16); }

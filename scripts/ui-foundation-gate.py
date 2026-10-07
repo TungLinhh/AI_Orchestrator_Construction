@@ -170,7 +170,7 @@ def main():
                             all(len(set(c[4:-1].split(", "))) == 1 for c in structural),
                         )
                     controls = page.evaluate("""()=>{
-                      const b=document.querySelector('.btn.primary'),s=getComputedStyle(b);
+                      const b=document.querySelector('#newTaskBtn'),s=getComputedStyle(b);
                       return {fg:s.color,bg:s.backgroundColor,font:s.fontFamily,
                         minHeight:s.minHeight,
                         hidden:[...document.querySelectorAll('[hidden]')].every(e=>getComputedStyle(e).display==='none'),
@@ -277,7 +277,7 @@ def main():
         )
         check(
             "reduced-motion",
-            page.evaluate("getComputedStyle(document.querySelector('.btn')).transitionDuration")
+            page.evaluate("getComputedStyle(document.querySelector('.ui-btn')).transitionDuration")
             == "0s",
         )
         page.evaluate("UIPreferences.preview({...UIPreferences.get(),theme:'auto',motion:'auto'})")
@@ -296,7 +296,7 @@ def main():
         switching = page.evaluate("""()=>{
           UIPreferences.preview({...UIPreferences.get(),theme:'dark'});
           return {flag:document.documentElement.dataset.uiSwitching,
-            duration:getComputedStyle(document.querySelector('.btn')).transitionDuration};
+            duration:getComputedStyle(document.querySelector('.ui-btn')).transitionDuration};
         }""")
         check(
             "theme-change-no-transition", switching == {"flag": "true", "duration": "0s"}, switching
@@ -304,7 +304,7 @@ def main():
         page.emulate_media(reduced_motion="reduce")
         check(
             "os-reduced-motion",
-            page.evaluate("getComputedStyle(document.querySelector('.btn')).transitionDuration")
+            page.evaluate("getComputedStyle(document.querySelector('.ui-btn')).transitionDuration")
             == "0s",
         )
         page.evaluate(

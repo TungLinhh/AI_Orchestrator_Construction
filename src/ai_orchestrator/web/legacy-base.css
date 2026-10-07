@@ -76,7 +76,7 @@ textarea {
   border-radius: 8px;
   color: var(--text);
   background: var(--surface);
-  padding: 10px 12px;
+  padding: var(--space-12) var(--space-12);
   width: 100%;
   min-width: 0;
 }
@@ -88,7 +88,7 @@ textarea {
 kbd {
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 2px 4px;
+  padding: var(--space-2) var(--space-4);
 }
 dialog {
   border: 1px solid var(--line);
@@ -101,7 +101,7 @@ dialog {
   box-shadow: var(--shadow);
 }
 dialog::backdrop {
-  background: #0b1a2980;
+  background: var(--color-overlay);
   backdrop-filter: blur(3px);
 }
 }

@@ -1230,7 +1230,7 @@ let stepTexts = [];
 function openSheet(title, bodyHtml) {
   setHTML(
     "sheetBody",
-    `<h3 style="margin:0 0 8px">${esc(title)}</h3>` + bodyHtml,
+    `<h3 style="margin:0 0 var(--space-8)">${esc(title)}</h3>` + bodyHtml,
   );
   setHTML(
     "sheetFoot",
@@ -1331,7 +1331,7 @@ function renderSteps(d) {
         }
         ${
           related.length
-            ? `<div class="dept-tier" style="margin:8px 0 4px">${t_fmt("step.logfor", "Log for this step ({n})", { n: related.length })}</div>` +
+            ? `<div class="dept-tier" style="margin:var(--space-8) 0 var(--space-4)">${t_fmt("step.logfor", "Log for this step ({n})", { n: related.length })}</div>` +
               related
                 .map(
                   (e) =>
@@ -1340,7 +1340,7 @@ function renderSteps(d) {
                 .join("")
             : ""
         }
-        <div class="s" style="margin-top:6px">${tr("step.model", "Model:")} ${esc(x.model_used || "—")}${x.model_profile ? ` · ${tr("step.profile", "Profile:")} ${esc(x.model_profile)}` : ""}${
+        <div class="s" style="margin-top:var(--space-8)">${tr("step.model", "Model:")} ${esc(x.model_used || "—")}${x.model_profile ? ` · ${tr("step.profile", "Profile:")} ${esc(x.model_profile)}` : ""}${
           x.finished_at
             ? tr("step.finished", " · finished ") + esc(ago(x.finished_at))
             : ""
@@ -1601,7 +1601,7 @@ async function renderOneTask(id) {
     (d.tree || [])
       .map(
         (n) => `
-    <a class="row" href="#/give/${encodeURIComponent(n.id)}" style="margin-left:${n.parent_task_id ? 18 : 0}px">
+    <a class="row" href="#/give/${encodeURIComponent(n.id)}" style="margin-left:${n.parent_task_id ? "var(--space-20)" : "0"}">
       <div class="grow">
         <div class="t">${n.parent_task_id ? "↳ " : ""}${esc(n.title)}</div>
         <div class="s">${esc(n.status)}${n.owner_name ? " · " + esc(n.owner_name) : ""}</div>

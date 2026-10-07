@@ -1,6 +1,7 @@
 """Read-only before/after list measurements and browser-local create/run fixtures."""
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import re
@@ -18,15 +19,22 @@ def main():
     parser.add_argument("--org", required=True)
     parser.add_argument("--chromium", required=True)
     parser.add_argument("--before", default="7a7c860")
+    parser.add_argument("--out", type=Path, default=Path("artifacts/ui-shots/04-work"))
     args = parser.parse_args()
     base = "http://127.0.0.1:8100"
-    out = Path("artifacts/ui-shots/04-work")
+    out = args.out
     out.mkdir(parents=True, exist_ok=True)
     results = {
         "baseline_revision": args.before,
         "measurements": {},
         "checks": [],
         "scope": "Single Chromium sample; local POST fixtures are not real execution",
+        "screenshots": [],
+    }
+    sources = {
+        str(f): hashlib.sha256(f.read_bytes()).hexdigest()
+        for f in Path("src/ai_orchestrator/web").glob("*")
+        if f.is_file()
     }
     with tempfile.TemporaryDirectory() as folder, sync_playwright() as p:
         root = Path(folder)
@@ -181,6 +189,7 @@ def main():
                     }
                 )
                 page.screenshot(path=str(out / "create-success-fixture.png"))
+                results["screenshots"].append("create-success-fixture.png")
                 page.evaluate("go('#/give')")
                 page.wait_for_selector("#giveList .work-row")
                 context.unroute("**/api/v1/tasks/" + task_id + "/run", run)
@@ -204,10 +213,12 @@ def main():
                     }
                 )
                 page.screenshot(path=str(out / "run-error-fixture.png"))
+                results["screenshots"].append("run-error-fixture.png")
                 page.evaluate("go('#/give')")
                 page.wait_for_selector("#giveList .work-row")
                 page.set_viewport_size({"width": 1920, "height": 1080})
                 page.screenshot(path=str(out / "width-1920-list.png"))
+                results["screenshots"].append("width-1920-list.png")
                 results["checks"].append(
                     {
                         "name": "width-1920-no-overflow",
@@ -225,6 +236,7 @@ def main():
                         }
                     )
                     page.screenshot(path=str(out / "loading-fixture.png"))
+                    results["screenshots"].append("loading-fixture.png")
                     route.continue_()
 
                 context.route("**/api/v1/ceo/work?*", pending_queue)
@@ -241,6 +253,14 @@ def main():
                 )
             context.close()
         browser.close()
+    results["source_sha256"] = {
+        str(f): hashlib.sha256(f.read_bytes()).hexdigest()
+        for f in Path("src/ai_orchestrator/web").glob("*")
+        if f.is_file()
+    }
+    results["checks"].append(
+        {"name": "source-frozen", "passed": sources == results["source_sha256"]}
+    )
     results["gate"] = "passed" if all(c["passed"] for c in results["checks"]) else "failed"
     (out / "performance-and-form.json").write_text(
         json.dumps(results, ensure_ascii=False, indent=2) + "\n"

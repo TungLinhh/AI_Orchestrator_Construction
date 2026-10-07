@@ -1408,7 +1408,8 @@ check("unread approval lights the bell badge", !$("notifCount").hidden && Number
 vm.runInContext('notify({id:"approval:ui-notification-check", title:"Duplicate", silent:true})', sandbox);
 check("stream and inbox duplicates keep one bell entry", vm.runInContext("notifs.length",sandbox) === beforeNotif+1);
 check("bell links the exact approval", $("notifList").innerHTML.includes('href="#/approval/ui-notification-check"'));
-check("restoring an approval does not interrupt with a toast", !$("toast").innerHTML.includes("Review this draft"));
+check("restoring an approval does not interrupt with a toast",
+  ![...$("uiToastRegion").children].some(node => node.innerHTML.includes("Review this draft")));
 $("sidebarToggle").onclick();
 check("sidebar collapse is accessible and persistent", $("sidebarToggle").getAttribute("aria-expanded") === "false" && sandbox.document.documentElement.classList.contains("sidebar-collapsed"));
 $("sidebarToggle").onclick();

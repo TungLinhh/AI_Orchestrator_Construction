@@ -46,10 +46,10 @@ def main() -> None:
         page.goto(url + "#/settings/appearance", wait_until="domcontentloaded")
         page.locator("#ui-preferences").wait_for()
         # A real workflow may have emitted a completion notification during boot.
-        page.locator("#toast").wait_for(state="hidden", timeout=15000)
+        page.locator(".ui-toast").last.wait_for(state="hidden", timeout=15000)
         page.evaluate("toast('Browser-only notification probe', false)")
-        page.locator("#toast").wait_for(state="visible")
-        page.locator("#toast").wait_for(state="hidden", timeout=15000)
+        page.locator(".ui-toast").last.wait_for(state="visible")
+        page.locator(".ui-toast").last.wait_for(state="hidden", timeout=15000)
         report["toast_visibility"] = True
         for mode in ("light", "dark"):
             for palette in page.evaluate("UIPalettes.items.map(p => p.id)"):

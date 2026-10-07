@@ -16,7 +16,8 @@
   giữ liên kết sâu và hợp đồng thao tác. Mỗi trang có commit riêng.
 - **Giai đoạn 6 hoàn tất**: command palette, phím tắt, toast, motion và mobile
   đã qua kiểm tra tương tác. Bằng chứng source cuối được tổng hợp tại Giai đoạn 7.
-- **Giai đoạn 7 đang chốt**: ma trận cuối, tài liệu và runtime sau khởi động lại.
+- **Giai đoạn 7 hoàn tất**: receipt cuối PASS, đủ ảnh/tài liệu/test và runtime
+  OpenRouter đã khởi động lại, health/readiness/UI passed.
 
 ## Quyết định và giả định
 
@@ -67,9 +68,9 @@
 
 ## Bước tiếp theo
 
-1. Đóng receipt tổng hợp Giai đoạn 7 khi mọi gate khớp hash source và đã passed.
-2. Khởi động lại runtime sản phẩm, kiểm health/readiness/UI/provider, mở console.
-3. Giữ các bước vận hành thật trong `FUTURE_WORK.md` riêng với nghiệm thu UI.
+1. Giai đoạn 0–7 đã đóng; đọc FINAL-REPORT và receipt cuối để bàn giao.
+2. Khi đổi UI, chạy lại gate liên quan và kiểm source hash trước nghiệm thu.
+3. Tiếp theo là vận hành thật theo FUTURE_WORK.md, tách khỏi chứng nhận UI.
 
 ## Tự phản biện Giai đoạn 0
 
@@ -436,7 +437,7 @@
 
 - Command palette tìm ID/tên/người giữ trên register thật, mở đúng task và
   navigation; lệnh giao diện có lưu, lệnh giao việc mở form. Ctrl/Cmd K và `?`
-  không cướp phím khi nhập liệu; Esc/Tab giữ focus đúng. 70 kiểm tra interaction
+  không cướp phím khi nhập liệu; Esc/Tab giữ focus đúng. 71 kiểm tra interaction
   đã passed trên source cuối, gồm desktop/tablet/mobile, 200% reflow và reduced.
 - Counter/entry một lần mỗi phiên; tối đa 4 stats và 12 hàng, entry ≤376ms,
   counter 480ms. Không chạy lại khi refresh/polling; reduced bỏ cả hai.
@@ -462,3 +463,51 @@
   lại full suite xanh. Test DB được reset bằng target có sẵn `test-fresh`; không
   seed/reset database vận hành. Credential probe OpenRouter valid; chưa phải
   bằng chứng completion hoặc workflow thật.
+
+- Rà biến động dữ liệu phát hiện test demo có sẵn ép database phát triển, tạo
+  “Board pack” bằng ScriptedRuntime trong suite mặc định. Nhận định ban đầu
+  “test không ghi dev” không đúng với ngoại lệ này. Không xóa dấu vết. Đã sửa
+  test dùng seed/runtime thật trong database test, truyền slug thực đã lưu và
+  query kiểm chứng độc lập. 28 test liên quan passed; suite đầy đủ đang chạy
+  lại trên mã đã sửa. Test live_model opt-in vẫn tách khỏi gate mặc định.
+- Bổ sung hồi quy tìm kiếm không dấu với chữ Đ viết hoa, sửa normalize tại
+  command palette. Source UI đã chốt; receipt đều chạy lại trên mã này.
+
+## Đóng cổng Giai đoạn 7 — 2026-10-07
+
+- **PASS**: `07-final/release-gate.json`, 531 kiểm tra tổng hợp, 420 ảnh được
+  tham chiếu bởi receipt; tất cả hash source khớp. Gate toàn app 746 checks,
+  57 route × sáng/tối × desktop/mobile; mọi route thêm kiểm overflow 360px.
+- Foundation 170, components 148, shell 191, Work 131, Issues 89, interaction 71,
+  performance/form 15, runtime 23 checks passed. Commit boot: 9 commit × 9
+  trang = 81 kiểm tra browser/Node thật, không POST vận hành.
+- Lint: 424 file formatted; typecheck: 177 source file, không lỗi. Suite cuối
+  sau sửa test isolation: **3.482 passed, 3 skipped, 1 deselected**, 10 warning
+  openpyxl, **525,86s**. E2E **34 passed**, PostgreSQL/NATS/Temporal thật.
+- Startup còn long task; cuộn đủ 1.197 hàng không có long task. Cache render
+  19,5→6,1ms trong phép đo riêng. Không đổi cách tính metric nghiệp vụ.
+- Khởi động lại runtime OpenRouter, primary DOTS free đúng cấu hình. Ready xác
+  nhận role least-privilege, 103 bảng RLS forced. Kiểm ID 12 agent/8 tool/43
+  skill và mở chín trang chính từ sản phẩm thật; không gọi model/approval/mail
+  trong probe. Credential valid không được coi là completion thành công.
+- Corpus dev quan sát vẫn 1.197 sau suite đã cách ly. Task demo từ test cũ giữ
+  nguyên, ghi rõ trong FINAL-REPORT; không nghiệm thu chúng là công việc thật.
+- Console chạy tại 8100; PID file phục vụ `make serve-stop`. Tab browser đã được
+  yêu cầu mở trong Codex; host trả queued nếu chat chưa hiện ở cửa sổ hiện tại.
+- Bằng chứng Chromium không chứng nhận Safari/Firefox. Các skip/warning và lỗi
+  provider lịch sử còn được ghi rõ; nghiệm thu UI không phải nghiệm thu live HR/
+  procurement. Bước tiếp theo của sản phẩm nằm trong FUTURE_WORK.md.
+
+### Checklist theo mục 14 của BRIEF
+
+- [x] Trang/màn con dùng hệ thống chung; màu và spacing sản phẩm theo token.
+- [x] Sáu palette × hai mode × hai mật độ đã đo tương phản và chụp ảnh.
+- [x] Work có badge, lỗi mở/chép được, metric rõ và cuộn toàn trang.
+- [x] Compact/Comfortable được nhớ; preview/lưu/hoàn tác đúng.
+- [x] Command, shortcut, toast, skeleton, tooltip, empty/error qua gate.
+- [x] Một intro mỗi phiên; entry ≤376ms, counter 480ms, reduced-motion tắt.
+- [x] Responsive 360–1920px; drawer/bottom sheet, không overflow ngang 360px.
+- [x] Keyboard/focus qua gate; axe không có serious/critical trong ma trận.
+- [x] Browser không gọi host ngoài; asset local và giấy phép giữ nguyên.
+- [x] Hash route/org/i18n/Esc/storage/API contract giữ nguyên; test xanh.
+- [x] CSS chết đã audit/dọn; không !important; README/FINAL-REPORT hoàn tất.

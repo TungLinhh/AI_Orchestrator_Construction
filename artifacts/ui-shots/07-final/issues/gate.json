@@ -1,0 +1,556 @@
+{
+  "gate": "passed",
+  "phase": 5,
+  "page": "issues",
+  "checks": [
+    {
+      "name": "bounded-initial-rows",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "metric-count-from-register",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "issues-route-hides-approvals",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "navy-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "navy-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "navy-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "teal-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "teal-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "teal-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "indigo-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "indigo-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "indigo-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "forest-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "forest-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "forest-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "copper-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "copper-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "copper-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "graphite-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graphite-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "graphite-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "filter-count",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "search-entire-corpus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "filter-search-no-network",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "no-results-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "no-results-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "full-error-copy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "expanded-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "expanded-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "refresh-preserves-node-open-focus",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "incremental-load",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "english-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "english-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "360-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "360-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "360-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "360-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "390-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "390-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "390-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "390-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "768-light-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "768-light-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "768-dark-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "768-dark-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "retry-disabled-while-sending",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "retry-failure-retained",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "retry-refusal-visible",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "refresh-error-retains-data",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "cached-filter-keeps-stale-warning",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "stale-error-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "stale-error-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "initial-error-no-zero-metrics",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "initial-error-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "initial-error-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "empty-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "empty-overflow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loading-aria-busy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loading-aria-busy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loading-aria-busy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loading-aria-busy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loading-aria-busy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "loading-aria-busy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "approvals-route-preserved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "legacy-combined-route-preserved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "work-page-regression",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "guide-metric-selection",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "guide-new-metrics-axe",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "no-unexpected-console-errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "no-runtime-errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "no-external-or-operational-write",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "screenshots": [
+    "after-desktop.png",
+    "desktop-light.png",
+    "desktop-dark.png",
+    "no-results.png",
+    "expanded-error.png",
+    "english.png",
+    "360-light.png",
+    "360-dark.png",
+    "390-light.png",
+    "390-dark.png",
+    "768-light.png",
+    "768-dark.png",
+    "stale-error-fixture.png",
+    "initial-error-fixture.png",
+    "empty-fixture.png",
+    "loading-fixture.png"
+  ],
+  "errors": [],
+  "console_errors": [],
+  "expected_fixture_console_errors": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)",
+      "location": {
+        "url": "http://127.0.0.1:8100/api/v1/tasks/tsk_01m49qy02cte3jhgz2kez3eje1/retry",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "location": {
+        "url": "http://127.0.0.1:8100/api/v1/ceo/work?limit=200",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "location": {
+        "url": "http://127.0.0.1:8100/api/v1/ceo/work?limit=200",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    }
+  ],
+  "blocked_requests": [],
+  "final_ui_acceptance": false,
+  "actual_corpus": {
+    "tasks": 1197,
+    "issues": 344
+  },
+  "source_sha256": {
+    "src/ai_orchestrator/web/business.js": "6953dc786a10baacf980f0fb82d2832520722cc0488ca0a0b5d00cafbcd0e1d8",
+    "src/ai_orchestrator/web/tokens.css": "6ee3b5ad653f7dc14256774cffea2ab1456a46c1b255f99634dfdd958ea98a22",
+    "src/ai_orchestrator/web/foundation.css": "3d32105344a88079b8aac94ac0bb504500a46c96609a6989f1cd01e0af402cf7",
+    "src/ai_orchestrator/web/navigation.js": "c1da180cb26c9eca66d3eeb74a285968d550241b973a377e05da99ee652a9da6",
+    "src/ai_orchestrator/web/work-ui.css": "7128a446b773fbe652b8472cf506549ec0e539b57ab51a6777f94efb95875b8b",
+    "src/ai_orchestrator/web/legacy-base.css": "566b471a3564b8826e6bed70e9396952734ce003dfa5837a5e9adfe133688b18",
+    "src/ai_orchestrator/web/management.js": "42aa0d0108bee62d5c23bbdda61f96405e6240838b73678b164d23aff59e724e",
+    "src/ai_orchestrator/web/__init__.py": "fd86787081d457cd42fea2270fe880baf2599efd730112e2ba097e9e847ccd53",
+    "src/ai_orchestrator/web/commands.js": "20f233f488997c0d18056e828ecf618518e7f44fc3802ffca99910c4783f6fbe",
+    "src/ai_orchestrator/web/procurement-intake.js": "8605bc773f736f4a70d5b9491291f5107218d2f667d6a17b986c856ac3446b91",
+    "src/ai_orchestrator/web/palettes.js": "361f8711597b797dcd8d96b83d3f586cd5a7559920b1c377edbe17ee71cb4426",
+    "src/ai_orchestrator/web/architecture.md": "61f8acc20cd4021a550f073d1f57bb229d5360271dc62d6b9c4e69b744289342",
+    "src/ai_orchestrator/web/organization.js": "eda13da8ffc1cff822f56d561b85b7b16e80ed3ca1573af2b63386538d0e6ca8",
+    "src/ai_orchestrator/web/styleguide.js": "0d1b5acd7853195d0f6ec3f96f86321a262c03c6ac4db0c0b14fedb0945b5d19",
+    "src/ai_orchestrator/web/agent-blueprints.js": "2e74e4cd9d344ce85cd51e62bb7118c848a8773ddb72daa9643544b5bcb19f69",
+    "src/ai_orchestrator/web/icons.js": "c7c01bc05067098e14740d10c50c979bd52b2aaaa92f04c36b6ea5845e4bf020",
+    "src/ai_orchestrator/web/components.js": "f6fca8f9439d6525efa0569b225b97bd8e86c70d3fb82d67e2fb179f7fa06cc2",
+    "src/ai_orchestrator/web/icons.svg": "62c7d0bf383cd872fa19665acb6d8e67cf8d5f974a2ecfff9974294d566a32ef",
+    "src/ai_orchestrator/web/work-ui.js": "52d5bb3f64d0ca88048208c5a6cee915fc267cefb7d1493ab1198e5e2ebc4167",
+    "src/ai_orchestrator/web/shell.css": "6039ad79fbd08a6cd5d6d1d03ba388755aff14d75f6d2598558e59bbcf1229d0",
+    "src/ai_orchestrator/web/commands.css": "0f036f0c4b59d94c7d6464648efda643d95ce2190ef59efd4d503ea10097f942",
+    "src/ai_orchestrator/web/page.py": "d9d981e8ceb6dc87a4018f2c3f39bf5860b4849388f75cd40055d41005c42587",
+    "src/ai_orchestrator/web/management.css": "0228e3f33f966e69bf0a105ac55ce5ae0cb71e94f1208d424e6ab50cb1e11366",
+    "src/ai_orchestrator/web/shell.js": "2d7f9e6a64f8c20e7a1262bcf4beb9e51f3cfff0b241aa364982ee562002d67d",
+    "src/ai_orchestrator/web/boot.js": "db0e71566401a940ccc83a905075297d2613999efd67f072272e65cadae68690",
+    "src/ai_orchestrator/web/issues-ui.js": "6fc9e49ea3fd69d627b69417c4f6120fa377e40ab413beb18bdcb03b4529d200",
+    "src/ai_orchestrator/web/styleguide.css": "49be388dd34d64e4f5a9e05359632d63be3a69f52d85864c27ddde2ec53d6448",
+    "src/ai_orchestrator/web/console.css": "f530203b839ca6d7920ea076af4b79f5c93983e82e2380da13705e04e4fb7389",
+    "src/ai_orchestrator/web/workflows.js": "e1c93f06eb2726c215f6264014315b5d42ffe3c67bc2ee6796321c2b13af688e",
+    "src/ai_orchestrator/web/fonts.css": "55a8cfb50e6e0208648ee9cfc0fa0a85b8c31fdd81e720d8b22b057f7e1497e7",
+    "src/ai_orchestrator/web/preferences.js": "6105937b06f88dd90137bbec439f165a97efe355ebca8bd36a7fe9e80a1e1470",
+    "src/ai_orchestrator/web/index.html": "db16c5b2004c0588b51aeb4c27eb5354aacde0052adb929b56926354a8a87615",
+    "src/ai_orchestrator/web/components.css": "5fe2e2a799d762010362372214422f7000a5dcfbc77b14839cccd1432f8e7bda",
+    "src/ai_orchestrator/web/settings.js": "8062e9eed819ca5614ddfdbeb338c08fcb833fdc1cb1fcd5ffdc004eac910ee3",
+    "src/ai_orchestrator/web/stream.js": "83103e78b2857bdc6ea13b9c9b259ad2e3d2df5640a9970f98cc263da0e02640",
+    "src/ai_orchestrator/web/reset.css": "188663957aca9d24ea02cbe69f654a8b7628b87e730324d988dc6bcd771f6ae1",
+    "src/ai_orchestrator/web/approvals-ui.js": "e1ca9a9bef493770536099cd0013170239cea05e123ad4912b7735d5291d3e63",
+    "src/ai_orchestrator/web/work.js": "2a149d123b048e8abb4b32e03b9222eafd4de390e80ec29900e27bddcc66dd31",
+    "src/ai_orchestrator/web/library.js": "2a3e5a2afcdd185013d2c010c2d6ad039c4281d3a2840d63f7b1d4c152f5b025",
+    "src/ai_orchestrator/web/core.js": "4a017da0573143bef83fd8b55f1ca8570029239c47f64af15e57af6dc1c115ed",
+    "src/ai_orchestrator/web/operations.js": "140a08d74c28bd235ef930bc59d008d5cf40b50089eb14c64b0480a92dd190a3"
+  }
+}
