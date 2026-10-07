@@ -135,18 +135,18 @@ __UI_ICONS__
           <div id="issueEmpty" hidden></div>
           <div class="ui-panel-body"><div class="ui-toolbar"><span class="ui-muted" id="issueVisibleCount" role="status" aria-live="polite"></span><button class="ui-btn ui-btn-ghost ui-btn-sm" id="loadMoreIssues" type="button" hidden>Tải thêm 100</button></div></div>
         </div>
-        <div class="card" id="approvalsCard">
-          <header>
+        <div class="ui-panel" id="approvalsCard">
+          <header class="ui-section-header">
             <h2 data-i18n="need.approvals">Approvals</h2>
             <span class="sub" id="workSub"></span>
             <span class="spacer"></span>
-            <span class="seg" id="workFilter">
+            <span class="ui-tabs ui-wrap-segmented" id="workFilter" role="group" aria-label="Approval filters">
               <button class="on" data-f="pending" data-i18n="need.decide">Needs a decision</button>
               <button data-f="all" data-i18n="need.allpending">Everything pending</button>
             </span>
           </header>
-          <div class="list" id="workList"></div>
-          <div class="empty" id="workEmpty" hidden>
+          <div id="approvalLoading" class="ui-panel-body" hidden></div><div id="approvalError" class="ui-panel-body" hidden></div><div class="list" id="workList" role="list" aria-label="Approvals"></div>
+          <div id="workEmpty" hidden>
             <div class="big"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-circle-check"></use></svg></div>
             <span data-i18n="need.approvals_empty">Nothing is waiting on a person.</span>
           </div>

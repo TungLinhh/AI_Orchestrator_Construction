@@ -22,6 +22,7 @@ SCRIPTS = (
     "shell.js",
     "work-ui.js",
     "issues-ui.js",
+    "approvals-ui.js",
     "boot.js",
 )
 

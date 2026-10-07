@@ -80,6 +80,7 @@ function renderIssues(q) {
 
 /* ---------------- work: the queue you can actually act on ---------------- */
 async function renderWork() {
+  if ((parseHash().name === "work" && parseHash().arg === "approvals") || parseHash().name === "approval") return window.ApprovalsUI.load();
   if (parseHash().name === "work" && parseHash().arg === "issues") return window.IssuesUI.load();
   $("view-work").removeAttribute("data-page");
   $("view-work").classList.remove("ui-page");
@@ -309,33 +310,17 @@ document.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-do][data-id]");
   if (!btn) return;
   const { do: action, id } = btn.dataset;
-  if (action === "ask") {
-    const question = window.prompt(
-      tr("appr.ask_q", "What should the agent answer before you decide?"),
-    );
-    if (!question) return;
-    await decide(id, "request-information", {
-      needs_information: true,
-      note: question,
-    });
-    return;
-  }
-  const label =
-    action === "approve"
-      ? tr("appr.approve_v", "Approve")
-      : tr("appr.reject_v", "Reject");
-  if (!window.confirm(t_fmt("appr.confirm", "{a} this request?", { a: label })))
-    return;
-  await decide(id, action, {});
+  window.ApprovalsUI.confirm(id, action);
 });
 
-async function decide(approvalId, action, extra) {
+async function decide(approvalId, action, extra, reportError = false) {
   try {
     const decision = await apiPost(
       `/approvals/${encodeURIComponent(approvalId)}/${action}`,
       extra,
     );
     if ($("sheet").open) $("sheet").close();
+    document.querySelectorAll("dialog[data-ui-modal][open]").forEach(el=>el.close());
     toast(
       action === "approve"
         ? tr("appr.approved", "Approved.")
@@ -358,6 +343,7 @@ async function decide(approvalId, action, extra) {
       }),
       true,
     );
+    if (reportError) throw err;
   }
 }
 
@@ -1564,21 +1550,7 @@ function renderTaskLog() {
 
 }
 async function renderApproval(id) {
-  if (!id) return;
-  const approval = await apiGet(`/approvals/${encodeURIComponent(id)}`);
-  if (parseHash().name !== "approval" || parseHash().arg !== id) return;
-  const live =
-    approval.status === "pending" &&
-    (!approval.expires_at || Date.parse(approval.expires_at) > Date.now());
-  openSheet(
-    `${tr("need.approvals", "Approval")} · ${approval.action_type}`,
-    `<div class="task-meta"><code>${esc(approval.id)}</code><span class="pill">${esc(approval.status)}</span></div>
-    ${reasonBlock(approval.reason || "")}
-    ${approval.action_type === "agent.provision" ? `<a class="btn" href="#/processes/provision/${esc(approval.action_payload?.draft_id || "")}">${state.lang === "vi" ? "Chỉnh sửa kế hoạch trước khi duyệt" : "Edit the plan before approval"}</a>` : ""}
-    <h3>${tr("appr.draft", "The exact draft requested for review")}</h3>${valueHTML(approval.action_payload || {})}
-    ${approval.task_id ? `<a class="btn" href="#/give/${encodeURIComponent(approval.task_id)}/decisions">${tr("need.open", "Open task")}</a>` : ""}
-    ${live ? `<div class="btn-row" style="margin-top:16px"><button class="btn primary" data-do="approve" data-id="${esc(id)}">${tr("appr.approve", "Approve")}</button><button class="btn danger" data-do="reject" data-id="${esc(id)}">${tr("appr.reject", "Reject")}</button></div>` : ""}`,
-  );
+  if (id) await window.ApprovalsUI.detail(id);
 }
 $("newTaskBtn").onclick = () => {
   $("newTaskForm").open = true;
@@ -2004,48 +1976,7 @@ document.addEventListener("click", async (e) => {
   }
   const btn = e.target.closest("button[data-appr]");
   if (!btn) return;
-  const doing = btn.dataset.do;
-  const note =
-    doing === "approve"
-      ? null
-      : window.prompt(
-          tr(
-            "appr.whyrefused",
-            "Why is this refused?\n\nThe reason is kept with the decision, so the next reader can " +
-              "see what was considered. An approval with no note is a tick in a box.",
-          ),
-        );
-  if (doing !== "approve" && (note === null || !note.trim())) return;
-  btn.disabled = true;
-  try {
-    await apiPost(
-      `/approvals/${encodeURIComponent(btn.dataset.appr)}/${doing}`,
-      doing === "approve" ? {} : { note: note.trim() },
-    );
-    toast(
-      doing === "approve"
-        ? tr("appr.decided", "Decided, and written to the log.")
-        : tr("appr.refused_note", "Refused, with your reason."),
-    );
-    await renderOneTask(parseHash().arg);
-    // The queue's count changes the moment a decision is made, so the badge must follow.
-    try {
-      const q = await apiGet("/ceo/work", { limit: 1 });
-      const b = $("navWorkCount");
-      if (b) {
-        b.textContent = q.needs_you ? String(q.needs_you) : "";
-        b.hidden = !q.needs_you;
-      }
-    } catch {
-      /* the badge is not worth a second error */
-    }
-  } catch (err) {
-    btn.disabled = false;
-    toast(
-      t_fmt("appr.couldnot", "Could not record that: {e}", { e: err.message }),
-      true,
-    );
-  }
+  window.ApprovalsUI.confirm(btn.dataset.appr,btn.dataset.do);
 });
 
 /* ====================== documents ======================
