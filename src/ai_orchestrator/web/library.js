@@ -175,7 +175,7 @@
       const developmentOnly = item.derived_from?.development_only === true;
       let html = card(
         item.name,
-        `<code>${esc(item.id)}</code><p>${esc(item.description)}</p>` +
+        `${UI.copyId(item.id)}<p>${esc(item.description)}</p>` +
           fields([
             [L("Version", "Phiên bản"), item.current_version],
             [
