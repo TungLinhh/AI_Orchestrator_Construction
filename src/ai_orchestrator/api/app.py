@@ -111,6 +111,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url="/docs",
         openapi_url="/openapi.json",
     )
+    import asyncio
+
+    app.state.source_parser_slots = asyncio.Semaphore(2)
     app.state.settings = settings
 
     _install_middleware(app, settings)
@@ -123,6 +126,28 @@ def _install_middleware(app: FastAPI, settings: Settings) -> None:
     from fastapi.middleware.cors import CORSMiddleware
 
     from ai_orchestrator.security.rate_limit import RateLimitMiddleware
+
+    @app.middleware("http")
+    async def source_upload_limit(request: Any, call_next: Any) -> Any:
+        if request.method == "POST" and request.url.path.endswith("/source-files"):
+            length = request.headers.get("content-length")
+            if length is None:
+                return JSONResponse(
+                    status_code=411,
+                    content={"error": {"message": "Uploads require Content-Length"}},
+                )
+            try:
+                size = int(length)
+            except ValueError:
+                return JSONResponse(
+                    status_code=400, content={"error": {"message": "Invalid Content-Length"}}
+                )
+            if not 0 < size <= 10 * 1024 * 1024 + 65536:
+                return JSONResponse(
+                    status_code=413,
+                    content={"error": {"message": "Upload exceeds 10 MiB plus form metadata"}},
+                )
+        return await call_next(request)
 
     app.add_middleware(RateLimitMiddleware, settings=settings)
     app.add_middleware(
@@ -199,13 +224,16 @@ def _install_routes(app: FastAPI) -> None:
     from ai_orchestrator.api.runtime import router as runtime_router
     from ai_orchestrator.api.scenarios import router as scenarios_router
     from ai_orchestrator.api.skills_tools import router as skills_tools_router
-    from ai_orchestrator.api.stream import router as stream_router
-    from ai_orchestrator.api.tasks import router as tasks_router
 
     # Health lives at the root, not under the versioned prefix. A probe does not
     # know or care which API version is deployed, and `/api/v1/health` returning
     # 404 while the service is perfectly healthy is a false alarm that gets
     # somebody paged.
+    from ai_orchestrator.api.sources import router as source_router
+    from ai_orchestrator.api.stream import router as stream_router
+    from ai_orchestrator.api.tasks import router as tasks_router
+
+    app.include_router(source_router, prefix="/api/v1")
     app.include_router(health_router)
 
     # Order is load-bearing, not alphabetical. Starlette matches in registration

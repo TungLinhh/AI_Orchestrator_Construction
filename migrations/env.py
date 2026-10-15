@@ -35,6 +35,7 @@ if str(SRC) not in sys.path:
 # Every module that declares domain tables, imported for the side effect. A table
 # only reaches `Base.metadata` when its module is imported, so a module missing
 # here is a module whose tables autogenerate would propose to DROP.
+import ai_orchestrator.persistence.sources  # noqa: E402
 import ai_orchestrator.persistence.agent_framework  # noqa: E402
 import ai_orchestrator.persistence.commercial  # noqa: E402
 import ai_orchestrator.persistence.construction  # noqa: E402

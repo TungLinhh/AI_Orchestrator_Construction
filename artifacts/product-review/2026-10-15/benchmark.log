@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/vutun/.codex/worktrees/23e2/ai_orchestrator/scripts/benchmark_free_models.py", line 263, in <module>
+    raise SystemExit(asyncio.run(main(parser.parse_args())))
+                     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/linuxbrew/.linuxbrew/opt/python@3.14/lib/python3.14/asyncio/runners.py", line 205, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/home/linuxbrew/.linuxbrew/opt/python@3.14/lib/python3.14/asyncio/runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/linuxbrew/.linuxbrew/opt/python@3.14/lib/python3.14/asyncio/base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/vutun/.codex/worktrees/23e2/ai_orchestrator/scripts/benchmark_free_models.py", line 214, in main
+    raise ValueError("Requested model missing or no longer free: " + candidate.model)
+ValueError: Requested model missing or no longer free: inclusionai/ling-3.0-flash-sante:free

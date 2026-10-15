@@ -1,0 +1,54 @@
+{
+  "output": {
+    "findings": [
+      {
+        "text": "Hồ sơ van cần chứng chỉ HSE",
+        "source_id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+        "locator": "brief.docx#paragraph:1",
+        "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+      },
+      {
+        "text": "Chưa đặt hàng",
+        "source_id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+        "locator": "brief.docx#paragraph:1",
+        "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+      },
+      {
+        "text": "SYNTHETIC ACCEPTANCE",
+        "source_id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+        "locator": "brief.docx#paragraph:1",
+        "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+      }
+    ],
+    "limitations": [
+      "Chỉ có một đoạn văn bản ngắn, không cung cấp chi tiết loại van, tiêu chuẩn HSE cụ thể, hay quy trình phê duyệt.",
+      "Không có thông tin về nhà cung cấp, báo giá, hoặc tài liệu kỹ thuật đi kèm.",
+      "Chưa có chứng chỉ HSE thực tế hoặc bằng chứng đã hoàn thành."
+    ],
+    "summary": "Hồ sơ van yêu cầu chứng chỉ HSE và chưa có đặt hàng, thiếu chi tiết về loại van và nhà cung cấp."
+  },
+  "manifest": {
+    "sources": [
+      {
+        "id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+        "error": null,
+        "state": "ready",
+        "origin": "upload",
+        "sha256": "d30dd269dc44fcbe0458bdea81f33adc0ef815b7ec03a14b575ed821ea670493",
+        "filename": "acceptance.zip",
+        "warnings": [],
+        "synthetic": false,
+        "byte_count": 36578,
+        "created_at": "2026-10-15T00:23:55.610290+00:00",
+        "media_type": "application/zip",
+        "org_unit_id": null,
+        "reviewed_from": null,
+        "classification": "internal",
+        "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+      }
+    ],
+    "version": 1,
+    "id": "smf_01m4yf3czqs08pvxxn95jmhmwk",
+    "sha256": "1e0f0c238f3550e682ffcae1d078ac06e620756221da7c0690fc9139bec6555f"
+  }
+}

@@ -18,7 +18,11 @@ def main():
     parser.add_argument("--org", required=True)
     parser.add_argument("--provider", default="openrouter")
     parser.add_argument("--chromium", help="Also boot the live product's nine main pages")
-    parser.add_argument("--primary-model", default="dots-studio/dots-3-note-preview:free")
+    from ai_orchestrator.models.profiles import default_profiles
+
+    parser.add_argument(
+        "--primary-model", default=default_profiles()["primary"].candidates[0].model
+    )
     parser.add_argument("--out", type=Path, default=Path("artifacts/ui-shots/07-final"))
     args = parser.parse_args()
     if urlparse(args.base).hostname not in {"127.0.0.1", "localhost"}:

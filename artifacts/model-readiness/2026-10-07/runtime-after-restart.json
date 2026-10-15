@@ -1,0 +1,62 @@
+{
+  "observed_at": "2026-10-07T12:58:17.772467+00:00",
+  "scope": "GET and socket probes only",
+  "checks": [
+    {
+      "path": "/health",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "path": "/ready",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "path": "/api/v1/model-profiles",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "path": "/api/v1/agents?limit=200",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "path": "/api/v1/tools?limit=200",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "path": "/api/v1/skills?limit=200",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "path": "/api/v1/documents/summary",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "path": "/api/v1/stream/status",
+      "passed": false,
+      "error": "ConnectError: All connection attempts failed"
+    },
+    {
+      "port": 55432,
+      "passed": true,
+      "scope": "socket only"
+    },
+    {
+      "port": 4222,
+      "passed": true,
+      "scope": "socket only"
+    },
+    {
+      "port": 7233,
+      "passed": true,
+      "scope": "socket only"
+    }
+  ],
+  "passed": false
+}

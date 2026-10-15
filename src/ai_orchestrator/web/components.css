@@ -4,7 +4,7 @@
     --ui-panel-radius: var(--radius);
     --ui-overlay-radius: var(--radius-dialog);
     --ui-control-gap: var(--space-8);
-    --ui-section-gap: var(--space-20);
+    --ui-section-gap: var(--space-16);
     --ui-disabled-opacity: 0.65;
     --ui-icon-size: var(--space-20);
     --ui-control-sm: 32px;
@@ -53,6 +53,9 @@
     cursor: pointer;
     transition:
       background-color var(--motion-fast) var(--ease-standard),
+      border-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard),
+      color var(--motion-fast) var(--ease-standard),
       transform var(--motion-instant) var(--ease-standard);
   }
   .ui-btn-sm {
@@ -66,17 +69,28 @@
   }
   .ui-btn:hover {
     background: var(--color-fill-hover);
+    border-color: color-mix(in srgb, var(--color-accent) 38%, var(--color-border-control));
+    box-shadow: var(--shadow-small);
   }
   .ui-btn:active {
     transform: translateY(1px);
+    box-shadow: none;
+  }
+  .ui-btn:focus-visible {
+    box-shadow: var(--ring-focus);
   }
   .ui-btn-primary {
     color: var(--color-on-accent);
-    background: var(--color-accent);
+    background: var(--accent-gradient, var(--color-accent));
+    background-color: var(--color-accent);
     border-color: var(--color-accent-border);
+    box-shadow: inset 0 1px 0 #ffffff2e, var(--shadow-small);
   }
   .ui-btn-primary:hover {
-    background: var(--color-accent-hover);
+    background: var(--accent-gradient-hover, var(--color-accent-hover));
+    background-color: var(--color-accent-hover);
+    border-color: var(--color-accent-border);
+    box-shadow: inset 0 1px 0 #ffffff2e, var(--shadow-control);
   }
   .ui-btn-danger {
     color: var(--color-danger-fg);
@@ -257,6 +271,7 @@
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--ui-panel-radius);
+    box-shadow: var(--shadow-control);
     min-width: 0;
   }
   .ui-section-header {
@@ -294,6 +309,20 @@
     background: var(--ui-tone-bg);
     border: 1px solid var(--ui-tone-border);
     border-radius: var(--ui-control-radius);
+    box-shadow: var(--shadow-small);
+  }
+  /* Pure-information callouts (no actions) rest on frosted glass instead of a
+     flat tint. Tones with actions stay solid so their controls keep full
+     contrast; the tone text color is unchanged either way. */
+  .ui-callout.ui-glass {
+    background: color-mix(in srgb, var(--ui-tone-bg) 82%, transparent);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .ui-callout.ui-glass {
+      background: var(--ui-tone-bg);
+    }
   }
   .ui-callout > .ui-icon {
     margin-top: var(--space-2);
@@ -327,9 +356,14 @@
     display: block;
     height: var(--space-16);
     border-radius: var(--space-4);
-    background: var(--color-fill-hover);
-    animation: ui-pulse var(--motion-emphasized) var(--ease-standard) infinite
-      alternate;
+    background: linear-gradient(
+      100deg,
+      var(--color-fill-hover) 35%,
+      var(--color-surface-1) 50%,
+      var(--color-fill-hover) 65%
+    );
+    background-size: 200% 100%;
+    animation: ui-shimmer var(--motion-slow) linear infinite;
   }
   .ui-skeleton > span:last-child {
     width: 60%;
@@ -369,9 +403,13 @@
     padding: var(--row-padding);
     min-height: var(--row-min-height);
     border-bottom: 1px solid var(--color-border-subtle);
+    transition: background-color var(--motion-fast) var(--ease-standard);
   }
   .ui-list-row:hover {
-    background: var(--color-fill);
+    background: var(--color-fill-hover);
+  }
+  .ui-list-row:focus-within {
+    background: var(--color-fill-hover);
   }
   .ui-row-main {
     flex: 1 1 240px;
@@ -428,6 +466,11 @@
     color: var(--color-text);
     border: 0;
     background: transparent;
+    border-radius: var(--space-4);
+    transition: color var(--motion-fast) var(--ease-standard);
+  }
+  .ui-table th button:hover {
+    color: var(--color-accent);
   }
   .ui-tabs {
     position: relative;
@@ -451,6 +494,13 @@
     border-radius: var(--space-4);
     font-size: var(--text-sm);
     font-weight: 500;
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      color var(--motion-fast) var(--ease-standard);
+  }
+  .ui-tabs button:hover {
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-fill-hover) 70%, transparent);
   }
   .ui-tabs button[aria-selected="true"],
   .ui-tabs button[aria-pressed="true"] {
@@ -514,7 +564,7 @@
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-control);
     border-radius: var(--ui-overlay-radius);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-pop);
   }
   .ui-menu button {
     display: flex;
@@ -564,7 +614,7 @@
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-control);
     border-radius: var(--ui-overlay-radius);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-pop);
   }
   .ui-dialog::backdrop {
     background: color-mix(in srgb, var(--color-text) 35%, transparent);
@@ -590,16 +640,26 @@
     width: min(var(--ui-toast-width), calc(100vw - var(--space-40)));
     z-index: var(--z-overlay);
   }
+  /* Toasts are read-only notices, so they float on frosted glass. The tone text
+     color is untouched and the fill stays 88% opaque, keeping the measured
+     text contrast where the solid tone already passes it. */
   .ui-toast {
     display: flex;
     align-items: center;
     gap: var(--space-12);
     padding: var(--space-12);
     color: var(--ui-tone-fg);
-    background: var(--ui-tone-bg);
+    background: color-mix(in srgb, var(--ui-tone-bg) 88%, transparent);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
     border: 1px solid var(--ui-tone-border);
     border-radius: var(--ui-control-radius);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-toast);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .ui-toast {
+      background: var(--ui-tone-bg);
+    }
   }
   .ui-toast > span {
     flex: 1;
@@ -641,6 +701,14 @@
   @keyframes ui-pulse {
     to {
       opacity: 0.6;
+    }
+  }
+  @keyframes ui-shimmer {
+    from {
+      background-position: 180% 0;
+    }
+    to {
+      background-position: -80% 0;
     }
   }
   @media (max-width: 640px) {
@@ -691,7 +759,7 @@
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-control);
     border-radius: var(--ui-overlay-radius);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-pop);
   }
   .ui-popover:popover-open {
     display: grid;
@@ -834,8 +902,42 @@
 
 @layer components {
   .ui-dialog[open], .ui-toast { animation:ui-overlay-in var(--motion-fast) var(--ease-enter); }
+  .ui-dialog[data-ui-modal="drawer"][open] { animation:ui-drawer-in var(--motion-base) var(--ease-enter); }
+  dialog.shell-drawer[open] { animation:ui-drawer-in var(--motion-base) var(--ease-enter); }
   .ui-popover:popover-open { animation:ui-overlay-in var(--motion-fast) var(--ease-enter); }
+  .ui-menu:not([hidden]) { animation:ui-overlay-in var(--motion-fast) var(--ease-enter); transform-origin:top left; }
   @keyframes ui-overlay-in { from { opacity:0; transform:translateY(var(--space-4)); } to { opacity:1; transform:none; } }
+  @keyframes ui-drawer-in { from { opacity:0; transform:translateX(28px); } to { opacity:1; transform:none; } }
+  @keyframes ui-expand-in { from { opacity:0; transform:translateY(calc(-1 * var(--space-4))); } to { opacity:1; transform:none; } }
+  /* Expanding panels fade their bodies in; the <details> itself stays instant so
+     keyboard toggling never waits on motion. */
+  .ui-disclosure[open] > .ui-disclosure-body,
+  details.issue[open] > .issue-body,
+  details.auxiliary[open] > .ui-panel-body,
+  #newTaskForm[open] > .ui-panel-body {
+    animation: ui-expand-in var(--motion-base) var(--ease-enter);
+  }
 }
 
 @layer components { .ui-toast a { color:inherit; text-decoration:underline; text-underline-offset:.2em; } }
+
+@layer components {
+  /* The rail glides and lifts while peeking; toggle placement, persistence and
+     the mobile drawer in shell.css are not touched here. */
+  #sidebar {
+    transition:
+      background-color var(--motion-base) var(--ease-standard),
+      box-shadow var(--motion-base) var(--ease-standard);
+  }
+  .sidebar-collapsed.sidebar-peek #sidebar {
+    box-shadow: var(--shadow-pop);
+  }
+  .ui-metric-strip > button {
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard);
+  }
+  .ui-metric-strip > button:focus-visible {
+    box-shadow: var(--ring-focus);
+  }
+}

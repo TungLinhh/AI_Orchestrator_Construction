@@ -676,12 +676,21 @@ class TestTheConsoleCanSeeAnything:
 
     async def test_the_page_renders_a_delegation_event(self, client: Any, tenant: Any) -> None:
         """The one that was blank: 189 real events and zero lines rendered."""
-        from ai_orchestrator.api.stream import backfill
+        from sqlalchemy import select
 
+        from ai_orchestrator.api.stream import backfill
+        from ai_orchestrator.persistence.models import Organization
+        from ai_orchestrator.seed import seed
+        from tests.integration.delegation_event_fixture import create_delegation_event
+
+        org = await tenant.session.scalar(
+            select(Organization).where(Organization.id == tenant.organization_id)
+        )
+        await seed(tenant.session, into=org)
+        await create_delegation_event(tenant)
         frames = await backfill(tenant.session, tenant.organization_id, 50)
         delegations = [f for f in frames if str(f["type"]).startswith("delegation.")]
-        if not delegations:
-            pytest.skip("no published delegation to check the page against")
+        assert delegations, "the persisted delegation produced no renderable event"
         await self._page_reads_a_real_frame(client, tenant, delegations[0])
 
     async def test_the_page_does_not_read_a_field_that_does_not_exist(self, client: Any) -> None:

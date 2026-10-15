@@ -1,0 +1,41 @@
+{
+  "output": {
+    "findings": [
+      {
+        "text": "Tài liệu cho biết hồ sơ van yêu cầu chứng chỉ HSE và chưa tiến hành đặt hàng.",
+        "source_id": "src_01m4y7br3580k4gwzbay83szt6",
+        "locator": "brief.docx#paragraph:1",
+        "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+      }
+    ],
+    "limitations": [
+      "Thông tin này đến từ synthetic acceptance, chưa phải là đơn hàng thực tế.",
+      "Chưa có bằng chứng về việc đặt hàng hoặc cung cấp chứng chỉ."
+    ],
+    "summary": "Đánh giá hồ sơ van: cần có chứng chỉ HSE nhưng chưa tiến hành đặt hàng."
+  },
+  "manifest": {
+    "sources": [
+      {
+        "id": "src_01m4y7br3580k4gwzbay83szt6",
+        "error": null,
+        "state": "ready",
+        "origin": "upload",
+        "sha256": "3cf83389f253372f8f6229af76bdf4f3e7037ff2146958dec90135306d34d076",
+        "filename": "acceptance.zip",
+        "warnings": [],
+        "synthetic": false,
+        "byte_count": 36578,
+        "created_at": "2026-10-14T22:08:40.552032+00:00",
+        "media_type": "application/zip",
+        "org_unit_id": null,
+        "reviewed_from": null,
+        "classification": "internal",
+        "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+      }
+    ],
+    "version": 1,
+    "id": "smf_01m4y7br4m7yy5pfyqh39s87cs",
+    "sha256": "e0a760833df52dd56b749a40b772fc42036134ace516465282161829fce59412"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "output": {
+    "findings": [
+      {
+        "text": "Báo giá A: số lượng 12, giá đơn vị 120000, giao hàng 80000, đã certify.",
+        "source_id": "src_01m4y7nfj59dq01vmmpm895vb4",
+        "locator": "lines:1-4",
+        "quote": "A,Valve-1,12,120000,80000,true"
+      },
+      {
+        "text": "Báo giá B không có chứng chỉ (certified=false) nên loại.",
+        "source_id": "src_01m4y7nfj59dq01vmmpm895vb4",
+        "locator": "lines:1-4",
+        "quote": "B,Valve-1,12,110000,0,false"
+      },
+      {
+        "text": "Báo giá C có chứng chỉ nhưng tổng chi phí cao hơn A.",
+        "source_id": "src_01m4y7nfj59dq01vmmpm895vb4",
+        "locator": "lines:1-4",
+        "quote": "C,Valve-1,12,130000,0,true"
+      },
+      {
+        "text": "Tổng chi phí cho A: 12 * 120000 + 80000 = 1520000 VND.",
+        "source_id": "src_01m4y7nfj59dq01vmmpm895vb4",
+        "locator": "lines:1-4",
+        "quote": "A,Valve-1,12,120000,80000,true"
+      }
+    ],
+    "limitations": [
+      "Chỉ có 3 báo giá được phân tích",
+      "Không có thông tin về yêu cầu chứng chỉ cụ thể"
+    ],
+    "summary": "Đánh giá ba báo giá cho Valve-1: A được chọn vì có chứng chỉ và tổng chi phí thấp nhất trong các báo giá có chứng chỉ.",
+    "total_vnd": 1520000,
+    "winner": "A"
+  },
+  "manifest": {
+    "sources": [
+      {
+        "id": "src_01m4y7nfj59dq01vmmpm895vb4",
+        "error": null,
+        "state": "ready",
+        "origin": "mock",
+        "sha256": "05ebf8e68b197ada8d5b88dcee5a7531a1e71ae547ca82596586e21768af37ce",
+        "filename": "mock-quotes-1.csv",
+        "warnings": [],
+        "synthetic": true,
+        "byte_count": 139,
+        "created_at": "2026-10-14T22:13:59.497314+00:00",
+        "media_type": "text/csv",
+        "org_unit_id": null,
+        "reviewed_from": null,
+        "classification": "internal",
+        "extraction_sha256": "4c733fffc052d49b2afc17b2fac32b3ae24ffe6bf0eebc7d35a60eeaa2e74a3e"
+      }
+    ],
+    "version": 1,
+    "id": "smf_01m4y7nfmf2scezqf8hst9nv9v",
+    "sha256": "c398506fb1171998f25193d53b2dbf6ba9e43cd1122a9ee3ed593df17c690c20"
+  }
+}

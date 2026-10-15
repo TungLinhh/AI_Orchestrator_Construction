@@ -116,8 +116,8 @@ def _classification(
 ) -> DataClassification:
     """Parse a classification, falling back to the strictest on nonsense.
 
-    The fallback is `RESTRICTED`, not `PUBLIC`. A typo in an operator's row must not
-    *widen* what a tenant's data may be sent to, and the strictest value means a
+    The invalid-value fallback is `PUBLIC`, the lowest disclosure ceiling.
+    A typo must not widen what a tenant's data may be sent to. This means a
     misconfigured row refuses work rather than leaking it.
     """
     if value is None:
@@ -125,8 +125,8 @@ def _classification(
     try:
         return DataClassification(value)
     except ValueError:
-        warn(f"{where}: unknown data classification {value!r}; treated as RESTRICTED")
-        return DataClassification.RESTRICTED
+        warn(f"{where}: unknown data classification {value!r}; treated as PUBLIC")
+        return DataClassification.PUBLIC
 
 
 def _candidate(

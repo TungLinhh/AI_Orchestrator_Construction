@@ -656,6 +656,33 @@ async def _activate(agents: AgentRepository, agent_id: str) -> None:
     await agents.transition(agent_id, Transition.ACTIVATE)
 
 
+async def ensure_register_roles(session: AsyncSession, organization_id: str) -> int:
+    """Seed missing register role names conservatively, never grant new authority.
+
+    The demo hierarchy and the dossier register use different role sets. Reference
+    roles need to exist for a clean install; they need no operational grants.
+    """
+    from ai_orchestrator.domain.agent_register import REGISTER
+    from ai_orchestrator.persistence.models import Role
+
+    names = set(
+        await session.scalars(select(Role.name).where(Role.organization_id == organization_id))
+    )
+    repository = RoleRepository(session, organization_id)
+    written = 0
+    for name in sorted({spec.role_name for spec in REGISTER} - names):
+        await repository.create(
+            name=name,
+            description="Reference role from the agent register; no additional authority granted.",
+            max_autonomy="L1",
+            allowed_capabilities=[],
+            may_delegate_to_peers=False,
+            may_spawn_subagents=False,
+        )
+        written += 1
+    return written
+
+
 async def seed(
     session: AsyncSession,
     *,
@@ -679,6 +706,7 @@ async def seed(
         existing = await session.execute(select(Organization).where(Organization.slug == slug))
         found = existing.scalar_one_or_none()
         if found is not None:
+            await ensure_register_roles(session, str(found.id))
             logger.info("seed.already_present", slug=slug, organization_id=found.id)
             return found
         org = None
@@ -993,6 +1021,7 @@ async def seed(
     # writes up as a failure: a plausible wrong answer, printed with confidence.
     units_created = 1 + len(OFFICES) + (len(DEPARTMENTS) - 1)
     agents_created = 1 + len(OFFICES) + len(department_agents)
+    await ensure_register_roles(session, str(org_id))
     logger.info(
         "seed.created",
         organization_id=org_id,

@@ -366,6 +366,19 @@ class ApprovalService:
             raise AuthorizationError(msg, details={"rule": "APPROVER_NOT_PRIVILEGED"})
 
         approval = await self.get(approval_id)
+        # Serialize decisions, then inspect the same task lineage the executor uses.
+        await self._session.refresh(approval, with_for_update=True)
+        if approval.action_type == "task.continue" and approval.task_id:
+            from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+            blocker = await TaskRepository(self._session, self._org).terminal_lineage(
+                approval.task_id
+            )
+            if blocker:
+                raise PreconditionError(
+                    "This review is obsolete: task lineage already ended", details=blocker
+                )
+
         if approval.status != ApprovalStatus.PENDING.value:
             msg = (
                 f"approval {approval_id} is already {approval.status}; a decided "

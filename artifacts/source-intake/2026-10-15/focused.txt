@@ -1,0 +1,38 @@
+.F...............................                                        [100%]
+=================================== FAILURES ===================================
+_____ test_stale_reviews_are_expired_without_human_approval_and_idempotent _____
+
+tenant = Tenant(organization_id='org_01m4y7q66w7jynsvr8xzse0jmw', session=<sqlalchemy.ext.asyncio.session.AsyncSession object a...ine.AsyncEngine object at 0x7cb7e6676e50>, autoflush=True, expire_on_commit=False), is_admin=False, _configured=False))
+
+    async def test_stale_reviews_are_expired_without_human_approval_and_idempotent(tenant):
+        org = await tenant.session.get(Organization, tenant.organization_id)
+        await seed(tenant.session, into=org)
+        repo = TaskRepository(tenant.session, tenant.organization_id)
+        parent = await repo.create(
+            title="Stopped parent", goal="Stopped parent", task_type="coordination"
+        )
+        child = await repo.create(
+            title="Child needs review", goal="Child needs review", parent_task_id=parent.id
+        )
+        service = TaskExecutionService(
+            session=tenant.session,
+            organization_id=tenant.organization_id,
+            runtime=_NeedsApprovalRuntime(),
+            run_mode=RunMode.SIMULATION,
+            auto_approve=False,
+        )
+        await service.execute_task(child.id)
+        child = await repo.get(child.id)
+>       assert child.status == "waiting_for_approval"
+E       AssertionError: assert 'failed' == 'waiting_for_approval'
+E         
+E         - waiting_for_approval
+E         + failed
+
+tests/integration/test_source_recovery.py:79: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-14 22:14:56 [info     ] seed.created                   agents=11 organization_id=org_01m4y7q66w7jynsvr8xzse0jmw units=11
+2026-10-14 22:14:56 [warning  ] task.failed                    category=planning_error reason='no agent is assigned and the task declares no owner' task_id=tsk_01m4y7q6s19jy2d7g4v5f2yjqy
+=========================== short test summary info ============================
+FAILED tests/integration/test_source_recovery.py::test_stale_reviews_are_expired_without_human_approval_and_idempotent
+1 failed, 32 passed in 16.30s

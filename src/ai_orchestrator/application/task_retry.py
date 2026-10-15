@@ -48,8 +48,11 @@ not terminal, and refusing to run would be the correct response to that impossib
 Copied: `goal`, `task_type`, `priority`, `input`, `constraints`, the requested output schema,
 and the budget ceilings. Those are the *work*.
 
-Not copied: `status` (it starts `created`), `owner_agent_id` (the retry is unassigned until
-somebody or the coordinator gives it an owner), `last_error`, `attempt_count`, the lease, and
+Not copied: `status` (a retry starts `created`, except a source-workflow retry keeps
+its owner so `create` marks it `assigned` — owned but unstarted, so Run stays allowed
+and no model run begins), `owner_agent_id` (the retry is unassigned until somebody or
+the coordinator gives it an owner, except a source-workflow retry keeps the previous
+owner so the executor's owner checks pass), `last_error`, `attempt_count`, the lease, and
 every spend figure. Those are the *history of the first attempt*, and copying them would make
 the new row claim a cost it did not incur.
 
@@ -63,11 +66,13 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ai_orchestrator.application.source_intake import SourceIntake
 from ai_orchestrator.domain.errors import ConflictError, NotFoundError
 from ai_orchestrator.persistence.repositories.task import TaskRepository
+from ai_orchestrator.persistence.sources import SourceManifest
 
 #: How a failure is named in the new task's title. Deliberately short and deliberately
 #: different: the operator's question at a glance is "is this the same work, again?", and the
@@ -154,6 +159,7 @@ async def retry_failed(
         (await session.execute(text(_CHAIN), {"o": organization_id, "id": task_id})).scalar_one()
     )
     tasks = TaskRepository(session, organization_id)
+    source = await tasks.get(task_id)
     retried = await tasks.create(
         title=f"{original['title'][:100]}{RETRY_MARKER} {attempt}",
         goal=original["goal"],
@@ -163,7 +169,27 @@ async def retry_failed(
         # piece of work rather than starting a second tree beside it.
         parent_task_id=original["parent_task_id"],
         requester_type="human",
+        owner_agent_id=source.owner_agent_id if source.input.get("source_workflow") else None,
+        priority=source.priority,
+        input=source.input,
+        constraints=source.constraints,
+        expected_output_schema=source.expected_output_schema,
+        budget_limit_tokens=source.budget_limit_tokens,
+        budget_limit_usd=float(source.budget_limit_usd)
+        if source.budget_limit_usd is not None
+        else None,
+        org_unit_id=source.org_unit_id,
     )
+    if source.input.get("source_workflow"):
+        manifest = await session.scalar(
+            select(SourceManifest).where(
+                SourceManifest.organization_id == organization_id, SourceManifest.task_id == task_id
+            )
+        )
+        if manifest is not None:
+            await SourceIntake(session, organization_id).bind(
+                retried, [entry["id"] for entry in manifest.snapshot["sources"]], manifest.selection
+            )
     # And the explicit dependency, so "this was a retry of that" is queryable without
     # reconstructing it from titles. Satisfied at once -- the failed task is terminal -- so it
     # never delays a run; see the module docstring for why that is not a deadlock.

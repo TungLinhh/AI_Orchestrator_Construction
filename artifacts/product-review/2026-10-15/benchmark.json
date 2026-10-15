@@ -1,0 +1,144 @@
+{
+  "observed_at": "2026-10-14T21:15:10.247351+00:00",
+  "synthetic": true,
+  "scope": "Pinned-model drafting checks; no real workflow or business action acceptance",
+  "rounds": 1,
+  "case_version": 2,
+  "deadline_ms": 30000,
+  "samples": [],
+  "catalogue": {
+    "thinkingmachines/inkling-small:free": {
+      "id": "thinkingmachines/inkling-small:free",
+      "canonical_slug": "thinkingmachines/inkling-small-20260730",
+      "hugging_face_id": "thinkingmachines/Inkling-Small",
+      "name": "Thinking Machines: Inkling Small (free)",
+      "created": 1785443117,
+      "description": "Inkling Small is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 12B active parameters out of 276B total. It is positioned as the smaller, more efficient member of...",
+      "context_length": 1048576,
+      "architecture": {
+        "modality": "text+image+audio->text",
+        "input_modalities": [
+          "text",
+          "image",
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 1048576,
+        "max_completion_tokens": 262144,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "reasoning_effort",
+        "seed",
+        "stop",
+        "temperature",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {
+        "temperature": null,
+        "top_p": null,
+        "top_k": null,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/thinkingmachines/inkling-small-20260730/endpoints"
+      },
+      "benchmarks": {
+        "design_arena": [],
+        "artificial_analysis": {
+          "intelligence_index": 25.7,
+          "coding_index": 52.9,
+          "agentic_index": 23.5
+        }
+      },
+      "reasoning": {
+        "mandatory": false,
+        "default_enabled": true,
+        "supported_efforts": [
+          "max",
+          "high",
+          "medium",
+          "low",
+          "minimal",
+          "none"
+        ],
+        "default_effort": "high"
+      }
+    },
+    "inclusionai/ling-3.0-flash-sante:free": null,
+    "dots-studio/dots-3-note-preview:free": {
+      "id": "dots-studio/dots-3-note-preview:free",
+      "canonical_slug": "dots-studio/dots-3-note-preview-20260813",
+      "hugging_face_id": null,
+      "name": "Dots Studio: Dots3-Note Preview (free)",
+      "created": 1786680361,
+      "description": "Dots3-Note Preview is an open-weight mixture-of-experts model from Dots Studio, with 16B active parameters out of 280B total. It is the lightest model in the Dots 3 family and is...",
+      "context_length": 512000,
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 512000,
+        "max_completion_tokens": 460800,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": "2026-12-31",
+      "links": {
+        "details": "/api/v1/models/dots-studio/dots-3-note-preview-20260813/endpoints"
+      },
+      "reasoning": {
+        "mandatory": false
+      }
+    }
+  }
+}

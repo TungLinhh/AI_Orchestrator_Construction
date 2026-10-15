@@ -1,0 +1,60 @@
+{
+  "synthetic": true,
+  "passed": true,
+  "original_task_id": "tsk_01m4y7e1vgrma4hbkpkpnqrmq3",
+  "task_id": "tsk_01m4y8dr9cg6c8zvt1xndt4w9h",
+  "created_by": "fixed source retry endpoint",
+  "manifest_sha256": "6d776dbcd4e6b7e951c20564c9b5dff394162213decd82b2449bcbf9bd69c50f",
+  "status": "completed",
+  "last_error": null,
+  "artifacts": [
+    {
+      "id": "art_01m4y8e9m80q1ajz8nksztkdg8",
+      "format": "docx",
+      "filename": "report-tsk_01m4y8dr9cg6c8zvt1xndt4w9h.docx",
+      "byte_count": 37414,
+      "sha256": "2fcd3ab4d379b33d6ef79bd276bc94b56d5f3f09d2f8b59999b9ec00510432a2",
+      "manifest_id": "smf_01m4y8dra1v5gjqzmpvxzamrd1"
+    },
+    {
+      "id": "art_01m4y8e9m80q1ajz8nksztkdga",
+      "format": "json",
+      "filename": "report-tsk_01m4y8dr9cg6c8zvt1xndt4w9h.json",
+      "byte_count": 2541,
+      "sha256": "dea6378e6b5441270494d18ca3113e0d5f05439f17eb6ff87b1027ec414f2369",
+      "manifest_id": "smf_01m4y8dra1v5gjqzmpvxzamrd1"
+    },
+    {
+      "id": "art_01m4y8e9m80q1ajz8nksztkdgb",
+      "format": "md",
+      "filename": "report-tsk_01m4y8dr9cg6c8zvt1xndt4w9h.md",
+      "byte_count": 1485,
+      "sha256": "3c0a0110bb6c7c86e0c4e9ef0516c40041b9749283ad3daa07318c24cc48886c",
+      "manifest_id": "smf_01m4y8dra1v5gjqzmpvxzamrd1"
+    },
+    {
+      "id": "art_01m4y8e9m80q1ajz8nksztkdg7",
+      "format": "pdf",
+      "filename": "report-tsk_01m4y8dr9cg6c8zvt1xndt4w9h.pdf",
+      "byte_count": 25710,
+      "sha256": "a505810daeebe3811eb4f07772ba18a325ba7649e4366c8c5e2cc4128ff68cf7",
+      "manifest_id": "smf_01m4y8dra1v5gjqzmpvxzamrd1"
+    },
+    {
+      "id": "art_01m4y8e9m80q1ajz8nksztkdg9",
+      "format": "xlsx",
+      "filename": "report-tsk_01m4y8dr9cg6c8zvt1xndt4w9h.xlsx",
+      "byte_count": 5952,
+      "sha256": "1db13c9fccb153f5fe52d93ef354b46b105d90adf25a6503eb06d374cabddb18",
+      "manifest_id": "smf_01m4y8dra1v5gjqzmpvxzamrd1"
+    },
+    {
+      "id": "art_01m4y8e9m80q1ajz8nksztkdgc",
+      "format": "zip",
+      "filename": "report-tsk_01m4y8dr9cg6c8zvt1xndt4w9h.zip",
+      "byte_count": 67261,
+      "sha256": "26a711989b0ef599d850de00546856fa8e7e1bc6068b8a92ba7297b4dc772158",
+      "manifest_id": "smf_01m4y8dra1v5gjqzmpvxzamrd1"
+    }
+  ]
+}

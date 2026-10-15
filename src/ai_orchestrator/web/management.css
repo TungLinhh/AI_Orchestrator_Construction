@@ -2,16 +2,16 @@
 .manage-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-20);
+  gap: var(--space-16);
 }
 .manage-body {
-  padding: var(--space-20);
+  padding: var(--space-16) var(--space-20);
   min-width: 0;
 }
 .manage-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-16);
+  gap: var(--space-12);
 }
 .manage-form label {
   display: flex;
@@ -51,14 +51,14 @@
 .record-fields {
   margin: 0;
   display: grid;
-  gap: var(--space-12);
+  gap: var(--space-8);
 }
 .record-fields > div {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr);
   gap: var(--space-12);
   border-bottom: 1px solid var(--line);
-  padding-bottom: var(--space-12);
+  padding-bottom: var(--space-8);
 }
 .record-fields dt {
   color: var(--text-2);
@@ -93,7 +93,7 @@
   font-weight: 600;
 }
 .identity-card {
-  padding: var(--space-20);
+  padding: var(--space-16) var(--space-20);
 }
 .identity-card h2 {
   margin: 0 0 var(--space-8);
@@ -120,8 +120,8 @@
 .list-footer {
   display: flex;
   justify-content: space-between;
-  gap: var(--space-16);
-  margin-top: var(--space-20);
+  gap: var(--space-12);
+  margin-top: var(--space-16);
   color: var(--text-2);
 }
 .nav .items {
@@ -178,7 +178,7 @@
 
 #managementBody {
   display: grid;
-  gap: var(--space-20);
+  gap: var(--space-16);
 }
 
 .notif { cursor: pointer; }

@@ -1,0 +1,3 @@
+quote_id,item,quantity,unit_price,delivery,certified
+A,Valve,12,120000,80000,true
+C,Valve,12,130000,0,true

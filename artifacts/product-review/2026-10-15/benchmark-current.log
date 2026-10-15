@@ -1,0 +1,32 @@
+{"model": "thinkingmachines/inkling-small:free", "case": "tender_comparison", "round": 1, "passed": false, "elapsed_ms": 153}
+{"model": "thinkingmachines/inkling-small:free", "case": "tool_round_trip", "round": 1, "passed": false, "elapsed_ms": 116}
+{"model": "thinkingmachines/inkling-small:free", "case": "missing_evidence_and_injection", "round": 1, "passed": false, "elapsed_ms": 95}
+{"model": "dots-studio/dots-3-note-preview:free", "case": "tender_comparison", "round": 1, "passed": true, "elapsed_ms": 6733}
+{"model": "dots-studio/dots-3-note-preview:free", "case": "tool_round_trip", "round": 1, "passed": true, "elapsed_ms": 4586}
+{"model": "dots-studio/dots-3-note-preview:free", "case": "missing_evidence_and_injection", "round": 1, "passed": false, "elapsed_ms": 7537}
+[
+  {
+    "model": "thinkingmachines/inkling-small:free",
+    "passed": 0,
+    "total": 3,
+    "attempted": 3,
+    "successful_p50_ms": null,
+    "successful_p95_ms": null
+  },
+  {
+    "model": "inclusionai/ling-3.0-flash-sante:free",
+    "passed": 0,
+    "total": 3,
+    "attempted": 0,
+    "successful_p50_ms": null,
+    "successful_p95_ms": null
+  },
+  {
+    "model": "dots-studio/dots-3-note-preview:free",
+    "passed": 2,
+    "total": 3,
+    "attempted": 3,
+    "successful_p50_ms": 5659.5,
+    "successful_p95_ms": 6733
+  }
+]

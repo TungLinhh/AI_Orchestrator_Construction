@@ -1,0 +1,40 @@
+{
+  "output": {
+    "findings": [
+      {
+        "text": "The valve dossier requires an HSE certificate and has not yet been ordered.",
+        "source_id": "src_01m4y78v5nz9xz44psr0vhdvnk",
+        "locator": "brief.docx#paragraph:1",
+        "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+      }
+    ],
+    "limitations": [
+      "Only one source was provided; no additional documentation available to verify status or identify other missing certificates."
+    ],
+    "summary": "Review of the acceptance documentation indicates that the valve dossier is missing an HSE certificate and the order for it has not been placed."
+  },
+  "manifest": {
+    "sources": [
+      {
+        "id": "src_01m4y78v5nz9xz44psr0vhdvnk",
+        "error": null,
+        "state": "ready",
+        "origin": "upload",
+        "sha256": "81d0d432ab87d73f7a6896e8b47de59596d6683a457ffa0ba1d65b42037079bf",
+        "filename": "acceptance.zip",
+        "warnings": [],
+        "synthetic": false,
+        "byte_count": 36578,
+        "created_at": "2026-10-14T22:07:05.397948+00:00",
+        "media_type": "application/zip",
+        "org_unit_id": null,
+        "reviewed_from": null,
+        "classification": "internal",
+        "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+      }
+    ],
+    "version": 1,
+    "id": "smf_01m4y78v6rrwwscw9w9jfvr4nd",
+    "sha256": "7d09bbe3c4f582ac557039ec7b811b9ad3d606e164b5dd5ea9b2993e3b786c7f"
+  }
+}

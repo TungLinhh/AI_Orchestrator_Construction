@@ -1,0 +1,186 @@
+{
+  "passed": true,
+  "root": "tsk_01m4b6hmvd1pheq8rhpcp92kpn",
+  "scope": "paused_synthetic_feedback_probe",
+  "human_approval": false,
+  "first_assessment": {
+    "state": "awaiting_confirmation",
+    "message": "Boss yêu cầu tuyển kỹ sư MEP có kinh nghiệm commissioning. Hãy lập kế hoạch cụ thể và hỏi lại nếu brief chưa đủ thông tin. Không giả lập phỏng vấn, quyết định con người hay onboarding đã xong.",
+    "revision": 1,
+    "assessment": {
+      "plan": [
+        {
+          "owner": "Executive Agent",
+          "action": "Xác nhận thông tin bổ sung từ Boss trước khi triển khai",
+          "stage_key": "brief",
+          "acceptance": "Boss trả lời 5 câu hỏi dưới bằng văn bản"
+        },
+        {
+          "owner": "Boss",
+          "action": "Boss duyệt định biên và ngân sách (headcount_review)",
+          "stage_key": "headcount_review",
+          "acceptance": "approved_plan có status pass từ Boss"
+        },
+        {
+          "owner": "HR Agent",
+          "action": "HR Agent soạn JD sáu phần theo rubric_spec và brief",
+          "stage_key": "jd",
+          "acceptance": "JD đủ 6 mục theo spec: Mục đích, Trách nhiệm, KPI, Thẩm quyền, Quan hệ, Yêu cầu năng lực"
+        },
+        {
+          "owner": "HR",
+          "action": "Duyệt JD (jd_review)",
+          "stage_key": "jd_review",
+          "acceptance": "HR duyệt JD, không đổi nội dung"
+        },
+        {
+          "owner": "HR Agent",
+          "action": "HR Agent soạn rubric có căn cứ theo SOP ONX-BO-HR-SOP-004",
+          "stage_key": "rubric",
+          "acceptance": "Rubric khớp rubric_spec: mechanical 25, electrical 25, coordination 20, commissioning 15, hse 10, documentation 5"
+        },
+        {
+          "owner": "HR",
+          "action": "Duyệt rubric (rubric_review)",
+          "stage_key": "rubric_review",
+          "acceptance": "HR duyệt rubric, không đổi"
+        }
+      ],
+      "questions": [
+        "Headcount_review đã được Boss duyệt chưa? (approved_plan đang trống)",
+        "Kinh nghiệm commissioning: số năm tối thiểu, ngành cụ thể?",
+        "BIM tools bắt buộc?",
+        "Địa điểm/remote?",
+        "Chứng chỉ HSE yêu cầu?"
+      ],
+      "skill_lesson": "Draft lesson đánh giá CV commissioning: dựa trên SOP ONX-BO-HR-SOP-004, trọng số mechanical 25đ, electrical 25đ, commissioning 15đ. Cần bằng chứng cụ thể từ CV: years of experience, project details, certification. Đây là draft để đánh giá sau, chưa published.",
+      "understanding": "Boss yêu cầu tuyển Kỹ sư MEP có commissioning experience cho O-Nexus. Brief có rubric_spec (mechanical 25, electrical 25, coordination 20, commissioning 15, hse 10, documentation 5), salary 20-35M, start 2026-10-15, synthetic CV trong hộp thư. Cần xác nhận thông tin từ Boss trước khi lập kế hoạch chi tiết. Các gate review (jd_review, rubric_review) đã sửa chủ sở hữu sang HR (vai trò người), không phải HR Agent."
+    },
+    "requested_at": "2026-10-07T12:48:51.297091+00:00",
+    "requested_by": "feedback-probe-system",
+    "lesson_status": "proposed",
+    "assessment_task_id": "tsk_01m4b6hn3vshtv63j21m9zb036",
+    "lesson_evidence_task_id": "tsk_01m4b6hn3vshtv63j21m9zb036"
+  },
+  "feedback": {
+    "state": "awaiting_confirmation",
+    "answers": "Trả lời các câu hỏi: kinh nghiệm MEP và commissioning tối thiểu ba năm, kiểm chứng qua CV và phỏng vấn kỹ thuật. Làm việc tại công trường dự án hư cấu demo ở Hà Nội. HSE yêu cầu huấn luyện an toàn công trường, cô lập điện và làm việc trên cao; chứng cứ do người phụ trách an toàn xác minh. BIM dùng Revit MEP và Navisworks. Ngày bắt đầu cố định theo brief, 2026-10-15; không cần hỏi lại về độ linh hoạt. Lương theo brief đã ghi. Chỉ dùng nguồn SOP đã đăng ký. HR duyệt JD/rubric, Design thực hiện phỏng vấn kỹ thuật; Boss duyệt lựa chọn và offer. Onboarding cần bằng chứng HR, an toàn và bàn giao mentor. Những dữ liệu chưa có phải hỏi hoặc chờ; không tuyên bố hoàn thành.",
+    "history": [
+      {
+        "actor": "feedback-probe-system",
+        "answers": "Trả lời các câu hỏi: kinh nghiệm MEP và commissioning tối thiểu ba năm, kiểm chứng qua CV và phỏng vấn kỹ thuật. Làm việc tại công trường dự án hư cấu demo ở Hà Nội. HSE yêu cầu huấn luyện an toàn công trường, cô lập điện và làm việc trên cao; chứng cứ do người phụ trách an toàn xác minh. BIM dùng Revit MEP và Navisworks. Ngày bắt đầu cố định theo brief, 2026-10-15; không cần hỏi lại về độ linh hoạt. Lương theo brief đã ghi. Chỉ dùng nguồn SOP đã đăng ký. HR duyệt JD/rubric, Design thực hiện phỏng vấn kỹ thuật; Boss duyệt lựa chọn và offer. Onboarding cần bằng chứng HR, an toàn và bàn giao mentor. Những dữ liệu chưa có phải hỏi hoặc chờ; không tuyên bố hoàn thành.",
+        "assessment_task_id": "tsk_01m4b6hn3vshtv63j21m9zb036"
+      }
+    ],
+    "message": "Boss yêu cầu tuyển kỹ sư MEP có kinh nghiệm commissioning. Hãy lập kế hoạch cụ thể và hỏi lại nếu brief chưa đủ thông tin. Không giả lập phỏng vấn, quyết định con người hay onboarding đã xong.",
+    "revision": 2,
+    "assessment": {
+      "plan": [
+        {
+          "owner": "Executive Agent",
+          "action": "Xác nhận trạng thái headcount_review với Boss (approved_plan đang trống)",
+          "stage_key": "brief",
+          "acceptance": "Boss trả lời bằng văn bản: headcount_review đã duyệt hay chưa; approved_plan có status pass từ Boss"
+        },
+        {
+          "owner": "Boss",
+          "action": "Boss duyệt định biên và ngân sách (headcount_review)",
+          "stage_key": "headcount_review",
+          "acceptance": "approved_plan có status pass từ Boss, định biên 1 người, ngân sách 20-35M"
+        },
+        {
+          "owner": "HR Agent",
+          "action": "HR Agent soạn JD kỹ sư MEP sáu phần theo rubric_spec và brief",
+          "stage_key": "jd",
+          "acceptance": "JD đủ 6 mục theo spec: Mục đích, Trách nhiệm, KPI, Thẩm quyền, Quan hệ, Yêu cầu năng lực; ghi rõ Revit MEP, Navisworks, 3 năm commissioning, Hà Nội"
+        },
+        {
+          "owner": "HR",
+          "action": "HR duyệt JD (jd_review)",
+          "stage_key": "jd_review",
+          "acceptance": "HR duyệt JD, không đổi nội dung"
+        },
+        {
+          "owner": "HR Agent",
+          "action": "HR Agent soạn rubric có căn cứ theo SOP",
+          "stage_key": "rubric",
+          "acceptance": "Rubric khớp rubric_spec: mechanical 25, electrical 25, coordination 20, commissioning 15, hse 10, documentation 5; căn cứ SOP ONX-BO-HR-SOP-004"
+        },
+        {
+          "owner": "HR",
+          "action": "HR duyệt rubric (rubric_review)",
+          "stage_key": "rubric_review",
+          "acceptance": "HR duyệt rubric, không đổi"
+        }
+      ],
+      "questions": [
+        "Headcount_review đã được Boss duyệt chưa? (approved_plan đang trống, cần Boss xác nhận bằng văn bản trước khi triển khai)"
+      ],
+      "skill_lesson": "Draft lesson đánh giá CV commissioning theo SOP ONX-BO-HR-SOP-004: trọng số mechanical 25đ, electrical 25đ, commissioning 15đ. Bằng chứng từ CV: years of experience, project details, certification; phỏng vấn kỹ thuật xác minh thực tế. Đây là draft để đánh giá sau, chưa published.",
+      "understanding": "Resolved: kinh nghiệm MEP/commissioning tối thiểu 3 năm (đã trả lời), BIM dùng Revit MEP và Navisworks (đã trả lời), địa điểm Hà Nội (đã trả lời), HSE yêu cầu huấn luyện an toàn công trường, cô lập điện, làm việc trên cao; chứng cứ do người phụ trách an toàn xác minh (đã trả lời), ngày bắt đầu cố định 2026-10-15 (đã trả lời), lương 20-35M (đã ghi trong brief), chỉ dùng SOP đã đăng ký, HR duyệt JD/rubric, Design phỏng vấn kỹ thuật, Boss duyệt lựa chọn và offer, onboarding cần bằng chứng HR/an toàn/mentor. Gaps: approved_plan trống → headcount_review chưa được Boss duyệt, đây là gate bắt buộc trước khi thực hiện JD/rubric. Cần Boss xác nhận bằng văn bản."
+    },
+    "requested_at": "2026-10-07T12:48:51.297091+00:00",
+    "requested_by": "feedback-probe-system",
+    "lesson_status": "proposed",
+    "assessment_task_id": "tsk_01m4b6jk949evveaw3ff9a15t3",
+    "previous_assessment": {
+      "plan": [
+        {
+          "owner": "Executive Agent",
+          "action": "Xác nhận thông tin bổ sung từ Boss trước khi triển khai",
+          "stage_key": "brief",
+          "acceptance": "Boss trả lời 5 câu hỏi dưới bằng văn bản"
+        },
+        {
+          "owner": "Boss",
+          "action": "Boss duyệt định biên và ngân sách (headcount_review)",
+          "stage_key": "headcount_review",
+          "acceptance": "approved_plan có status pass từ Boss"
+        },
+        {
+          "owner": "HR Agent",
+          "action": "HR Agent soạn JD sáu phần theo rubric_spec và brief",
+          "stage_key": "jd",
+          "acceptance": "JD đủ 6 mục theo spec: Mục đích, Trách nhiệm, KPI, Thẩm quyền, Quan hệ, Yêu cầu năng lực"
+        },
+        {
+          "owner": "HR",
+          "action": "Duyệt JD (jd_review)",
+          "stage_key": "jd_review",
+          "acceptance": "HR duyệt JD, không đổi nội dung"
+        },
+        {
+          "owner": "HR Agent",
+          "action": "HR Agent soạn rubric có căn cứ theo SOP ONX-BO-HR-SOP-004",
+          "stage_key": "rubric",
+          "acceptance": "Rubric khớp rubric_spec: mechanical 25, electrical 25, coordination 20, commissioning 15, hse 10, documentation 5"
+        },
+        {
+          "owner": "HR",
+          "action": "Duyệt rubric (rubric_review)",
+          "stage_key": "rubric_review",
+          "acceptance": "HR duyệt rubric, không đổi"
+        }
+      ],
+      "questions": [
+        "Headcount_review đã được Boss duyệt chưa? (approved_plan đang trống)",
+        "Kinh nghiệm commissioning: số năm tối thiểu, ngành cụ thể?",
+        "BIM tools bắt buộc?",
+        "Địa điểm/remote?",
+        "Chứng chỉ HSE yêu cầu?"
+      ],
+      "skill_lesson": "Draft lesson đánh giá CV commissioning: dựa trên SOP ONX-BO-HR-SOP-004, trọng số mechanical 25đ, electrical 25đ, commissioning 15đ. Cần bằng chứng cụ thể từ CV: years of experience, project details, certification. Đây là draft để đánh giá sau, chưa published.",
+      "understanding": "Boss yêu cầu tuyển Kỹ sư MEP có commissioning experience cho O-Nexus. Brief có rubric_spec (mechanical 25, electrical 25, coordination 20, commissioning 15, hse 10, documentation 5), salary 20-35M, start 2026-10-15, synthetic CV trong hộp thư. Cần xác nhận thông tin từ Boss trước khi lập kế hoạch chi tiết. Các gate review (jd_review, rubric_review) đã sửa chủ sở hữu sang HR (vai trò người), không phải HR Agent."
+    },
+    "lesson_evidence_task_id": "tsk_01m4b6jk949evveaw3ff9a15t3"
+  },
+  "model_calls": 3,
+  "models": [
+    "inclusionai/ling-3.0-flash-sante:free"
+  ],
+  "tokens": 20659,
+  "provider_output_tokens": 2474,
+  "provider_reasoning_tokens": 7014,
+  "model_latency_ms": 44307,
+  "cost_usd": "0.000000"
+}

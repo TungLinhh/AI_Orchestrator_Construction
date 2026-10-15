@@ -1,0 +1,42 @@
+{
+  "output": {
+    "findings": [
+      {
+        "text": "Tài liệu cho biết hồ sơ van cần chứng chỉ HSE và đơn hàng chưa được đặt.",
+        "source_id": "src_01m4yfv0vmz73ff3zbcxs49eaj",
+        "locator": "brief.docx#paragraph:1",
+        "quote": "Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+      }
+    ],
+    "limitations": [
+      "Chỉ có một tài liệu chấp nhận ngắn gọn được cung cấp; không có thông tin chi tiết về thông số kỹ thuật van hoặc yêu cầu chứng chỉ HSE.",
+      "Không có báo giá nhà cung cấp, thông số kỹ thuật hoặc kế hoạch procurement để kiểm tra.",
+      "Trạng thái quá trình lấy chứng chỉ HSE là không xác định."
+    ],
+    "summary": "Tài liệu chấp nhận cho thấy hồ sơ van yêu cầu chứng chỉ HSE nhưng hiện tại chưa có, và đơn hàng chưa được đặt. Điều này xác nhận một khoảng trống về tuân thủ chứng từ trước khi có thể tiến hành đặt hàng."
+  },
+  "manifest": {
+    "sources": [
+      {
+        "id": "src_01m4yfv0vmz73ff3zbcxs49eaj",
+        "error": null,
+        "state": "ready",
+        "origin": "upload",
+        "sha256": "a8a78e346bc89e1c0c63d140e851b0f2ff581837e8e8a77bc9cb16d9937352d0",
+        "filename": "acceptance.zip",
+        "warnings": [],
+        "synthetic": false,
+        "byte_count": 36578,
+        "created_at": "2026-10-15T00:36:49.653372+00:00",
+        "media_type": "application/zip",
+        "org_unit_id": null,
+        "reviewed_from": null,
+        "classification": "internal",
+        "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+      }
+    ],
+    "version": 1,
+    "id": "smf_01m4yfv0wmfk0annnj94yp2cah",
+    "sha256": "a2b51c9c5f57856efc39de72ad4790546e70cbdf56a0824bbcf9e12e7a73c2ff"
+  }
+}

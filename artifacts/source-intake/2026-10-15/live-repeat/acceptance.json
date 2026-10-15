@@ -1,0 +1,136 @@
+{
+  "synthetic": true,
+  "passed": false,
+  "cases": [
+    {
+      "mode": "mock",
+      "passed": false,
+      "source_ids": [
+        "src_01m4y79zysvf4kxyv03kpc2kzk"
+      ],
+      "task_id": "tsk_01m4y79zzdaak8mgmtn6dfrxr8",
+      "run": {
+        "task_id": "tsk_01m4y79zzdaak8mgmtn6dfrxr8",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "failed",
+      "error": "no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: candidate deadline exceeded",
+      "exception": "{'mode': 'mock', 'passed': False, 'source_ids': ['src_01m4y79zysvf4kxyv03kpc2kzk'], 'task_id': 'tsk_01m4y79zzdaak8mgmtn6dfrxr8', 'run': {'task_id': 'tsk_01m4y79zzdaak8mgmtn6dfrxr8', 'agent_id': 'agt_01m3ycsewvvcwbr1d1xap4f754', 'started': True, 'reason': '', 'already_running': False, 'estimate_seconds': 0, 'estimate_tokens': 0}, 'status': 'failed', 'error': \"no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: candidate deadline exceeded\"}"
+    },
+    {
+      "mode": "sources",
+      "passed": true,
+      "source_ids": [
+        "src_01m4y7br3580k4gwzbay83szt6"
+      ],
+      "task_id": "tsk_01m4y7br420t8081mypgv424yq",
+      "run": {
+        "task_id": "tsk_01m4y7br420t8081mypgv424yq",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4y7cf9n1jspnqm1z5ytz5mq",
+          "format": "docx",
+          "filename": "report-tsk_01m4y7br420t8081mypgv424yq.docx",
+          "byte_count": 37169,
+          "sha256": "6e125b86ec34f076be090e5494e0a810234cba793fb31f1428c118cb3412a4bb",
+          "manifest_id": "smf_01m4y7br4m7yy5pfyqh39s87cs"
+        },
+        {
+          "id": "art_01m4y7cf9n1jspnqm1z5ytz5ms",
+          "format": "json",
+          "filename": "report-tsk_01m4y7br420t8081mypgv424yq.json",
+          "byte_count": 1540,
+          "sha256": "46c4d4bbfb6efc4f273e664b62596d3d649032fcd9c45f53c83223916b8595cd",
+          "manifest_id": "smf_01m4y7br4m7yy5pfyqh39s87cs"
+        },
+        {
+          "id": "art_01m4y7cf9n1jspnqm1z5ytz5mt",
+          "format": "md",
+          "filename": "report-tsk_01m4y7br420t8081mypgv424yq.md",
+          "byte_count": 754,
+          "sha256": "7bbac9fd6c77360d823088bb9e6600b9dc14f2d7f1a12fdfdfd41d7bb426b54f",
+          "manifest_id": "smf_01m4y7br4m7yy5pfyqh39s87cs"
+        },
+        {
+          "id": "art_01m4y7cf9n1jspnqm1z5ytz5mp",
+          "format": "pdf",
+          "filename": "report-tsk_01m4y7br420t8081mypgv424yq.pdf",
+          "byte_count": 25000,
+          "sha256": "c0cd9fd7d4e5608f550dd27c50fe3fe99cfac11d5c20d7850989cf99ee4e4692",
+          "manifest_id": "smf_01m4y7br4m7yy5pfyqh39s87cs"
+        },
+        {
+          "id": "art_01m4y7cf9n1jspnqm1z5ytz5mr",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4y7br420t8081mypgv424yq.xlsx",
+          "byte_count": 5620,
+          "sha256": "2d12561c3fb9cb92a29894fa54334f75506ebac6eff68e345561110d3f3336b3",
+          "manifest_id": "smf_01m4y7br4m7yy5pfyqh39s87cs"
+        },
+        {
+          "id": "art_01m4y7cf9n1jspnqm1z5ytz5mv",
+          "format": "zip",
+          "filename": "report-tsk_01m4y7br420t8081mypgv424yq.zip",
+          "byte_count": 99492,
+          "sha256": "d6d0f1c355bae4ed52189907074e928e5ea753cdec3290e3d2793fe71c409ab3",
+          "manifest_id": "smf_01m4y7br4m7yy5pfyqh39s87cs"
+        }
+      ],
+      "output": {
+        "output": {
+          "findings": [
+            {
+              "text": "Tài liệu cho biết hồ sơ van yêu cầu chứng chỉ HSE và chưa tiến hành đặt hàng.",
+              "source_id": "src_01m4y7br3580k4gwzbay83szt6",
+              "locator": "brief.docx#paragraph:1",
+              "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+            }
+          ],
+          "limitations": [
+            "Thông tin này đến từ synthetic acceptance, chưa phải là đơn hàng thực tế.",
+            "Chưa có bằng chứng về việc đặt hàng hoặc cung cấp chứng chỉ."
+          ],
+          "summary": "Đánh giá hồ sơ van: cần có chứng chỉ HSE nhưng chưa tiến hành đặt hàng."
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4y7br3580k4gwzbay83szt6",
+              "error": null,
+              "state": "ready",
+              "origin": "upload",
+              "sha256": "3cf83389f253372f8f6229af76bdf4f3e7037ff2146958dec90135306d34d076",
+              "filename": "acceptance.zip",
+              "warnings": [],
+              "synthetic": false,
+              "byte_count": 36578,
+              "created_at": "2026-10-14T22:08:40.552032+00:00",
+              "media_type": "application/zip",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4y7br4m7yy5pfyqh39s87cs",
+          "sha256": "e0a760833df52dd56b749a40b772fc42036134ace516465282161829fce59412"
+        }
+      }
+    }
+  ]
+}

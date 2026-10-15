@@ -1,0 +1,378 @@
+{
+  "observed_at": "2026-10-14T21:15:49.263824+00:00",
+  "synthetic": true,
+  "scope": "Pinned-model drafting checks; no real workflow or business action acceptance",
+  "rounds": 1,
+  "case_version": 2,
+  "deadline_ms": 30000,
+  "samples": [
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+      "rejected_completions": [],
+      "elapsed_ms": 153,
+      "attempted": true
+    },
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "case": "tool_round_trip",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+      "rejected_completions": [],
+      "elapsed_ms": 116,
+      "attempted": true
+    },
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+      "rejected_completions": [],
+      "elapsed_ms": 95,
+      "attempted": true
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": false,
+      "attempted": false,
+      "elapsed_ms": null,
+      "error": "Requested model missing or no longer free"
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "case": "tool_round_trip",
+      "round": 1,
+      "passed": false,
+      "attempted": false,
+      "elapsed_ms": null,
+      "error": "Requested model missing or no longer free"
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": false,
+      "attempted": false,
+      "elapsed_ms": null,
+      "error": "Requested model missing or no longer free"
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": true,
+      "output": "",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_346c2ace34c74fe094de297d",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"decision\": \"A\", \"external_action_completed\": false, \"source\": \"quote:A:line1\", \"total_vnd\": 1520000}"
+          }
+        }
+      ],
+      "model_used": "dots-studio/dots-3-note-preview:free",
+      "usage": {
+        "prompt_tokens": 369,
+        "completion_tokens": 510,
+        "total_tokens": 879,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 394,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 879,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "elapsed_ms": 6733,
+      "attempted": true
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "tool_round_trip",
+      "round": 1,
+      "passed": true,
+      "first_turn": {
+        "tool_calls": [
+          {
+            "type": "function",
+            "index": 0,
+            "id": "call_a7910ab6ae824d2dbb454a3d",
+            "function": {
+              "name": "calculator",
+              "arguments": "{\"a\": 17, \"b\": 25}"
+            }
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 203,
+          "completion_tokens": 80,
+          "total_tokens": 283,
+          "cost": 0,
+          "is_byok": false,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+          },
+          "cost_details": {
+            "upstream_inference_cost": 0,
+            "upstream_inference_prompt_cost": 0,
+            "upstream_inference_completions_cost": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 56,
+            "image_tokens": 0,
+            "audio_tokens": 0
+          }
+        }
+      },
+      "output": "",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_3244943f949641b4a005485d",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"tool_result\": 42}"
+          }
+        }
+      ],
+      "model_used": "dots-studio/dots-3-note-preview:free",
+      "usage": {
+        "prompt_tokens": 264,
+        "completion_tokens": 106,
+        "total_tokens": 370,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 72,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 370,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "elapsed_ms": 4586,
+      "attempted": true
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'dots-studio/dots-3-note-preview:free': openrouter/dots-studio/dots-3-note-preview:free: openrouter/dots-studio/dots-3-note-preview:free: inconsistent completion/reasoning usage",
+      "rejected_completions": [],
+      "elapsed_ms": 7537,
+      "attempted": true
+    }
+  ],
+  "catalogue": {
+    "thinkingmachines/inkling-small:free": {
+      "id": "thinkingmachines/inkling-small:free",
+      "canonical_slug": "thinkingmachines/inkling-small-20260730",
+      "hugging_face_id": "thinkingmachines/Inkling-Small",
+      "name": "Thinking Machines: Inkling Small (free)",
+      "created": 1785443117,
+      "description": "Inkling Small is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 12B active parameters out of 276B total. It is positioned as the smaller, more efficient member of...",
+      "context_length": 1048576,
+      "architecture": {
+        "modality": "text+image+audio->text",
+        "input_modalities": [
+          "text",
+          "image",
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 1048576,
+        "max_completion_tokens": 262144,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "reasoning_effort",
+        "seed",
+        "stop",
+        "temperature",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {
+        "temperature": null,
+        "top_p": null,
+        "top_k": null,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/thinkingmachines/inkling-small-20260730/endpoints"
+      },
+      "benchmarks": {
+        "design_arena": [],
+        "artificial_analysis": {
+          "intelligence_index": 25.7,
+          "coding_index": 52.9,
+          "agentic_index": 23.5
+        }
+      },
+      "reasoning": {
+        "mandatory": false,
+        "default_enabled": true,
+        "supported_efforts": [
+          "max",
+          "high",
+          "medium",
+          "low",
+          "minimal",
+          "none"
+        ],
+        "default_effort": "high"
+      }
+    },
+    "inclusionai/ling-3.0-flash-sante:free": null,
+    "dots-studio/dots-3-note-preview:free": {
+      "id": "dots-studio/dots-3-note-preview:free",
+      "canonical_slug": "dots-studio/dots-3-note-preview-20260813",
+      "hugging_face_id": null,
+      "name": "Dots Studio: Dots3-Note Preview (free)",
+      "created": 1786680361,
+      "description": "Dots3-Note Preview is an open-weight mixture-of-experts model from Dots Studio, with 16B active parameters out of 280B total. It is the lightest model in the Dots 3 family and is...",
+      "context_length": 512000,
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 512000,
+        "max_completion_tokens": 460800,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": "2026-12-31",
+      "links": {
+        "details": "/api/v1/models/dots-studio/dots-3-note-preview-20260813/endpoints"
+      },
+      "reasoning": {
+        "mandatory": false
+      }
+    }
+  },
+  "summary": [
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "passed": 0,
+      "total": 3,
+      "attempted": 3,
+      "successful_p50_ms": null,
+      "successful_p95_ms": null
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "passed": 0,
+      "total": 3,
+      "attempted": 0,
+      "successful_p50_ms": null,
+      "successful_p95_ms": null
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "passed": 2,
+      "total": 3,
+      "attempted": 3,
+      "successful_p50_ms": 5659.5,
+      "successful_p95_ms": 6733
+    }
+  ],
+  "measured_order": [
+    "dots-studio/dots-3-note-preview:free",
+    "thinkingmachines/inkling-small:free",
+    "inclusionai/ling-3.0-flash-sante:free"
+  ],
+  "limitations": "Small synthetic sample; ranking is provisional. No weight training."
+}

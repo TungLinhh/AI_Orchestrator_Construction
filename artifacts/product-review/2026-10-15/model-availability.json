@@ -1,0 +1,172 @@
+{
+  "observed_at": "2026-10-14T21:24:34.635625+00:00",
+  "scope": "Public catalogue read only; not a completion, entitlement or quality test",
+  "models": [
+    {
+      "profile": "primary",
+      "model": "thinkingmachines/inkling-small:free",
+      "catalogued": true,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "reasoning_effort",
+        "seed",
+        "stop",
+        "temperature",
+        "tools",
+        "top_p"
+      ],
+      "context_length": 1048576,
+      "entitlement_or_quality_tested": false
+    },
+    {
+      "profile": "primary",
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "catalogued": false,
+      "pricing": null,
+      "supported_parameters": null,
+      "context_length": null,
+      "entitlement_or_quality_tested": false
+    },
+    {
+      "profile": "primary",
+      "model": "dots-studio/dots-3-note-preview:free",
+      "catalogued": true,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "context_length": 512000,
+      "entitlement_or_quality_tested": false
+    },
+    {
+      "profile": "primary",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "catalogued": true,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "seed",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "context_length": 1000000,
+      "entitlement_or_quality_tested": false
+    },
+    {
+      "profile": "primary",
+      "model": "poolside/laguna-s-2.1:free",
+      "catalogued": true,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "temperature",
+        "tool_choice",
+        "tools"
+      ],
+      "context_length": 262144,
+      "entitlement_or_quality_tested": false
+    },
+    {
+      "profile": "primary",
+      "model": "cohere/north-mini-code:free",
+      "catalogued": true,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "seed",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "context_length": 256000,
+      "entitlement_or_quality_tested": false
+    },
+    {
+      "profile": "proposer",
+      "model": "google/gemma-4-31b-it:free",
+      "catalogued": true,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "context_length": 262144,
+      "entitlement_or_quality_tested": false
+    },
+    {
+      "profile": "proposer",
+      "model": "thinkingmachines/inkling:free",
+      "catalogued": true,
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "reasoning_effort",
+        "seed",
+        "stop",
+        "temperature",
+        "tools",
+        "top_p"
+      ],
+      "context_length": 1048576,
+      "entitlement_or_quality_tested": false
+    }
+  ]
+}

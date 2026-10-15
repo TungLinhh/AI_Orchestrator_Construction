@@ -2,8 +2,8 @@
 :root {
   --command-width: 640px;
   --color-overlay: #0b1a2980;
-  --shadow-control: 0 2px 8px #172b3a05;
-  --shadow-small: 0 1px 4px #0001;
+  --shadow-control: 0 1px 2px #172b3a14, 0 4px 12px #172b3a0f;
+  --shadow-small: 0 1px 2px #00000014, 0 2px 6px #0000000f;
   --primitive-bg: #f2f3f2;
   --primitive-surface: #fbfcfc;
   --primitive-surface-2: #eceeed;
@@ -105,6 +105,17 @@
   --font: var(--primitive-font-sans); --mono: var(--primitive-font-mono); --font-mono: var(--mono);
   --radius: 12px; --radius-s: 8px; --radius-control: 8px; --radius-dialog: 14px;
   --shadow: 0 1px 2px var(--primitive-shadow-color), 0 8px 24px var(--primitive-shadow-color);
+  /* Layered depth: resting panels use --shadow, raised overlays --shadow-pop,
+     transient toasts --shadow-toast. Colors stay on the same primitives, so the
+     contrast gate keeps measuring identical text/background pairs. */
+  --shadow-lg: 0 1px 2px var(--primitive-shadow-color), 0 6px 16px var(--primitive-shadow-color), 0 16px 40px var(--primitive-shadow-color);
+  --shadow-pop: 0 2px 4px var(--primitive-shadow-color), 0 12px 28px var(--primitive-shadow-color), 0 24px 56px #0b1a2926;
+  --shadow-toast: 0 2px 6px #0b1a2933, 0 12px 32px #0b1a292e;
+  --ring-focus: 0 0 0 3px color-mix(in srgb, var(--color-focus) 30%, transparent);
+  --hairline: 1px solid color-mix(in srgb, var(--color-border-subtle) 72%, transparent);
+  --accent-gradient: linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 88%, #ffffff) 0%, var(--color-accent) 100%);
+  --accent-gradient-hover: linear-gradient(180deg, color-mix(in srgb, var(--color-accent-hover) 88%, #ffffff) 0%, var(--color-accent-hover) 100%);
+  --glass-blur: blur(16px) saturate(1.25);
   --nav-w: 216px; --z-sticky: 30; --z-menu: 100; --z-overlay: 200;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 56px;
   --space-2: 2px; --space-4: 4px; --space-8: 8px; --space-12: 12px; --space-16: 16px;
@@ -113,8 +124,11 @@
   --text-lg: 20px; --text-xl: 24px; --text-2xl: 32px;
   --ui-touch-target: 44px;
   --btn-height: 40px; --field-height: 42px; --field-padding: 12px 12px;
-  --row-min-height: 56px; --row-padding: 16px 20px; --cell-padding: 12px 12px;
-  --panel-padding: 20px; --label-size: 13px;
+  /* Comfortable stays breathable but stops wasting the desktop viewport: rows and
+     panels lose ~4px of vertical slack each. Compact is already dense and keeps
+     its values; coarse pointers keep 44px targets via the rule below. */
+  --row-min-height: 48px; --row-padding: 12px 16px; --cell-padding: 10px 12px;
+  --panel-padding: 16px 20px; --label-size: 13px;
   --motion-instant: 80ms; --motion-fast: 140ms; --motion-base: 200ms;
   --motion-slow: 320ms; --motion-emphasized: 480ms;
   --ease-standard: cubic-bezier(.2,0,0,1); --ease-enter: cubic-bezier(0,0,.2,1);

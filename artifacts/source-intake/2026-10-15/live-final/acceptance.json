@@ -1,0 +1,149 @@
+{
+  "synthetic": true,
+  "passed": false,
+  "cases": [
+    {
+      "mode": "mock",
+      "passed": false,
+      "source_ids": [
+        "src_01m4yf134zmhkmsyz2ex50kasy"
+      ],
+      "task_id": "tsk_01m4yf136fkc8w7kba75gpwvg1",
+      "run": {
+        "task_id": "tsk_01m4yf136fkc8w7kba75gpwvg1",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "failed",
+      "error": "no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: excluded after artifact verification failure",
+      "exception": "{'mode': 'mock', 'passed': False, 'source_ids': ['src_01m4yf134zmhkmsyz2ex50kasy'], 'task_id': 'tsk_01m4yf136fkc8w7kba75gpwvg1', 'run': {'task_id': 'tsk_01m4yf136fkc8w7kba75gpwvg1', 'agent_id': 'agt_01m3ycsewvvcwbr1d1xap4f754', 'started': True, 'reason': '', 'already_running': False, 'estimate_seconds': 0, 'estimate_tokens': 0}, 'status': 'failed', 'error': \"no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: excluded after artifact verification failure\"}"
+    },
+    {
+      "mode": "sources",
+      "passed": true,
+      "source_ids": [
+        "src_01m4yf3cyr0h8f5nqspvksrf9n"
+      ],
+      "task_id": "tsk_01m4yf3czea1qxkm3bkxrwqfrc",
+      "run": {
+        "task_id": "tsk_01m4yf3czea1qxkm3bkxrwqfrc",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4yf4tg04kaac9yjymmbet6s",
+          "format": "docx",
+          "filename": "report-tsk_01m4yf3czea1qxkm3bkxrwqfrc.docx",
+          "byte_count": 37274,
+          "sha256": "467ffda6ae379ebfae35e72587b227387820ac921a3ff9e867590873cdc575fa",
+          "manifest_id": "smf_01m4yf3czqs08pvxxn95jmhmwk"
+        },
+        {
+          "id": "art_01m4yf4tg04kaac9yjymmbet6v",
+          "format": "json",
+          "filename": "report-tsk_01m4yf3czea1qxkm3bkxrwqfrc.json",
+          "byte_count": 2172,
+          "sha256": "776f486a3d479aba9e432c9d2fa5f3b5f83e73252e20cde88e1e5c79b2e39626",
+          "manifest_id": "smf_01m4yf3czqs08pvxxn95jmhmwk"
+        },
+        {
+          "id": "art_01m4yf4tg04kaac9yjymmbet6w",
+          "format": "md",
+          "filename": "report-tsk_01m4yf3czea1qxkm3bkxrwqfrc.md",
+          "byte_count": 1196,
+          "sha256": "5c83b7395dd2f24d6d468a93c3f333f76c93637cfb098ce1d12a7b9e9e665961",
+          "manifest_id": "smf_01m4yf3czqs08pvxxn95jmhmwk"
+        },
+        {
+          "id": "art_01m4yf4tg04kaac9yjymmbet6r",
+          "format": "pdf",
+          "filename": "report-tsk_01m4yf3czea1qxkm3bkxrwqfrc.pdf",
+          "byte_count": 25569,
+          "sha256": "fcd4c66feeb4a6f3fb6bf72163015f9624b7f117c26ba3dc67f2a03c87178b1f",
+          "manifest_id": "smf_01m4yf3czqs08pvxxn95jmhmwk"
+        },
+        {
+          "id": "art_01m4yf4tg04kaac9yjymmbet6t",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4yf3czea1qxkm3bkxrwqfrc.xlsx",
+          "byte_count": 5770,
+          "sha256": "78ae796244955b159c52b116bc7a186de4a5abadd8ef57afb83ff319e40116c5",
+          "manifest_id": "smf_01m4yf3czqs08pvxxn95jmhmwk"
+        },
+        {
+          "id": "art_01m4yf4tg04kaac9yjymmbet6x",
+          "format": "zip",
+          "filename": "report-tsk_01m4yf3czea1qxkm3bkxrwqfrc.zip",
+          "byte_count": 100451,
+          "sha256": "fb840cb4f4c2664c742f812b7dfd6177910455ef4dfb00b500947948f28d9859",
+          "manifest_id": "smf_01m4yf3czqs08pvxxn95jmhmwk"
+        }
+      ],
+      "output": {
+        "output": {
+          "findings": [
+            {
+              "text": "Hồ sơ van cần chứng chỉ HSE",
+              "source_id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+              "locator": "brief.docx#paragraph:1",
+              "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+            },
+            {
+              "text": "Chưa đặt hàng",
+              "source_id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+              "locator": "brief.docx#paragraph:1",
+              "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+            },
+            {
+              "text": "SYNTHETIC ACCEPTANCE",
+              "source_id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+              "locator": "brief.docx#paragraph:1",
+              "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+            }
+          ],
+          "limitations": [
+            "Chỉ có một đoạn văn bản ngắn, không cung cấp chi tiết loại van, tiêu chuẩn HSE cụ thể, hay quy trình phê duyệt.",
+            "Không có thông tin về nhà cung cấp, báo giá, hoặc tài liệu kỹ thuật đi kèm.",
+            "Chưa có chứng chỉ HSE thực tế hoặc bằng chứng đã hoàn thành."
+          ],
+          "summary": "Hồ sơ van yêu cầu chứng chỉ HSE và chưa có đặt hàng, thiếu chi tiết về loại van và nhà cung cấp."
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4yf3cyr0h8f5nqspvksrf9n",
+              "error": null,
+              "state": "ready",
+              "origin": "upload",
+              "sha256": "d30dd269dc44fcbe0458bdea81f33adc0ef815b7ec03a14b575ed821ea670493",
+              "filename": "acceptance.zip",
+              "warnings": [],
+              "synthetic": false,
+              "byte_count": 36578,
+              "created_at": "2026-10-15T00:23:55.610290+00:00",
+              "media_type": "application/zip",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4yf3czqs08pvxxn95jmhmwk",
+          "sha256": "1e0f0c238f3550e682ffcae1d078ac06e620756221da7c0690fc9139bec6555f"
+        }
+      }
+    }
+  ]
+}

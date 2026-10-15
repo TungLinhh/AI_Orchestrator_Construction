@@ -364,6 +364,28 @@ class TaskRepository:
         )
         return task
 
+    async def terminal_lineage(self, task_id: str) -> dict[str, str] | None:
+        """A continuation cannot outlive a terminal task or ancestor."""
+        result = await self._session.execute(
+            text("""
+                WITH RECURSIVE lineage AS (
+                    SELECT id, parent_task_id, status, 0 AS depth, ARRAY[id::text] AS path
+                    FROM tasks WHERE organization_id = :org AND id = :task
+                    UNION ALL
+                    SELECT p.id, p.parent_task_id, p.status, c.depth + 1, c.path || p.id::text
+                    FROM tasks p JOIN lineage c ON p.id = c.parent_task_id
+                    WHERE p.organization_id = :org AND c.depth < 64
+                      AND NOT p.id = ANY(c.path)
+                )
+                SELECT id, status FROM lineage
+                WHERE status IN ('completed', 'failed', 'canceled', 'expired')
+                ORDER BY depth LIMIT 1
+            """),
+            {"org": self._org, "task": task_id},
+        )
+        row = result.mappings().first()
+        return dict(row) if row else None
+
     async def get(self, task_id: str) -> Task:
         result = await self._session.execute(
             select(Task).where(and_(Task.id == task_id, Task.organization_id == self._org))

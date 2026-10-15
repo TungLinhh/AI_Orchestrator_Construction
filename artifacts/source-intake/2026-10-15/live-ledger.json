@@ -1,0 +1,391 @@
+{
+  "synthetic": true,
+  "records": [
+    {
+      "run": "live",
+      "task_id": "tsk_01m4y77be94s2q32pk2hmk6arp",
+      "executions": [
+        {
+          "status": "failed",
+          "model_used": null,
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1320,
+          "output_tokens": 1060,
+          "reasoning_tokens": 432,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "error",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": "provider_error",
+          "input_tokens": 982,
+          "output_tokens": 0,
+          "reasoning_tokens": 707,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live",
+      "task_id": "tsk_01m4y78v6b2ayd1w8hy4xfx8p5",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 991,
+          "output_tokens": 293,
+          "reasoning_tokens": 155,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 898,
+          "output_tokens": 106,
+          "reasoning_tokens": 355,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-repeat",
+      "task_id": "tsk_01m4y79zzdaak8mgmtn6dfrxr8",
+      "executions": [
+        {
+          "status": "failed",
+          "model_used": null,
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1320,
+          "output_tokens": 898,
+          "reasoning_tokens": 289,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-repeat",
+      "task_id": "tsk_01m4y7br420t8081mypgv424yq",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 989,
+          "output_tokens": 241,
+          "reasoning_tokens": 242,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 897,
+          "output_tokens": 98,
+          "reasoning_tokens": 999,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-tuned",
+      "task_id": "tsk_01m4y7e1vgrma4hbkpkpnqrmq3",
+      "executions": [
+        {
+          "status": "failed",
+          "model_used": null,
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1320,
+          "output_tokens": 880,
+          "reasoning_tokens": 263,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 1208,
+          "output_tokens": 204,
+          "reasoning_tokens": 406,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-tuned",
+      "task_id": "tsk_01m4y7fej9jknxb1c3epm1zcay",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 988,
+          "output_tokens": 231,
+          "reasoning_tokens": 202,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "error",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": "provider_error",
+          "input_tokens": 809,
+          "output_tokens": 0,
+          "reasoning_tokens": 516,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 899,
+          "output_tokens": 220,
+          "reasoning_tokens": 440,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-schema-tuned",
+      "task_id": "tsk_01m4y7nfknxphvp4an6nv4v88w",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1337,
+          "output_tokens": 735,
+          "reasoning_tokens": 248,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 1222,
+          "output_tokens": 370,
+          "reasoning_tokens": 1340,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 1250,
+          "output_tokens": 867,
+          "reasoning_tokens": 1121,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-schema-tuned",
+      "task_id": "tsk_01m4y7r2bgkskkaz7pnbzb1v2d",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1022,
+          "output_tokens": 137,
+          "reasoning_tokens": 173,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-confirmation",
+      "task_id": "tsk_01m4y7s9nckrabyz67d2n4xd7t",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1337,
+          "output_tokens": 813,
+          "reasoning_tokens": 363,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 1224,
+          "output_tokens": 478,
+          "reasoning_tokens": 1463,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 1252,
+          "output_tokens": 350,
+          "reasoning_tokens": 2396,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-confirmation",
+      "task_id": "tsk_01m4y7wbej3vz0pmwr3j10v6jv",
+      "executions": [
+        {
+          "status": "failed",
+          "model_used": null,
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1022,
+          "output_tokens": 177,
+          "reasoning_tokens": 339,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "browser-live",
+      "task_id": "tsk_01m4y8180wc5k4bs7xb29nfytq",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "error",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": "artifact_invalid",
+          "input_tokens": 1363,
+          "output_tokens": 767,
+          "reasoning_tokens": 795,
+          "cost_usd": "0.000000"
+        },
+        {
+          "status": "ok",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "routing_reason": "fallback",
+          "error_kind": null,
+          "input_tokens": 1247,
+          "output_tokens": 594,
+          "reasoning_tokens": 389,
+          "cost_usd": "0.000000"
+        }
+      ]
+    },
+    {
+      "run": "live-retry",
+      "task_id": "tsk_01m4y8dr9cg6c8zvt1xndt4w9h",
+      "executions": [
+        {
+          "status": "completed",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "cost_usd": "0.000000"
+        }
+      ],
+      "model_usage": [
+        {
+          "status": "ok",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "routing_reason": "primary",
+          "error_kind": null,
+          "input_tokens": 1348,
+          "output_tokens": 727,
+          "reasoning_tokens": 342,
+          "cost_usd": "0.000000"
+        }
+      ]
+    }
+  ]
+}

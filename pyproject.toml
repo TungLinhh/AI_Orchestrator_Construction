@@ -35,6 +35,10 @@ dependencies = [
     # silently because it was not — the tests "passed" against no files at all,
     # which is the F87 shape one layer out. See docs/FAILED_APPROACHES.md F90.
     "openpyxl>=3.1.5",
+    "python-docx>=1.2.0",
+    "defusedxml>=0.7.1",
+    "pillow>=12.0.0",
+    "reportlab>=4.4.0",
 ]
 
 [project.optional-dependencies]
@@ -158,5 +162,5 @@ disallow_untyped_defs = false
 # workbooks, but it ships no type information. `ignore_missing_imports` rather than a
 # per-file `# type: ignore`, because the stubs are missing for the whole library and a
 # suppression on one import only pushes the error to the next line.
-module = ["openpyxl.*"]
+module = ["openpyxl.*", "defusedxml.*", "reportlab.*"]
 ignore_missing_imports = true

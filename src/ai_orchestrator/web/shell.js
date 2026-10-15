@@ -17,7 +17,8 @@ window.UIShell = (() => {
   let restoreTo = null;
   let previousOverflow = '', organization = null, organizationError = false;
   function indicator() {
-    const collapsed=document.documentElement.classList.contains('sidebar-collapsed') && !drawer.open;
+    const root = document.documentElement;
+    const collapsed=root.classList.contains('sidebar-collapsed') && !root.classList.contains('sidebar-peek') && !drawer.open;
     tooltips.forEach((tip,link)=>{
       link.parentElement.classList.toggle('ui-tooltip-host',collapsed);
       tip.textContent=link.querySelector('[data-i18n]')?.textContent || link.textContent;

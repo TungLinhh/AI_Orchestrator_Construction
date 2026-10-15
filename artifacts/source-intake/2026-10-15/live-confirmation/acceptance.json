@@ -1,0 +1,150 @@
+{
+  "synthetic": true,
+  "passed": false,
+  "cases": [
+    {
+      "mode": "mock",
+      "passed": true,
+      "source_ids": [
+        "src_01m4y7s9mr5hwt0s3gq678dk2z"
+      ],
+      "task_id": "tsk_01m4y7s9nckrabyz67d2n4xd7t",
+      "run": {
+        "task_id": "tsk_01m4y7s9nckrabyz67d2n4xd7t",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4y7wafxztxtn5xr89dzr424",
+          "format": "docx",
+          "filename": "report-tsk_01m4y7s9nckrabyz67d2n4xd7t.docx",
+          "byte_count": 37201,
+          "sha256": "ada6cf3d31c9d0d274d4e011b37ed9efd49b6dfc7f4a4d5afc90e82c7c9a1540",
+          "manifest_id": "smf_01m4y7s9nq85c940g7wprn3yjr"
+        },
+        {
+          "id": "art_01m4y7wafxztxtn5xr89dzr426",
+          "format": "json",
+          "filename": "report-tsk_01m4y7s9nckrabyz67d2n4xd7t.json",
+          "byte_count": 1917,
+          "sha256": "6d78cac987ac595279fcb6301645e09b517be4271b7bcc139c6113f0a92b9766",
+          "manifest_id": "smf_01m4y7s9nq85c940g7wprn3yjr"
+        },
+        {
+          "id": "art_01m4y7wafxztxtn5xr89dzr427",
+          "format": "md",
+          "filename": "report-tsk_01m4y7s9nckrabyz67d2n4xd7t.md",
+          "byte_count": 936,
+          "sha256": "74c0d903d64df85fd1a91fc70eff5cf0f011210f83114335fcd1d5947735bffd",
+          "manifest_id": "smf_01m4y7s9nq85c940g7wprn3yjr"
+        },
+        {
+          "id": "art_01m4y7wafxztxtn5xr89dzr423",
+          "format": "pdf",
+          "filename": "report-tsk_01m4y7s9nckrabyz67d2n4xd7t.pdf",
+          "byte_count": 25062,
+          "sha256": "a5abfb4f9589b552fb3cf47487492cfcdd05189697dc05780259b81857bb7ffd",
+          "manifest_id": "smf_01m4y7s9nq85c940g7wprn3yjr"
+        },
+        {
+          "id": "art_01m4y7wafxztxtn5xr89dzr425",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4y7s9nckrabyz67d2n4xd7t.xlsx",
+          "byte_count": 5706,
+          "sha256": "c92ea90b7e80032222852dd72b51da44549a460f98c61f92c0953d921582c606",
+          "manifest_id": "smf_01m4y7s9nq85c940g7wprn3yjr"
+        },
+        {
+          "id": "art_01m4y7wafxztxtn5xr89dzr428",
+          "format": "zip",
+          "filename": "report-tsk_01m4y7s9nckrabyz67d2n4xd7t.zip",
+          "byte_count": 65898,
+          "sha256": "4da66062ecbef1f1d429703652c5d2433dedc317300ab265ac667475b3ecf2d2",
+          "manifest_id": "smf_01m4y7s9nq85c940g7wprn3yjr"
+        }
+      ],
+      "output": {
+        "output": {
+          "findings": [
+            {
+              "text": "Báo giá A có chứng nhận và giao hàng.",
+              "source_id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+              "locator": "lines:1-4",
+              "quote": "A,Valve-1,12,120000,80000,true"
+            },
+            {
+              "text": "Báo giá B không có chứng nhận.",
+              "source_id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+              "locator": "lines:1-4",
+              "quote": "B,Valve-1,12,110000,0,false"
+            },
+            {
+              "text": "Báo giá C có chứng nhận nhưng không giao hàng.",
+              "source_id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+              "locator": "lines:1-4",
+              "quote": "C,Valve-1,12,130000,0,true"
+            }
+          ],
+          "limitations": [
+            "Báo giá B thiếu chứng nhận",
+            "Báo giá C không có giao hàng"
+          ],
+          "summary": "Đánh giá các báo giá cho Valve-1 dựa trên tiêu chí chứng nhận bắt buộc, giao hàng và giá. A là người chiến thắng với tổng 1.520.000 VND. Sẽ thay đổi nếu B cung cấp chứng nhận.",
+          "total_vnd": 1520000,
+          "winner": "A"
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+              "error": null,
+              "state": "ready",
+              "origin": "mock",
+              "sha256": "05ebf8e68b197ada8d5b88dcee5a7531a1e71ae547ca82596586e21768af37ce",
+              "filename": "mock-quotes-1.csv",
+              "warnings": [],
+              "synthetic": true,
+              "byte_count": 139,
+              "created_at": "2026-10-14T22:16:04.506287+00:00",
+              "media_type": "text/csv",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "4c733fffc052d49b2afc17b2fac32b3ae24ffe6bf0eebc7d35a60eeaa2e74a3e"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4y7s9nq85c940g7wprn3yjr",
+          "sha256": "01006428c45d251c06d4fdc327a5627a94b2fa409912c1150aee85b2e84d38de"
+        }
+      }
+    },
+    {
+      "mode": "sources",
+      "passed": false,
+      "source_ids": [
+        "src_01m4y7wbdzw51eqc7mqg51q4z3"
+      ],
+      "task_id": "tsk_01m4y7wbej3vz0pmwr3j10v6jv",
+      "run": {
+        "task_id": "tsk_01m4y7wbej3vz0pmwr3j10v6jv",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "failed",
+      "error": "no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: openrouter/dots-studio/dots-3-note-preview:free: inconsistent completion/reasoning usage",
+      "exception": "{'mode': 'sources', 'passed': False, 'source_ids': ['src_01m4y7wbdzw51eqc7mqg51q4z3'], 'task_id': 'tsk_01m4y7wbej3vz0pmwr3j10v6jv', 'run': {'task_id': 'tsk_01m4y7wbej3vz0pmwr3j10v6jv', 'agent_id': 'agt_01m3ycsewvvcwbr1d1xap4f754', 'started': True, 'reason': '', 'already_running': False, 'estimate_seconds': 0, 'estimate_tokens': 0}, 'status': 'failed', 'error': \"no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: openrouter/dots-studio/dots-3-note-preview:free: inconsistent completion/reasoning usage\"}"
+    }
+  ]
+}

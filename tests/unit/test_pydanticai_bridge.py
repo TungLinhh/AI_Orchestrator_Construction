@@ -262,6 +262,7 @@ class TestEndToEnd:
         assert result.status.value == "completed"
         assert result.execution_id
         assert result.task_id == str(TASK)
+        assert result.model_used == "scripted-1"
 
     async def test_a_gateway_refusal_becomes_a_failed_result_not_an_exception(self) -> None:
         from ai_orchestrator.domain.errors import ModelUnavailable

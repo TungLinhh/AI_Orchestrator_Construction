@@ -112,7 +112,9 @@ def _gateway(tool_arguments: dict[str, Any] | None, *, model_used: str = PROPOSE
                     provider="deterministic",
                     model="scripted-1",
                     pricing=ModelPricing(input_per_mtok=Money("0"), output_per_mtok=Money("0")),
-                    max_classification=DataClassification.PUBLIC,
+                    # Proposal traces are INTERNAL, even when the provider is
+                    # local and the evidence in this test is synthetic.
+                    max_classification=DataClassification.INTERNAL,
                 ),
             ),
         )

@@ -13,6 +13,7 @@ import hashlib
 import json
 import math
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from scripts.organization_eval import (
@@ -36,7 +37,7 @@ from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.domain.contracts import Actor, AgentResult, AgentResultStatus
 from ai_orchestrator.domain.enums import ActorType, RunMode
 from ai_orchestrator.domain.ids import SkillVersionId
-from ai_orchestrator.models.gateway import ModelProfile, ModelResponse
+from ai_orchestrator.models.gateway import ModelResponse
 from ai_orchestrator.persistence.models import Agent, ModelUsage, SkillVersion
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.persistence.session import Database
@@ -104,7 +105,7 @@ async def run_cases(
                     await gateway.aclose()
                     raise ValueError("Evaluation requires free OpenRouter candidates")
                 gateway.register_profile(
-                    ModelProfile(name=agent.model_profile, candidates=candidates)
+                    replace(profile, candidates=candidates, fallback_profile=None)
                 )
                 engine = WorkflowEvidenceRuntime(
                     gateway, lambda value, current=case: validate_sources(current, value)

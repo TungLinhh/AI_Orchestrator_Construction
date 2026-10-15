@@ -53,6 +53,8 @@ _RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504, 529})
 
 
 def _should_retry(exc: BaseException) -> bool:
+    if getattr(exc, "details", {}).get("status") in {400, 401, 403, 404, 422}:
+        return False
     return isinstance(
         exc,
         ModelRateLimited
@@ -154,7 +156,22 @@ class OpenAICompatibleProvider(ModelProvider):
                     "limit_remaining": response.headers.get("x-ratelimit-remaining-requests"),
                 },
             )
-        if response.status_code in {401, 403}:
+        if response.status_code == 403:
+            body = _safe_body(response)
+            if _content_filter_refusal(body) is not None:
+                raise PolicyDenied(
+                    f"{candidate.key()}: the provider's content filter refused this prompt",
+                    details={"model": candidate.key(), "body": _safe_dict(body)},
+                )
+            # Model-specific entitlement can differ between candidates on the
+            # same key. Inkling Small currently requires a registered agentic
+            # harness. Do not retry or disguise the client; try the next model.
+            raise ModelUnavailable(
+                f"{candidate.key()}: model access denied (403): "
+                + str(body.get("error", {}).get("message", "access denied"))[:300],
+                details={"model": candidate.key(), "status": 403},
+            )
+        if response.status_code == 401:
             # Never retried. The credential is wrong or insufficient, and
             # repeating the request does not change either.
             msg = (
@@ -166,7 +183,7 @@ class OpenAICompatibleProvider(ModelProvider):
             )
         if response.status_code == 404:
             msg = f"{candidate.key()}: model not found at this provider"
-            raise ModelUnavailable(msg, details={"model": candidate.key()})
+            raise ModelUnavailable(msg, details={"model": candidate.key(), "status": 404})
         if response.status_code == 400:
             body = _safe_body(response)
             msg = (
@@ -180,7 +197,12 @@ class OpenAICompatibleProvider(ModelProvider):
                 msg, details={"model": candidate.key(), "status": response.status_code}
             )
 
-        body = response.json()
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise ModelUnavailable(f"{candidate.key()}: response is not JSON", cause=exc) from exc
+        if not isinstance(body, dict):
+            raise ModelUnavailable(f"{candidate.key()}: response must be an object")
         refusal = _content_filter_refusal(body)
         if refusal is not None:
             # A provider's content filter is a *refusal*, not a fault, and it must
@@ -214,7 +236,11 @@ def _content_filter_refusal(body: dict[str, Any]) -> str | None:
         if "content_filter" in code or "content filter" in message:
             return code or "content_filter"
     choices = body.get("choices") or []
-    first = choices[0] if choices and isinstance(choices[0], dict) else None
+    first = (
+        choices[0]
+        if isinstance(choices, list) and choices and isinstance(choices[0], dict)
+        else None
+    )
     if first is not None and str(first.get("finish_reason") or "") == "content_filter":
         return "content_filter"
     return None
@@ -241,7 +267,16 @@ def _parse_openai_response(
     if not choices:
         msg = f"{candidate.key()}: response contained no choices"
         raise ModelUnavailable(msg, details={"model": candidate.key()})
+    if not isinstance(choices, list) or not isinstance(choices[0], dict):
+        raise ModelUnavailable(f"{candidate.key()}: malformed response choices")
     message = choices[0].get("message") or {}
+    if not isinstance(message, dict) or not isinstance(message.get("content") or "", str):
+        raise ModelUnavailable(f"{candidate.key()}: malformed assistant message")
+    calls = message.get("tool_calls") or []
+    if not isinstance(calls, list) or any(
+        not isinstance(call, dict) or not isinstance(call.get("function"), dict) for call in calls
+    ):
+        raise ModelUnavailable(f"{candidate.key()}: malformed tool calls")
 
     raw_usage = body.get("usage") or {}
     details = raw_usage.get("completion_tokens_details") or {}

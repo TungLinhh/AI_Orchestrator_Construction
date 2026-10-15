@@ -1,0 +1,51 @@
+{
+  "scope": "Independent follow-up of external agent claims; current sidebar geometry and workflow execution.",
+  "external_claims": {
+    "full_suite": {
+      "verified_log": "external-evidence/test-final2.log",
+      "result": "3560 passed, 1 deselected, 10 warnings; prior external run, not rerun in this follow-up"
+    },
+    "e2e": {
+      "verified_log": "external-evidence/e2e-final2.log",
+      "result": "34 passed; prior external run"
+    },
+    "live_prior": {
+      "receipt": "../live-rerun/acceptance.json",
+      "result": "2/2 completed; a successful pair is not an availability guarantee"
+    },
+    "sidebar_position": {
+      "receipt": "before.json",
+      "result": "Claim only covered Y; X moved 175 -> 15.5, first icon Y moved 121.1875 -> 74"
+    }
+  },
+  "current": {
+    "sidebar": "verified/receipt.json",
+    "backend": "backend-regression.txt",
+    "runtime": "runtime-final/runtime-check.json",
+    "live": "live/acceptance.json",
+    "live_executions": "live/executions.json",
+    "backlog": "backlog.json",
+    "shell": "shell-acceptance/stage-3-gate.json"
+  },
+  "limitations": [
+    "Current live pair: mock completed, source document failed on provider content filter. Do not bypass provider refusal or mark failed task as completed.",
+    "Full regression and E2E logs were preserved from external run. Only focused backend, browser gates, lint and mypy rerun here.",
+    "Production tenant identity, connectors and pilot acceptance remain open."
+  ],
+  "source_sha256": {
+    "src/ai_orchestrator/web/shell.css": "46bf835a607bf3ec436975fc6725694cd691d6965e7a08cee0bbab3fe987e321",
+    "scripts/sidebar-motion-receipt.py": "7d9cdb62a0cfa8a5f8c7784e0805158d8e0d5e3dbf61edc92acf4fad179e5184",
+    "scripts/sidebar-toggle-receipt.py": "6dd8be2e4bff5d47fa375f7e67e465f822bda40edc05eaa5fcf2cf57efdbfd00",
+    "scripts/ui-shell-gate.py": "40de4e4138bdd3c9883cb6cf696c0a770b7833a53146df417073a68f26f9cea2"
+  },
+  "results": {
+    "sidebar_motion": "111/111 passed; 31 PNG",
+    "shell": "195/195 passed; 35 PNG",
+    "work": "131/131 passed; 44 PNG",
+    "runtime": "23/23 passed",
+    "focused_backend": "115 passed",
+    "lint": "455 files formatted; checks passed",
+    "typecheck": "186 files passed",
+    "live": "1/2: mock completed on NVIDIA; sources refused by DOTS content filter"
+  }
+}

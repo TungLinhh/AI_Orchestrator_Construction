@@ -162,6 +162,14 @@ async def start(
             reason="Run this task through its workflow controller",
         )
 
+    if task_input.get("source_workflow") and task["status"] == "waiting_for_input":
+        return RunHandle(
+            task_id=task_id,
+            agent_id=str(task["owner_agent_id"] or ""),
+            started=False,
+            reason="Select readable sources or generate mock files before running",
+        )
+
     remote = int(
         (await conn.execute(text(_IS_RUNNING), {"o": organization_id, "t": task_id})).scalar_one()
     )
@@ -180,7 +188,7 @@ async def start(
     # executor then re-read its own result and returned in a second -- so the API claimed
     # to have started 67,000 tokens of work and did nothing. A handle that says "started"
     # must mean work began.
-    if task["status"] in ("completed", "failed", "cancelled", "blocked"):
+    if task["status"] in ("completed", "failed", "canceled", "expired", "blocked"):
         return RunHandle(
             task_id=task_id,
             agent_id=str(agent_id or task["owner_agent_id"] or ""),
@@ -202,6 +210,14 @@ async def start(
         name=f"local-run-{task_id}",
     )
     logger.info("local run started task=%s agent=%s", task_id, chosen)
+    if task_input.get("source_workflow"):
+        return RunHandle(
+            task_id=task_id,
+            agent_id=str(chosen),
+            started=True,
+            estimate_seconds=0,
+            estimate_tokens=0,
+        )
     return RunHandle(task_id=task_id, agent_id=str(chosen), started=True)
 
 

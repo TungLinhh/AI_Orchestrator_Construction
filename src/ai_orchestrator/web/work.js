@@ -1722,6 +1722,7 @@ async function renderOneTask(id) {
   )
     watchRun(t.id);
   else stopWatch();
+  window.SourceUI?.task(id);
   renderCrumbs(parseHash());
 }
 

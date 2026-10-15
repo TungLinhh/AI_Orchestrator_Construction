@@ -1,70 +1,190 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
-## UI refresh theo brief — 2026-10-07
+> Cập nhật triển khai 15-10-2026: xem [SOURCE_WORKFLOW_STATUS.md](SOURCE_WORKFLOW_STATUS.md)
+> cho luồng nguồn/mock, upload, executor và export đã viết, giới hạn và bằng chứng.
+> Chuỗi execution hiện hành: NVIDIA Nemotron Ultra free → DOTS free; Ling/Inkling
+> trong các snapshot bên dưới là lịch sử, đã bị thay thế. Các số test cũ không
+> thay cho cổng kiểm chứng của thay đổi nguồn hiện tại.
 
-**Giai đoạn 0 đã hoàn tất**, trên nhánh `ui/refresh`: 57 URL, 338 ảnh,
-24 trường hợp màu/mật độ, sáu font được kiểm tra. Receipt
-[stage-0-gate.json](artifacts/ui-shots/00-baseline/stage-0-gate.json) đã PASS. Theo yêu cầu
-mới, ưu tiên đi đúng thứ tự brief. Giai đoạn 1 đã triển khai nền tảng, browser
-gate PASS và kiểm chứng cuối đã qua; chưa thay nghiệp vụ.
-Nguồn đặc tả giữ nguyên tại [BRIEF.md](docs/ui-refresh/BRIEF.md).
+## Điều chỉnh ưu tiên sau kiểm chứng sidebar, 15-10-2026
 
-- Khảo sát: [00-audit.md](docs/ui-refresh/00-audit.md).
-- Quyết định và cổng kiểm chứng: [PROGRESS.md](docs/ui-refresh/PROGRESS.md).
-- Thiết kế và thứ tự tiếp theo: [01-design-plan.md](docs/ui-refresh/01-design-plan.md).
-- Ảnh hiện trạng: [index.html](artifacts/ui-shots/00-baseline/index.html).
+Đã sửa nút sidebar chạy ngang và icon nhảy hàng; thêm kiểm tra từng frame,
+vùng bấm, bàn phím và mobile. Tiến độ và receipt mới nằm tại
+[SOURCE_WORKFLOW_STATUS.md](SOURCE_WORKFLOW_STATUS.md#kiểm-chứng-lại-sau-báo-cáo-agent-ngoài-15-10-2026).
 
-**Mốc đã hoàn tất:** Giai đoạn 1 — layers, tokens cho 12 tổ
-hợp, Inter/JetBrains Mono và Lucide cục bộ, density/motion/prepaint. Browser gate
-đã đạt 170 checks; [receipt](artifacts/ui-shots/01-foundation/stage-1-gate.json).
-Lint/typecheck đạt; full suite 3.477 passed, 8 skipped (5 cần NATS, 3 skip cũ),
-1 deselected. Giữ bằng chứng và giới hạn thực thi tại PROGRESS.md.
+Ưu tiên mở tiếp theo:
 
-**Mốc đã hoàn tất:** Giai đoạn 2 — component API và style guide ẩn local-only.
-148 checks browser, 24 tổ hợp, 34 ảnh, axe sạch trên style guide/overlays;
-full suite 3.477 passed/8 skipped/1 deselected. Receipt:
-[stage-2-gate.json](artifacts/ui-shots/02-components/stage-2-gate.json).
-Hướng dẫn: [03-components.md](docs/ui-refresh/03-components.md).
+1. **R0 model reliability còn mở.** Probe mới 1/2 do provider content filter;
+   không dùng lần 2/2 trước để tuyên bố đã hết lỗi. Đo nhiều lượt trên holdout,
+   tách refusal/availability/validation, giữ mọi failed run và latency đến artifact
+   được chấp nhận. Cần trạng thái và hướng xử lý dễ hiểu cho người vận hành.
+2. **UX regression đã có gate cụ thể.** Mọi sửa sidebar phải giữ tọa độ X/Y của
+   nút và icon qua animation, kích thước vùng bấm, reload preference, mobile,
+   reduced motion và accessibility. Giữ kiểm tra trên trình duyệt thật.
+3. **Nguồn và workflow tiếp theo.** Revision nguồn/checkpoint, review output theo
+   rubric, rồi thêm workflow nghiệp vụ với corpus thật có sự đồng ý của tenant.
+4. **R3–R5 vẫn chưa hoàn thành.** Identity, tenant provisioning, connector OAuth,
+   billing và vận hành SaaS tiếp tục theo PRODUCT_COMPLETION_PLAN.md; không suy ra
+   production readiness từ fixture hoặc bộ test kỹ thuật xanh.
 
-**Mốc đã hoàn tất:** Giai đoạn 3 — khung ứng dụng, browser
-PASS 191 checks/24 tổ hợp/35 ảnh; lint/typecheck đạt, full suite một lượt
-3.477 passed/8 skipped/1 deselected. Sidebar/rail,
-indicator/tooltip, topbar VI/EN, mode/sáu màu/density, workspace thật, callout
-xác thực và mobile drawer. Handoff: [04-shell.md](docs/ui-refresh/04-shell.md).
+## Định hướng hiện hành, triển khai 15-10-2026
 
-**Mốc đã hoàn tất:** Giai đoạn 4 — Công việc/detail/form. Browser PASS
-131 checks/24 tổ hợp/44 ảnh, supplement PASS 14 checks. Register keyed,
-100 hàng ban đầu/tải thêm, search/filter/sort toàn corpus, copy lỗi/ID,
-validation/loading, nhật ký có phạm vi trang và controller cũ. Handoff:
-[05-work.md](docs/ui-refresh/05-work.md). Lint/typecheck đạt; full suite một lượt
-**3.477 passed/8 skipped/1 deselected** (547,38s). Không nghiệm thu model/mail/workflow thật bằng fixture UI.
+Luồng ưu tiên đã có code và bằng chứng chạy: chọn nguồn hoặc tạo mock → upload
+và đọc file → manifest bất biến → executor/model thật → kiểm chứng trích dẫn,
+phép tính → DOCX/XLSX/PDF/JSON/Markdown/ZIP có thể tải. Chi tiết, giới hạn định
+dạng và lệnh chạy lại nằm ở [SOURCE_WORKFLOW_STATUS.md](SOURCE_WORKFLOW_STATUS.md).
 
-**Mốc đã hoàn tất trong Giai đoạn 5:** trang Sự cố — browser PASS 88 checks/16
-ảnh, shared components, cache/search/filter, error/copy và retry refusal fixture.
-Lint/typecheck PASS; full suite một lượt
-**3.477 passed/8 skipped/1 deselected** (493,28s). Handoff:
-[06-issues.md](docs/ui-refresh/06-issues.md). Giai đoạn 5 chưa hoàn tất toàn bộ.
+Execution dùng **NVIDIA Nemotron Ultra free → DOTS free**. Đã bỏ Ling/Inkling.
+Benchmark phát hiện NVIDIA có lúc trả tool call dưới dạng văn bản lỗi; DOTS cũng
+có lỗi provider/usage. Runtime loại output lỗi, sửa artifact và thử lại có giới hạn.
+Không thay kết quả live bằng fake. Hai task nguồn/mock đã hoàn thành trong một
+lần chạy đầy đủ; các lần thất bại và vòng xác nhận cũng được giữ trong receipt.
+Chưa có bằng chứng SLA hoặc độ ổn định của dịch vụ free trong thời gian dài.
 
-**Mốc kế tiếp:** Giai đoạn 5, trang Phê duyệt — một trang một commit.
+Đã sửa các lỗi mở thuộc luồng này: task chờ input không trở lại hàng chạy sau khi
+bổ sung nguồn; retry làm mất input/schema/budget; bridge thiếu provenance; generator
+ORM làm mất `__tablename__` khi thêm bảng đầu tiên; quyền mặc định PostgreSQL cho
+phép sửa bảng nguồn; model output bị loại vẫn hiện thành công ở ledger. Các ca
+regression, schema/RLS và cổng toàn dự án nằm trong receipt đợt triển khai.
 
-1. Sự cố đã chuyển: shared metric/list/log/badge/copy, 100 hàng/tải thêm,
-   search/filter/cache và trạng thái lỗi giữ dữ liệu. Cổng cuối đã PASS; không đổi handler retry/backend.
-2. Phê duyệt: giải thích yêu cầu, quyết định/authority, confirmation có context,
-   trạng thái gửi/lỗi và thông báo đang có. Không giả phê duyệt, đổi quyền hoặc
-   tạo cơ chế notification backend trong phạm vi refresh.
-3. Tổ chức/đơn vị: hierarchy, hồ sơ agent, form và trạng thái; sửa deep link
-   `#/dept/<agent_id>` thành key phòng ban thật sau khi xác minh mapping.
-4. Quy trình cùng màn campaign/workflow/blueprint/intake: giữ thứ tự stage,
-   human gates và mode simulation/live; input/output/log dùng cùng component.
-5. Thư viện, Dữ liệu nghiệp vụ, Vận hành, Cài đặt: từng trang và màn con, giữ
-   thao tác thật; tiếng Việt/EN, error/loading/empty, mobile và keyboard.
-6. Mỗi commit có ảnh trước/sau và gate đúng scope. GĐ6 làm command palette,
-   shortcut help, responsive/a11y/motion toàn app; GĐ7 tự phản biện, CSS cleanup,
-   ma trận nghiệm thu và FINAL-REPORT. Chưa coi GĐ0–4 là toàn app đã hoàn tất.
+14 approval children dưới parent đã failed đã được reconciliation: expire approval
+và cancel task con, có audit, không duyệt thay người. Chạy lại trả 0 thay đổi.
+Không hủy các root/campaign còn hợp lệ để làm xanh dashboard.
 
-Các mục nghiệp vụ bên dưới là roadmap riêng; không mở rộng phạm vi UI refresh.
+Ưu tiên kế tiếp theo thứ tự:
 
+1. Chốt độ ổn định và chất lượng từng workflow bằng tập holdout, dữ liệu pilot và
+   người duyệt đầu ra. Tách lỗi model/provider, lỗi contract và lỗi công cụ.
+2. Hoàn thiện identity/membership, provisioning tenant thứ hai, quota cả artifact,
+   retention, storage và sandbox trước canary có dữ liệu thật.
+3. Nối Gmail/Drive/plugin theo quyền và provenance. Upload hiện có không chứng minh
+   attachment đã được tìm, tải và xử lý từ connector thật.
+4. Workflow có version, revision nguồn, checkpoint, retry/compensation và tiêu chí
+   đầu ra theo pack nghiệp vụ. Mở rộng từng pack sau nghiệm thu, không tăng số menu
+   để thay cho khả năng hoàn thành task.
 
+[PRODUCT_COMPLETION_PLAN.md](PRODUCT_COMPLETION_PLAN.md) giữ ma trận 12 nhóm tính
+năng, 22 nhóm workflow mục tiêu và cổng R0–R5. Các nhóm chưa triển khai vẫn là
+backlog. [Bằng chứng đợt nguồn](artifacts/source-intake/2026-10-15) bao gồm cả mẫu
+file, kết quả live, ledger, ảnh trình duyệt và log gate; không cộng kết quả cũ vào
+kết quả kiểm chứng phiên bản mới.
+
+## Nền quyết định và bằng chứng ngày 07-10-2026
+
+Phần này giữ kết quả của đợt trước; thay đổi availability/model và backlog hiện
+hành nằm ở trên. Không coi các con số cũ là lần chạy lại hôm nay.
+
+Ưu tiên số một là nhận một task có nguồn rõ ràng, hoàn thành sản phẩm có thể
+kiểm chứng và giao lại cho người dùng. Sau khi đường này ổn định, đóng gói để
+mỗi tenant có tổ chức, workflow, dữ liệu, model và connector theo nhu cầu riêng.
+Giữ PydanticAI + Temporal + PostgreSQL/NATS. Chưa có lý do để thay framework
+hoặc mở lại cuộc refactor UI.
+
+**Trạng thái UI:** giai đoạn 0–7 đã đóng cổng. Theo
+[UI PROGRESS](docs/ui-refresh/PROGRESS.md), release gate đạt 531 kiểm tra tổng hợp,
+420 ảnh tham chiếu và suite 3.482 passed; đây là bằng chứng đợt UI trước, không
+phải kết quả chạy lại của đợt model. Không tiếp tục coi Phê duyệt hay Command
+palette là trang chưa làm. [Development PROGRESS](docs/PROGRESS.md) là nhật ký
+lịch sử có các bảng trạng thái cũ; đối chiếu source và receipt trước khi tái lập kế hoạch.
+
+### Kết quả mới và giới hạn
+
+- Chuỗi yêu cầu đã đặt thành **Inkling Small → Ling Sante → DOTS**, sau đó giữ
+  các fallback free khác. Profile của tenant thử nghiệm đã ghi và đọc lại qua
+  cùng loader của runtime. Độc lập giữ nguyên profile proposer.
+- Catalogue OpenRouter xác nhận cả ba model free và tools. Inkling/Ling không
+  quảng bá strict JSON Schema; khai báo capability đã sửa. Task cần strict schema
+  sẽ bỏ qua hai model này, còn workflow artifact tiếp tục dùng tool contract.
+- Inkling Small bị chặn HTTP 403 vì free endpoint chỉ mở cho agentic harness
+  được OpenRouter chấp nhận. Primary được giữ theo yêu cầu, nhưng chưa thể nghiệm
+  thu khả năng phục vụ. Chuyển ngay sang Ling, không giả danh một app khác.
+- Benchmark đã chạy hai lượt với ba bài tổng hợp. Inkling 0/6 do access gate;
+  Ling 3/6, ba ca còn lại rate-limited; DOTS 3/6, có lỗi chứng cứ và usage/finish.
+  Ling có các ca đạt trong khoảng 2–2,7 giây. Mẫu nhỏ chưa đủ chốt SLA.
+- Procurement chạy **13/13 bước**, 6 model calls thực, không fake; audit độc lập
+  đạt **75 checks**. Đây là simulation với supplier, delivery và gate tổng hợp.
+  Không coi là đã mua hàng hoặc đã có phê duyệt con người.
+- Feedback đã sửa lỗi owner của human gate qua vòng kiểm chứng và trả lời lại;
+  probe đạt bằng 3 model calls. Campaign giữ paused, không gửi mail hay tự xác nhận.
+- Sửa fallback cho output rỗng, finish error, required tool bị thiếu và tool
+  output hỏng. Mỗi candidate có deadline 30 giây, không retry transport ở chuỗi
+  mặc định. Workflow giữ validator/repair và usage riêng cho từng lần thử.
+- Sửa giới hạn privacy lấy mức thấp hơn của profile/provider. Giá trị classification
+  sai được hạ về PUBLIC. Chỉ tenant được cấu hình rõ mới gửi INTERNAL ra chuỗi
+  model này; không mở quyền cho CONFIDENTIAL/RESTRICTED/SECRET.
+
+Bằng chứng mới ở [model-readiness](artifacts/model-readiness/2026-10-07/).
+Báo cáo tích hợp và kiểm chứng: [INTEGRATION_READINESS.md](INTEGRATION_READINESS.md).
+Thiết kế input: [DATA_INTAKE_PLAN.md](DATA_INTAKE_PLAN.md).
+Không lấy UI gate, test fake hoặc credential probe làm bằng chứng model hoàn thành task.
+
+### Thứ tự triển khai và cổng nghiệm thu
+
+| Mốc | Sản phẩm giao được | Cổng chốt |
+| --- | --- | --- |
+| P0 — củng cố thực thi | Chuỗi model có deadline/fallback, contract artifact, lỗi và provenance; vòng train/holdout có skill nháp | Có workflow simulation hoàn thành, audit độc lập, regression gates, negative cases và báo cáo chất lượng lặp lại |
+| P1 — task có nguồn | Hỏi chọn nguồn hoặc tạo file mock ngay khi chạy; kho tài liệu tenant; upload và manifest bất biến | Browser → upload → parse → task → validator → artifact tải được. Thiếu dữ liệu phải waiting_for_input. Không dùng nguồn ngoài manifest |
+| P2 — hoàn thành task có kiểm chứng | Intake đầy đủ, clarification, plan, stage outputs, review/revision, xuất DOCX/PDF/XLSX/ZIP theo nhu cầu | Đo completion rate theo loại task, không chỉ số tool calls; restart/retry không mất bước, không nhân đôi tác động; sản phẩm khớp nguồn |
+| P3 — tenant có thể tùy chỉnh | Provisioning, tenant template có version, cấu hình model/policy/tool/skill/workflow, secret theo connection | Tạo hai tenant khác SOP/rubric/agent; chạy cùng executor, không lẫn nguồn/skill/cache/event/receipt; quyền truy cập được xác minh |
+| P4 — connector thật | Read-only canary cho Gmail/Drive/plugin, sau đó từng write action | Tài khoản được cấp đúng scope, cursor/retry/revocation/receipt/read-back; approval gắn đúng phiên bản và hành động |
+| P5 — pilot nghiệp vụ | MEP thật rồi procurement thật; sau đó Design, QA/QC-HSE, Finance, Sales | Người phụ trách xác nhận từng đầu ra, quyết định và bằng chứng ngoài hệ thống; chạy shadow thực tế trước khi tăng tự chủ |
+
+P1 triển khai thành ba đợt trong DATA_INTAKE_PLAN: upload và chọn nguồn trước,
+ZIP/OCR sau, rồi connector. Dữ liệu mock phải tạo thành file thật và đi qua cùng
+parser. Không quảng cáo "đọc mọi file" khi parser chỉ hỗ trợ một tập định dạng.
+
+### Làm hệ thống hoàn thành được công việc
+
+Mỗi loại task cần định nghĩa đầu vào tối thiểu, artifact schema, quy tắc nghiệp
+vụ, nguồn được phép, công cụ, human gate và tiêu chí xong. `completed` chỉ có
+nghĩa khi artifact đủ và validator đạt. Output có văn phong tốt nhưng không có
+chứng cứ hoặc sai số phải bị từ chối. Hết candidate/budget thì trả lỗi có bước
+khắc phục, không để task chạy vô hạn.
+
+Đo riêng availability, chất lượng, thời gian tới artifact được chấp nhận và thời
+gian chờ người dùng. Dùng latency của các ca thành công khi so tốc độ; 403/429
+trả trong 100 ms không phải model hoàn thành nhanh. Chỉ nâng model sau nhiều
+lượt trên corpus đóng băng; kiểm lại quota và quyền trước mỗi đợt.
+
+Vòng cải thiện: giữ input/output/log và lỗi → tái hiện → sửa parser/contract/prompt
+hoặc workflow ở đúng nơi → chạy regression → đề xuất SkillVersion chưa publish
+→ so baseline/candidate trên holdout qua executor thật → người chuyên môn duyệt
+→ canary → publish/rollback. "Training" ở MVP là đánh giá và cải thiện instruction,
+không phải đã huấn luyện trọng số. Không học từ kết quả sai hoặc phê duyệt mô phỏng
+rồi tự áp dụng cho production.
+
+### Đóng gói cho tenant khác
+
+Chọn **một runtime dùng chung với cấu hình tenant có version**. Không fork code
+cho mỗi công ty và không sao chép nguyên tổ chức O-Nexus thành onboarding mặc định.
+Template mô tả units/roles, workflow stages, schemas/rubrics, skill references,
+provider policy và connector scopes. Executor, validator engine và receipt contract
+vẫn là code dùng chung. Validator chuyên ngành cần extension có version và test.
+
+Bổ sung provisioning có dry-run/diff, validation, apply idempotent, import/export,
+upgrade và rollback. Pin template/workflow/skill/source versions vào từng run.
+Giữ override của tenant khi nâng template; không reset dữ liệu vận hành để nâng schema.
+
+RLS hiện có bảo vệ hàng và đơn vị, nhưng API demo cho tự gửi `x-organization-id`.
+Trước khi mở cho người dùng các công ty khác, cần authentication và membership
+ràng buộc tenant phía server, RBAC cho quản trị/nguồn/connector và quản lý secrets.
+Role switcher demo không thể làm cơ chế phân quyền production. Đo quota, concurrency,
+retention, export/delete và noisy-neighbor theo tenant trước khi mở rộng tải.
+
+### Việc bắt đầu ngay sau cổng P0
+
+1. Chốt contract `SourceAsset`/`Extraction`/`TaskSourceManifest` và migration RLS.
+2. Làm upload + lựa chọn nguồn/mock cho task mới, reuse components UI hiện có.
+3. Chọn một task đọc hồ sơ mua vật tư từ gói PDF/DOCX/XLSX/ZIP tổng hợp và giao
+   báo cáo so sánh có citation cùng file xuất. Chạy qua toàn đường sản phẩm.
+4. Làm task kiểm tra hồ sơ MEP từ kho đã chọn, dừng đúng nơi cần phỏng vấn/người duyệt.
+5. Chốt tenant template và tạo tenant thứ hai bằng provisioning, không seed tay.
+
+## Lịch sử các đợt trước
+
+Các mục bên dưới được giữ để truy vết quyết định và bằng chứng cũ. Thứ tự ưu tiên
+hiện hành là P0–P5 ở trên. Những dòng "tiếp theo" trong lịch sử không thay thế kế
+hoạch mới, và kết quả test cũ không được cộng vào kết quả kiểm chứng hôm nay.
 
 ## Trạng thái sau đợt 4 — 2026-10-06
 

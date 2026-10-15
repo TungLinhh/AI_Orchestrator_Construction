@@ -1,0 +1,745 @@
+{
+  "waiting": null,
+  "connector_actions": [],
+  "control": {
+    "state": "not_requested",
+    "paused": false,
+    "feedback": {}
+  },
+  "revision_of": null,
+  "brief": {
+    "boss_brief": "Chuẩn bị đủ vật tư và NCC cho gói thử độc lập; chưa phát hành PO thật. Duyệt chất lượng và DOA mô phỏng, kiểm tra đủ BOQ, NCC không đỏ và 3-way match."
+  },
+  "brief_hash": "23b0b089c8c05e9b59a97afa9ec364aad47b1ee4aa8227290cb5c93f8a9e9467",
+  "id": "tsk_01m4b6eg55k00gv24x740cbar0",
+  "kind": "procurement",
+  "mode": "simulation",
+  "title": "Chuẩn bị mua vật tư và chọn NCC",
+  "status": "completed",
+  "error": "",
+  "lifecycle": {
+    "state": "ready",
+    "reason": "",
+    "replay_task_ids": [],
+    "reconciliation_task_ids": []
+  },
+  "summary": {
+    "mode": "simulation",
+    "summary": "Đã hoàn thành toàn bộ workflow trong môi trường thử; mọi cổng người duyệt đều là phê duyệt mô phỏng.",
+    "po_status": "draft_not_issued",
+    "synthetic": true,
+    "total_vnd": 77000000.0,
+    "human_approvals": 0,
+    "three_way_match": {
+      "matched": true,
+      "po_hash": "146b0fc83590b946386808f1692bcccb4155defa46f19d980522115a1bc9d9d1",
+      "grn_hash": "eadc7b5757611bf2331fb16ef6b036be8b456df469cbbc24d594b1d089aa90ab",
+      "synthetic": true,
+      "total_vnd": 77000000.0,
+      "line_count": 3,
+      "invoice_hash": "0d2276b642f55838ca18f826d6fe9a84c418d440bec65b49321e26e34082226b",
+      "payment_executed": false
+    },
+    "completed_stages": [
+      "brief",
+      "plan",
+      "rfq",
+      "qualification",
+      "quality",
+      "material_review",
+      "comparison",
+      "negotiation",
+      "award_review",
+      "po",
+      "delivery",
+      "three_way_match",
+      "close"
+    ],
+    "payment_executed": false,
+    "simulated_reviews": 2,
+    "stage_evidence_hashes": {
+      "po": "146b0fc83590b946386808f1692bcccb4155defa46f19d980522115a1bc9d9d1",
+      "rfq": "da914e7513c03fee412216e3ded91499881c2f82a274332c33e4c2ced7d044fa",
+      "plan": "b712b6db6aeaaaa9f399bfc02118b54511ebe1a038ff85a1bacc48f3d543a817",
+      "brief": "c3a237f44c27057ad73e79791773c396b7e76e06422a427f0eaf493841fb506d",
+      "quality": "d2d0769b955ad10e3a82246c1c97a3eb4265a0e9f9970691c2f5df7ad9b1198c",
+      "delivery": "31353f7d032f9d369af1abd67d5608fc8fcadc4cfee67aec930e2f774d17a83c",
+      "comparison": "e2e603824c04d64075b499f96f783dcce13ac71d87e7fcf8496bd4e144b84080",
+      "negotiation": "6196912b9a211f15dd417a36a821ad27ba24c31fb25758a3bfc0648d224b35d3",
+      "award_review": "e280b7e60dafed905a9eb63d86cb01c76eac555be374c849d016e1d8edef57c6",
+      "qualification": "8ceac60673c49f01a2607ab0de1e09caa0d838b77dab3047456ecb4aa762de9b",
+      "material_review": "43bd595bb76f551e698a846e7a97fa710956e03f6140b740e0c36489b5defd92",
+      "three_way_match": "a05ecad862d1ce1e6d2d2c7777d6ddf0adcc3f529878bd4e0726553b56fc9e54"
+    },
+    "selected_materials_and_suppliers": [
+      {
+        "quantity": 100,
+        "unit_price": 60000,
+        "material_id": "PIPE-01",
+        "supplier_id": "NCC-TEST-A"
+      },
+      {
+        "quantity": 200,
+        "unit_price": 175000,
+        "material_id": "CABLE-01",
+        "supplier_id": "NCC-TEST-B"
+      },
+      {
+        "quantity": 2,
+        "unit_price": 18000000,
+        "material_id": "PUMP-01",
+        "supplier_id": "NCC-TEST-A"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "code": "ONX-MO-PRC-SOP-005",
+      "source": "human",
+      "name_vi": "Mua sắm vật tư & lựa chọn thầu phụ (kèm thẩm định NCC)"
+    },
+    {
+      "code": "ONX-MO-PRC-SOP-006",
+      "source": "human",
+      "name_vi": "Thẩm định năng lực & rủi ro nhà cung cấp"
+    }
+  ],
+  "mail_intake": null,
+  "evidence": {
+    "real_model_calls": 6,
+    "fake_model_calls": 0,
+    "models": [
+      "inclusionai/ling-3.0-flash-sante:free"
+    ],
+    "events": 48,
+    "audits": 17
+  },
+  "completed": 13,
+  "total": 13,
+  "stages": [
+    {
+      "id": "tsk_01m4b6eg5v8zqkt67j8bfpqv7v",
+      "key": "brief",
+      "title": "Boss giao BOQ và yêu cầu mua vật tư",
+      "owner_agent_id": "agt_01m3ycsen0pawxm3h21zk1m3bt",
+      "status": "completed",
+      "output": {
+        "mode": "simulation",
+        "position": null,
+        "headcount": null,
+        "synthetic": true,
+        "boss_brief": "Chuẩn bị đủ vật tư và NCC cho gói thử độc lập; chưa phát hành PO thật. Duyệt chất lượng và DOA mô phỏng, kiểm tra đủ BOQ, NCC không đỏ và 3-way match.",
+        "salary_range": [
+          null,
+          null
+        ]
+      },
+      "artifact_hash": "c3a237f44c27057ad73e79791773c396b7e76e06422a427f0eaf493841fb506d",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg64j40x1g7f7r7hqq4r",
+      "key": "plan",
+      "title": "Lập kế hoạch vật tư và long-lead",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "completed",
+      "output": {
+        "schedule": [
+          "Đặt hàng PIPE-01/CABLE-01 trước 2026-11-10, giao 10 ngày, đảm bảo trước 2026-11-20",
+          "Đặt hàng PUMP-01 (long-lead) trước 2026-10-21, giao 30 ngày, đảm bảo trước 2026-11-20",
+          "G3 kiểm tra vật tư trước 2026-12-01"
+        ],
+        "material_plan": [
+          {
+            "quantity": 100,
+            "long_lead": false,
+            "material_id": "PIPE-01",
+            "technical_spec": "Ống PPR PN20, chứng chỉ vật liệu"
+          },
+          {
+            "quantity": 200,
+            "long_lead": false,
+            "material_id": "CABLE-01",
+            "technical_spec": "Cáp đồng 4x16mm2, chứng chỉ kiểm tra xuất xưởng"
+          },
+          {
+            "quantity": 2,
+            "long_lead": true,
+            "material_id": "PUMP-01",
+            "technical_spec": "Bơm 10m3/h, 30m cột áp, chứng chỉ và bảo hành 24 tháng"
+          }
+        ],
+        "missing_information": [
+          "Chứng chỉ gốc NCC-TEST-A/B cần đối chiếu trước khi đặt PO",
+          "Điều khoản DOA và incoterm chưa có trong báo giá",
+          "PO chưa phát hành (mô phỏng)"
+        ]
+      },
+      "artifact_hash": "b712b6db6aeaaaa9f399bfc02118b54511ebe1a038ff85a1bacc48f3d543a817",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg6h590csewk1gyen3f3",
+      "key": "rfq",
+      "title": "Chuẩn bị RFQ cho tối thiểu ba NCC",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "completed",
+      "output": {
+        "rfq": "RFQ mô phỏng gói vật tư cấp nước, điện, bơm. BOQ: PIPE-01 x100m, CABLE-01 x200m, PUMP-01 x2bộ. NCC-TEST-A/B hợp lệ, chứng chỉ có; NCC-TEST-C BỊ LOẠI (pháp lý không hợp lệ, không đạt kỹ thuật, thiếu chứng chỉ). Chờ đối chiếu chứng chỉ gốc trước khi đặt PO. Đặt PIPE/CABLE trước 2026-11-10, PUMP trước 2026-10-21.",
+        "supplier_ids": [
+          "NCC-TEST-A",
+          "NCC-TEST-B",
+          "NCC-TEST-C"
+        ],
+        "quote_register": [
+          {
+            "quantity": 100,
+            "unit_price": 60000,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 200,
+            "unit_price": 180000,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 2,
+            "unit_price": 18000000,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 100,
+            "unit_price": 65000,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-B"
+          },
+          {
+            "quantity": 200,
+            "unit_price": 175000,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B"
+          },
+          {
+            "quantity": 2,
+            "unit_price": 18500000,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-B"
+          }
+        ]
+      },
+      "artifact_hash": "da914e7513c03fee412216e3ded91499881c2f82a274332c33e4c2ced7d044fa",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg6v8dvfqt9qwzeq2w6s",
+      "key": "qualification",
+      "title": "Thẩm định pháp lý, tài chính và HSE NCC",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "completed",
+      "output": {
+        "suppliers": [
+          {
+            "reason": "Đáp ứng đầy đủ kỹ thuật (spec_compliant=true), chứng chỉ kèm theo đủ 3 mặt hàng, giá thấp nhất tổng 78.000.000 VND.",
+            "hse_review": "Có đào tạo và đăng ký sự cố cung cấp đầy đủ, không vi phạm HSE lớn.",
+            "supplier_id": "NCC-TEST-A",
+            "legal_review": "Hợp lệ, không vi phạm pháp luật.",
+            "classification": "green",
+            "financial_review": "Dư nợ hoạt động dương, không có rủi ro thanh khoản ngắn hạn."
+          },
+          {
+            "reason": "Đạt kỹ thuật và chứng chỉ đầy đủ, giá cao hơn NCC-TEST-A tổng 78.500.000 VND (chênh lệch 500.000 VND).",
+            "hse_review": "Có đào tạo và đăng ký sự cố cung cấp đầy đủ.",
+            "supplier_id": "NCC-TEST-B",
+            "legal_review": "Hợp lệ.",
+            "classification": "green",
+            "financial_review": "Dư nợ hoạt động dương, tương đương NCC-TEST-A."
+          },
+          {
+            "reason": "Bị loại: pháp lý không hợp lệ, không đạt kỹ thuật (spec_compliant=false), thiếu chứng chỉ (certificate_ref rỗng) cả 3 mặt hàng.",
+            "hse_review": "Có đào tạo và đăng ký sự cố nhưng không bù đắp được thiếu hụt pháp lý/kỹ thuật.",
+            "supplier_id": "NCC-TEST-C",
+            "legal_review": "KHÔNG HỢP LỆ (legal_valid=false).",
+            "classification": "red",
+            "financial_review": "Dư nợ hoạt động dương nhưng không đủ điều kiện xét do vi phạm pháp lý và kỹ thuật."
+          }
+        ]
+      },
+      "artifact_hash": "8ceac60673c49f01a2607ab0de1e09caa0d838b77dab3047456ecb4aa762de9b",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg75mjfs37r22kb07pvr",
+      "key": "quality",
+      "title": "QA đánh giá từng vật tư và chứng chỉ",
+      "owner_agent_id": "agt_01m3ycsexs88vtqsytcqh4q0gy",
+      "status": "completed",
+      "output": {
+        "assessments": [
+          {
+            "reason": "Ống PPR PN20 đúng BOQ, chứng chỉ vật liệu kèm theo hợp lệ; NCC-TEST-A đạt kỹ thuật, pháp lý, HSE, tài chính — xanh.",
+            "accepted": true,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A",
+            "certificate_ref": "fixture:cert:NCC-TEST-A:PIPE-01"
+          },
+          {
+            "reason": "Cáp đồng 4x16mm2 đúng BOQ, chứng chỉ kiểm tra xuất xưởng có đủ; NCC-TEST-A đạt kỹ thuật, pháp lý, HSE, tài chính — xanh.",
+            "accepted": true,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-A",
+            "certificate_ref": "fixture:cert:NCC-TEST-A:CABLE-01"
+          },
+          {
+            "reason": "Bơm 10m3/h, 30m cột áp đúng BOQ, chứng chỉ và bảo hành 24 tháng kèm theo; NCC-TEST-A đạt kỹ thuật, pháp lý, HSE, tài chính — xanh.",
+            "accepted": true,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A",
+            "certificate_ref": "fixture:cert:NCC-TEST-A:PUMP-01"
+          },
+          {
+            "reason": "Ống PPR PN20 đúng BOQ, chứng chỉ vật liệu kèm theo hợp lệ; NCC-TEST-B đạt kỹ thuật, pháp lý, HSE, tài chính — xanh.",
+            "accepted": true,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-B",
+            "certificate_ref": "fixture:cert:NCC-TEST-B:PIPE-01"
+          },
+          {
+            "reason": "Cáp đồng 4x16mm2 đúng BOQ, chứng chỉ kiểm tra xuất xưởng có đủ; NCC-TEST-B đạt kỹ thuật, pháp lý, HSE, tài chính — xanh.",
+            "accepted": true,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B",
+            "certificate_ref": "fixture:cert:NCC-TEST-B:CABLE-01"
+          },
+          {
+            "reason": "Bơm 10m3/h, 30m cột áp đúng BOQ, chứng chỉ và bảo hành 24 tháng kèm theo; NCC-TEST-B đạt kỹ thuật, pháp lý, HSE, tài chính — xanh.",
+            "accepted": true,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-B",
+            "certificate_ref": "fixture:cert:NCC-TEST-B:PUMP-01"
+          },
+          {
+            "reason": "NCC-TEST-C BỊ LOẠI: pháp lý không hợp lệ (legal_valid=false), spec_compliant=false, thiếu chứng chỉ (certificate_ref rỗng) — không đủ điều kiện xét.",
+            "accepted": false,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-C",
+            "certificate_ref": ""
+          },
+          {
+            "reason": "NCC-TEST-C BỊ LOẠI: pháp lý không hợp lệ (legal_valid=false), spec_compliant=false, thiếu chứng chỉ (certificate_ref rỗng) — không đủ điều kiện xét.",
+            "accepted": false,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-C",
+            "certificate_ref": ""
+          },
+          {
+            "reason": "NCC-TEST-C BỊ LOẠI: pháp lý không hợp lệ (legal_valid=false), spec_compliant=false, thiếu chứng chỉ (certificate_ref rỗng) — không đủ điều kiện xét.",
+            "accepted": false,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-C",
+            "certificate_ref": ""
+          }
+        ],
+        "missing_evidence": [
+          "Chứng chỉ gốc NCC-TEST-A/B cần đối chiếu trước khi đặt PO",
+          "Điều khoản DOA và incoterm chưa có trong báo giá",
+          "PO chưa phát hành (mô phỏng)"
+        ]
+      },
+      "artifact_hash": "d2d0769b955ad10e3a82246c1c97a3eb4265a0e9f9970691c2f5df7ad9b1198c",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg7fd0c3rctg5waqqd24",
+      "key": "material_review",
+      "title": "Người phòng vật tư duyệt chất lượng",
+      "owner_agent_id": "agt_01m3ycsexs88vtqsytcqh4q0gy",
+      "status": "completed",
+      "output": {
+        "mode": "simulation",
+        "label": "Phê duyệt mô phỏng",
+        "decision": "simulated_approved",
+        "conditions": "Chỉ sử dụng cho dữ liệu và môi trường thử; không cho phép hành động production.",
+        "recorded_at": "2026-10-07T12:47:39.910892+00:00",
+        "review_role": "Quality Agent",
+        "artifact_hash": "d2d0769b955ad10e3a82246c1c97a3eb4265a0e9f9970691c2f5df7ad9b1198c",
+        "human_decision": false
+      },
+      "artifact_hash": "43bd595bb76f551e698a846e7a97fa710956e03f6140b740e0c36489b5defd92",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg7smym0cqarydngw4ww",
+      "key": "comparison",
+      "title": "So sánh giá, bảo hành và giao hàng",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "completed",
+      "output": {
+        "reasons": [
+          "PIPE-01 chọn NCC-TEST-A (60,000 VND/m, tổng 6M VND): giá thấp nhất, xanh, đủ chứng chỉ, giao 10 ngày.",
+          "CABLE-01 chọn NCC-TEST-B (175,000 VND/m, tổng 35M VND): giá thấp hơn A 5,000 VND/m, xanh, đủ chứng chỉ, giao 10 ngày.",
+          "PUMP-01 chọn NCC-TEST-A (18,000,000 VND/bộ, tổng 36M VND): giá thấp hơn B 500k, xanh, long-lead giao 30 ngày, bảo hành 24 tháng.",
+          "Tổng dự án 77,000,000 VND (tối ưu); NCC-TEST-C loại đỏ không xét.",
+          "Thay đổi quyết định nếu xác minh chứng chỉ gốc NCC-TEST-A/B thất bại, hoặc yêu cầu đơn nhà cung cấp duy nhất, hoặc điều khoản DOA/incoterm không đạt."
+        ],
+        "total_vnd": 77000000,
+        "comparison": [
+          {
+            "reason": "NCC-TEST-A xanh, chứng chỉ fixture hợp lệ, giá 60,000 VND/m thấp hơn B; tổng 6,000,000 VND, bảo hành 24 tháng, giao 10 ngày.",
+            "eligible": true,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A",
+            "total_price": 6000000,
+            "delivery_days": 10,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-B xanh, chứng chỉ hợp lệ, giá 65,000 VND/m; tổng 6,500,000 VND, bảo hành 24 tháng, giao 10 ngày.",
+            "eligible": true,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-B",
+            "total_price": 6500000,
+            "delivery_days": 10,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-B xanh, chứng chỉ hợp lệ, giá 175,000 VND/m thấp hơn A; tổng 35,000,000 VND, bảo hành 24 tháng, giao 10 ngày.",
+            "eligible": true,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B",
+            "total_price": 35000000,
+            "delivery_days": 10,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-A xanh, chứng chỉ hợp lệ, giá 180,000 VND/m; tổng 36,000,000 VND, bảo hành 24 tháng, giao 10 ngày.",
+            "eligible": true,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-A",
+            "total_price": 36000000,
+            "delivery_days": 10,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-A xanh, long-lead, chứng chỉ hợp lệ, giá 18,000,000 VND/thấp hơn B; tổng 36,000,000 VND, bảo hành 24 tháng, giao 30 ngày.",
+            "eligible": true,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A",
+            "total_price": 36000000,
+            "delivery_days": 30,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-B xanh, long-lead, chứng chỉ hợp lệ, giá 18,500,000 VND; tổng 37,000,000 VND, bảo hành 24 tháng, giao 30 ngày.",
+            "eligible": true,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-B",
+            "total_price": 37000000,
+            "delivery_days": 30,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-C đỏ: legal_valid=false, spec_compliant=false, certificate_ref rỗng — loại khỏi xét.",
+            "eligible": false,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-C",
+            "total_price": 4000000,
+            "delivery_days": 10,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-C đỏ: legal_valid=false, spec_compliant=false, certificate_ref rỗng — loại khỏi xét.",
+            "eligible": false,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-C",
+            "total_price": 28000000,
+            "delivery_days": 10,
+            "warranty_months": 24
+          },
+          {
+            "reason": "NCC-TEST-C đỏ: legal_valid=false, spec_compliant=false, certificate_ref rỗng — loại khỏi xét.",
+            "eligible": false,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-C",
+            "total_price": 28000000,
+            "delivery_days": 30,
+            "warranty_months": 24
+          }
+        ],
+        "recommended_awards": [
+          {
+            "quantity": 100,
+            "unit_price": 60000,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 200,
+            "unit_price": 175000,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B"
+          },
+          {
+            "quantity": 2,
+            "unit_price": 18000000,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A"
+          }
+        ]
+      },
+      "artifact_hash": "e2e603824c04d64075b499f96f783dcce13ac71d87e7fcf8496bd4e144b84080",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg85tw0ffn42hntbwacy",
+      "key": "negotiation",
+      "title": "Chuẩn bị đàm phán và điều kiện thương mại",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "completed",
+      "output": {
+        "risks": [
+          "NCC-TEST-C giá thấp hơn 15-22% nhưng bị loại đỏ (pháp lý, kỹ thuật, chứng chỉ) — không được xét dù áp lực giá.",
+          "Chứng chỉ gốc NCC-TEST-A/B chưa đối chiếu: rủi ro loại sau khi đàm phán.",
+          "Thiếu điều khoản DOA/incoterm trong báo giá: rủi ro chất lượng/giao nhận khi phát sinh.",
+          "PUMP long-lead đặt trễ sau 2026-10-21 sẽ trượt need_date 2026-11-20.",
+          "Mô phỏng: PO thật chưa phát hành, mọi quyết định chờ boss phê duyệt."
+        ],
+        "negotiation_record": [
+          "Bước 1: Yêu cầu NCC-TEST-A/B xác nhận giá giữ nguyên báo giá, bổ sung điều khoản DOA/incoterm trong vòng 3 ngày làm việc.",
+          "Bước 2: Đàm phán riêng — PIPE-01 + PUMP-01 với NCC-TEST-A (target 3-5% PUMP do long-lead), CABLE-01 với NCC-TEST-B (target 2-3%).",
+          "Bước 3: Đối chiếu chứng chỉ gốc trước khi đặt PO; nếu thất bại → chuyển sang NCC còn lại hoặc hoãn gói.",
+          "Bước 4: G3 kiểm tra trước 2026-12-01; PO mô phỏng chỉ dùng cho thử, không phát hành thật.",
+          "Thời gian đặt hàng: PIPE/CABLE trước 2026-11-10, PUMP trước 2026-10-21 để đảm bảo nhận hàng trước 2026-11-20."
+        ],
+        "commercial_conditions": [
+          "Giá PO giữ đúng báo giá NCC-TEST-A/B (không giảm trừ khi có chứng cứ fixture mới): PIPE-01 60,000 VND/m (A), CABLE-01 175,000 VND/m (B), PUMP-01 18,000,000 VND/bộ (A).",
+          "Điều khoản DOA, incoterm và phương thức thanh toán (30-70-100%) phải bổ sung qua đàm phán trước khi phát hành PO thật.",
+          "Bảo hành 24 tháng theo báo giá, giao hàng 10 ngày (PIPE/CABLE) và 30 ngày (PUMP long-lead).",
+          "Chứng chỉ gốc NCC-TEST-A/B phải đối chiếu đạt trước khi đặt hàng; NCC-TEST-C loại đỏ, không xét."
+        ]
+      },
+      "artifact_hash": "6196912b9a211f15dd417a36a821ad27ba24c31fb25758a3bfc0648d224b35d3",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg8fcqq7rkzqfkzqkkkg",
+      "key": "award_review",
+      "title": "Cấp DOA duyệt đề xuất lựa chọn",
+      "owner_agent_id": "agt_01m3ycsen0pawxm3h21zk1m3bt",
+      "status": "completed",
+      "output": {
+        "mode": "simulation",
+        "label": "Phê duyệt mô phỏng",
+        "decision": "simulated_approved",
+        "conditions": "Chỉ sử dụng cho dữ liệu và môi trường thử; không cho phép hành động production.",
+        "recorded_at": "2026-10-07T12:48:03.601387+00:00",
+        "review_role": "Executive Agent",
+        "artifact_hash": "6196912b9a211f15dd417a36a821ad27ba24c31fb25758a3bfc0648d224b35d3",
+        "human_decision": false
+      },
+      "artifact_hash": "e280b7e60dafed905a9eb63d86cb01c76eac555be374c849d016e1d8edef57c6",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg8r3jsgrvxcjdya49yk",
+      "key": "po",
+      "title": "Lập PO dự thảo đủ vật tư",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "completed",
+      "output": {
+        "lines": [
+          {
+            "quantity": 100,
+            "unit_price": 60000,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 200,
+            "unit_price": 175000,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B"
+          },
+          {
+            "quantity": 2,
+            "unit_price": 18000000,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A"
+          }
+        ],
+        "po_id": "DRAFT-tsk_01m4b6eg55k00gv24x740cbar0",
+        "status": "draft_not_issued",
+        "synthetic": true,
+        "award_review_hash": "e280b7e60dafed905a9eb63d86cb01c76eac555be374c849d016e1d8edef57c6",
+        "quality_review_hash": "43bd595bb76f551e698a846e7a97fa710956e03f6140b740e0c36489b5defd92"
+      },
+      "artifact_hash": "146b0fc83590b946386808f1692bcccb4155defa46f19d980522115a1bc9d9d1",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg91te2chqkzjh4v2b36",
+      "key": "delivery",
+      "title": "Ghi nhận giao hàng và GRN thử",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "completed",
+      "output": {
+        "grn": [
+          {
+            "quantity": 100,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 2,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 200,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B"
+          }
+        ],
+        "grn_id": "TEST-GRN-tsk_01m4b6eg55k00gv24x740cbar0",
+        "source": "fixture:warehouse-and-invoice-v1",
+        "invoice": [
+          {
+            "quantity": 100,
+            "unit_price": 60000,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 2,
+            "unit_price": 18000000,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 200,
+            "unit_price": 175000,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B"
+          }
+        ],
+        "synthetic": true,
+        "invoice_id": "TEST-INVOICE-tsk_01m4b6eg55k00gv24x740cbar0",
+        "external_delivery_claimed": false
+      },
+      "artifact_hash": "31353f7d032f9d369af1abd67d5608fc8fcadc4cfee67aec930e2f774d17a83c",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg9cefvchvtr4aj9jgjg",
+      "key": "three_way_match",
+      "title": "Đối chiếu PO-GRN-Invoice",
+      "owner_agent_id": "agt_01m3ycsezrkvqr836b56arb8g9",
+      "status": "completed",
+      "output": {
+        "matched": true,
+        "po_hash": "146b0fc83590b946386808f1692bcccb4155defa46f19d980522115a1bc9d9d1",
+        "grn_hash": "eadc7b5757611bf2331fb16ef6b036be8b456df469cbbc24d594b1d089aa90ab",
+        "synthetic": true,
+        "total_vnd": 77000000.0,
+        "line_count": 3,
+        "invoice_hash": "0d2276b642f55838ca18f826d6fe9a84c418d440bec65b49321e26e34082226b",
+        "payment_executed": false
+      },
+      "artifact_hash": "a05ecad862d1ce1e6d2d2c7777d6ddf0adcc3f529878bd4e0726553b56fc9e54",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6eg9p72rfxnx8kwmkmyaw",
+      "key": "close",
+      "title": "Đóng hồ sơ chuẩn bị mua vật tư",
+      "owner_agent_id": "agt_01m3ycsen0pawxm3h21zk1m3bt",
+      "status": "completed",
+      "output": {
+        "mode": "simulation",
+        "summary": "Đã hoàn thành toàn bộ workflow trong môi trường thử; mọi cổng người duyệt đều là phê duyệt mô phỏng.",
+        "po_status": "draft_not_issued",
+        "synthetic": true,
+        "total_vnd": 77000000.0,
+        "human_approvals": 0,
+        "three_way_match": {
+          "matched": true,
+          "po_hash": "146b0fc83590b946386808f1692bcccb4155defa46f19d980522115a1bc9d9d1",
+          "grn_hash": "eadc7b5757611bf2331fb16ef6b036be8b456df469cbbc24d594b1d089aa90ab",
+          "synthetic": true,
+          "total_vnd": 77000000.0,
+          "line_count": 3,
+          "invoice_hash": "0d2276b642f55838ca18f826d6fe9a84c418d440bec65b49321e26e34082226b",
+          "payment_executed": false
+        },
+        "completed_stages": [
+          "brief",
+          "plan",
+          "rfq",
+          "qualification",
+          "quality",
+          "material_review",
+          "comparison",
+          "negotiation",
+          "award_review",
+          "po",
+          "delivery",
+          "three_way_match",
+          "close"
+        ],
+        "payment_executed": false,
+        "simulated_reviews": 2,
+        "stage_evidence_hashes": {
+          "po": "146b0fc83590b946386808f1692bcccb4155defa46f19d980522115a1bc9d9d1",
+          "rfq": "da914e7513c03fee412216e3ded91499881c2f82a274332c33e4c2ced7d044fa",
+          "plan": "b712b6db6aeaaaa9f399bfc02118b54511ebe1a038ff85a1bacc48f3d543a817",
+          "brief": "c3a237f44c27057ad73e79791773c396b7e76e06422a427f0eaf493841fb506d",
+          "quality": "d2d0769b955ad10e3a82246c1c97a3eb4265a0e9f9970691c2f5df7ad9b1198c",
+          "delivery": "31353f7d032f9d369af1abd67d5608fc8fcadc4cfee67aec930e2f774d17a83c",
+          "comparison": "e2e603824c04d64075b499f96f783dcce13ac71d87e7fcf8496bd4e144b84080",
+          "negotiation": "6196912b9a211f15dd417a36a821ad27ba24c31fb25758a3bfc0648d224b35d3",
+          "award_review": "e280b7e60dafed905a9eb63d86cb01c76eac555be374c849d016e1d8edef57c6",
+          "qualification": "8ceac60673c49f01a2607ab0de1e09caa0d838b77dab3047456ecb4aa762de9b",
+          "material_review": "43bd595bb76f551e698a846e7a97fa710956e03f6140b740e0c36489b5defd92",
+          "three_way_match": "a05ecad862d1ce1e6d2d2c7777d6ddf0adcc3f529878bd4e0726553b56fc9e54"
+        },
+        "selected_materials_and_suppliers": [
+          {
+            "quantity": 100,
+            "unit_price": 60000,
+            "material_id": "PIPE-01",
+            "supplier_id": "NCC-TEST-A"
+          },
+          {
+            "quantity": 200,
+            "unit_price": 175000,
+            "material_id": "CABLE-01",
+            "supplier_id": "NCC-TEST-B"
+          },
+          {
+            "quantity": 2,
+            "unit_price": 18000000,
+            "material_id": "PUMP-01",
+            "supplier_id": "NCC-TEST-A"
+          }
+        ]
+      },
+      "artifact_hash": "8ae1c95d2e0048b84893311d62437a87444e6090a9a1ff63e3f5d58b091434bc",
+      "error": null,
+      "reused_from": null
+    }
+  ]
+}

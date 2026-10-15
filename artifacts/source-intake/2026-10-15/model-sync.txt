@@ -1,0 +1,29 @@
+  agent_framework.py: 4 __table_args__ rebuilt
+  commercial.py: 6 __table_args__ rebuilt
+  construction.py: 10 __table_args__ rebuilt
+  contracts.py: 7 __table_args__ rebuilt
+  models.py: 47 __table_args__ rebuilt
+  process.py: 15 __table_args__ rebuilt
+  procurement.py: 10 __table_args__ rebuilt
+  progress.py: 1 __table_args__ rebuilt
+  sources.py: 4 __table_args__ rebuilt
+  supply.py: 5 __table_args__ rebuilt
+  0 column-level key(s) removed; the composite key replaces them
+  109 declaration(s) rebuilt from the database
+  models.py: dropped audit_logs: ix_audit_logs_sequence (a column already creates it)
+  1 column-derived index(es) left to the column
+  agent_framework.py: 4 __table_args__ rebuilt
+  commercial.py: 6 __table_args__ rebuilt
+  construction.py: 10 __table_args__ rebuilt
+  contracts.py: 7 __table_args__ rebuilt
+  models.py: 47 __table_args__ rebuilt
+  process.py: 15 __table_args__ rebuilt
+  procurement.py: 10 __table_args__ rebuilt
+  progress.py: 1 __table_args__ rebuilt
+  sources.py: 4 __table_args__ rebuilt
+  supply.py: 5 __table_args__ rebuilt
+  0 column-level key(s) removed; the composite key replaces them
+  109 declaration(s) rebuilt from the database
+  models.py: dropped audit_logs: ix_audit_logs_sequence (a column already creates it)
+  1 column-derived index(es) left to the column
+  idempotent: 50a6a88a17d50a940e177acd3054ce7c9654f7955509bf824a061017838d9f19

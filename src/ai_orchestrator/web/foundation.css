@@ -19,6 +19,7 @@
   .card > header, .card > .body, .manage-body { padding: var(--panel-padding); }
   .btn.primary:hover { color: var(--color-on-accent); }
   .sidebar-collapsed { --nav-w: 64px; }
+  .sidebar-collapsed.sidebar-peek { --nav-w: 216px; }
   :root[data-ui-initializing] *, :root[data-ui-switching] *,
   :root[data-ui-initializing] *::before, :root[data-ui-initializing] *::after,
   :root[data-ui-switching] *::before, :root[data-ui-switching] *::after {

@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "effective_unchanged": true,
+  "rows_reused": 5,
+  "profiles": [
+    "primary",
+    "reasoning",
+    "default",
+    "fast_general",
+    "reasoning_high"
+  ]
+}

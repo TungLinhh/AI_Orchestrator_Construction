@@ -1,0 +1,83 @@
+{
+  "check": "sidebar-toggle-at-bottom",
+  "captured_at": "2026-10-15T03:30:07.383394+00:00",
+  "checks": [
+    {
+      "name": "toggle sits in the bottom band of the open sidebar",
+      "passed": true,
+      "detail": "toggle bottom=892.0 sidebar bottom=900.0"
+    },
+    {
+      "name": "collapsed rail is 64px",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "toggle position is unchanged on both axes open vs collapsed",
+      "passed": true,
+      "detail": "open y=860.0 collapsed y=860.0"
+    },
+    {
+      "name": "toggle still labelled while collapsed",
+      "passed": true,
+      "detail": "Mở rộng thanh bên"
+    },
+    {
+      "name": "collapse persisted",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "hover peek widens without dropping the collapsed class",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "toggle position is unchanged on both axes during peek",
+      "passed": true,
+      "detail": "open y=860.0 peek y=860.0"
+    },
+    {
+      "name": "leaving the rail ends the peek",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "toggle expands again with aria-expanded=true",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "zero JS errors",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "geometry": {
+    "open": {
+      "x": 16,
+      "y": 860,
+      "width": 32,
+      "height": 32
+    },
+    "collapsed": {
+      "x": 16,
+      "y": 860,
+      "width": 32,
+      "height": 32
+    },
+    "peek": {
+      "x": 16,
+      "y": 860,
+      "width": 32,
+      "height": 32
+    }
+  },
+  "errors": [],
+  "screenshots": [
+    "sidebar-open.png",
+    "sidebar-collapsed.png",
+    "sidebar-peek.png"
+  ],
+  "gate": "passed"
+}

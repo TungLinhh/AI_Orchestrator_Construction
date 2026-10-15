@@ -1,0 +1,386 @@
+{
+  "observed_at": "2026-10-07T12:44:51.886309+00:00",
+  "organization_id": "org_01m3ycsehgwz7v1fk2ahswkwhm",
+  "applied": true,
+  "changes": [
+    {
+      "name": "primary",
+      "before": null,
+      "after": [
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling-small:free",
+          "max_input_tokens": 1048576,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": true,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "inclusionai/ling-3.0-flash-sante:free",
+          "max_input_tokens": 262144,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "dots-studio/dots-3-note-preview:free",
+          "max_input_tokens": 512000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "poolside/laguna-s-2.1:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "cohere/north-mini-code:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        }
+      ]
+    },
+    {
+      "name": "reasoning",
+      "before": null,
+      "after": [
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling-small:free",
+          "max_input_tokens": 1048576,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": true,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "inclusionai/ling-3.0-flash-sante:free",
+          "max_input_tokens": 262144,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "dots-studio/dots-3-note-preview:free",
+          "max_input_tokens": 512000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "poolside/laguna-s-2.1:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "cohere/north-mini-code:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        }
+      ]
+    },
+    {
+      "name": "default",
+      "before": {
+        "id": "mpf_01m3ycsekskcyk4tkgwjn8p56p",
+        "providers": [
+          {
+            "model": "scripted-1",
+            "weight": 1.0,
+            "provider": "deterministic"
+          }
+        ],
+        "max_latency_ms": 60000,
+        "max_retries": 2,
+        "requires_structured_output": true
+      },
+      "after": [
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling-small:free",
+          "max_input_tokens": 1048576,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": true,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "inclusionai/ling-3.0-flash-sante:free",
+          "max_input_tokens": 262144,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "dots-studio/dots-3-note-preview:free",
+          "max_input_tokens": 512000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "poolside/laguna-s-2.1:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "cohere/north-mini-code:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        }
+      ]
+    },
+    {
+      "name": "fast_general",
+      "before": {
+        "id": "mpf_01m3ycsekskcyk4tkgwjn8p56q",
+        "providers": [
+          {
+            "model": "scripted-1",
+            "weight": 1.0,
+            "provider": "deterministic"
+          }
+        ],
+        "max_latency_ms": 60000,
+        "max_retries": 2,
+        "requires_structured_output": true
+      },
+      "after": [
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling-small:free",
+          "max_input_tokens": 1048576,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": true,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "inclusionai/ling-3.0-flash-sante:free",
+          "max_input_tokens": 262144,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "dots-studio/dots-3-note-preview:free",
+          "max_input_tokens": 512000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "poolside/laguna-s-2.1:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "cohere/north-mini-code:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        }
+      ]
+    },
+    {
+      "name": "reasoning_high",
+      "before": {
+        "id": "mpf_01m3ycsektzf0q82vsvswq92wc",
+        "providers": [
+          {
+            "model": "scripted-1",
+            "weight": 1.0,
+            "provider": "deterministic"
+          }
+        ],
+        "max_latency_ms": 60000,
+        "max_retries": 2,
+        "requires_structured_output": true
+      },
+      "after": [
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling-small:free",
+          "max_input_tokens": 1048576,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": true,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "inclusionai/ling-3.0-flash-sante:free",
+          "max_input_tokens": 262144,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "dots-studio/dots-3-note-preview:free",
+          "max_input_tokens": 512000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "nvidia/nemotron-3.5-lightning:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "poolside/laguna-s-2.1:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        },
+        {
+          "provider": "openrouter",
+          "model": "cohere/north-mini-code:free",
+          "max_input_tokens": 200000,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "supports_vision": false,
+          "max_classification": "public"
+        }
+      ]
+    }
+  ],
+  "read_back_verified": true,
+  "effective": {
+    "primary": [
+      "thinkingmachines/inkling-small:free",
+      "inclusionai/ling-3.0-flash-sante:free",
+      "dots-studio/dots-3-note-preview:free",
+      "nvidia/nemotron-3.5-lightning:free",
+      "poolside/laguna-s-2.1:free",
+      "cohere/north-mini-code:free"
+    ],
+    "reasoning": [
+      "thinkingmachines/inkling-small:free",
+      "inclusionai/ling-3.0-flash-sante:free",
+      "dots-studio/dots-3-note-preview:free",
+      "nvidia/nemotron-3.5-lightning:free",
+      "poolside/laguna-s-2.1:free",
+      "cohere/north-mini-code:free"
+    ],
+    "default": [
+      "thinkingmachines/inkling-small:free",
+      "inclusionai/ling-3.0-flash-sante:free",
+      "dots-studio/dots-3-note-preview:free",
+      "nvidia/nemotron-3.5-lightning:free",
+      "poolside/laguna-s-2.1:free",
+      "cohere/north-mini-code:free"
+    ],
+    "fast_general": [
+      "thinkingmachines/inkling-small:free",
+      "inclusionai/ling-3.0-flash-sante:free",
+      "dots-studio/dots-3-note-preview:free",
+      "nvidia/nemotron-3.5-lightning:free",
+      "poolside/laguna-s-2.1:free",
+      "cohere/north-mini-code:free"
+    ],
+    "reasoning_high": [
+      "thinkingmachines/inkling-small:free",
+      "inclusionai/ling-3.0-flash-sante:free",
+      "dots-studio/dots-3-note-preview:free",
+      "nvidia/nemotron-3.5-lightning:free",
+      "poolside/laguna-s-2.1:free",
+      "cohere/north-mini-code:free"
+    ]
+  }
+}

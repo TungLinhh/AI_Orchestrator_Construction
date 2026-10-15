@@ -1,0 +1,204 @@
+{
+  "waiting": null,
+  "connector_actions": [],
+  "control": {
+    "state": "not_requested",
+    "paused": false,
+    "feedback": {}
+  },
+  "revision_of": null,
+  "brief": {
+    "boss_brief": "Chuẩn bị đủ vật tư và NCC cho gói thử độc lập; chưa phát hành PO thật. Duyệt chất lượng và DOA mô phỏng, kiểm tra đủ BOQ, NCC không đỏ và 3-way match."
+  },
+  "brief_hash": "23b0b089c8c05e9b59a97afa9ec364aad47b1ee4aa8227290cb5c93f8a9e9467",
+  "id": "tsk_01m4b6aw13sweybypp96j9sgh5",
+  "kind": "procurement",
+  "mode": "simulation",
+  "title": "Chuẩn bị mua vật tư và chọn NCC",
+  "status": "failed",
+  "error": "ValueError: Model stage did not complete: plan (failed)",
+  "lifecycle": {
+    "state": "failed",
+    "reason": "ValueError: Model stage did not complete: plan (failed)",
+    "replay_task_ids": [],
+    "reconciliation_task_ids": []
+  },
+  "summary": {},
+  "sources": [
+    {
+      "code": "ONX-MO-PRC-SOP-005",
+      "source": "human",
+      "name_vi": "Mua sắm vật tư & lựa chọn thầu phụ (kèm thẩm định NCC)"
+    },
+    {
+      "code": "ONX-MO-PRC-SOP-006",
+      "source": "human",
+      "name_vi": "Thẩm định năng lực & rủi ro nhà cung cấp"
+    }
+  ],
+  "mail_intake": null,
+  "evidence": {
+    "real_model_calls": 0,
+    "fake_model_calls": 0,
+    "models": [],
+    "events": 31,
+    "audits": 4
+  },
+  "completed": 1,
+  "total": 13,
+  "stages": [
+    {
+      "id": "tsk_01m4b6aw389xaha7p0v2xa6n3x",
+      "key": "brief",
+      "title": "Boss giao BOQ và yêu cầu mua vật tư",
+      "owner_agent_id": "agt_01m3ycsen0pawxm3h21zk1m3bt",
+      "status": "completed",
+      "output": {
+        "mode": "simulation",
+        "position": null,
+        "headcount": null,
+        "synthetic": true,
+        "boss_brief": "Chuẩn bị đủ vật tư và NCC cho gói thử độc lập; chưa phát hành PO thật. Duyệt chất lượng và DOA mô phỏng, kiểm tra đủ BOQ, NCC không đỏ và 3-way match.",
+        "salary_range": [
+          null,
+          null
+        ]
+      },
+      "artifact_hash": "c3a237f44c27057ad73e79791773c396b7e76e06422a427f0eaf493841fb506d",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw3pkx0gysyp2ye2nx0q",
+      "key": "plan",
+      "title": "Lập kế hoạch vật tư và long-lead",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "failed",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": "no permitted model candidate for profile 'primary' (classification=internal); rejected: ['openrouter/cohere/north-mini-code:free: classification internal exceeds the effective ceiling public', 'openrouter/dots-studio/dots-3-note-preview:free: classification internal exceeds the effective ceiling public', 'openrouter/inclusionai/ling-3.0-flash-sante:free: classification internal exceeds the effective ceiling public', 'openrouter/nvidia/nemotron-3.5-lightning:free: classification internal exceeds the effective ceiling public', 'openrouter/poolside/laguna-s-2.1:free: classification internal exceeds the effective ceiling public', 'openrouter/thinkingmachines/inkling-small:free: classification internal exceeds the effective ceiling public']",
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw4jqmm2xz7gb7e70199",
+      "key": "rfq",
+      "title": "Chuẩn bị RFQ cho tối thiểu ba NCC",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw50jtsfkqyevfm0z1kb",
+      "key": "qualification",
+      "title": "Thẩm định pháp lý, tài chính và HSE NCC",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw5c86jx7dhhqbdz99tr",
+      "key": "quality",
+      "title": "QA đánh giá từng vật tư và chứng chỉ",
+      "owner_agent_id": "agt_01m3ycsexs88vtqsytcqh4q0gy",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw5sjrenyr90hzysz58z",
+      "key": "material_review",
+      "title": "Người phòng vật tư duyệt chất lượng",
+      "owner_agent_id": "agt_01m3ycsexs88vtqsytcqh4q0gy",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw6qyavg6b20ang3adp3",
+      "key": "comparison",
+      "title": "So sánh giá, bảo hành và giao hàng",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw7jy2ya0mk8cwx8btvx",
+      "key": "negotiation",
+      "title": "Chuẩn bị đàm phán và điều kiện thương mại",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw82tynmpftp7aq52fem",
+      "key": "award_review",
+      "title": "Cấp DOA duyệt đề xuất lựa chọn",
+      "owner_agent_id": "agt_01m3ycsen0pawxm3h21zk1m3bt",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw8gj4ra5fpex60tecjy",
+      "key": "po",
+      "title": "Lập PO dự thảo đủ vật tư",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw90z3cyaj7h7n4p60j8",
+      "key": "delivery",
+      "title": "Ghi nhận giao hàng và GRN thử",
+      "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6aw9dhdzde6kyv61srmzx",
+      "key": "three_way_match",
+      "title": "Đối chiếu PO-GRN-Invoice",
+      "owner_agent_id": "agt_01m3ycsezrkvqr836b56arb8g9",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    },
+    {
+      "id": "tsk_01m4b6awa24wf03g4cv97cbee6",
+      "key": "close",
+      "title": "Đóng hồ sơ chuẩn bị mua vật tư",
+      "owner_agent_id": "agt_01m3ycsen0pawxm3h21zk1m3bt",
+      "status": "canceled",
+      "output": {},
+      "artifact_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "error": null,
+      "reused_from": null
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "task_url": "http://127.0.0.1:8101/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m4yc1strkcfyx079d97m14k4",
+  "scroller": {
+    "docH": 1047,
+    "bodyH": 1047,
+    "mainH": 988,
+    "mainOverflowY": "visible",
+    "winH": 900
+  },
+  "heading_after_scroll600": {
+    "top": 59,
+    "bottom": 219.96875,
+    "position": "sticky",
+    "visible": true
+  },
+  "heading_after_scroll1500": {
+    "headingTop": 59,
+    "headingVisible": true,
+    "tabsTop": 354.734375,
+    "tabsVisible": true
+  },
+  "grids": [
+    {
+      "sel": "",
+      "cols": "722.25px 437.734px"
+    }
+  ],
+  "primary": {
+    "bg": "rgb(39, 87, 129)",
+    "bgImage": "linear-gradient(color(srgb 0.254588 0.420235 0.565176) 0%, rgb(39, 87, 129) 100%)",
+    "shadow": "rgba(255, 255, 255, 0.18) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.08) 0px 1px 2px 0px, rgba(0, 0, 0, 0.06) 0px 2px 6px 0px",
+    "radius": "8px",
+    "transition": "background-color 0.14s cubic-bezier(0.2, 0, 0, 1), border-color 0.14s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.14s cubic-bezier(0.2, 0, 0, 1), color 0.14s cubic-bezier(0.2, 0, 0, 1), transform 0.08s cubic-bezier(0.2, 0, 0, 1)"
+  },
+  "primary_hover_shadow": "rgba(255, 255, 255, 0.18) 0px 1px 0px 0px inset, rgba(23, 43, 58, 0.08) 0px 1px 2px 0px, rgba(23, 43, 58, 0.06) 0px 4px 12px 0px",
+  "primary_focus": {
+    "outline": "rgb(39, 87, 129) solid 2px",
+    "boxShadow": "rgba(255, 255, 255, 0.18) 0px 1px 0px 0px inset, rgba(23, 43, 58, 0.08) 0px 1px 2px 0px, rgba(23, 43, 58, 0.06) 0px 4px 12px 0px"
+  },
+  "toast_probe": {
+    "hasUI": false,
+    "hasToast": false,
+    "toastEl": true
+  },
+  "toast_fired": "no-toast-fn",
+  "toast_style": {
+    "found": false
+  },
+  "skeleton_css": {
+    "firstHit": "ui-sr) {\n    display: block;\n    height: var(--space-16);\n    border-radius: var(--space-4);\n    background: linear-gradient(\n      100deg,\n      var(--color-fill-hover) 35%,\n      var(--color-surface-1) 50%,\n      var(--color-fill-hover) 65%\n    );\n    background-size: 200% 100%;\n    animation: ui-shimmer var(--motion-slow) linear infinite;\n  }\n  .ui-skeleton > span:last-child {\n    width: 60%;\n  }\n  .ui-kbd {\n    border: 1px solid var(--color-border-control);\n    background: var(--color-fill);\n    color: var(--color-text-secondary);\n    border-radius: var(--space-4);\n    font: var(--text-xs) / 1.5 var(--mono);\n    padding: var(--space-2) var(--space-4);\n  }\n  .ui-copy-id {\n    display: inline-flex;\n    align-items: center;\n    gap: var(--space-8);\n    min-height: var(--btn-height);\n    m",
+    "skeletonRules": []
+  },
+  "rm_css": "on: none;\n  }\n  :root[data-motion=\"reduced\"] *, :root[data-motion=\"reduced\"] *::before,\n  :root[data-motion=\"reduced\"] *::after { transition: none; animation: none; scroll-behavior: auto; }\n  @media (prefers-reduced-motion: reduce) {\n    *, *::before, *::after { animation: none; transition: none; scroll-behavior: auto; }\n  }\n  @media (max-width: 760px) {\n    input, select, textarea, .manage-form input, .manage-form select, .manage-form textarea { font-size: 16px; }\n  }\n}\n\n/* Legacy element defaults live below component rules, not in pages. */\n@layer base {\n* {\n  box-sizing: border-box;\n}\nhtml,\nbody {\n  margin: 0;\n  min-height: 100%;\n  scroll-behavior: smooth;\n}\nbody {\n  font: 14px/1.6 var(--font);\n  background: var(--bg);\n  color: var(--text);\n}\n[hidden] {\n  display: none;\n}\na {\n  color: var(--accent);\n  text-decoration: none;\n}\na:hover {\n  text-decoration: underline;\n}\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n}\nbutton {\n  color: inherit;\n  cursor: pointer;\n}\nh1,\nh2,\nh3,\np {\n"
+}

@@ -101,6 +101,8 @@ TASK_TRANSITIONS: Final[Mapping[TaskStatus, Mapping[Transition, TaskStatus]]] = 
         Transition.EXPIRE: TaskStatus.EXPIRED,
     },
     TaskStatus.WAITING_FOR_INPUT: {
+        # Validated inputs can make queued work ready without claiming execution.
+        Transition.RESUME: TaskStatus.ASSIGNED,
         Transition.PROVIDE_INPUT: TaskStatus.RUNNING,
         Transition.FAIL: TaskStatus.FAILED,
         Transition.CANCEL: TaskStatus.CANCELED,

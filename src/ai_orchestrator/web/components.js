@@ -107,8 +107,12 @@ const UI = (() => {
     description = "",
     status = "info",
     actions = "",
-  } = {}) =>
-    `<div class="ui-callout" data-tone="${tone(status)}">${icon(status === "danger" || status === "warning" ? "circle-alert" : "info")}<div><strong>${E(title)}</strong>${description ? `<p>${E(description)}</p>` : ""}${actions}</div></div>`;
+  } = {}) => {
+    /* A callout with no actions is pure information and rests on frosted glass
+       (see .ui-callout.ui-glass); one with controls stays solid. */
+    const glass = !actions && (status === "info" || status === "neutral");
+    return `<div class="ui-callout${glass ? " ui-glass" : ""}" data-tone="${tone(status)}">${icon(status === "danger" || status === "warning" ? "circle-alert" : "info")}<div><strong>${E(title)}</strong>${description ? `<p>${E(description)}</p>` : ""}${actions}</div></div>`;
+  };
   const empty = ({
     title,
     description = "",

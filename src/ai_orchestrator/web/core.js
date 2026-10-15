@@ -1150,7 +1150,25 @@ try {
 } catch { /* storage may be unavailable */ }
 $("sidebarToggle").onclick = () => {
   document.documentElement.classList.toggle("sidebar-collapsed");
+  document.documentElement.classList.remove("sidebar-peek");
   try { localStorage.setItem("ao-sidebar-collapsed", String(document.documentElement.classList.contains("sidebar-collapsed"))); } catch { }
   paintSidebar();
 };
+(function initSidebarPeek() {
+  const bar = $("sidebar");
+  if (!bar) return;
+  let fine = null;
+  try { fine = window.matchMedia?.("(hover: hover) and (pointer: fine)"); } catch { fine = null; }
+  if (!fine || !fine.matches) return;
+  const setPeek = (on) => {
+    const root = document.documentElement;
+    if (!root.classList.contains("sidebar-collapsed")) { root.classList.remove("sidebar-peek"); return; }
+    root.classList.toggle("sidebar-peek", on);
+    window.UIShell?.indicator();
+  };
+  bar.addEventListener("mouseenter", () => setPeek(true));
+  bar.addEventListener("mouseleave", () => setPeek(false));
+  bar.addEventListener("focusin", () => setPeek(true));
+  bar.addEventListener("focusout", (e) => { if (!bar.contains(e.relatedTarget)) setPeek(false); });
+})();
 paintSidebar();

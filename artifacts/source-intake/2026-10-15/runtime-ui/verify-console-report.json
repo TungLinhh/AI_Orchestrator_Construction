@@ -1,0 +1,165 @@
+{
+  "captured_at": "2026-10-14T23:52:25.318981+00:00",
+  "base": "http://127.0.0.1:8101",
+  "console_errors": [],
+  "checks": [
+    {
+      "name": "task-detail-opens",
+      "passed": true,
+      "detail": "url=http://127.0.0.1:8101/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m4yc1strkcfyx079d97m14k4 sections={\"banner\": true, \"heading\": \"[SYNTHETIC SOURCE ACCEPTANCE] sources (l\\u1ea7n ch\\u1ea1y l\\u1ea1i) 1 (l\\u1ea7n ch\\u1ea1y l\\u1ea1i) 1 (l\\u1ea7n ch\\u1ea1\", \"answer\": true, \"request\": true, \"cancel\": true, \"runBtn\": true}"
+    },
+    {
+      "name": "sticky-elements-present",
+      "passed": true,
+      "detail": "['workToolbar', 'page-heading']"
+    },
+    {
+      "name": "task-overview-layout",
+      "passed": true,
+      "detail": "{\"found\": true, \"display\": \"block\", \"cols\": \"none\"}"
+    },
+    {
+      "name": "polish-tokens",
+      "passed": true,
+      "detail": "{\"btnBgImage\": \"none\", \"btnShadow\": \"none\", \"btnRadius\": \"8px\", \"panelShadow\": \"rgba(23, 43, 58, 0.08) 0px 1px 2px 0px, rgba(23, 43, 58, 0.06) 0px 4px 12px 0px\", \"panelRadius\": \"12px\", \"hasShimmer\": true, \"hasGlass\": true, \"hasRing\": true, \"hasGradient\": true}"
+    },
+    {
+      "name": "density-1440",
+      "passed": true,
+      "detail": "{\"rowPad\": \"12px 16px\", \"rowMin\": \"48px\", \"panelPad\": \"8px 12px\", \"mainW\": 1224, \"bodyScrollW\": 1440, \"winW\": 1440}"
+    },
+    {
+      "name": "sidebar-toggle-at-bottom",
+      "passed": true,
+      "detail": "{\"found\": true, \"toggleBottom\": 892, \"sidebarBottom\": 900, \"toggleY\": 860, \"label\": \"Thu g\\u1ecdn thanh b\\u00ean\", \"expanded\": \"true\"}"
+    },
+    {
+      "name": "sidebar-collapse-persists-position",
+      "passed": true,
+      "detail": "{\"y\": 860, \"collapsed\": \"nav\", \"expanded\": \"false\", \"label\": \"M\\u1edf r\\u1ed9ng thanh b\\u00ean\", \"railW\": 64}"
+    },
+    {
+      "name": "sidebar-hover-peek",
+      "passed": true,
+      "detail": "{\"cls\": \"nav\", \"w\": 216, \"toggleY\": 860}"
+    },
+    {
+      "name": "sidebar-peek-retracts",
+      "passed": true,
+      "detail": "nav w=64"
+    },
+    {
+      "name": "reduced-motion-query",
+      "passed": true,
+      "detail": "{\"hasReducedMotionQuery\": true, \"sampleTransition\": \"0s\"}"
+    },
+    {
+      "name": "zero-console-errors-desktop",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "name": "mobile-no-overflow-give",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-issues",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-approvals",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-departments",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-processes",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-library",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-business",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-operations",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-no-overflow-settings",
+      "passed": true,
+      "detail": "{\"scrollW\": 390, \"winW\": 390, \"overflowX\": \"visible\"}"
+    },
+    {
+      "name": "mobile-task-opens",
+      "passed": true,
+      "detail": "http://127.0.0.1:8101/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm#/give/tsk_01m4yc1strkcfyx079d97m14k4"
+    },
+    {
+      "name": "zero-console-errors-mobile",
+      "passed": true,
+      "detail": "[]"
+    }
+  ],
+  "screenshots": [
+    "verify-desktop-give-top.png",
+    "verify-desktop-give-mid.png",
+    "verify-desktop-give-end.png",
+    "verify-desktop-issues-top.png",
+    "verify-desktop-issues-mid.png",
+    "verify-desktop-issues-end.png",
+    "verify-desktop-approvals-top.png",
+    "verify-desktop-approvals-mid.png",
+    "verify-desktop-approvals-end.png",
+    "verify-desktop-departments-top.png",
+    "verify-desktop-departments-mid.png",
+    "verify-desktop-departments-end.png",
+    "verify-desktop-processes-top.png",
+    "verify-desktop-processes-mid.png",
+    "verify-desktop-processes-end.png",
+    "verify-desktop-library-top.png",
+    "verify-desktop-library-mid.png",
+    "verify-desktop-library-end.png",
+    "verify-desktop-business-top.png",
+    "verify-desktop-business-mid.png",
+    "verify-desktop-business-end.png",
+    "verify-desktop-operations-top.png",
+    "verify-desktop-operations-mid.png",
+    "verify-desktop-operations-end.png",
+    "verify-desktop-settings-top.png",
+    "verify-desktop-settings-mid.png",
+    "verify-desktop-settings-end.png",
+    "verify-desktop-task-top.png",
+    "verify-desktop-task-scroll1.png",
+    "verify-desktop-task-scroll2.png",
+    "verify-desktop-task-scroll3.png",
+    "verify-desktop-sidebar-open.png",
+    "verify-desktop-sidebar-collapsed.png",
+    "verify-desktop-sidebar-peek.png",
+    "verify-desktop-reduced-motion.png",
+    "verify-mobile-give.png",
+    "verify-mobile-issues.png",
+    "verify-mobile-approvals.png",
+    "verify-mobile-departments.png",
+    "verify-mobile-processes.png",
+    "verify-mobile-library.png",
+    "verify-mobile-business.png",
+    "verify-mobile-operations.png",
+    "verify-mobile-settings.png",
+    "verify-mobile-task.png"
+  ],
+  "gate": "passed"
+}

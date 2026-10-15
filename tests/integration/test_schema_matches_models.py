@@ -48,6 +48,7 @@ from ai_orchestrator.persistence import (
     process,
     procurement,
     progress,
+    sources,
     supply,
 )
 from ai_orchestrator.persistence.base import Base
@@ -82,6 +83,7 @@ DOMAIN_MODULES = (
     procurement,
     progress,
     agent_framework,
+    sources,
 )
 
 #: Must match `migrations/env.py`. A comparison configured differently answers a

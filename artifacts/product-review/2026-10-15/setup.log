@@ -1,0 +1,85 @@
+uv run alembic -c migrations/alembic.ini upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> e16621b0d3d9, initial schema: 44 tenant-scoped tables
+INFO  [alembic.runtime.migration] Running upgrade e16621b0d3d9 -> 0002, Row-level security and a least-privilege application role.
+INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, Add `model_profiles.max_classification`.
+INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, Add `tasks.procedure_fingerprint` — the shape of the work, not its wording.
+INFO  [alembic.runtime.migration] Running upgrade 0004 -> 0005, The migration for quarantine: a table that is never read by the load path.
+INFO  [alembic.runtime.migration] Running upgrade 0005 -> 0006, Repair four points of drift between the ORM models and the shipped schema.
+INFO  [alembic.runtime.migration] Running upgrade 0006 -> 0007, Construction domain, tranche 1: clients, projects, zones, WBS, milestones.
+INFO  [alembic.runtime.migration] Running upgrade 0007 -> 0008, Commercial front end: opportunity, tender, bid.
+INFO  [alembic.runtime.migration] Running upgrade 0008 -> 0009, Contracts, variations, claims, and the supplier master.
+INFO  [alembic.runtime.migration] Running upgrade 0009 -> 0010, The process spine: Gates G0-G5, SOPs, delegation of authority, autonomy policy.
+INFO  [alembic.runtime.migration] Running upgrade 0010 -> 0011, Material master and supplier due diligence.
+INFO  [alembic.runtime.migration] Running upgrade 0011 -> 0012, Requisition to goods receipt: the chain that makes the 3-way match arithmetic.
+INFO  [alembic.runtime.migration] Running upgrade 0012 -> 0013, Rename two constraints that Postgres had silently truncated.
+INFO  [alembic.runtime.migration] Running upgrade 0013 -> 0014, Construction progress: the plan and its outcome on one row.
+INFO  [alembic.runtime.migration] Running upgrade 0014 -> 0015, Scope the progress report key by section, because a line number is not unique.
+INFO  [alembic.runtime.migration] Running upgrade 0015 -> 0016, The agent framework's missing parts, and the missing end of the learning loop.
+INFO  [alembic.runtime.migration] Running upgrade 0016 -> 0017, Attach a progress reading to the WBS node that contains it.
+INFO  [alembic.runtime.migration] Running upgrade 0017 -> 0018, Identify a progress reading by where it is, not by what it says.
+INFO  [alembic.runtime.migration] Running upgrade 0018 -> 0019, A closed decision vocabulary, and the two decisions Phase 4c had to add to it.
+INFO  [alembic.runtime.migration] Running upgrade 0019 -> 0020, The supply chain cannot reference a row in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0020 -> 0021, A row in the orchestration tranche may not name a parent in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0021 -> 0022, A row in the governance tranche may not name a parent in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0022 -> 0023, A row in the construction tranche may not name a parent in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0023 -> 0024, A model-extracted work-package line must carry its extraction confidence.
+INFO  [alembic.runtime.migration] Running upgrade 0024 -> 0025, Document control: a code, a version lineage, a distribution matrix, and an expiry.
+INFO  [alembic.runtime.migration] Running upgrade 0025 -> 0026, A stable key for "this parent already gave this agent this work".
+INFO  [alembic.runtime.migration] Running upgrade 0026 -> 0027, Say **which** agent asked for a task, not merely that an agent did.
+INFO  [alembic.runtime.migration] Running upgrade 0027 -> 0028, Give a learned skill somewhere to keep the log it was learned from.
+INFO  [alembic.runtime.migration] Running upgrade 0028 -> 0029, Record how many calls a run actually made, so the ceiling stops being a guess.
+INFO  [alembic.runtime.migration] Running upgrade 0029 -> 0030, Unit-scope row-level security, on top of the tenant isolation of 0002.
+INFO  [alembic.runtime.migration] Running upgrade 0030 -> 0031, Scope the duplicate-intent index to the request that raised it.
+INFO  [alembic.runtime.migration] Running upgrade 0031 -> 0032, The duplicate-intent scope becomes a column, because an expression index cannot be one.
+INFO  [alembic.runtime.migration] Running upgrade 0032 -> 0033, Correct two column comments, so the model and the schema say the same thing.
+INFO  [alembic.runtime.migration] Running upgrade 0033 -> 0034, Durable native commands and external-action evidence, isolated per tenant.
+AO_MIGRATION_DB=${AO_TEST_DB_NAME:-ai_orchestrator_test} \
+	uv run alembic -c migrations/alembic.ini upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> e16621b0d3d9, initial schema: 44 tenant-scoped tables
+INFO  [alembic.runtime.migration] Running upgrade e16621b0d3d9 -> 0002, Row-level security and a least-privilege application role.
+INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, Add `model_profiles.max_classification`.
+INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, Add `tasks.procedure_fingerprint` — the shape of the work, not its wording.
+INFO  [alembic.runtime.migration] Running upgrade 0004 -> 0005, The migration for quarantine: a table that is never read by the load path.
+INFO  [alembic.runtime.migration] Running upgrade 0005 -> 0006, Repair four points of drift between the ORM models and the shipped schema.
+INFO  [alembic.runtime.migration] Running upgrade 0006 -> 0007, Construction domain, tranche 1: clients, projects, zones, WBS, milestones.
+INFO  [alembic.runtime.migration] Running upgrade 0007 -> 0008, Commercial front end: opportunity, tender, bid.
+INFO  [alembic.runtime.migration] Running upgrade 0008 -> 0009, Contracts, variations, claims, and the supplier master.
+INFO  [alembic.runtime.migration] Running upgrade 0009 -> 0010, The process spine: Gates G0-G5, SOPs, delegation of authority, autonomy policy.
+INFO  [alembic.runtime.migration] Running upgrade 0010 -> 0011, Material master and supplier due diligence.
+INFO  [alembic.runtime.migration] Running upgrade 0011 -> 0012, Requisition to goods receipt: the chain that makes the 3-way match arithmetic.
+INFO  [alembic.runtime.migration] Running upgrade 0012 -> 0013, Rename two constraints that Postgres had silently truncated.
+INFO  [alembic.runtime.migration] Running upgrade 0013 -> 0014, Construction progress: the plan and its outcome on one row.
+INFO  [alembic.runtime.migration] Running upgrade 0014 -> 0015, Scope the progress report key by section, because a line number is not unique.
+INFO  [alembic.runtime.migration] Running upgrade 0015 -> 0016, The agent framework's missing parts, and the missing end of the learning loop.
+INFO  [alembic.runtime.migration] Running upgrade 0016 -> 0017, Attach a progress reading to the WBS node that contains it.
+INFO  [alembic.runtime.migration] Running upgrade 0017 -> 0018, Identify a progress reading by where it is, not by what it says.
+INFO  [alembic.runtime.migration] Running upgrade 0018 -> 0019, A closed decision vocabulary, and the two decisions Phase 4c had to add to it.
+INFO  [alembic.runtime.migration] Running upgrade 0019 -> 0020, The supply chain cannot reference a row in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0020 -> 0021, A row in the orchestration tranche may not name a parent in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0021 -> 0022, A row in the governance tranche may not name a parent in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0022 -> 0023, A row in the construction tranche may not name a parent in another tenant.
+INFO  [alembic.runtime.migration] Running upgrade 0023 -> 0024, A model-extracted work-package line must carry its extraction confidence.
+INFO  [alembic.runtime.migration] Running upgrade 0024 -> 0025, Document control: a code, a version lineage, a distribution matrix, and an expiry.
+INFO  [alembic.runtime.migration] Running upgrade 0025 -> 0026, A stable key for "this parent already gave this agent this work".
+INFO  [alembic.runtime.migration] Running upgrade 0026 -> 0027, Say **which** agent asked for a task, not merely that an agent did.
+INFO  [alembic.runtime.migration] Running upgrade 0027 -> 0028, Give a learned skill somewhere to keep the log it was learned from.
+INFO  [alembic.runtime.migration] Running upgrade 0028 -> 0029, Record how many calls a run actually made, so the ceiling stops being a guess.
+INFO  [alembic.runtime.migration] Running upgrade 0029 -> 0030, Unit-scope row-level security, on top of the tenant isolation of 0002.
+INFO  [alembic.runtime.migration] Running upgrade 0030 -> 0031, Scope the duplicate-intent index to the request that raised it.
+INFO  [alembic.runtime.migration] Running upgrade 0031 -> 0032, The duplicate-intent scope becomes a column, because an expression index cannot be one.
+INFO  [alembic.runtime.migration] Running upgrade 0032 -> 0033, Correct two column comments, so the model and the schema say the same thing.
+INFO  [alembic.runtime.migration] Running upgrade 0033 -> 0034, Durable native commands and external-action evidence, isolated per tenant.
+uv run -m ai_orchestrator.seed
+{"agents": 11, "event": "seed.created", "level": "info", "logger": "__main__", "organization_id": "org_01m4y464y54m0zfcg8ap363a54", "timestamp": "2026-10-14T21:13:11.666881Z", "units": 11}
+seeded organization: autonomous-demo-company (org_01m4y464y54m0zfcg8ap363a54)
+uv run scripts/seed_process_spine.py
+spine for org_01m4y464y54m0zfcg8ap363a54: {'gates': 6, 'criteria': 45, 'sops': 28, 'forbidden_zones': 6, 'doa': 8, 'sop_steps': 5, 'raci': 14}
+  112 written this run
+  written: {'gates': 6, 'criteria': 45, 'sops': 28, 'forbidden_zones': 6, 'doa': 8, 'gate_session_steps': 5, 'raci': 14}
+  copying the reference catalogue from ai_orchestrator (org_01m4y464y54m0zfcg8ap363a54)
+  ai_orchestrator holds no complete role catalogue for the register
+make: *** [Makefile:229: seed-test-reference] Error 1

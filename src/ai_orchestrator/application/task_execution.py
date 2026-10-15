@@ -27,7 +27,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ai_orchestrator.agent_runtime.context import (
@@ -444,19 +444,20 @@ class TaskExecutionService:
         stack trace in a log is the worst outcome available: the system cannot
         tell anyone what happened and the task cannot be retried.
         """
+        runtime = self._runtime
         started = time.monotonic()
         task = await self._tasks.get(task_id)
 
         if task.input.get("workflow_revision_for"):
             raise PreconditionError("Apply campaign revisions through their human review")
 
-        if task.input.get("workflow_feedback_for") and self._runtime.name != "workflow_evidence":
+        if task.input.get("workflow_feedback_for") and runtime.name != "workflow_evidence":
             raise PreconditionError("Run feedback through its workflow discussion controller")
 
-        if task.input.get("agent_blueprint_draft") and self._runtime.name != "agent_blueprint":
+        if task.input.get("agent_blueprint_draft") and runtime.name != "agent_blueprint":
             raise PreconditionError("Generate this draft through its agent blueprint controller")
         if task.input.get("agent_workflow") and (
-            self._runtime.name != "agent_blueprint"
+            runtime.name != "agent_blueprint"
             or not task.input.get("stage_key")
             or not task.input.get("inputs")
         ):
@@ -465,7 +466,7 @@ class TaskExecutionService:
         # Ordered business stages cannot be started through an ordinary agent run:
         # doing so could skip a workflow review or its independent evidence checks.
         if task.input.get("business_workflow"):
-            if not task.input.get("stage_key") or self._runtime.name != "workflow_evidence":
+            if not task.input.get("stage_key") or runtime.name != "workflow_evidence":
                 raise PreconditionError(
                     "Run this ordered task through its business workflow controller"
                 )
@@ -485,6 +486,13 @@ class TaskExecutionService:
             .limit(1)
         ):
             raise PreconditionError("This task already has an active execution")
+
+        if task.parent_task_id:
+            blocker = await self._tasks.terminal_lineage(task.parent_task_id)
+            if blocker:
+                raise PreconditionError(
+                    "Cannot execute work under a terminal parent", details=blocker
+                )
 
         # Every entry point must honor the current review, including a direct
         # activity retry. A previous approval cannot authorize a later stage.
@@ -548,6 +556,46 @@ class TaskExecutionService:
         except AgentUnavailable as exc:
             return await self._fail(task, exc.message, "planning_error")
 
+        source_context = None
+        if task.input.get("source_workflow"):
+            from ai_orchestrator.agent_runtime.source_document import SourceDocumentRuntime
+            from ai_orchestrator.application.model_profiles import build_tenant_gateway
+            from ai_orchestrator.application.source_intake import SourceIntake
+            from ai_orchestrator.persistence.unit_scope import permitted_unit_ids_for
+
+            previous_scope = await self._session.scalar(
+                text("SELECT current_setting('app.agent_unit_ids', true)")
+            )
+            permitted = await permitted_unit_ids_for(self._session, self._org, resolved.org_unit_id)
+            await self._session.execute(
+                text("SELECT set_config('app.agent_unit_ids', :ids, true)"),
+                {"ids": ",".join(permitted)},
+            )
+            source_error = None
+            try:
+                source_context = await SourceIntake(self._session, self._org).context(task)
+            except (PlatformError, ValueError) as exc:
+                source_error = str(exc)
+            finally:
+                await self._session.execute(
+                    text("SELECT set_config('app.agent_unit_ids', :ids, true)"),
+                    {"ids": previous_scope or "*"},
+                )
+            if source_error:
+                if task.status == "created":
+                    task = await self._tasks.transition(task_id, Transition.ASSIGN)
+                if task.status in {"assigned", "running"}:
+                    task = await self._tasks.transition(task_id, Transition.REQUEST_INPUT)
+                task.last_error = source_error
+                return ExecutionOutcome(
+                    task_id=task_id, status=TaskStatus.WAITING_FOR_INPUT, summary=source_error
+                )
+            if task.status == "waiting_for_input":
+                task = await self._tasks.transition(task_id, Transition.PROVIDE_INPUT)
+            assert source_context is not None
+            gateway = await build_tenant_gateway(self._org, session=self._session)
+            runtime = SourceDocumentRuntime(gateway, source_context)
+
         # --- state ---------------------------------------------------------
         if task.status in {TaskStatus.CREATED.value, TaskStatus.QUEUED.value}:
             task = await self._tasks.transition(task_id, Transition.ASSIGN)
@@ -562,7 +610,7 @@ class TaskExecutionService:
         execution = await self._executions.start(
             task_id=task_id,
             agent_id=resolved.agent.id,
-            runtime_adapter=self._runtime.name,
+            runtime_adapter=runtime.name,
             model_profile=resolved.agent.model_profile,
             attempt=attempt,
             input_hash=task.fingerprint,
@@ -603,11 +651,16 @@ class TaskExecutionService:
             execution_id=execution.id,
             context={
                 "agent_id": resolved.agent.id,
-                "runtime": self._runtime.name,
+                "runtime": runtime.name,
                 "model_profile": resolved.agent.model_profile,
                 "agent_definition_version": resolved.definition.version,
             },
         )
+
+        if source_context is not None:
+            context = context.model_copy(
+                update={"data_classification": DataClassification(source_context["classification"])}
+            )
 
         # --- run -----------------------------------------------------------
         # The context is held for the duration of the run so the tool executor
@@ -658,7 +711,7 @@ class TaskExecutionService:
         if self._execution_checkpoint:
             await self._execution_checkpoint(execution_id)
         try:
-            result = await self._runtime.execute(
+            result = await runtime.execute(
                 agent_task,
                 context,
                 execute_tool=self._execute_tool_call,
@@ -694,7 +747,17 @@ class TaskExecutionService:
         if self._execution_checkpoint:
             await self._execution_checkpoint(execution_id, final=True)
             await self._session.refresh(task)
-        return await self._finish(task, resolved, context, result, execution_id, budget, started)
+        return await self._finish(
+            task,
+            resolved,
+            context,
+            result,
+            execution_id,
+            budget,
+            started,
+            source_context=source_context,
+            runtime_name=runtime.name,
+        )
 
     async def _apply_delegations(
         self,
@@ -2044,6 +2107,7 @@ class TaskExecutionService:
             return
         decision = response.decision
         usage = response.usage
+        validation_error = getattr(response, "validation_error", None)
         self._session.add(
             ModelUsage(
                 id=str(ModelUsageId.create()),
@@ -2061,8 +2125,12 @@ class TaskExecutionService:
                 cost_usd=float(response.cost_usd or 0),
                 latency_ms=response.latency_ms,
                 routing_reason=decision.routing_reason if decision else "primary",
-                status="error" if getattr(response, "finish_reason", None) == "error" else "ok",
-                error_kind="provider_error"
+                status="error"
+                if validation_error or getattr(response, "finish_reason", None) == "error"
+                else "ok",
+                error_kind="artifact_invalid"
+                if validation_error
+                else "provider_error"
                 if getattr(response, "finish_reason", None) == "error"
                 else None,
             )
@@ -2081,7 +2149,15 @@ class TaskExecutionService:
         execution_id: str,
         budget: BudgetState,
         started: float,
+        *,
+        source_context: dict[str, Any] | None = None,
+        runtime_name: str | None = None,
     ) -> ExecutionOutcome:
+        if task.input.get("source_workflow") and result.status is AgentResultStatus.COMPLETED:
+            from ai_orchestrator.application.source_intake import SourceIntake
+
+            assert source_context is not None
+            await SourceIntake(self._session, self._org).export(task, result.output, source_context)
         duration_ms = int((time.monotonic() - started) * 1000)
         usage = result.usage
         cost = result.cost_usd or Money("0")
@@ -2100,7 +2176,7 @@ class TaskExecutionService:
                 "steps": [
                     {
                         "action": "runtime.execute",
-                        "runtime": self._runtime.name,
+                        "runtime": runtime_name or self._runtime.name,
                         "status": result.status.value,
                         "model_used": result.model_used,
                         "proposals": [p.kind for p in result.follow_up_actions],

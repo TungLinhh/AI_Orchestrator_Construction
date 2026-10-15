@@ -1,0 +1,55 @@
+{
+  "output": {
+    "findings": [
+      {
+        "text": "Báo giá A có chứng nhận và giao hàng.",
+        "source_id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+        "locator": "lines:1-4",
+        "quote": "A,Valve-1,12,120000,80000,true"
+      },
+      {
+        "text": "Báo giá B không có chứng nhận.",
+        "source_id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+        "locator": "lines:1-4",
+        "quote": "B,Valve-1,12,110000,0,false"
+      },
+      {
+        "text": "Báo giá C có chứng nhận nhưng không giao hàng.",
+        "source_id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+        "locator": "lines:1-4",
+        "quote": "C,Valve-1,12,130000,0,true"
+      }
+    ],
+    "limitations": [
+      "Báo giá B thiếu chứng nhận",
+      "Báo giá C không có giao hàng"
+    ],
+    "summary": "Đánh giá các báo giá cho Valve-1 dựa trên tiêu chí chứng nhận bắt buộc, giao hàng và giá. A là người chiến thắng với tổng 1.520.000 VND. Sẽ thay đổi nếu B cung cấp chứng nhận.",
+    "total_vnd": 1520000,
+    "winner": "A"
+  },
+  "manifest": {
+    "sources": [
+      {
+        "id": "src_01m4y7s9mr5hwt0s3gq678dk2z",
+        "error": null,
+        "state": "ready",
+        "origin": "mock",
+        "sha256": "05ebf8e68b197ada8d5b88dcee5a7531a1e71ae547ca82596586e21768af37ce",
+        "filename": "mock-quotes-1.csv",
+        "warnings": [],
+        "synthetic": true,
+        "byte_count": 139,
+        "created_at": "2026-10-14T22:16:04.506287+00:00",
+        "media_type": "text/csv",
+        "org_unit_id": null,
+        "reviewed_from": null,
+        "classification": "internal",
+        "extraction_sha256": "4c733fffc052d49b2afc17b2fac32b3ae24ffe6bf0eebc7d35a60eeaa2e74a3e"
+      }
+    ],
+    "version": 1,
+    "id": "smf_01m4y7s9nq85c940g7wprn3yjr",
+    "sha256": "01006428c45d251c06d4fdc327a5627a94b2fa409912c1150aee85b2e84d38de"
+  }
+}

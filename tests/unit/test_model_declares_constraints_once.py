@@ -38,6 +38,7 @@ import warnings
 from collections.abc import Iterator
 
 import pytest
+from sqlalchemy import UniqueConstraint
 
 warnings.filterwarnings("ignore")
 
@@ -214,6 +215,11 @@ class TestTheTenantPairIsDeclaredWhereAForeignKeyNeedsIt:
                     any(
                         set(index.columns.keys()) == remote and index.unique
                         for index in parent.indexes
+                    )
+                    or any(
+                        isinstance(constraint, UniqueConstraint)
+                        and set(constraint.columns.keys()) == remote
+                        for constraint in parent.constraints
                     )
                     or set(parent.primary_key.columns.keys()) == remote
                 )

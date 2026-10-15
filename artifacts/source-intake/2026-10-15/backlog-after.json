@@ -1,0 +1,713 @@
+{
+  "observed_at": "2026-10-14T22:21:01.199452+00:00",
+  "organization_id": "org_01m3ycsehgwz7v1fk2ahswkwhm",
+  "scope": "Tenant application role, SELECT only; no automatic cleanup or retry",
+  "counts": [
+    {
+      "status": "assigned",
+      "tasks": 207
+    },
+    {
+      "status": "canceled",
+      "tasks": 195
+    },
+    {
+      "status": "completed",
+      "tasks": 720
+    },
+    {
+      "status": "created",
+      "tasks": 2
+    },
+    {
+      "status": "failed",
+      "tasks": 180
+    },
+    {
+      "status": "running",
+      "tasks": 1
+    },
+    {
+      "status": "waiting_for_approval",
+      "tasks": 1
+    },
+    {
+      "status": "waiting_for_input",
+      "tasks": 1
+    }
+  ],
+  "oldest_nonterminal_tasks": [
+    {
+      "id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "title": "Workflow: MEP HR — bản vận hành để Boss duyệt",
+      "status": "waiting_for_input",
+      "parent_task_id": null,
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:29.988172+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2vb0020xjvs065ygmmb",
+      "title": "Nhận brief tuyển từ Boss",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:29.996793+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2vhws57zfh8b2f4tdbp",
+      "title": "Review: Nhận brief tuyển từ Boss",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.002854+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2vtbc3rr3jx019fp51v",
+      "title": "Soạn JD và rubric có nguồn",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.011638+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2w1xxd3sm1xndjm6tdq",
+      "title": "Review: Soạn JD và rubric có nguồn",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.018388+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2w7qg2w6mswstwagqaz",
+      "title": "Rà soát chứng cứ đăng tuyển và nhận CV",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.024965+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2wej0ewvbdvbap0brw0",
+      "title": "Review: Rà soát chứng cứ đăng tuyển và nhận CV",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.031526+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2wnkmga9mhs0h5dgs1z",
+      "title": "Đọc CV và đánh giá từng tiêu chí",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.038390+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2wvqk3zhhsct2q1er14",
+      "title": "Review: Đọc CV và đánh giá từng tiêu chí",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.044866+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2x2vt9ec6jpy1cvet67",
+      "title": "Tính điểm và báo cáo HR xét",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.051268+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2x8f0dmvg0jrgmszy3a",
+      "title": "Review: Tính điểm và báo cáo HR xét",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.057382+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2xe7d7wwtv2jmx34n01",
+      "title": "HR xét hồ sơ",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.063518+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2xm8mbyckd1qv6070an",
+      "title": "Review: HR xét hồ sơ",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.069915+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2xtb8v51wrye8swkstc",
+      "title": "Chuẩn bị hồ sơ Boss duyệt danh sách vòng 1",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.076038+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2y161s8nczhfnz8vjad",
+      "title": "Review: Chuẩn bị hồ sơ Boss duyệt danh sách vòng 1",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.083039+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2y8frgvg82cf6q8atv4",
+      "title": "Tổng hợp chứng cứ phỏng vấn vòng 1",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.089717+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2yeyh9mb32m8vsvcs5a",
+      "title": "Review: Tổng hợp chứng cứ phỏng vấn vòng 1",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.096222+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2ynv69xggww8av0mr4t",
+      "title": "Tổng hợp chứng cứ phỏng vấn vòng 2",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.102983+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2ywpaab132nybp7nz1h",
+      "title": "Review: Tổng hợp chứng cứ phỏng vấn vòng 2",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.109532+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2z2q3es9tsw7pk7eh4g",
+      "title": "Chuẩn bị đề xuất tuyển để Boss quyết định",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.116122+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2zaxzdfk1zhv9be6ks3",
+      "title": "Review: Chuẩn bị đề xuất tuyển để Boss quyết định",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.123620+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2zh8way7nmw8eme99zq",
+      "title": "Soạn offer theo khung lương",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.130949+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2zr0wshh23kg09vzv80",
+      "title": "Review: Soạn offer theo khung lương",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.137698+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt2zyk9kbgmysy5zeae7g",
+      "title": "Chuẩn bị hồ sơ Boss duyệt offer",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.144077+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt305at7ewfb8nghrn866",
+      "title": "Review: Chuẩn bị hồ sơ Boss duyệt offer",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.151110+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt30cya9jfenjccag49ta",
+      "title": "Đối chứng offer đã gửi",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.157854+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt30msg31rt56kzz5vdkr",
+      "title": "Review: Đối chứng offer đã gửi",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.165909+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt30w1wqqfkchzddbctt3",
+      "title": "Đối chứng chấp nhận offer",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.173431+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt3131fscnt18j9jb6dmq",
+      "title": "Review: Đối chứng chấp nhận offer",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.180828+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt31ahp7jxxeg9jk8d2v0",
+      "title": "Soạn checklist onboarding",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.188244+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt31hphe6bx19d5xrm2n5",
+      "title": "Review: Soạn checklist onboarding",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.195177+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt31r8kczgmj3bn0wbeq5",
+      "title": "Đối chứng hồ sơ onboarding",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.201980+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt31z509cqgam2rk661wn",
+      "title": "Review: Đối chứng hồ sơ onboarding",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.208476+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt326v586shs94fwet9ah",
+      "title": "Chấm công từ hệ thống",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.215778+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt32d6pte82z0rycnbm64",
+      "title": "Review: Chấm công từ hệ thống",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.222810+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt32mewxqpkydt3fcwj04",
+      "title": "Tổng hợp biến động nhân sự",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.229895+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt32vegp06tgkde9q0035",
+      "title": "Review: Tổng hợp biến động nhân sự",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.236562+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt331rn28ndja87y6h7b9",
+      "title": "Tính lương",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.242710+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt3381ejbzc7aesra4xqb",
+      "title": "Review: Tính lương",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.249138+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt33ejp9brx3ve65ss08x",
+      "title": "Đối soát độc lập",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.255288+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt33m551zpv87qqa2qthq",
+      "title": "Review: Đối soát độc lập",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.261548+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt33vdb8trkdb2h6hyjyn",
+      "title": "Chuẩn bị và đối chứng hồ sơ duyệt hai cấp",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.268347+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt341x24rp95wqmest0xk",
+      "title": "Review: Chuẩn bị và đối chứng hồ sơ duyệt hai cấp",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.274770+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt348vv5ma4hzwebp4cbe",
+      "title": "Chuẩn bị hồ sơ và đối chứng chi trả",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.281265+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt34eeva3sga2dq6005es",
+      "title": "Review: Chuẩn bị hồ sơ và đối chứng chi trả",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.287459+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt34m1hdfsd7s6efp7c1y",
+      "title": "Chuẩn bị và rà soát hồ sơ BHXH/thuế",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.294037+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt34vn7v24vq5t146ngvr",
+      "title": "Review: Chuẩn bị và rà soát hồ sơ BHXH/thuế",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.300267+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt352208t1g9cfpn00x13",
+      "title": "Đánh giá hiệu suất bán niên",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.307949+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt359vp4t17a6jjbr4h64",
+      "title": "Review: Đánh giá hiệu suất bán niên",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.314293+00:00",
+      "last_error": null,
+      "failure_category": null
+    },
+    {
+      "id": "tsk_01m48gt35f2wcf4tc5dk6nqfdm",
+      "title": "Chuẩn bị và đối chứng hồ sơ offboarding",
+      "status": "assigned",
+      "parent_task_id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "owner_agent_id": "agt_01m48gt2t1vdpfnr9z7dztktcb",
+      "created_at": "2026-10-06 11:50:30.320602+00:00",
+      "last_error": null,
+      "failure_category": null
+    }
+  ],
+  "running_executions": [
+    {
+      "id": "exe_01m4y819yg90f37wr0r5q1yp74",
+      "task_id": "tsk_01m4y8180wc5k4bs7xb29nfytq",
+      "started_at": "2026-10-14 22:20:26.963598+00:00"
+    }
+  ],
+  "nonterminal_dependencies": [
+    {
+      "status": "assigned",
+      "is_root": false,
+      "parent_status": "assigned",
+      "tasks": 147
+    },
+    {
+      "status": "assigned",
+      "is_root": false,
+      "parent_status": "waiting_for_input",
+      "tasks": 52
+    },
+    {
+      "status": "assigned",
+      "is_root": true,
+      "parent_status": null,
+      "tasks": 8
+    },
+    {
+      "status": "created",
+      "is_root": true,
+      "parent_status": null,
+      "tasks": 2
+    },
+    {
+      "status": "running",
+      "is_root": true,
+      "parent_status": null,
+      "tasks": 1
+    },
+    {
+      "status": "waiting_for_approval",
+      "is_root": true,
+      "parent_status": null,
+      "tasks": 1
+    },
+    {
+      "status": "waiting_for_input",
+      "is_root": true,
+      "parent_status": null,
+      "tasks": 1
+    }
+  ],
+  "nonterminal_roots": [
+    {
+      "id": "tsk_01m48gt2v1y0kyn9q1m6p3mf0k",
+      "title": "Workflow: MEP HR — bản vận hành để Boss duyệt",
+      "status": "waiting_for_input",
+      "created_at": "2026-10-06 11:50:29.988172+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m48pfrfj4c1v2s28df4mrrsv",
+      "title": "Tuyển Kỹ sư Chất lượng: JD → rubric → CV",
+      "status": "waiting_for_approval",
+      "created_at": "2026-10-06 13:29:43.159001+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m49cbbprrxkbbr86m0gd4bm9",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "status": "assigned",
+      "created_at": "2026-10-06 19:51:47.676549+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m49d1xrevstryjwkzvb65er3",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "status": "assigned",
+      "created_at": "2026-10-06 20:04:07.061957+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m49dbexwfys52e78n6ag2cwc",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "status": "assigned",
+      "created_at": "2026-10-06 20:09:19.552446+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m49dq2d1b3j7c3ak0b5nrhpb",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "status": "assigned",
+      "created_at": "2026-10-06 20:15:39.940964+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m49e4jvfz47cexxebkbrdc99",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "status": "assigned",
+      "created_at": "2026-10-06 20:23:02.771740+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m49pfqqn6xq5nat4zsjfar9m",
+      "title": "[MOCK EVAL] hr-injection-v1 (lần chạy lại) 1",
+      "status": "created",
+      "created_at": "2026-10-06 22:48:56.814837+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m4atv9pnezjwmtypkf9v2wte",
+      "title": "UI FIXTURE brief",
+      "status": "assigned",
+      "created_at": "2026-10-07 09:24:24.410597+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m4b6awmn2dwn50sj7sfjg9s5",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "status": "assigned",
+      "created_at": "2026-10-07 12:45:09.659752+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m4b6hmvd1pheq8rhpcp92kpn",
+      "title": "Tuyển kỹ sư MEP đến onboarding",
+      "status": "assigned",
+      "created_at": "2026-10-07 12:48:51.058660+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m4y7jqh8fjzht144r58r0yvq",
+      "title": "[SYNTHETIC SOURCE ACCEPTANCE] mock (lần chạy lại) 1",
+      "status": "created",
+      "created_at": "2026-10-14 22:12:29.344673+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    },
+    {
+      "id": "tsk_01m4y8180wc5k4bs7xb29nfytq",
+      "title": "[SYNTHETIC BROWSER ACCEPTANCE] Compare selected quotes with",
+      "status": "running",
+      "created_at": "2026-10-14 22:20:24.994942+00:00",
+      "last_error": null,
+      "failure_category": null,
+      "lifecycle": null
+    }
+  ],
+  "sample_limit": 50,
+  "limitations": "Terminal includes failure. Waiting work is not necessarily abandoned."
+}

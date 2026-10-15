@@ -1,0 +1,137 @@
+uv run pytest -q -m 'not live_model'
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+..........F............................................................. [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+..............................F......................................... [ 73%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 87%]
+........................................................................ [ 89%]
+........................................................................ [ 91%]
+........................................................................ [ 93%]
+........................................................................ [ 95%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+...............                                                          [100%]
+=================================== FAILURES ===================================
+_ TestTheTenantPairIsDeclaredWhereAForeignKeyNeedsIt.test_every_composite_foreign_key_references_something_unique _
+
+self = <tests.unit.test_model_declares_constraints_once.TestTheTenantPairIsDeclaredWhereAForeignKeyNeedsIt object at 0x7a54a9f17ed0>
+metadata = MetaData()
+
+    def test_every_composite_foreign_key_references_something_unique(self, metadata) -> None:
+        """A composite key needs its **referenced columns** to be unique on the parent.
+    
+        Migration `0020` adds `UNIQUE (organization_id, id)` to ten parents for exactly
+        this reason. A composite key added to a parent that lacks the pair is refused by
+        Postgres at `CREATE TABLE` time, which is the loud version of the problem.
+    
+        The first version of this check assumed the pair is always
+        `(organization_id, id)`, and reported `units_dictionary` four times. That table has
+        no `id` column: its primary key is `(organization_id, code)`, and the four keys
+        pointing at it reference *that*. The assumption was the bug, not the schema — so
+        the rule below asks about the referenced columns rather than about a name.
+        """
+        offenders: list[str] = []
+        for name, table in sorted(metadata.tables.items()):
+            for fk in table.foreign_key_constraints:
+                locals_ = list(fk.columns.keys())
+                # A key on `organization_id` *alone* is not composite -- it is the ordinary
+                # tenant key every table carries, and it needs no unique pair.
+                if len(locals_) < 2:
+                    continue
+                parent = fk.elements[0].column.table
+                remote = {element.column.name for element in fk.elements}
+                covered = (
+                    any(
+                        set(index.columns.keys()) == remote and index.unique
+                        for index in parent.indexes
+                    )
+                    or set(parent.primary_key.columns.keys()) == remote
+                )
+                if not covered:
+                    offenders.append(f"{name}.{fk.name} -> {parent.name}{sorted(remote)}")
+>       assert not offenders, (
+            "A composite foreign key references columns that are neither a unique index "
+            f"nor the primary key on the parent: {offenders}"
+        )
+E       AssertionError: A composite foreign key references columns that are neither a unique index nor the primary key on the parent: ["source_artifacts.fk_source_artifacts_organization_id_source_manifests -> source_manifests['id', 'organization_id']", "source_bindings.fk_source_bindings_organization_id_source_files -> source_files['id', 'organization_id']", "source_bindings.fk_source_bindings_organization_id_source_manifests -> source_manifests['id', 'organization_id']"]
+E       assert not ["source_artifacts.fk_source_artifacts_organization_id_source_manifests -> source_manifests['id', 'organization_id']",...]", "source_bindings.fk_source_bindings_organization_id_source_manifests -> source_manifests['id', 'organization_id']"]
+
+tests/unit/test_model_declares_constraints_once.py:222: AssertionError
+_______ TestTheProposerCannotBeAStub.test_it_has_at_least_two_candidates _______
+
+self = <tests.unit.test_proposer_profile.TestTheProposerCannotBeAStub object at 0x7a54a9dc8b00>
+
+    def test_it_has_at_least_two_candidates(self) -> None:
+        """One candidate is not a preference order, it is a single point of failure.
+    
+        Every free tier rate-limits, and a proposer that cannot be reached simply
+        means no proposal — which is correct behaviour, but it also means the loop
+        stops whenever one provider is having a bad afternoon.
+        """
+>       assert len(default_profiles()[PROPOSER].candidates) >= 2
+E       AssertionError: assert 1 >= 2
+E        +  where 1 = len((ModelCandidate(provider='openrouter', model='google/gemma-4-31b-it:free', weight=1.0, max_input_tokens=200000, suppor...al('0'), cache_write_per_mtok=Decimal('0')), max_classification=<DataClassification.PUBLIC: 'public'>, base_url=None),))
+E        +    where (ModelCandidate(provider='openrouter', model='google/gemma-4-31b-it:free', weight=1.0, max_input_tokens=200000, suppor...al('0'), cache_write_per_mtok=Decimal('0')), max_classification=<DataClassification.PUBLIC: 'public'>, base_url=None),) = ModelProfile(name='proposer', candidates=(ModelCandidate(provider='openrouter', model='google/gemma-4-31b-it:free', we...requires_tools=True, requires_structured_output=True, max_classification=<DataClassification.RESTRICTED: 'restricted'>).candidates
+
+tests/unit/test_proposer_profile.py:59: AssertionError
+=============================== warnings summary ===============================
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_the_reader_is_actually_installed
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_at_least_one_price_schedule_is_found
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_a_goods_receipt_sheet_yields_more_than_one_table
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_detection_is_quiet_on_most_sheets
+tests/integration/test_project_corpus_survey.py::TestTheProgressReaderWasDiscardingThis::test_the_identity_block_is_in_the_file_the_progress_reader_reads
+  /home/vutun/.codex/worktrees/23e2/ai_orchestrator/.venv/lib/python3.14/site-packages/openpyxl/worksheet/_reader.py:329: UserWarning: Conditional Formatting extension is not supported and will be removed
+    warn(msg)
+
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_the_reader_is_actually_installed
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_at_least_one_price_schedule_is_found
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_a_goods_receipt_sheet_yields_more_than_one_table
+tests/integration/test_ingest_sheets.py::TestAgainstTheRealCorpus::test_detection_is_quiet_on_most_sheets
+tests/integration/test_project_corpus_survey.py::TestTheProgressReaderWasDiscardingThis::test_the_identity_block_is_in_the_file_the_progress_reader_reads
+  /home/vutun/.codex/worktrees/23e2/ai_orchestrator/.venv/lib/python3.14/site-packages/openpyxl/worksheet/header_footer.py:48: UserWarning: Cannot parse header or footer so it will be ignored
+    warn("""Cannot parse header or footer so it will be ignored""")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_model_declares_constraints_once.py::TestTheTenantPairIsDeclaredWhereAForeignKeyNeedsIt::test_every_composite_foreign_key_references_something_unique
+FAILED tests/unit/test_proposer_profile.py::TestTheProposerCannotBeAStub::test_it_has_at_least_two_candidates
+2 failed, 3541 passed, 1 deselected, 10 warnings in 649.29s (0:10:49)
+make: *** [Makefile:187: test] Error 1

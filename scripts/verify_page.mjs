@@ -82,6 +82,7 @@ function seedControls(html) {
 function makeNode(id, tag) {
   const classes = new Set();
   const node = {
+    remove() { if (this.id) nodes.delete(this.id); },
     id: id || "", tagName: (tag || "div").toUpperCase(),
     innerHTML: "", textContent: "", value: "", disabled: false, hidden: false,
     className: "", style: {setProperty(k,v) {this[k]=v;}, getPropertyValue(k) {return this[k] || "";}}, dataset: {}, attributes: {}, children: [], parentElement: null,
@@ -93,6 +94,7 @@ function makeNode(id, tag) {
     },
     get classText() { return [...classes].join(" "); },
     setAttribute(k, v) { this.attributes[k] = v; },
+    matches(s) { return matchesSimple({tag: this.tagName.toLowerCase(), attrs: {...this.attributes, id: this.id, class: this.className || this.classText}}, s); },
     getAttribute(k) { return this.attributes[k] ?? null; },
     removeAttribute(k) { delete this.attributes[k]; },
     addEventListener() {}, removeEventListener() {},
@@ -213,6 +215,11 @@ function parseHTML(html, parent = null) {
 /** Does one parsed element satisfy one *simple* selector such as `.a`, `#b`, `[c]`,
  *  `[c="v"]`, `.a[c="v"]`, `tag`, or `tag.cls`? */
 function matchesSimple(el, sel) {
+  if (sel.includes(",")) return sel.split(",").some(part => matchesSimple(el, part.trim()));
+  if (/:hover|:focus-within|:focus-visible/.test(sel)) return false;
+  const exclusions = [...sel.matchAll(/:not\(([^)]+)\)/g)];
+  if (exclusions.some(match => matchesSimple(el, match[1]))) return false;
+  sel = sel.replace(/:not\([^)]+\)/g, "");
   const parts = sel.match(/(^[a-zA-Z][\w-]*)|(\.[\w-]+)|(#[\w-]+)|(\[([^\]=]+)(?:=("?)([^\]"]*)\6)?\])/g) || [];
   if (!parts.length) throw new Error(`queryAll does not understand "${sel}"`);
   for (const p of parts) {
@@ -245,6 +252,9 @@ function matchesWithin(el, parts) {
   const last = parts[parts.length - 1];
   if (!matchesSimple(el, last)) return false;
   if (parts.length === 1) return true;
+  if (parts[parts.length - 2] === ">") {
+    return !!el.parent && matchesWithin(el.parent, parts.slice(0, -2));
+  }
   let p = el.parent;
   while (p) {
     if (matchesWithin(p, parts.slice(0, -1))) return true;
@@ -272,6 +282,17 @@ function asDomNode(el, source) {
   if (el.__dom) return el.__dom;
   const classes = new Set((el.attrs.class || "").split(/\s+/).filter(Boolean));
   const node = {
+    remove() {
+      if (el.parent) el.parent.children = el.parent.children.filter(child => child !== el);
+      el.parent = null;
+    },
+    append(...kids) { kids.forEach(child => node.appendChild(child)); },
+    appendChild(child) {
+      const parsed = {tag: child.tagName.toLowerCase(), attrs: {...child.attributes, class: child.className || child.classText}, text: child.textContent || "", children: treeOf(child).children, parent: el, __dom: child};
+      el.children.push(parsed);
+      child.parentElement = node;
+      return child;
+    },
     tagName: el.tag.toUpperCase(),
     style: {setProperty(k,v) {this[k]=v;}}, offsetLeft:0, offsetWidth:0,
     getBoundingClientRect() { return {x:0,y:0,top:0,left:0,right:0,bottom:0,width:0,height:0}; },
@@ -374,6 +395,7 @@ function asDomNode(el, source) {
     },
     querySelectorAll(s) { return queryTree(el, s).map((c) => asDomNode(c, "")); },
     querySelector(s) { return queryTree(el, s).map((c) => asDomNode(c, ""))[0] ?? null; },
+    matches(s) { return matchesSimple(el, s); },
     closest(s) {
       let p = el;
       while (p) {
@@ -459,7 +481,15 @@ const document_ = {
   documentElement: makeNode("html", "html"),
   getElementById(id) {
     if (!nodes.has(id)) nodes.set(id, makeNode(id, id === "sheet" ? "dialog" : "div"));
-    return nodes.get(id);
+    const node = nodes.get(id);
+    // Forms created by a rendered management page must expose their actual children.
+    // Keep the node identity/listeners while resolving its current containing markup.
+    if (!node.innerHTML) for (const container of nodes.values()) {
+      if (container === node || !container.innerHTML?.includes(`id="${id}"`)) continue;
+      const parsed = queryTree(treeOf(container), `#${id}`)[0];
+      if (parsed) { node.__tree = parsed; node.__treeSource = node.innerHTML; break; }
+    }
+    return node;
   },
   querySelectorAll(sel) { return queryAll(sel); },
   querySelector(sel) { return queryAll(sel)[0] ?? null; },
@@ -881,12 +911,12 @@ try {
   await new Promise((r) => setTimeout(r, 2000));
 
   const workStats = $("workStats").innerHTML;
-  check("the queue rendered", /class="stat/.test(workStats), `${workStats.length} chars`);
+  check("the queue rendered", /class="work-stat/.test(workStats), `${workStats.length} chars`);
   check("it says how many need a person", /Waiting on you/.test(workStats));
   check("the list has tasks to pick from", /class="row/.test($("giveList").innerHTML),
     `${($("giveList").innerHTML.match(/class="row/g) || []).length} rows`);
 
-  const population = [...workStats.matchAll(/class="v">([^<]+)</g)]
+  const population = [...workStats.matchAll(/<strong>([^<]+)</g)]
     .map((m) => Number(m[1].replaceAll(",", "")));
   check("the work summary agrees with the whole API population",
     population.join() === [queue.needs_you, queue.in_flight, queue.settled, queue.total].join(),
@@ -1194,7 +1224,7 @@ check("the agent selector is filled, not left on its loading text",
   `${agentOpts.length} option(s): `
   + agentOpts.slice(0, 3).map((o) => String(o.textContent)).join(" | "));
 
-check("the tiles rendered", /class="stat/.test(stats), `${stats.length} chars`);
+check("the tiles rendered", /class="ui-metric-strip/.test(stats), `${stats.length} chars`);
   check("it counts stranded runs separately", /Stranded runs/.test(stats));
   /* **The headcount must include the offices.** It read "of 8 agents" over an
      organisation of 11, because the tile summed the chief and the departments and
@@ -1327,7 +1357,7 @@ try {
     $("runThisState").textContent === status && $("runThisTask").hidden,
     `state=${$("runThisState").textContent}, run hidden=${$("runThisTask").hidden}`);
   check("opening a task preserves its exact identity",
-    $("taskIdentity").textContent === taskId && $("taskTitle").textContent === report.task.title);
+    $("taskIdentity").querySelector("[data-ui-copy]")?.dataset.uiCopy === taskId && $("taskTitle").textContent === report.task.title);
   const reportLine = vm.runInContext('eventLine({event_type:"task.failed",view:{title:"<img src=x onerror=alert(1)>"}})', sandbox);
   check("report event types are understood and untrusted titles are escaped",
     /could not finish/.test(reportLine) && /&lt;img/.test(reportLine) && !/<img/.test(reportLine), reportLine);
@@ -1385,8 +1415,8 @@ try {
           workflow.stages.every(stage => stage.status === "assigned") &&
           workflow.evidence.real_model_calls === 0 && workflow.evidence.fake_model_calls === 0)),
         `stages=${workflow.total}, started=${body.started}`);
-    } else check("it is created, not started", body.status === "created",
-      "retry creation must not start a model run");
+    } else check("it is created, not started", body.status === "created" || body.status === "assigned",
+      `status=${body.status}: retry creation must not start a model run (assigned keeps the source owner so Run is allowed; neither state runs anything)`);
   } else {
     check("a refusal names the task already on the work, so it can be opened",
       !alreadyRetried || /tsk_[a-z0-9]+/.test(said),
@@ -1412,8 +1442,37 @@ check("restoring an approval does not interrupt with a toast",
   ![...$("uiToastRegion").children].some(node => node.innerHTML.includes("Review this draft")));
 $("sidebarToggle").onclick();
 check("sidebar collapse is accessible and persistent", $("sidebarToggle").getAttribute("aria-expanded") === "false" && sandbox.document.documentElement.classList.contains("sidebar-collapsed"));
+sandbox.document.documentElement.classList.add("sidebar-peek");
+check("sidebar hover peek keeps collapse state but widens", sandbox.document.documentElement.classList.contains("sidebar-collapsed") && sandbox.document.documentElement.classList.contains("sidebar-peek"));
+sandbox.document.documentElement.classList.remove("sidebar-peek");
 $("sidebarToggle").onclick();
 check("sidebar expands again", $("sidebarToggle").getAttribute("aria-expanded") === "true");
+check("sidebar hover handlers are wired", /sidebar-peek/.test(html) && /mouseenter/.test(html) && /mouseleave/.test(html));
+/* The toggle lives at the bottom of the sidebar and stays there: the base rule pins
+   it with `position:absolute; bottom:…`, and neither the collapsed nor the peek rule
+   may move that vertical anchor — only the horizontal (`right`/`transform`) changes,
+   so the button never runs to another corner when the rail narrows. Asserted on the
+   served CSS because the shim has no layout engine (`getBoundingClientRect` is 0). */
+{
+  const base = html.match(/#sidebar\s+\.sidebar-toggle\s*\{([^}]*)\}/);
+  const collapsed = html.match(/\.sidebar-collapsed\s+#sidebar\s+\.sidebar-toggle\s*\{([^}]*)\}/);
+  const peek = html.match(/\.sidebar-collapsed\.sidebar-peek\s+#sidebar\s+\.sidebar-toggle\s*\{([^}]*)\}/);
+  check("sidebar toggle is pinned to the bottom of the sidebar",
+    !!base && /position\s*:\s*absolute/.test(base[1]) && /bottom\s*:/.test(base[1]),
+    base ? base[1].trim().slice(0, 120) : "no base toggle rule in the served CSS");
+  /* The vertical anchor must survive both states: collapsed and peek rules may re-place
+     the button horizontally but must not set `top`/`bottom`. A second `bottom:` with a
+     different value is the defect this kills — the button jumping between top and
+     bottom corners when the rail narrows. */
+  for (const [name, rule] of [["collapsed", collapsed], ["peek", peek]]) {
+    check(`sidebar toggle keeps its vertical anchor when ${name}`,
+      !!rule && !/(^|[;\s])(top|bottom)\s*:/.test(rule[1]),
+      rule ? rule[1].trim().slice(0, 120) : `no ${name} toggle rule in the served CSS`);
+  }
+  check("sidebar toggle stays out of the mobile drawer",
+    /\.shell-drawer\s+#sidebar\s+\.sidebar-toggle\s*\{[^}]*display\s*:\s*none/.test(html),
+    "drawer rule intact");
+}
 /* Primitive rendering and input contracts exercise nested untrusted values. */
 const readable = vm.runInContext('valueHTML({recommendation:{message:"<img src=x onerror=alert(1)>"},items:["Preserve the words",{score:7}]})', sandbox);
 check("nested records are readable and escaped without JSON", /Recommendation/.test(readable) && /Score/.test(readable) && /Preserve the words/.test(readable) && /&lt;img/.test(readable) && !/<img|json-block/.test(readable));
@@ -1458,8 +1517,8 @@ for (const destination of ["processes/catalogue", "processes/workflows", "proces
 }
 try {
   const profiles = await (await fetch(`${BASE}/api/v1/model-profiles`,{headers:{"x-organization-id":ORG}})).json();
-  check("effective primary profile names the requested Dots model",
-    profiles.items.find(p=>p.name === "primary")?.providers[0]?.model === "dots-studio/dots-3-note-preview:free");
+  check("effective primary profile names the requested Nemotron 3 Ultra model",
+    profiles.items.find(p=>p.name === "primary")?.providers[0]?.model === "nvidia/nemotron-3-ultra-550b-a55b:free");
   const definitions = await (await fetch(`${BASE}/api/v1/console/catalogue?kind=definitions`,{headers:{"x-organization-id":ORG}})).json();
   if(definitions.items.length){
     const definition=definitions.items[0]; sandbox.__hash="#/processes/definitions/"+definition.id;

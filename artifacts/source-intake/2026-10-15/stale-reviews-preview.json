@@ -1,0 +1,132 @@
+{
+  "organization_id": "org_01m3ycsehgwz7v1fk2ahswkwhm",
+  "apply": false,
+  "findings": [
+    {
+      "task_id": "tsk_01m46spw54f3wkxr3dfytzspy5",
+      "blocker": {
+        "id": "tsk_01m46sp988x3xr022kqf74pk27",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46sq3ehabb6fw976chywg4f",
+      "blocker": {
+        "id": "tsk_01m46sp988x3xr022kqf74pk27",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46wsnr0dkjzm9v4dnn2wemj",
+      "blocker": {
+        "id": "tsk_01m46ws2f295j57af70rgc8xay",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x3rt57nh9yq9wr638m9tp",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x4pktvvcfb877rka6yes2",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x5wrzmkd6xshykd06g29k",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x6bewz3kx37pz07mrs6gx",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x6k6qzdb2sfmdydm1hbc4",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x88p96tbf6yj0pnmv9qyt",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x8f4t1jd1qw2nz7kcps0r",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46x9amdzswecr0ahxkd4vrk",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46xa8by185p6sxvfgvb5yt4",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m46xay0j5z4km3f10z9rb7nf",
+      "blocker": {
+        "id": "tsk_01m46x357s5gq7gxf4tnc6425x",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    },
+    {
+      "task_id": "tsk_01m48bs1j23zqqjb2vne6gyy74",
+      "blocker": {
+        "id": "tsk_01m489vb3w9d5n5rw26461ed2e",
+        "status": "failed"
+      },
+      "running_execution": null,
+      "applied": false
+    }
+  ]
+}

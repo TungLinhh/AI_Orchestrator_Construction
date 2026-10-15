@@ -335,6 +335,9 @@ class TestTheForbiddenZones:
         because a policy table with no rows is a platform that enforces nothing
         and looks configured.
         """
+        from scripts.seed_process_spine import seed
+
+        await seed(tenant.organization_id)
         rows = (
             await tenant.session.execute(
                 text(
@@ -344,12 +347,11 @@ class TestTheForbiddenZones:
                 {"o": tenant.organization_id},
             )
         ).all()
-        if not rows:
-            pytest.skip("process spine not seeded for this tenant")
+        assert rows, "process-spine seeding produced no policies"
         by_class = {r[0]: (r[1], r[2]) for r in rows}
         assert "safety_conclusion" in by_class
-        assert by_class["safety_conclusion"][0] == "L2", (
-            "Tập 1: an AI may not conclude a safety matter at all; the ceiling is L2"
+        assert by_class["safety_conclusion"] == ("L1", True), (
+            "Safety conclusions are hard-blocked; the seeded ceiling is L1"
         )
         assert "hr_personnel_decision" in by_class
         assert by_class["hr_personnel_decision"][0] == "L2"

@@ -1,0 +1,80 @@
+{
+  "observed_at": "2026-10-07T13:05:54.262958+00:00",
+  "synthetic": true,
+  "passed": false,
+  "task_id": "tsk_01m4b7gwejzea9hkq2raemdexf",
+  "run_handle": {
+    "task_id": "tsk_01m4b7gwejzea9hkq2raemdexf",
+    "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+    "started": true,
+    "reason": "",
+    "already_running": false,
+    "estimate_seconds": 644,
+    "estimate_tokens": 67136
+  },
+  "task": {
+    "id": "tsk_01m4b7gwejzea9hkq2raemdexf",
+    "title": "[SYNTHETIC MODEL READINESS] tender artifact",
+    "goal": "Analyze only the synthetic quotes in input. Need 12 valves with mandatory certification. Select the cheapest eligible quote and compute total including delivery. Do not send RFQ, place orders, contact people or delegate. Return one JSON object with winner as the quote id and total_vnd as a number. This is a draft calculation, not an external transaction.",
+    "task_type": "analysis",
+    "status": "completed",
+    "priority": "normal",
+    "requester_id": "dev:no-auth:1fk2ahswkwhm",
+    "requester_type": "human",
+    "owner_agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+    "org_unit_id": null,
+    "parent_task_id": null,
+    "fingerprint": "3400bf8cc1fe1d53f3601830d3b0c2ae6573435037c759cfaf4ed5c2e5954074",
+    "input": {
+      "quotes": [
+        {
+          "id": "A",
+          "unit_vnd": 120000,
+          "certified": true,
+          "delivery_vnd": 80000
+        },
+        {
+          "id": "B",
+          "unit_vnd": 110000,
+          "certified": false,
+          "delivery_vnd": 0
+        }
+      ],
+      "quantity": 12,
+      "synthetic": true
+    },
+    "output": {
+      "winner": "A",
+      "total_vnd": 1520000
+    },
+    "constraints": {},
+    "budget_limit_usd": null,
+    "spent_usd": 0.0,
+    "spent_tokens": 2551,
+    "attempt_count": 0,
+    "deadline_at": null,
+    "workflow_id": null,
+    "workflow_run_id": null,
+    "last_error": null,
+    "failure_category": null,
+    "created_at": "2026-10-07T13:05:54.650943+00:00",
+    "started_at": "2026-10-07T13:05:56.702614+00:00",
+    "completed_at": "2026-10-07T13:06:00.982915+00:00"
+  },
+  "executions": {
+    "items": [
+      {
+        "id": "exe_01m4b7gyfpjwthn9sqs8f3gxdp",
+        "attempt": 1,
+        "status": "completed",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "model_used": null,
+        "cost_usd": 0.0,
+        "duration_ms": 4278,
+        "error_category": null,
+        "started_at": "2026-10-07T13:05:56.729985+00:00"
+      }
+    ],
+    "count": 1
+  }
+}

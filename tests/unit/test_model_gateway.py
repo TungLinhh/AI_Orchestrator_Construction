@@ -114,6 +114,7 @@ class TestPrivacyRouting:
         profiles = {
             "mixed": ModelProfile(
                 name="mixed",
+                max_classification=DataClassification.SECRET,
                 candidates=(
                     ModelCandidate(
                         provider="openrouter",

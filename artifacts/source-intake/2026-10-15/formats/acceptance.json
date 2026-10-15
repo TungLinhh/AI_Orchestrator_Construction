@@ -1,0 +1,124 @@
+{
+  "synthetic": true,
+  "cases": [
+    {
+      "filename": "brief.txt",
+      "state": "ready",
+      "source_id": "src_01m4y7fzcz8rnr70emr1hd79d3",
+      "segments": 1,
+      "warnings": [],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "brief.md",
+      "state": "ready",
+      "source_id": "src_01m4y7fzgxjgjfmmr5caw7t63p",
+      "segments": 1,
+      "warnings": [],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "brief.json",
+      "state": "ready",
+      "source_id": "src_01m4y7fznjbdnb18ykp8eet0vx",
+      "segments": 1,
+      "warnings": [],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "quotes.csv",
+      "state": "ready",
+      "source_id": "src_01m4y7fzrxk1zq286zq0s7hc6a",
+      "segments": 1,
+      "warnings": [],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "brief.docx",
+      "state": "ready",
+      "source_id": "src_01m4y7fzwbhwxf6zvr1eny0616",
+      "segments": 1,
+      "warnings": [],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "brief.xlsx",
+      "state": "ready",
+      "source_id": "src_01m4y7g04gq3k1n6343tzc256f",
+      "segments": 1,
+      "warnings": [
+        "Formulas are preserved as formulas; missing cached values are not treated as zero."
+      ],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "brief.pdf",
+      "state": "ready",
+      "source_id": "src_01m4y7g0cjaa4tdtpk93d3q77c",
+      "segments": 1,
+      "warnings": [],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "packet.zip",
+      "state": "ready",
+      "source_id": "src_01m4y7g0gm192qc74577np8mzj",
+      "segments": 2,
+      "warnings": [],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "scan.png",
+      "state": "ready",
+      "source_id": "src_01m4y7g1082epvcdr5a366c43n",
+      "segments": 1,
+      "warnings": [
+        "OCR mean confidence 96.0"
+      ],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "scan.jpeg",
+      "state": "ready",
+      "source_id": "src_01m4y7g1cyt3ryzbmggtad763h",
+      "segments": 1,
+      "warnings": [
+        "OCR mean confidence 96.3"
+      ],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "scan.tiff",
+      "state": "ready",
+      "source_id": "src_01m4y7g1tdb5805cazgbfnam47",
+      "segments": 1,
+      "warnings": [
+        "OCR mean confidence 96.0"
+      ],
+      "error": null,
+      "passed": true
+    },
+    {
+      "filename": "scanned.pdf",
+      "state": "needs_review",
+      "source_id": "src_01m4y7g2ax9wb8xp7e1nfyw7hm",
+      "segments": 1,
+      "warnings": [
+        "OCR confidence 96.2; review scanned source."
+      ],
+      "error": null,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

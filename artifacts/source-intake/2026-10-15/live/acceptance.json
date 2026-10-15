@@ -1,0 +1,135 @@
+{
+  "synthetic": true,
+  "passed": false,
+  "cases": [
+    {
+      "mode": "mock",
+      "passed": false,
+      "source_ids": [
+        "src_01m4y77bcncepxk0qbg8gpxq9k"
+      ],
+      "task_id": "tsk_01m4y77be94s2q32pk2hmk6arp",
+      "run": {
+        "task_id": "tsk_01m4y77be94s2q32pk2hmk6arp",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "failed",
+      "error": "no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: excluded after artifact verification failure",
+      "exception": "{'mode': 'mock', 'passed': False, 'source_ids': ['src_01m4y77bcncepxk0qbg8gpxq9k'], 'task_id': 'tsk_01m4y77be94s2q32pk2hmk6arp', 'run': {'task_id': 'tsk_01m4y77be94s2q32pk2hmk6arp', 'agent_id': 'agt_01m3ycsewvvcwbr1d1xap4f754', 'started': True, 'reason': '', 'already_running': False, 'estimate_seconds': 0, 'estimate_tokens': 0}, 'status': 'failed', 'error': \"no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: excluded after artifact verification failure\"}"
+    },
+    {
+      "mode": "sources",
+      "passed": true,
+      "source_ids": [
+        "src_01m4y78v5nz9xz44psr0vhdvnk"
+      ],
+      "task_id": "tsk_01m4y78v6b2ayd1w8hy4xfx8p5",
+      "run": {
+        "task_id": "tsk_01m4y78v6b2ayd1w8hy4xfx8p5",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4y79b4zp4ssmsqn0x4m1s5e",
+          "format": "docx",
+          "filename": "report-tsk_01m4y78v6b2ayd1w8hy4xfx8p5.docx",
+          "byte_count": 37153,
+          "sha256": "211cb47a1ae2a2389504a0c58289a3b72d99665371c0dd90232f60bc4ddd82ab",
+          "manifest_id": "smf_01m4y78v6rrwwscw9w9jfvr4nd"
+        },
+        {
+          "id": "art_01m4y79b4zp4ssmsqn0x4m1s5g",
+          "format": "json",
+          "filename": "report-tsk_01m4y78v6b2ayd1w8hy4xfx8p5.json",
+          "byte_count": 1505,
+          "sha256": "88abfbda05d30d18a42f08c0613a80977cd05813144f6d145395ffe1c349e651",
+          "manifest_id": "smf_01m4y78v6rrwwscw9w9jfvr4nd"
+        },
+        {
+          "id": "art_01m4y79b4zp4ssmsqn0x4m1s5h",
+          "format": "md",
+          "filename": "report-tsk_01m4y78v6b2ayd1w8hy4xfx8p5.md",
+          "byte_count": 725,
+          "sha256": "6cd8a3794fa12fbe73fdc1a731e5f8f5a5675ebcfdce5ce321a2db1f25d47f78",
+          "manifest_id": "smf_01m4y78v6rrwwscw9w9jfvr4nd"
+        },
+        {
+          "id": "art_01m4y79b4yh3xsfxq5ane64kj8",
+          "format": "pdf",
+          "filename": "report-tsk_01m4y78v6b2ayd1w8hy4xfx8p5.pdf",
+          "byte_count": 24650,
+          "sha256": "3c8f1ecf07773ad7f41de9ffd17e88e500dfc02f9bd31530beb2b594497d2b61",
+          "manifest_id": "smf_01m4y78v6rrwwscw9w9jfvr4nd"
+        },
+        {
+          "id": "art_01m4y79b4zp4ssmsqn0x4m1s5f",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4y78v6b2ayd1w8hy4xfx8p5.xlsx",
+          "byte_count": 5592,
+          "sha256": "f9b10180a019e53adf45656a2644296a2ab0aade515080cd2865341237e307b3",
+          "manifest_id": "smf_01m4y78v6rrwwscw9w9jfvr4nd"
+        },
+        {
+          "id": "art_01m4y79b4zp4ssmsqn0x4m1s5j",
+          "format": "zip",
+          "filename": "report-tsk_01m4y78v6b2ayd1w8hy4xfx8p5.zip",
+          "byte_count": 99059,
+          "sha256": "4acf2d06440bb946c6226daae3199848a97b130580f780f3d57f9d10a17a6b42",
+          "manifest_id": "smf_01m4y78v6rrwwscw9w9jfvr4nd"
+        }
+      ],
+      "output": {
+        "output": {
+          "findings": [
+            {
+              "text": "The valve dossier requires an HSE certificate and has not yet been ordered.",
+              "source_id": "src_01m4y78v5nz9xz44psr0vhdvnk",
+              "locator": "brief.docx#paragraph:1",
+              "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+            }
+          ],
+          "limitations": [
+            "Only one source was provided; no additional documentation available to verify status or identify other missing certificates."
+          ],
+          "summary": "Review of the acceptance documentation indicates that the valve dossier is missing an HSE certificate and the order for it has not been placed."
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4y78v5nz9xz44psr0vhdvnk",
+              "error": null,
+              "state": "ready",
+              "origin": "upload",
+              "sha256": "81d0d432ab87d73f7a6896e8b47de59596d6683a457ffa0ba1d65b42037079bf",
+              "filename": "acceptance.zip",
+              "warnings": [],
+              "synthetic": false,
+              "byte_count": 36578,
+              "created_at": "2026-10-14T22:07:05.397948+00:00",
+              "media_type": "application/zip",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4y78v6rrwwscw9w9jfvr4nd",
+          "sha256": "7d09bbe3c4f582ac557039ec7b811b9ad3d606e164b5dd5ea9b2993e3b786c7f"
+        }
+      }
+    }
+  ]
+}

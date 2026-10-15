@@ -1,0 +1,139 @@
+{
+  "synthetic": true,
+  "passed": false,
+  "cases": [
+    {
+      "mode": "mock",
+      "passed": false,
+      "source_ids": [
+        "src_01m4y7e1t6tpeed60jyqbp0k31"
+      ],
+      "task_id": "tsk_01m4y7e1vgrma4hbkpkpnqrmq3",
+      "run": {
+        "task_id": "tsk_01m4y7e1vgrma4hbkpkpnqrmq3",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "failed",
+      "error": "no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: excluded after artifact verification failure",
+      "exception": "{'mode': 'mock', 'passed': False, 'source_ids': ['src_01m4y7e1t6tpeed60jyqbp0k31'], 'task_id': 'tsk_01m4y7e1vgrma4hbkpkpnqrmq3', 'run': {'task_id': 'tsk_01m4y7e1vgrma4hbkpkpnqrmq3', 'agent_id': 'agt_01m3ycsewvvcwbr1d1xap4f754', 'started': True, 'reason': '', 'already_running': False, 'estimate_seconds': 0, 'estimate_tokens': 0}, 'status': 'failed', 'error': \"no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: excluded after artifact verification failure; openrouter/dots-studio/dots-3-note-preview:free: excluded after artifact verification failure\"}"
+    },
+    {
+      "mode": "sources",
+      "passed": true,
+      "source_ids": [
+        "src_01m4y7feh6zhdzhksdq8vgr318"
+      ],
+      "task_id": "tsk_01m4y7fej9jknxb1c3epm1zcay",
+      "run": {
+        "task_id": "tsk_01m4y7fej9jknxb1c3epm1zcay",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4y7gtyenm0bsmapsr6r0mya",
+          "format": "docx",
+          "filename": "report-tsk_01m4y7fej9jknxb1c3epm1zcay.docx",
+          "byte_count": 37386,
+          "sha256": "af251b31faf5a42a546850ba7439398513b6a267cc88e26b0841b843778bd073",
+          "manifest_id": "smf_01m4y7fejr24a5kexamqtvbemr"
+        },
+        {
+          "id": "art_01m4y7gtyenm0bsmapsr6r0myc",
+          "format": "json",
+          "filename": "report-tsk_01m4y7fej9jknxb1c3epm1zcay.json",
+          "byte_count": 2093,
+          "sha256": "805c63c7bc7ab35a63c7a80b939b5d0716a7c9a36ccea0b7e7ed000417e549ad",
+          "manifest_id": "smf_01m4y7fejr24a5kexamqtvbemr"
+        },
+        {
+          "id": "art_01m4y7gtyenm0bsmapsr6r0myd",
+          "format": "md",
+          "filename": "report-tsk_01m4y7fej9jknxb1c3epm1zcay.md",
+          "byte_count": 1289,
+          "sha256": "3fe760275c81d310177f9e7d4596f5e33b582a28a0348a5fb8cae32d939a660f",
+          "manifest_id": "smf_01m4y7fejr24a5kexamqtvbemr"
+        },
+        {
+          "id": "art_01m4y7gtyenm0bsmapsr6r0my9",
+          "format": "pdf",
+          "filename": "report-tsk_01m4y7fej9jknxb1c3epm1zcay.pdf",
+          "byte_count": 25685,
+          "sha256": "8d962003c266042b457331f8e70b5042ccdb57829c5101a54405fcb12c12af25",
+          "manifest_id": "smf_01m4y7fejr24a5kexamqtvbemr"
+        },
+        {
+          "id": "art_01m4y7gtyenm0bsmapsr6r0myb",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4y7fej9jknxb1c3epm1zcay.xlsx",
+          "byte_count": 5883,
+          "sha256": "6cbfe12adfd94c6da39811c125c0ae5e5f5309bf0e9f0219b3f922cba50659d3",
+          "manifest_id": "smf_01m4y7fejr24a5kexamqtvbemr"
+        },
+        {
+          "id": "art_01m4y7gtyenm0bsmapsr6r0mye",
+          "format": "zip",
+          "filename": "report-tsk_01m4y7fej9jknxb1c3epm1zcay.zip",
+          "byte_count": 101010,
+          "sha256": "a503daa027194cd267633f27df11d8e896d8bf84f0027139a8441d86e7dc6c50",
+          "manifest_id": "smf_01m4y7fejr24a5kexamqtvbemr"
+        }
+      ],
+      "output": {
+        "output": {
+          "findings": [
+            {
+              "text": "Tài liệu xác nhận tổng hợp cho biết hồ sơ van cần có chứng chỉ HSE. Chưa có đơn đặt hàng nào được thực hiện.",
+              "source_id": "src_01m4y7feh6zhdzhksdq8vgr318",
+              "locator": "brief.docx#paragraph:1",
+              "quote": "SYNTHETIC ACCEPTANCE: Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+            }
+          ],
+          "limitations": [
+            "Đây là tài liệu tổng hợp mô phỏng (synthetic acceptance), không phải tài liệu chính thức.",
+            "Chỉ có một nguồn tài liệu được cung cấp để xác minh.",
+            "Không có thông tin chi tiết về chứng chỉ HSE cụ thể cần thiết.",
+            "Không có dữ liệu về các loại van hoặc dự án liên quan.",
+            "Chưa xác định được mức độ khẩn cấp của yêu cầu chứng chỉ."
+          ],
+          "summary": "Phân tích tài liệu xác nhận tổng hợp cho thấy hồ sơ van yêu cầu chứng chỉ HSE và hiện chưa có chứng chỉ nào được cung cấp. Đồng thời, chưa có đơn đặt hàng nào được thực hiện. Cần thu thập chứng chỉ HSE cho các van trước khi tiến hành đặt hàng."
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4y7feh6zhdzhksdq8vgr318",
+              "error": null,
+              "state": "ready",
+              "origin": "upload",
+              "sha256": "df7aef373c56dc870757c70a0c3c6ed90ac073b6970359b1edde5793248a5add",
+              "filename": "acceptance.zip",
+              "warnings": [],
+              "synthetic": false,
+              "byte_count": 36578,
+              "created_at": "2026-10-14T22:10:41.831639+00:00",
+              "media_type": "application/zip",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4y7fejr24a5kexamqtvbemr",
+          "sha256": "b67a2de60b35a1a494095c5aa2ecb20b3d0846942e81766c978639a5d3471dcb"
+        }
+      }
+    }
+  ]
+}

@@ -248,7 +248,7 @@ class TestTheLoaderRefusesRatherThanGuesses:
         await _write_profile(tenant, max_classification="public-ish")
 
         load = await load_tenant_profiles(db, tenant.organization_id)
-        assert load.profiles[TENANT_ONLY].max_classification is DataClassification.RESTRICTED
+        assert load.profiles[TENANT_ONLY].max_classification is DataClassification.PUBLIC
         assert any("classification" in w for w in load.warnings)
 
     async def test_a_row_with_no_usable_candidate_is_skipped_and_reported(

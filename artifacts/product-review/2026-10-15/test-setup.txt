@@ -1,0 +1,11 @@
+AO_MIGRATION_DB=${AO_TEST_DB_NAME:-ai_orchestrator_test} \
+	uv run alembic -c migrations/alembic.ini upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+  copying the reference catalogue from ai_orchestrator (org_01m3t8b2qz836nwmz8mkqsr2vx)
+    role catalogue source: org_01m3qr9h28ta4zn2hbtfcraa5q
+    reusing the catalogue holder org_01m4b38509j9nz1p42dm0dp9b5
+    roles: 9 in source, 0 written so far
+    sop_definitions: 28 in source, 0 written so far
+    autonomy_policies: 6 in source, 0 written so far
+  wrote 0, already present 43, into ai_orchestrator_test

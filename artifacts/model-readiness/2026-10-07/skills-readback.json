@@ -1,0 +1,44 @@
+{
+  "scope": "persisted sandbox skill read-back",
+  "skills": [
+    {
+      "id": "sklv_01m4b6ky2qfgzp8rn0evf2arp5",
+      "skill_id": "skl_25df7bfb73e83615e8e83c0ca0",
+      "is_published": false,
+      "derived_from": {
+        "case_id": "hr-normal-v1",
+        "agent_id": "agt_01m3ycsf0nndemdwckc8jemx5s",
+        "failures": [],
+        "synthetic": true,
+        "corpus_sha256": "019af15ab0b22a6250eb9c8c1a71d6a0bdc638f44ed7db414541656b441200d3",
+        "development_only": true,
+        "evidence_runtime": "live",
+        "evaluation_passed": true,
+        "evidence_task_ids": [
+          "tsk_01m4b6ksfn6jswmwjpyrhds62b"
+        ],
+        "observation_sha256": "a2ed7af2036db7f941881752e681922709704d58a1acd4d90de31c5eef4ca6c3"
+      }
+    },
+    {
+      "id": "sklv_01m4b6mgs7h90d0fh4fbbx46hy",
+      "skill_id": "skl_6f3417c83ce08b58d4eeb5386c",
+      "is_published": false,
+      "derived_from": {
+        "case_id": "procurement-normal-v1",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "failures": [],
+        "synthetic": true,
+        "corpus_sha256": "019af15ab0b22a6250eb9c8c1a71d6a0bdc638f44ed7db414541656b441200d3",
+        "development_only": true,
+        "evidence_runtime": "live",
+        "evaluation_passed": true,
+        "evidence_task_ids": [
+          "tsk_01m4b6ky3dthm29ngc59k899kv"
+        ],
+        "observation_sha256": "a2ed7af2036db7f941881752e681922709704d58a1acd4d90de31c5eef4ca6c3"
+      }
+    }
+  ],
+  "all_unpublished": true
+}

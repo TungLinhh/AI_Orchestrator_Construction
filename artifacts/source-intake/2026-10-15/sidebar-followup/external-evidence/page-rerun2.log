@@ -1,0 +1,253 @@
+
+  tenant: org_01m3ycsehgwz7v1fk2ahswkwhm
+
+  org org_01m3ycsehgwz7v1fk2ahswkwhm: closed 0 stranded execution(s), failed 0 stale running execution(s), expired 0 unanswered approval(s), abandoned 0 unclaimed task(s)
+  the register already has 1311 task(s); making sure they are run
+  started 1 of 1 runnable task(s)
+2026-10-14 22:46:29 [info     ] pipeline.step_started          depth=0 task_id=tsk_01m4y9ccy08vxvwwbrba95wzkk
+2026-10-14 22:46:30 [info     ] workflow.gateway_retry         attempt=1
+2026-10-14 22:46:30 [warning  ] task.failed                    category=model_error reason="no usable model for profile 'primary': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: no provider adapter registered; openrouter/dots-studio/dots-3-note-preview:free: no provider adapter registere" task_id=tsk_01m4y9ccy08vxvwwbrba95wzkk
+2026-10-14 22:46:30 [info     ] pipeline.step_finished         status=failed task_id=tsk_01m4y9ccy08vxvwwbrba95wzkk
+  tsk_01m4y9ccy08vxvwwbrba95wzkk settled as failed
+The API must already be running.  `make page` does that for you;
+or start it with:  AO_API_AUTH_DISABLED=true uv run -m uvicorn ai_orchestrator.main:app --port 8000
+structure:
+  ok    no element id is declared twice  — 249 ids, all unique
+  ok    nothing is coerced into markup by joining nodes  — no `innerHTML = nodes.join()` remains
+  ok    every element the page writes to exists  — give/work/unit/answer/dept-filter/provider/flow ids all present
+  ok    one nav link per screen, no two sharing a destination  — give:#/give, work:#/work/issues, work:#/work/approvals, departments:#/departments, processes:#/processes, library:#/library/skills, business:#/business/projects, operations:#/operations/models, settings:#/settings
+  ok    the work form comes before the workflow it explains  — Start a task precedes Workflow in the document
+  ok    the task view has an answer card above the evidence  — Answer precedes Steps
+  ok    the organisation view has a finder and an office filter  — search + All-offices chips
+  ok    the language switch exists  — VI/EN toggle in the crumbs
+  ok    every chrome string has a Vietnamese entry  — 116 keys, all translated
+  ok    the Vietnamese catalogue is substantial, not a stub  — 358 entries
+  ok    the served page names its provider  — fake
+  ok    both run controls carry the provider pill  — give + task run cards
+  ok    the workflow tree has card styles, not browser bullets  — .tree reset + status rails
+runtime:
+  ok    the script loaded without throwing
+  ok    requests were made  — 15 fetches
+  ok    no request failed
+
+the way out:
+  ok    there is a visible back control
+  ok    the breadcrumb bar is present
+  ok    the breadcrumb is marked deep  — class=deep
+  ok    the breadcrumb shows a path
+
+the event stream:
+  ok    the stream carries events  — 300 frames
+  ok    the event shape has `id`  — keys: id,type,subject,source,actor_id,data,occurred_at,view
+  ok    the event shape has `type`  — keys: id,type,subject,source,actor_id,data,occurred_at,view
+  ok    the event shape has `data`  — keys: id,type,subject,source,actor_id,data,occurred_at,view
+  ok    the event shape has `occurred_at`  — keys: id,type,subject,source,actor_id,data,occurred_at,view
+  ok    the event shape has `view`  — keys: id,type,subject,source,actor_id,data,occurred_at,view
+  ok    the delegation tree either draws the record or states there is none  — 134 node(s) drawn, 0 delegation event(s)
+  ok    and task lifecycle events alongside  — 300
+  ok    the page reads the field names that exist  — the console used to read ev.detail and ev.at, so 189 real events rendered blank
+
+going back:
+  ok    the organisation view comes back  — 12 box(es)
+
+give work:
+  ok    the queue rendered  — 891 chars
+  ok    it says how many need a person
+  ok    the list has tasks to pick from  — 100 rows
+  ok    the work summary agrees with the whole API population  — rendered=392,0,919,1311, total=1311
+  ok    a task row exists to open  — tsk_01m4y9ccy08vxvwwbrba95wzkk
+  ok    the task detail rendered  — [SYNTHETIC SOURCE ACCEPTANCE] sources (lần chạy lại) 1 (lần chạy lại) 1 (lần chạy lại) 1
+  ok    the detail screen is the one on screen, not the list  — task hidden=false give hidden=true
+  ok    the delegation tree is there  — 1 rows
+  ok    the log is there  — 3655 chars
+  ok    the report is written in words  — No model name is recorded in this task report.
+  ok    the bell exists on every screen  — bell + panel + count
+  ok    the task states what happened first
+  ok    the steps say what each hand did  — 1 step(s)
+  ok    a step carries its pointers, not just a status  — pointers or an honest empty state
+  ok    the full text has somewhere to open  — dialog + body
+  ok    the delegation graph rendered  — 954 chars
+  ok    it draws one node per task in the tree  — 1 node(s)
+  ok    a tree of N tasks draws N-1 edges, not N boxes and no lines  — 0 edge(s) for 0 parent-child pair(s) in a tree of 1
+  ok    the graph is described for a screen reader
+  ok    edges name who handed off
+  ok    the answer is shown as sentences when there is one  — no output, empty state shown
+  ok    there is a run control
+  ok    the run states its cost before it is pressed  — quota and variable duration are visible before starting
+  ok    the run says it is started in the background
+  ok    the breadcrumb offers a way out  — <a href="#/give">Work</a> <span class="sep">/</span> <span class="here" title="[SYNTHETIC SOURCE ACCEPTANCE] sources (lần chạy lại) 1 (lần chạy lại) 1 (lần chạy
+  ok    every decision is either open or decided, never blank  — 0 open, 0 decided, empty-state shown=true
+  ok    an open decision offers both actions, never one  — 0 approve / 0 refuse
+  ok    the decision sits on the same screen as its evidence  — tree and decisions together
+  ok    leaving a task releases its detail  — 0 chars still alive
+  ok    and the list is the screen again  — give hidden=false task hidden=true
+  ok    and the queue is there to come back to
+  ok    the live feed renders, and says so when there is nothing to say  — 40 line(s): <a class="row feed-row" href="#/give/tsk_01m4y9ccy08vxvwwbrba95wzkk/log">
+      <span class="feed-do
+
+the departments:
+  ok    the departments view loaded
+  ok    the department tree rendered  — 12 box(es)
+  ok    the department roster retains the seed baseline  — 8 live departments; minimum 7
+  ok    the chief is the root of the tree
+  ok    the tree groups departments under offices  — 3 group(s) for 3 office(s)
+  ok    every office has a group of its own  — front-office, middle-office, back-office
+  ok    every department is inside its own office's group  — 3/3 group(s) correct
+  ok    no department is drawn outside every group  — the chief is the only box with no office above it
+  ok    one vertical rule per office, not one per box  — 3 rule(s) for 3 office(s)
+  ok    every box in the payload is a box on the screen  — 12 box(es)
+  ok    every box carries its open and done counts
+  ok    every box shows its grant against its ceiling  — 12 box(es)
+  ok    a lit box means a run in flight, nothing else  — lit=0 api=0
+  ok    a stranded run is drawn differently from a live one  — dashed border, not a moving light
+  ok    the agent selector is filled, not left on its loading text  — 13 option(s): the chief (default) | Executive Agent — the whole company | Front Office Agent — an office
+  ok    the tiles rendered  — 522 chars
+  ok    it counts stranded runs separately
+  ok    the headcount covers every agent in the organisation  — of 12 agents
+  ok    an office shows its own work and its departments' separately  — 4 roll-up line(s)
+  ok    the department panel opened  — Design — Design Agent
+  ok    it shows what the agent did  — 0 run(s)
+  ok    it shows the work beside it  — open, attention and done
+  ok    open and finished are separated  — 7 open · 5 need attention · 12 done
+  ok    there is a way back to the whole organisation
+  ok    the breadcrumb offers the way out  — <a href="#/departments">Departments</a> <span class="sep">/</span> <span class="here" title="Design — Design Agent">Design — Design Agent</s
+  ok    the page names no department count it cannot back up  — no hard-coded roster number on the screen
+  ok    an office box is clickable  — front-office
+  ok    clicking an office opens that office's own panel  — #/dept/front-office — Front Office — Front Office Agent
+  ok    the office's panel shows its own departments  — 3 box(es) for 2 department(s)
+  ok    the office's panel shows the office itself too  — the unit and its departments on one panel
+  ok    the office's panel names the office, not the chief  — 
+    
+    
+    
+    
+  Front OfficeFront Office Agent
+      
+      
+      
+      
+      
+    own open 0own don
+  ok    the office's panel separates its own work from its departments'  — own: 0 open · 2 need attention · 10 done — with 2 below: 0 open · 24 need attention · 36 done
+  ok    the back button goes back to the organisation  — Back to the organisation
+  ok    and it arrives back at the tree  — #/departments
+
+failed work:
+  ok    a task row exists to open  — tsk_01m4y9ccy08vxvwwbrba95wzkk
+  ok    this tenant has failed work to make actionable  — failed: [SYNTHETIC SOURCE ACCEPTANCE] sources (lần c
+  ok    a stopped task never reports itself as running  — state=failed, run hidden=true
+  ok    opening a task preserves its exact identity
+  ok    report event types are understood and untrusted titles are escaped  — the platform could not finish it — <b>&lt;img src=x onerror=alert(1)&gt;</b>
+  ok    approval handlers cannot also consume a task-decision button
+  ok    the retry button appears for exactly the work that stopped  — status=failed, button hidden=false
+  ok    the button says what it will do before it is pressed  — the title explains it makes a new task, not that it reopens this one
+  ok    retrying failed work either makes a task or says precisely why not  — 200 this work failed as failed: no usable model for profile 'primary': openroute
+  ok    the new task says which failure it follows  — [SYNTHETIC SOURCE ACCEPTANCE] sources (lần chạy lại) 1 (lần chạy lại) 1 (lần chạy lại) 1 (lần chạy lại) 1 <- tsk_01m4y9ccy08vxvwwbrba95wzkk
+  ok    it is created, not started  — status=assigned: retry creation must not start a model run (assigned keeps the source owner so Run is allowed; neither state runs anything)
+  ok    unread approval lights the bell badge
+  ok    stream and inbox duplicates keep one bell entry
+  ok    bell links the exact approval
+  ok    restoring an approval does not interrupt with a toast
+  ok    sidebar collapse is accessible and persistent
+  ok    sidebar hover peek keeps collapse state but widens
+  ok    sidebar expands again
+  ok    sidebar hover handlers are wired
+  ok    nested records are readable and escaped without JSON
+  ok    structured answers copy as words without JSON
+  ok    tool forms preserve numeric and false values
+  ok    tool forms refuse missing required values
+  ok    Skip to content preserves the current route
+  ok    no management form asks the chairman to enter JSON
+  ok    Back returns to the preceding console screen
+  ok    browser Forward returns to the next console screen
+management:
+  ok    processes/catalogue renders from its API  — 8421 characters
+  ok    processes/catalogue does not show missing JS values
+  ok    processes/catalogue selects only the management surface
+  ok    processes/workflows renders from its API  — 29450 characters
+  ok    real hiring has a separate brief form and salary/date inputs
+  ok    processes/workflows does not show missing JS values
+  ok    processes/workflows selects only the management surface
+  ok    processes/hiring renders from its API  — 2617 characters
+  ok    the example process explains its reference and recorded stage count
+  ok    processes/hiring does not show missing JS values
+  ok    processes/hiring selects only the management surface
+  ok    processes/definitions renders from its API  — 5825 characters
+  ok    processes/definitions does not show missing JS values
+  ok    processes/definitions selects only the management surface
+  ok    processes/provision renders from its API  — 4666 characters
+  ok    processes/provision does not show missing JS values
+  ok    processes/provision selects only the management surface
+  ok    library/skills renders from its API  — 25114 characters
+  ok    library/skills does not show missing JS values
+  ok    library/skills selects only the management surface
+  ok    library/tools renders from its API  — 8028 characters
+  ok    library/tools does not show missing JS values
+  ok    library/tools selects only the management surface
+  ok    library/memory renders from its API  — 2732 characters
+  ok    library/memory does not show missing JS values
+  ok    library/memory selects only the management surface
+  ok    business/projects renders from its API  — 567 characters
+  ok    business/projects does not show missing JS values
+  ok    business/projects selects only the management surface
+  ok    business/documents renders from its API  — 522 characters
+  ok    business/documents does not show missing JS values
+  ok    business/documents selects only the management surface
+  ok    operations/models renders from its API  — 9559 characters
+  ok    operations/models does not show missing JS values
+  ok    operations/models selects only the management surface
+  ok    operations/usage renders from its API  — 31126 characters
+  ok    operations/usage does not show missing JS values
+  ok    operations/usage selects only the management surface
+  ok    operations/events renders from its API  — 12689 characters
+  ok    operations/events does not show missing JS values
+  ok    operations/events selects only the management surface
+  ok    operations/decisions renders from its API  — 589 characters
+  ok    operations/decisions does not show missing JS values
+  ok    operations/decisions selects only the management surface
+  ok    operations/audit renders from its API  — 113771 characters
+  ok    operations/audit does not show missing JS values
+  ok    operations/audit selects only the management surface
+  ok    operations/governance renders from its API  — 7653 characters
+  ok    operations/governance does not show missing JS values
+  ok    operations/governance selects only the management surface
+  ok    operations/system renders from its API  — 2815 characters
+  ok    operations/system does not show missing JS values
+  ok    operations/system selects only the management surface
+  ok    settings renders from its API  — 2201 characters
+  ok    settings does not show missing JS values
+  ok    settings selects only the management surface
+  ok    settings/units renders from its API  — 8148 characters
+  ok    settings/units does not show missing JS values
+  ok    settings/units selects only the management surface
+  ok    settings/roles renders from its API  — 7381 characters
+  ok    settings/roles does not show missing JS values
+  ok    settings/roles selects only the management surface
+  ok    effective primary profile names the requested Nemotron 3 Ultra model
+  ok    a definition deep link shows exactly the selected definition
+  ok    agent controls preserve the selected agent identity
+  ok    agent configuration exposes actual profile and budget controls
+  ok    agent plan deep link renders the exact editable draft
+  ok    all drafted tasks and source references are reviewable
+  ok    agent plan has a separate human submission control
+  ok    prepared workflow opens its exact root and task links
+  ok    prepared workflow exposes refresh and current input requirements
+  ok    future source fields do not block partial submission
+  ok    an event deep link opens its exact payload
+  ok    business workflow deep link shows the exact root
+  ok    business workflow exposes every ordered stage and its task
+  ok    business workflow states simulation and source references
+  ok    business workflow exposes execution evidence and refresh controls
+  ok    completed hiring shows every CV and grounded score
+  ok    waiting interview renders its evidence form and result choices
+  ok    acceptance form uses the exact reviewed offer hash
+  ok    empty shortlist explains the recorded score and disables resume
+  ok    empty shortlist does not request irrelevant interview evidence
+  ok    feedback questions render an answer form with revision choices
+  ok    appearance settings expose language, theme, spacing, motion and start screen
+  ok    preferences apply and persist the selected device presentation
+  ok    management navigation produced no unhandled error
+
+  Open this:  http://127.0.0.1:8099/api/v1/ui?org=org_01m3ycsehgwz7v1fk2ahswkwhm
+  Stop it:    make page-stop
+

@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-14",
+  "check": "sidebar hover-expand + toggle-collapse on real Chromium 1440x900",
+  "results": {
+    "toggle_collapses_to_64px_rail": true,
+    "collapse_persists_localStorage_and_reload": true,
+    "labels_hidden_when_collapsed": true,
+    "hover_peek_widens_to_216px": true,
+    "labels_visible_while_peek": true,
+    "mouseout_removes_peek": true,
+    "toggle_expands_again": true,
+    "js_errors": []
+  },
+  "notes": "peek is visual-only (sidebar-peek class); persisted state stays collapsed. Hover guarded by (hover:hover) and (pointer:fine); mobile drawer unaffected. favicon 404 suppressed with data-URI icon.",
+  "rerun": "uv run --with playwright python /tmp/opencode/sidebar_hover.py (needs API on 8101)"
+}

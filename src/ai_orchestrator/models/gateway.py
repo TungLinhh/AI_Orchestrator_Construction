@@ -25,10 +25,11 @@ via a fallback" are different results for an evaluation and for a cost report.
 from __future__ import annotations
 
 import abc
+import asyncio
 import hashlib
 import json
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from typing import Any
 
@@ -158,6 +159,9 @@ class ModelRequest:
     # A bounded artifact loop can reduce nested transport retries; never raises
     # the adapter's configured retry limit and is not sent to the provider.
     max_provider_retries: int | None = None
+    # Evidence runtimes own validation, repair and per-attempt usage recording.
+    # Ordinary agent calls use the gateway's completion checks instead.
+    caller_validates_output: bool = False
 
     def to_provider_payload(self, candidate: ModelCandidate) -> dict[str, Any]:
         """The OpenAI-compatible chat-completions shape.
@@ -207,10 +211,56 @@ class ModelResponse:
     decision: RoutingDecision | None = None
     finish_reason: str = ""
     raw_usage: dict[str, Any] = field(default_factory=dict)
+    rejected_responses: list[ModelResponse] = field(default_factory=list)
+    validation_error: str | None = None
 
     @property
     def total_tokens(self) -> int:
         return self.usage.total
+
+
+class GatewayUnavailable(ModelUnavailable):
+    """Exhausted candidates, retaining returned completions for the usage ledger."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        details: dict[str, Any],
+        cause: BaseException | None,
+        responses: tuple[ModelResponse, ...],
+    ) -> None:
+        super().__init__(message, details=details, cause=cause)
+        self.responses = responses
+
+
+def _completion_failure(response: ModelResponse, request: ModelRequest) -> str | None:
+    """Reject unusable protocol output. Business validators own semantic quality."""
+    if response.finish_reason == "error":
+        return "provider reported finish_reason=error"
+    if not response.text.strip() and not response.tool_calls:
+        return "empty completion"
+    requires_call = request.tool_choice == "required" or isinstance(request.tool_choice, dict)
+    if request.tools and requires_call and not response.tool_calls:
+        return "required tool call missing"
+    allowed = {tool.get("function", {}).get("name") for tool in request.tools}
+    for call in response.tool_calls:
+        function = call.get("function", {})
+        if function.get("name") not in allowed:
+            return "unknown tool call"
+        try:
+            arguments = function.get("arguments", "")
+            arguments = json.loads(arguments) if isinstance(arguments, str) else arguments
+        except TypeError, ValueError:
+            return "malformed tool arguments"
+        if not isinstance(arguments, dict):
+            return "tool arguments must be an object"
+    if request.output_schema is not None and not response.tool_calls:
+        try:
+            response.parsed = json.loads(response.text)
+        except TypeError, ValueError:
+            return "malformed JSON output"
+    return None
 
 
 class ModelProvider(abc.ABC):
@@ -319,6 +369,8 @@ class ModelGateway:
         #: difference: the first means retry, the second means fix configuration.
         unservable: list[str] = []
         primary_error: BaseException | None = None
+        rejected_responses: list[ModelResponse] = []
+        spent = Money("0")
 
         for index, candidate in enumerate(candidates):
             considered.append(candidate.key())
@@ -336,7 +388,7 @@ class ModelGateway:
             usage_estimate, cost_estimate = estimate_request_cost(request, candidate)
             if (
                 request.remaining_budget_usd is not None
-                and cost_estimate > request.remaining_budget_usd
+                and cost_estimate > request.remaining_budget_usd - spent
             ):
                 # Refusing is better than calling and discovering afterwards that
                 # the org is over budget.
@@ -356,13 +408,22 @@ class ModelGateway:
                 ),
                 routing_reason="primary" if index == 0 else "fallback",
                 considered=tuple(considered),
-                rejected=tuple(rejected),
+                rejected=tuple(sorted(rejected)) + tuple(errors),
                 estimated_cost_usd=cost_estimate,
                 estimated_tokens=usage_estimate,
             )
 
             try:
-                response = await provider.complete(candidate, request)
+                retries = max(0, profile.max_retries)
+                if request.max_provider_retries is not None:
+                    retries = min(retries, max(0, request.max_provider_retries))
+                bounded = replace(request, max_provider_retries=retries)
+                async with asyncio.timeout(profile.max_latency_ms / 1000):
+                    response = await provider.complete(candidate, bounded)
+            except TimeoutError as exc:
+                errors.append(f"{candidate.key()}: candidate deadline exceeded")
+                primary_error = primary_error or exc
+                continue
             except ModelRateLimited as exc:
                 errors.append(f"{candidate.key()}: rate limited")
                 primary_error = primary_error or exc
@@ -375,6 +436,15 @@ class ModelGateway:
             response.decision = decision
             response.model_used = response.model_used or candidate.model
             response.provider = candidate.provider
+            if not request.caller_validates_output:
+                finding = _completion_failure(response, request)
+                if finding:
+                    response.validation_error = finding
+                    rejected_responses.append(response)
+                    spent += response.cost_usd
+                    errors.append(f"{candidate.key()}: {finding}")
+                    continue
+            response.rejected_responses = rejected_responses
             return response
 
         # Both lists, and which is which. On a real free-tier run this read
@@ -383,7 +453,7 @@ class ModelGateway:
         # reachable, and hides the fact that the profile promised a fallback the
         # gateway cannot serve.
         detail = "; ".join(errors + unservable) or "no candidates attempted"
-        raise ModelUnavailable(
+        raise GatewayUnavailable(
             f"no usable model for profile {request.profile!r}: {detail}",
             details={
                 "profile": request.profile,
@@ -392,6 +462,7 @@ class ModelGateway:
                 "considered": considered,
             },
             cause=primary_error,
+            responses=tuple(rejected_responses),
         )
 
     def _select_candidates(
@@ -422,7 +493,9 @@ class ModelGateway:
             if profile.requires_tools and not candidate.supports_tools:
                 rejected.add(f"{key}: profile requires tool calling")
                 continue
-            if profile.requires_structured_output and not candidate.supports_structured_output:
+            if (
+                profile.requires_structured_output or request.output_schema is not None
+            ) and not candidate.supports_structured_output:
                 rejected.add(f"{key}: profile requires structured output")
                 continue
             if request.estimated_input_tokens > candidate.max_input_tokens:
@@ -453,7 +526,7 @@ def _most_restrictive(*ceilings: DataClassification) -> DataClassification:
         DataClassification.RESTRICTED,
         DataClassification.SECRET,
     )
-    return max(ceilings, key=order.index)
+    return min(ceilings, key=order.index)
 
 
 def hash_embedding(text: str, dimensions: int = HASH_EMBEDDING_DIM) -> list[float]:

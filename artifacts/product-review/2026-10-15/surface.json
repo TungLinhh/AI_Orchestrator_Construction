@@ -1,0 +1,1117 @@
+{
+  "observed_at": "2026-10-14T21:21:38.570123+00:00",
+  "scope": "Static declarations only; not runtime acceptance or a feature count",
+  "files_sha256": {
+    "src/ai_orchestrator/api/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/ai_orchestrator/api/agent_blueprints.py": "8086dc32e048acbe21261b7e3417b0bd9e9df04e0a3e878917ab2269ecbda62e",
+    "src/ai_orchestrator/api/agents.py": "1f80f1a849c910016c5bcbff3fe79cc181162ba0cd0f79def82f7dfdf3576497",
+    "src/ai_orchestrator/api/agents_control.py": "d737709bcad9f582dc1e9efc21dd7ea28fd1ec0b1229c5db5a55bd195ad0bab3",
+    "src/ai_orchestrator/api/app.py": "4c21747d34b99dd6c21224d4325d06ce2baef231b90101e070b5df790f8c4698",
+    "src/ai_orchestrator/api/approvals.py": "41f002bf2e1cf1f98e705fe5b49747766449df03bcf4aa14588d3beacd9479d9",
+    "src/ai_orchestrator/api/business_workflows.py": "cce126fbc94d3839e4ce917ce0187f5da89180f797b8659cc8401739a1bd2c0f",
+    "src/ai_orchestrator/api/console.py": "f4eead61269bf61b58b4fbb80a26eb0fbe46b23346c4d147587ccdfe92746900",
+    "src/ai_orchestrator/api/construction.py": "47021702a9644d4b60449f5530b5e4a9bd5476f90565d300edf3e431f9bc6924",
+    "src/ai_orchestrator/api/deps.py": "5e5499adcb5b7b82fcf0efbac8b2a2210e3e708eb71c81af142efe081b9fa1db",
+    "src/ai_orchestrator/api/documents.py": "9e21203d5e19efd73028d006fcea43e5f59cf1faf710617c8bd9a5d69e58f61e",
+    "src/ai_orchestrator/api/events_audit.py": "4ef550fe6d5b1ad8c65807d45b573c0ea294394331661cda0b25418a1e8c25de",
+    "src/ai_orchestrator/api/health.py": "4e58764986ee87df71ea6d9776add5fe4cddc2b16b82c068e62e23fb6fc35a1f",
+    "src/ai_orchestrator/api/organizations.py": "894d43dfa16b4296f71e10a0d9b7fe5261eb5ab3fec6594b362076c466f17367",
+    "src/ai_orchestrator/api/runtime.py": "122de047eb4e8307daf79321fcc1d02865cb1930952662078f5a4675309d4900",
+    "src/ai_orchestrator/api/scenarios.py": "0fc0c2ec9bc4d5a8d38e59c3aa1b13a02fc35fee57e174c3760f4e268517f914",
+    "src/ai_orchestrator/api/skills_tools.py": "d25ab3f354997206d5e55f248d27037fd12863525b678d9696bcc07968037749",
+    "src/ai_orchestrator/api/stream.py": "ad7dcf74b3dc36250af0e4be131acb023e890c7e346ff694a4d150211a53d03e",
+    "src/ai_orchestrator/api/stream_pump.py": "1fb62dc68d97318804cd843ede10e562cc748807958bc47c9d704ed928c72fd8",
+    "src/ai_orchestrator/api/tasks.py": "d7671d2c826bc0ffde61d40ced356c93cee682ad6fbb04a1741704fb515ea70d",
+    "src/ai_orchestrator/domain/business_workflow.py": "5639015d31c2caca3641775017c7d2c62596d2b6abcf47aca925f9fb503ca505",
+    "src/ai_orchestrator/domain/hr_templates.py": "7a016c1a0cc49103d079849b9c11085d680e2af640381c7ab5aa2c4aedb5736b",
+    "src/ai_orchestrator/tools/builtin.py": "6820af2b6d515090ec245e072da3a68f1a20841cd1927d2ca050f75a4dff58b5"
+  },
+  "routes": [
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 47,
+      "method": "GET",
+      "declared_path": "/templates",
+      "handler": "templates"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 59,
+      "method": "GET",
+      "declared_path": "",
+      "handler": "listing"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 90,
+      "method": "POST",
+      "declared_path": "",
+      "handler": "draft"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 104,
+      "method": "GET",
+      "declared_path": "/workflows/{root_id}",
+      "handler": "workflow"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 163,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/inputs",
+      "handler": "inputs"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 214,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/run",
+      "handler": "run"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 226,
+      "method": "GET",
+      "declared_path": "/{draft_id}",
+      "handler": "get"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 231,
+      "method": "PATCH",
+      "declared_path": "/{draft_id}",
+      "handler": "edit"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agent_blueprints.py",
+      "line": 241,
+      "method": "POST",
+      "declared_path": "/{draft_id}/submit",
+      "handler": "submit"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 150,
+      "method": "POST",
+      "declared_path": "/definitions",
+      "handler": "create_definition"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 182,
+      "method": "POST",
+      "declared_path": "",
+      "handler": "create_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 208,
+      "method": "GET",
+      "declared_path": "",
+      "handler": "list_agents"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 221,
+      "method": "GET",
+      "declared_path": "/discover",
+      "handler": "discover_agents"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 246,
+      "method": "GET",
+      "declared_path": "/{agent_id}",
+      "handler": "get_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 252,
+      "method": "PATCH",
+      "declared_path": "/{agent_id}",
+      "handler": "update_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 301,
+      "method": "POST",
+      "declared_path": "/{agent_id}/activate",
+      "handler": "activate_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 306,
+      "method": "POST",
+      "declared_path": "/{agent_id}/pause",
+      "handler": "pause_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 311,
+      "method": "POST",
+      "declared_path": "/{agent_id}/resume",
+      "handler": "resume_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 316,
+      "method": "POST",
+      "declared_path": "/{agent_id}/suspend",
+      "handler": "suspend_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 321,
+      "method": "POST",
+      "declared_path": "/{agent_id}/retire",
+      "handler": "retire_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 327,
+      "method": "GET",
+      "declared_path": "/{agent_id}/capabilities",
+      "handler": "get_capabilities"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 391,
+      "method": "GET",
+      "declared_path": "/{agent_id}/health",
+      "handler": "get_health"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 425,
+      "method": "POST",
+      "declared_path": "/{agent_id}/skills",
+      "handler": "bind_skill"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 461,
+      "method": "POST",
+      "declared_path": "/{agent_id}/tools",
+      "handler": "bind_tool"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 507,
+      "method": "DELETE",
+      "declared_path": "/{agent_id}/tools/{tool_id}",
+      "handler": "revoke_tool"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 520,
+      "method": "POST",
+      "declared_path": "/{agent_id}/relationships",
+      "handler": "link_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents.py",
+      "line": 543,
+      "method": "GET",
+      "declared_path": "/{agent_id}/children",
+      "handler": "list_children"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents_control.py",
+      "line": 154,
+      "method": "GET",
+      "declared_path": "/agents/{agent_id}/control",
+      "handler": "agent_control"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents_control.py",
+      "line": 165,
+      "method": "POST",
+      "declared_path": "/agents/{agent_id}/kill",
+      "handler": "kill_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents_control.py",
+      "line": 231,
+      "method": "POST",
+      "declared_path": "/agents/{agent_id}/revive",
+      "handler": "revive_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/agents_control.py",
+      "line": 340,
+      "method": "GET",
+      "declared_path": "/ai-decisions",
+      "handler": "list_decisions"
+    },
+    {
+      "file": "src/ai_orchestrator/api/approvals.py",
+      "line": 65,
+      "method": "GET",
+      "declared_path": "/approvals",
+      "handler": "list_approvals"
+    },
+    {
+      "file": "src/ai_orchestrator/api/approvals.py",
+      "line": 94,
+      "method": "GET",
+      "declared_path": "/approvals/stats",
+      "handler": "approval_stats"
+    },
+    {
+      "file": "src/ai_orchestrator/api/approvals.py",
+      "line": 132,
+      "method": "GET",
+      "declared_path": "/approvals/{approval_id}",
+      "handler": "get_approval"
+    },
+    {
+      "file": "src/ai_orchestrator/api/approvals.py",
+      "line": 234,
+      "method": "POST",
+      "declared_path": "/approvals/{approval_id}/approve",
+      "handler": "approve"
+    },
+    {
+      "file": "src/ai_orchestrator/api/approvals.py",
+      "line": 274,
+      "method": "POST",
+      "declared_path": "/approvals/{approval_id}/reject",
+      "handler": "reject"
+    },
+    {
+      "file": "src/ai_orchestrator/api/approvals.py",
+      "line": 289,
+      "method": "POST",
+      "declared_path": "/approvals/{approval_id}/request-information",
+      "handler": "request_information"
+    },
+    {
+      "file": "src/ai_orchestrator/api/approvals.py",
+      "line": 329,
+      "method": "GET",
+      "declared_path": "/tasks/{task_id}/approvals",
+      "handler": "approvals_for_task"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 45,
+      "method": "POST",
+      "declared_path": "/workflows/hiring",
+      "handler": "hiring"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 64,
+      "method": "POST",
+      "declared_path": "/workflows/procurement",
+      "handler": "procurement"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 81,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/revisions",
+      "handler": "propose_revision"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 101,
+      "method": "GET",
+      "declared_path": "/workflows",
+      "handler": "listing"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 146,
+      "method": "POST",
+      "declared_path": "/workflows/examples",
+      "handler": "example"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 154,
+      "method": "GET",
+      "declared_path": "/workflows/{root_id}",
+      "handler": "detail"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 161,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/run",
+      "handler": "run"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 190,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/evidence",
+      "handler": "evidence"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 235,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/retry",
+      "handler": "retry"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 294,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/feedback",
+      "handler": "feedback"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 310,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/feedback/confirm",
+      "handler": "confirm_feedback"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 337,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/actions/{action_id}/reconcile",
+      "handler": "reconcile_action"
+    },
+    {
+      "file": "src/ai_orchestrator/api/business_workflows.py",
+      "line": 376,
+      "method": "POST",
+      "declared_path": "/workflows/{root_id}/feedback/answer",
+      "handler": "answer_feedback"
+    },
+    {
+      "file": "src/ai_orchestrator/api/console.py",
+      "line": 30,
+      "method": "GET",
+      "declared_path": "/console/context",
+      "handler": "console_context"
+    },
+    {
+      "file": "src/ai_orchestrator/api/console.py",
+      "line": 57,
+      "method": "GET",
+      "declared_path": "/console/catalogue",
+      "handler": "console_catalogue"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 129,
+      "method": "GET",
+      "declared_path": "/portfolio",
+      "handler": "portfolio"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 143,
+      "method": "GET",
+      "declared_path": "/hiring",
+      "handler": "hiring"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 162,
+      "method": "GET",
+      "declared_path": "/departments",
+      "handler": "departments"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 184,
+      "method": "GET",
+      "declared_path": "/ceo/work",
+      "handler": "ceo_work"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 213,
+      "method": "GET",
+      "declared_path": "/projects",
+      "handler": "projects"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 244,
+      "method": "GET",
+      "declared_path": "/projects/{project_id}",
+      "handler": "project"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 267,
+      "method": "GET",
+      "declared_path": "/projects/{project_id}/workspace",
+      "handler": "workspace"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 289,
+      "method": "GET",
+      "declared_path": "/projects/{project_id}/wbs",
+      "handler": "breakdown"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 307,
+      "method": "GET",
+      "declared_path": "/projects/{project_id}/activity",
+      "handler": "activity"
+    },
+    {
+      "file": "src/ai_orchestrator/api/construction.py",
+      "line": 385,
+      "method": "GET",
+      "declared_path": "/approvals/inbox",
+      "handler": "inbox"
+    },
+    {
+      "file": "src/ai_orchestrator/api/documents.py",
+      "line": 205,
+      "method": "GET",
+      "declared_path": "/documents/summary",
+      "handler": "summary"
+    },
+    {
+      "file": "src/ai_orchestrator/api/documents.py",
+      "line": 225,
+      "method": "GET",
+      "declared_path": "/documents",
+      "handler": "register"
+    },
+    {
+      "file": "src/ai_orchestrator/api/documents.py",
+      "line": 259,
+      "method": "GET",
+      "declared_path": "/documents/{document_id}",
+      "handler": "one"
+    },
+    {
+      "file": "src/ai_orchestrator/api/documents.py",
+      "line": 267,
+      "method": "POST",
+      "declared_path": "/documents/{document_id}/versions",
+      "handler": "issue"
+    },
+    {
+      "file": "src/ai_orchestrator/api/documents.py",
+      "line": 297,
+      "method": "POST",
+      "declared_path": "/documents/{document_id}/distributions",
+      "handler": "send"
+    },
+    {
+      "file": "src/ai_orchestrator/api/documents.py",
+      "line": 342,
+      "method": "POST",
+      "declared_path": "/documents/{document_id}/acknowledge",
+      "handler": "read"
+    },
+    {
+      "file": "src/ai_orchestrator/api/events_audit.py",
+      "line": 39,
+      "method": "GET",
+      "declared_path": "/events",
+      "handler": "list_events"
+    },
+    {
+      "file": "src/ai_orchestrator/api/events_audit.py",
+      "line": 78,
+      "method": "GET",
+      "declared_path": "/events/stats",
+      "handler": "event_stats"
+    },
+    {
+      "file": "src/ai_orchestrator/api/events_audit.py",
+      "line": 112,
+      "method": "GET",
+      "declared_path": "/events/{event_id}",
+      "handler": "get_event"
+    },
+    {
+      "file": "src/ai_orchestrator/api/events_audit.py",
+      "line": 127,
+      "method": "GET",
+      "declared_path": "/audit",
+      "handler": "list_audit"
+    },
+    {
+      "file": "src/ai_orchestrator/api/events_audit.py",
+      "line": 192,
+      "method": "GET",
+      "declared_path": "/audit/denials",
+      "handler": "denial_summary"
+    },
+    {
+      "file": "src/ai_orchestrator/api/events_audit.py",
+      "line": 207,
+      "method": "GET",
+      "declared_path": "/governance/summary",
+      "handler": "governance_summary"
+    },
+    {
+      "file": "src/ai_orchestrator/api/events_audit.py",
+      "line": 288,
+      "method": "GET",
+      "declared_path": "/governance/spend",
+      "handler": "spend_by_agent"
+    },
+    {
+      "file": "src/ai_orchestrator/api/health.py",
+      "line": 71,
+      "method": "GET",
+      "declared_path": "/health",
+      "handler": "health"
+    },
+    {
+      "file": "src/ai_orchestrator/api/health.py",
+      "line": 77,
+      "method": "GET",
+      "declared_path": "/ready",
+      "handler": "ready"
+    },
+    {
+      "file": "src/ai_orchestrator/api/health.py",
+      "line": 114,
+      "method": "GET",
+      "declared_path": "/metrics",
+      "handler": "metrics"
+    },
+    {
+      "file": "src/ai_orchestrator/api/health.py",
+      "line": 131,
+      "method": "GET",
+      "declared_path": "/system/secrets",
+      "handler": "secret_status"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 104,
+      "method": "POST",
+      "declared_path": "/organizations",
+      "handler": "create_organization"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 140,
+      "method": "GET",
+      "declared_path": "/organizations/{organization_id}",
+      "handler": "get_organization"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 151,
+      "method": "PATCH",
+      "declared_path": "/organizations/{organization_id}",
+      "handler": "update_organization"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 167,
+      "method": "POST",
+      "declared_path": "/org-units",
+      "handler": "create_org_unit"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 185,
+      "method": "GET",
+      "declared_path": "/org-units/{unit_id}",
+      "handler": "get_org_unit"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 193,
+      "method": "GET",
+      "declared_path": "/org-units/{unit_id}/tree",
+      "handler": "get_org_unit_tree"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 221,
+      "method": "GET",
+      "declared_path": "/org-units",
+      "handler": "list_org_units"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 232,
+      "method": "POST",
+      "declared_path": "/org-units/{unit_id}/move",
+      "handler": "move_org_unit"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 250,
+      "method": "POST",
+      "declared_path": "/roles",
+      "handler": "create_role"
+    },
+    {
+      "file": "src/ai_orchestrator/api/organizations.py",
+      "line": 279,
+      "method": "GET",
+      "declared_path": "/roles",
+      "handler": "list_roles"
+    },
+    {
+      "file": "src/ai_orchestrator/api/runtime.py",
+      "line": 77,
+      "method": "GET",
+      "declared_path": "/model-profiles",
+      "handler": "list_model_profiles"
+    },
+    {
+      "file": "src/ai_orchestrator/api/runtime.py",
+      "line": 121,
+      "method": "POST",
+      "declared_path": "/model/call",
+      "handler": "call_model"
+    },
+    {
+      "file": "src/ai_orchestrator/api/runtime.py",
+      "line": 161,
+      "method": "GET",
+      "declared_path": "/model/usage",
+      "handler": "model_usage"
+    },
+    {
+      "file": "src/ai_orchestrator/api/runtime.py",
+      "line": 220,
+      "method": "POST",
+      "declared_path": "/tools/invoke",
+      "handler": "invoke_tool"
+    },
+    {
+      "file": "src/ai_orchestrator/api/runtime.py",
+      "line": 268,
+      "method": "POST",
+      "declared_path": "/memory",
+      "handler": "write_memory"
+    },
+    {
+      "file": "src/ai_orchestrator/api/runtime.py",
+      "line": 302,
+      "method": "POST",
+      "declared_path": "/memory/search",
+      "handler": "search_memory"
+    },
+    {
+      "file": "src/ai_orchestrator/api/runtime.py",
+      "line": 340,
+      "method": "GET",
+      "declared_path": "/memory/stats",
+      "handler": "memory_stats"
+    },
+    {
+      "file": "src/ai_orchestrator/api/scenarios.py",
+      "line": 22,
+      "method": "GET",
+      "declared_path": "/scenarios",
+      "handler": "list_scenarios"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 126,
+      "method": "POST",
+      "declared_path": "/skills",
+      "handler": "create_skill"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 169,
+      "method": "POST",
+      "declared_path": "/skills/proposals",
+      "handler": "propose_skill"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 223,
+      "method": "POST",
+      "declared_path": "/skills/{skill_id}/publish",
+      "handler": "publish_skill"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 356,
+      "method": "GET",
+      "declared_path": "/skills",
+      "handler": "list_skills"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 374,
+      "method": "GET",
+      "declared_path": "/skills/{skill_id}",
+      "handler": "get_skill"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 401,
+      "method": "POST",
+      "declared_path": "/tools",
+      "handler": "create_tool"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 453,
+      "method": "GET",
+      "declared_path": "/tools",
+      "handler": "list_tools"
+    },
+    {
+      "file": "src/ai_orchestrator/api/skills_tools.py",
+      "line": 470,
+      "method": "GET",
+      "declared_path": "/tools/{tool_id}",
+      "handler": "get_tool"
+    },
+    {
+      "file": "src/ai_orchestrator/api/stream.py",
+      "line": 215,
+      "method": "GET",
+      "declared_path": "/stream",
+      "handler": "stream"
+    },
+    {
+      "file": "src/ai_orchestrator/api/stream.py",
+      "line": 295,
+      "method": "GET",
+      "declared_path": "/stream/status",
+      "handler": "stream_status"
+    },
+    {
+      "file": "src/ai_orchestrator/api/stream.py",
+      "line": 356,
+      "method": "GET",
+      "declared_path": "/ui/assets/{filename}",
+      "handler": "ui_font"
+    },
+    {
+      "file": "src/ai_orchestrator/api/stream.py",
+      "line": 374,
+      "method": "GET",
+      "declared_path": "/ui",
+      "handler": "ui"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 165,
+      "method": "POST",
+      "declared_path": "/tasks",
+      "handler": "create_task"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 324,
+      "method": "GET",
+      "declared_path": "/tasks",
+      "handler": "list_tasks"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 345,
+      "method": "GET",
+      "declared_path": "/tasks/{task_id}",
+      "handler": "get_task"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 352,
+      "method": "POST",
+      "declared_path": "/tasks/{task_id}/cancel",
+      "handler": "cancel_task"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 422,
+      "method": "POST",
+      "declared_path": "/tasks/{task_id}/dependencies",
+      "handler": "add_dependency"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 435,
+      "method": "POST",
+      "declared_path": "/tasks/{task_id}/delegate",
+      "handler": "delegate_task"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 493,
+      "method": "GET",
+      "declared_path": "/tasks/{task_id}/delegations",
+      "handler": "list_delegations"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 516,
+      "method": "GET",
+      "declared_path": "/executions/{execution_id}",
+      "handler": "get_execution"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 558,
+      "method": "GET",
+      "declared_path": "/tasks/{task_id}/executions",
+      "handler": "list_executions"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 581,
+      "method": "POST",
+      "declared_path": "/tasks/{task_id}/run",
+      "handler": "run_task_now"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 622,
+      "method": "POST",
+      "declared_path": "/tasks/{task_id}/retry",
+      "handler": "retry_task"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 677,
+      "method": "GET",
+      "declared_path": "/tasks/{task_id}/report",
+      "handler": "get_task_report"
+    },
+    {
+      "file": "src/ai_orchestrator/api/tasks.py",
+      "line": 706,
+      "method": "GET",
+      "declared_path": "/tasks/{task_id}/timeline",
+      "handler": "get_task_timeline"
+    }
+  ],
+  "route_declarations": 123,
+  "built_in_tools": [
+    {
+      "name": "calculator",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 605
+    },
+    {
+      "name": "safe_web_search",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 629
+    },
+    {
+      "name": "document_reader",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 661
+    },
+    {
+      "name": "internal_database_query",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 684
+    },
+    {
+      "name": "delegate_to_agent",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 722
+    },
+    {
+      "name": "call_a2a_agent",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 756
+    },
+    {
+      "name": "ask_agent",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 801
+    },
+    {
+      "name": "write_report",
+      "file": "src/ai_orchestrator/tools/builtin.py",
+      "line": 843
+    }
+  ],
+  "ordered_business_stages": {
+    "HIRING": [
+      {
+        "key": "brief",
+        "owner": "Executive Agent",
+        "kind": "input"
+      },
+      {
+        "key": "headcount_review",
+        "owner": "Executive Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "jd",
+        "owner": "HR Agent",
+        "kind": "model"
+      },
+      {
+        "key": "jd_review",
+        "owner": "HR Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "rubric",
+        "owner": "HR Agent",
+        "kind": "model"
+      },
+      {
+        "key": "rubric_review",
+        "owner": "HR Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "test_mail",
+        "owner": "HR Agent",
+        "kind": "mail_send"
+      },
+      {
+        "key": "cv_intake",
+        "owner": "HR Agent",
+        "kind": "mail_read"
+      },
+      {
+        "key": "scoring",
+        "owner": "HR Agent",
+        "kind": "model"
+      },
+      {
+        "key": "hr_review",
+        "owner": "HR Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "interview_technical",
+        "owner": "Design Agent",
+        "kind": "input"
+      },
+      {
+        "key": "interview_hr",
+        "owner": "HR Agent",
+        "kind": "input"
+      },
+      {
+        "key": "selection",
+        "owner": "HR Agent",
+        "kind": "model"
+      },
+      {
+        "key": "ceo_review",
+        "owner": "Executive Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "offer",
+        "owner": "HR Agent",
+        "kind": "model"
+      },
+      {
+        "key": "offer_review",
+        "owner": "Executive Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "offer_acceptance",
+        "owner": "HR Agent",
+        "kind": "input"
+      },
+      {
+        "key": "onboarding_plan",
+        "owner": "HR Agent",
+        "kind": "model"
+      },
+      {
+        "key": "onboarding_setup",
+        "owner": "HR Agent",
+        "kind": "onboard"
+      },
+      {
+        "key": "onboarding_review",
+        "owner": "HR Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "close",
+        "owner": "Executive Agent",
+        "kind": "close"
+      }
+    ],
+    "PROCUREMENT": [
+      {
+        "key": "brief",
+        "owner": "Executive Agent",
+        "kind": "input"
+      },
+      {
+        "key": "plan",
+        "owner": "Procurement Agent",
+        "kind": "model"
+      },
+      {
+        "key": "rfq",
+        "owner": "Procurement Agent",
+        "kind": "model"
+      },
+      {
+        "key": "qualification",
+        "owner": "Procurement Agent",
+        "kind": "model"
+      },
+      {
+        "key": "quality",
+        "owner": "Quality Agent",
+        "kind": "model"
+      },
+      {
+        "key": "material_review",
+        "owner": "Quality Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "comparison",
+        "owner": "Procurement Agent",
+        "kind": "model"
+      },
+      {
+        "key": "negotiation",
+        "owner": "Procurement Agent",
+        "kind": "model"
+      },
+      {
+        "key": "award_review",
+        "owner": "Executive Agent",
+        "kind": "gate"
+      },
+      {
+        "key": "po",
+        "owner": "Procurement Agent",
+        "kind": "record"
+      },
+      {
+        "key": "delivery",
+        "owner": "Procurement Agent",
+        "kind": "input"
+      },
+      {
+        "key": "three_way_match",
+        "owner": "Finance Agent",
+        "kind": "match"
+      },
+      {
+        "key": "close",
+        "owner": "Executive Agent",
+        "kind": "close"
+      }
+    ]
+  },
+  "hr_template_keys": [
+    "recruitment",
+    "performance",
+    "payroll",
+    "offboarding"
+  ]
+}

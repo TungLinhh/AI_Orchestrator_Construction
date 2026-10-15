@@ -48,8 +48,22 @@ from __future__ import annotations
 import ast
 import asyncio
 import collections
+import json
 import pathlib
 import sys
+
+
+def _py_str(value: str) -> str:
+    """Render a Python string literal the way `ruff format` keeps it.
+
+    `repr()` prefers single quotes, which the formatter rewrites to double
+    quotes on the next `make lint`, so a generated file never converges.
+    Constraint expressions contain single quotes (SQL literals) and no double
+    quotes, so a JSON-style double-quoted literal is stable under the
+    formatter.
+    """
+    return json.dumps(value, ensure_ascii=False)
+
 
 MODELS = pathlib.Path("src/ai_orchestrator/persistence")
 
@@ -187,7 +201,7 @@ def _wrap_string(value: str, indent: str, width: int = 92) -> list[str]:
     against `pg_get_constraintdef`.
     """
     if len(value) + len(indent) <= width:
-        return [f"{indent}{value!r},"]
+        return [f"{indent}{_py_str(value)},"]
     chunks: list[str] = []
     remaining = value
     while len(remaining) + len(indent) > width:
@@ -199,7 +213,8 @@ def _wrap_string(value: str, indent: str, width: int = 92) -> list[str]:
         chunks.append(remaining[:cut])
         remaining = remaining[cut:]
     chunks.append(remaining)
-    return [f"{indent}{chunk!r}" for chunk in chunks[:-1]] + [f"{indent}{chunks[-1]!r},"]
+    head = [f"{indent}{_py_str(chunk)}" for chunk in chunks[:-1]]
+    return [*head, f"{indent}{_py_str(chunks[-1])},"]
 
 
 def _parse_index(definition: str) -> tuple:
@@ -420,7 +435,7 @@ async def main() -> int:
             rendered = [opener, *body, "    )"]
             if stmt is None:
                 anchor = _after_tablename(node)
-                edits.append((anchor, anchor, ["", *rendered]))
+                edits.append((anchor + 1, anchor, ["", *rendered]))
             else:
                 edits.append((stmt.lineno, stmt.end_lineno or stmt.lineno, rendered))
             total += 1

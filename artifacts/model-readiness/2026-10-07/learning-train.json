@@ -1,0 +1,107 @@
+{
+  "synthetic": true,
+  "runtime": "live",
+  "evaluator_protocol": 2,
+  "corpus_sha256": "019af15ab0b22a6250eb9c8c1a71d6a0bdc638f44ed7db414541656b441200d3",
+  "model_quality_measured": true,
+  "measurements": {
+    "real_model_calls": 3,
+    "fake_model_calls": 0,
+    "provider_error_responses": 0,
+    "failed_executions": 0,
+    "provider_http_rejections": 0,
+    "fallback_calls": 3,
+    "tokens": 7651,
+    "cost_usd": "0.000000",
+    "models": [
+      "inclusionai/ling-3.0-flash-sante:free"
+    ],
+    "p50_task_s": 4.848,
+    "p95_task_s": 18.229
+  },
+  "candidate_lessons_used": false,
+  "production_ready": false,
+  "external_actions_executed": false,
+  "passed": 2,
+  "total": 2,
+  "results": [
+    {
+      "case_id": "hr-normal-v1",
+      "output_schema_sha256": "7d5aa706068b29a3d14da2ebf2e761acf5c7d0a587eb4217ad649675427ac991",
+      "department": "hr",
+      "split": "train",
+      "variant": "normal",
+      "task_id": "tsk_01m4b6ksfn6jswmwjpyrhds62b",
+      "execution_status": "completed",
+      "last_error": null,
+      "failure_category": null,
+      "passed": true,
+      "failures": [],
+      "duration_s": 4.848,
+      "output": {
+        "values": {
+          "score": 100
+        },
+        "decision": "needs_review",
+        "findings": [
+          {
+            "source_id": "mock:hr:evidence",
+            "conclusion": "Both required sources present; MEP rubric confirms six criteria all verified good per evidence source.",
+            "evidence_quote": "MEP rubric: six verified criteria, all good, weights 25/20/20/15/10/10."
+          }
+        ],
+        "missing_inputs": [],
+        "external_actions_executed": false
+      },
+      "candidate_lesson_count": 0,
+      "agent_id": "agt_01m3ycsf0nndemdwckc8jemx5s",
+      "lesson_version_id": "sklv_01m4b6ky2qfgzp8rn0evf2arp5",
+      "lesson_published": false
+    },
+    {
+      "case_id": "procurement-normal-v1",
+      "output_schema_sha256": "e5529a5954d92dcf12a1a4647707442e60df276f1ae5378d4e66885b72414184",
+      "department": "procurement",
+      "split": "train",
+      "variant": "normal",
+      "task_id": "tsk_01m4b6ky3dthm29ngc59k899kv",
+      "execution_status": "completed",
+      "last_error": null,
+      "failure_category": null,
+      "passed": true,
+      "failures": [],
+      "duration_s": 18.229,
+      "output": {
+        "values": {
+          "winner": "NCC-MOCK-A",
+          "total_vnd": 1200000
+        },
+        "decision": "needs_review",
+        "findings": [
+          {
+            "source_id": "mock:procurement:evidence",
+            "conclusion": "NCC-MOCK-A is the cheapest certified/valid supplier for 10 PIPE, total 1,200,000 VND; NCC-MOCK-C excluded due to lacking certification/legal validity.",
+            "evidence_quote": "BOQ: 10 PIPE. NCC-MOCK-A certified/legal valid, unit price 120000 VND. NCC-MOCK-B certified/legal valid, unit price 130000 VND. NCC-MOCK-C legal invalid, uncertified, unit price 90000 VND."
+          },
+          {
+            "source_id": "mock:procurement:policy",
+            "conclusion": "With all required sources present, the evaluation status is needs_review pending human approval of materials/DOA before purchase.",
+            "evidence_quote": "Complete sources yield needs_review"
+          }
+        ],
+        "missing_inputs": [],
+        "external_actions_executed": false
+      },
+      "candidate_lesson_count": 0,
+      "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+      "lesson_version_id": "sklv_01m4b6mgs7h90d0fh4fbbx46hy",
+      "lesson_published": false
+    }
+  ],
+  "limitations": [
+    "Synthetic gold answers require department expert review.",
+    "Reference playback does not evaluate model reasoning.",
+    "No live integration, production approval or shadow promotion evidence.",
+    "Model call counts cover recorded responses; HTTP rejections have no response usage."
+  ]
+}

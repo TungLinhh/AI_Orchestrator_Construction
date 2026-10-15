@@ -1,0 +1,59 @@
+{
+  "source_sha256": "e3d503402715fbaebb6ffead92bd9c403d36ce470c9eb8949d1a9c945ac40287",
+  "configured_order": [
+    "thinkingmachines/inkling-small:free",
+    "inclusionai/ling-3.0-flash-sante:free",
+    "dots-studio/dots-3-note-preview:free"
+  ],
+  "first_usable_preference": [
+    "inclusionai/ling-3.0-flash-sante:free",
+    "dots-studio/dots-3-note-preview:free"
+  ],
+  "scope": "Availability and synthetic artifact checks only",
+  "summary": [
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "passed": 0,
+      "total": 6,
+      "successful_elapsed_ms": [],
+      "failure_details": [
+        "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+        "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+        "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+        "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+        "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps",
+        "no usable model for profile 'thinkingmachines/inkling-small:free': openrouter/thinkingmachines/inkling-small:free: openrouter/thinkingmachines/inkling-small:free: model access denied (403): thinkingmachines/inkling-small:free is only available on agentic harnesses. Try plugging it into a coding agent or productivity app listed on https://openrouter.ai/apps"
+      ]
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "passed": 3,
+      "total": 6,
+      "successful_elapsed_ms": [
+        2693,
+        1984,
+        2580
+      ],
+      "failure_details": [
+        "no usable model for profile 'inclusionai/ling-3.0-flash-sante:free': openrouter/inclusionai/ling-3.0-flash-sante:free: rate limited",
+        "no usable model for profile 'inclusionai/ling-3.0-flash-sante:free': openrouter/inclusionai/ling-3.0-flash-sante:free: rate limited",
+        "no usable model for profile 'inclusionai/ling-3.0-flash-sante:free': openrouter/inclusionai/ling-3.0-flash-sante:free: rate limited"
+      ]
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "passed": 3,
+      "total": 6,
+      "successful_elapsed_ms": [
+        6343,
+        5676,
+        11522
+      ],
+      "failure_details": [
+        "no usable model for profile 'dots-studio/dots-3-note-preview:free': openrouter/dots-studio/dots-3-note-preview:free: openrouter/dots-studio/dots-3-note-preview:free: inconsistent completion/reasoning usage",
+        "artifact failed independent evidence/arithmetic checks",
+        "no usable model for profile 'dots-studio/dots-3-note-preview:free': openrouter/dots-studio/dots-3-note-preview:free: openrouter/dots-studio/dots-3-note-preview:free: inconsistent completion/reasoning usage"
+      ]
+    }
+  ]
+}

@@ -266,7 +266,10 @@ $("runBtn").onclick = async () => {
     // screen did nothing: the task was created with nobody to do it.
     const chosen = $("scenario").value;
     const scenario = (state.scenarios || []).find((sc) => sc.key === chosen);
-    const made = await apiPost("/tasks", {
+    const made = window.SourceUI ? await window.SourceUI.create({
+      title: (scenario ? scenario.title : goal).slice(0, 60), goal,
+      owner_agent_id: $("agent").value || null,
+    }) : await apiPost("/tasks", {
       title: (scenario ? scenario.title : goal).slice(0, 60),
       goal,
       task_type: $("taskType").value,
@@ -286,6 +289,12 @@ $("runBtn").onclick = async () => {
         : {}),
     });
     const taskId = made.task_id || made.id;
+    if (made.status === "waiting_for_input") {
+      notice(tr("source.waiting", "Task created; select readable sources before running."), true);
+      go(`#/give/${encodeURIComponent(taskId)}`);
+      await route();
+      return;
+    }
 
     // **Then actually run it. This is the button's whole job and it was not doing it.**
     //

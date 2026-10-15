@@ -361,14 +361,17 @@ def _to_ai_response(
     if not parts and response.text:
         parts.append(text_part(content=response.text))
 
+    # The framework's token ceiling includes rejected completions too. The
+    # ledger still records each attempt under its actual model separately.
+    attempts = [*response.rejected_responses, response]
     return ai_response(
         parts=parts,
         model_name=response.model_used or "unknown",
         usage=request_usage(
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-            cache_read_tokens=response.usage.cache_read_tokens,
-            cache_write_tokens=response.usage.cache_write_tokens,
+            input_tokens=sum(r.usage.input_tokens for r in attempts),
+            output_tokens=sum(r.usage.output_tokens + r.usage.reasoning_tokens for r in attempts),
+            cache_read_tokens=sum(r.usage.cache_read_tokens for r in attempts),
+            cache_write_tokens=sum(r.usage.cache_write_tokens for r in attempts),
         ),
         finish_reason=response.finish_reason or "stop",
         provider_name=response.provider or None,
@@ -575,7 +578,9 @@ async def run_with_pydantic_ai(
             cache_read_tokens=usage.cache_read_tokens,
             cache_write_tokens=usage.cache_write_tokens,
         ),
-        model_used=str(getattr(run, "model_name", "") or ""),
+        # AgentRunResult owns the transcript; the serving model is on its last
+        # response. Reading a nonexistent run.model_name erased fallback provenance.
+        model_used=run.response.model_name or "",
         follow_up_actions=_proposals_from_run(run),
     )
 
@@ -666,7 +671,16 @@ class _RecordingGateway:
         return getattr(self._inner, name)
 
     async def complete(self, request: Any) -> Any:
-        response = await self._inner.complete(request)
+        from ai_orchestrator.models.gateway import GatewayUnavailable
+
+        try:
+            response = await self._inner.complete(request)
+        except GatewayUnavailable as exc:
+            for rejected in exc.responses:
+                await self._record(rejected)
+            raise
+        for rejected in response.rejected_responses:
+            await self._record(rejected)
         await self._record(response)
         return response
 

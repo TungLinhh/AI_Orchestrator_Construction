@@ -1,0 +1,31 @@
+{
+  "passed": false,
+  "root": "tsk_01m4b6awmn2dwn50sj7sfjg9s5",
+  "scope": "paused_synthetic_feedback_probe",
+  "human_approval": false,
+  "first_assessment": {
+    "error": "no permitted model candidate for profile 'primary' (classification=internal); rejected: ['openrouter/cohere/north-mini-code:free: classification internal exceeds the effective ceiling public', 'openrouter/dots-studio/dots-3-note-preview:free: classification internal exceeds the effective ceiling public', 'openrouter/inclusionai/ling-3.0-flash-sante:free: classification internal exceeds the effective ceiling public', 'openrouter/nvidia/nemotron-3.5-lightning:free: classification internal exceeds the effective ceiling public', 'openrouter/poolside/laguna-s-2.1:free: classification internal exceeds the effective ceiling public', 'openrouter/thinkingmachines/inkling-small:free: classification internal exceeds the effective ceiling public']",
+    "state": "failed",
+    "message": "Boss yêu cầu tuyển kỹ sư MEP có kinh nghiệm commissioning. Hãy lập kế hoạch cụ thể và hỏi lại nếu brief chưa đủ thông tin. Không giả lập phỏng vấn, quyết định con người hay onboarding đã xong.",
+    "revision": 1,
+    "requested_at": "2026-10-07T12:45:10.026220+00:00",
+    "requested_by": "feedback-probe-system",
+    "assessment_task_id": "tsk_01m4b6ax19wmmebrwpcv4tpc04"
+  },
+  "feedback": {
+    "error": "no permitted model candidate for profile 'primary' (classification=internal); rejected: ['openrouter/cohere/north-mini-code:free: classification internal exceeds the effective ceiling public', 'openrouter/dots-studio/dots-3-note-preview:free: classification internal exceeds the effective ceiling public', 'openrouter/inclusionai/ling-3.0-flash-sante:free: classification internal exceeds the effective ceiling public', 'openrouter/nvidia/nemotron-3.5-lightning:free: classification internal exceeds the effective ceiling public', 'openrouter/poolside/laguna-s-2.1:free: classification internal exceeds the effective ceiling public', 'openrouter/thinkingmachines/inkling-small:free: classification internal exceeds the effective ceiling public']",
+    "state": "failed",
+    "message": "Boss yêu cầu tuyển kỹ sư MEP có kinh nghiệm commissioning. Hãy lập kế hoạch cụ thể và hỏi lại nếu brief chưa đủ thông tin. Không giả lập phỏng vấn, quyết định con người hay onboarding đã xong.",
+    "revision": 1,
+    "requested_at": "2026-10-07T12:45:10.026220+00:00",
+    "requested_by": "feedback-probe-system",
+    "assessment_task_id": "tsk_01m4b6ax19wmmebrwpcv4tpc04"
+  },
+  "model_calls": 0,
+  "models": [],
+  "tokens": 0,
+  "provider_output_tokens": 0,
+  "provider_reasoning_tokens": 0,
+  "model_latency_ms": 0,
+  "cost_usd": "0"
+}

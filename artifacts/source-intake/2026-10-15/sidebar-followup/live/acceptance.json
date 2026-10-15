@@ -1,0 +1,150 @@
+{
+  "synthetic": true,
+  "passed": false,
+  "cases": [
+    {
+      "mode": "mock",
+      "passed": true,
+      "source_ids": [
+        "src_01m4ysf1z4peqx6qar5vqb5sn4"
+      ],
+      "task_id": "tsk_01m4ysf21w99bs96zmk5a74e0c",
+      "run": {
+        "task_id": "tsk_01m4ysf21w99bs96zmk5a74e0c",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4ysgp6yvg7492w5h1zrrne1",
+          "format": "docx",
+          "filename": "report-tsk_01m4ysf21w99bs96zmk5a74e0c.docx",
+          "byte_count": 37478,
+          "sha256": "a56b254a37c2e319e827f6cee01fed305646b1ec1c8dcf8e4771e9fb6be30070",
+          "manifest_id": "smf_01m4ysf2412d6w6ya0vk56yrk3"
+        },
+        {
+          "id": "art_01m4ysgp6z3z36etz8081q2590",
+          "format": "json",
+          "filename": "report-tsk_01m4ysf21w99bs96zmk5a74e0c.json",
+          "byte_count": 2587,
+          "sha256": "f5b72310da236921b8db5290afde30b3fe5ce70416afd334b1e6d0a2c77e1b96",
+          "manifest_id": "smf_01m4ysf2412d6w6ya0vk56yrk3"
+        },
+        {
+          "id": "art_01m4ysgp6z3z36etz8081q2591",
+          "format": "md",
+          "filename": "report-tsk_01m4ysf21w99bs96zmk5a74e0c.md",
+          "byte_count": 1606,
+          "sha256": "368c28f82dede98141f1a552cff35b1c37a035cab1cd541512b74de9b4630689",
+          "manifest_id": "smf_01m4ysf2412d6w6ya0vk56yrk3"
+        },
+        {
+          "id": "art_01m4ysgp6xwvwppzsstn7vvqkg",
+          "format": "pdf",
+          "filename": "report-tsk_01m4ysf21w99bs96zmk5a74e0c.pdf",
+          "byte_count": 25884,
+          "sha256": "4b9b3982590c022d7868abd9f1da4a4addad60c95adef92bcbf6a16318431d97",
+          "manifest_id": "smf_01m4ysf2412d6w6ya0vk56yrk3"
+        },
+        {
+          "id": "art_01m4ysgp6z3z36etz8081q258z",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4ysf21w99bs96zmk5a74e0c.xlsx",
+          "byte_count": 5998,
+          "sha256": "bbd768f1db21c5af088d2e8b9b94253c46f5408e7e2606b2f8a8fa9a04b4a2d4",
+          "manifest_id": "smf_01m4ysf2412d6w6ya0vk56yrk3"
+        },
+        {
+          "id": "art_01m4ysgp6z3z36etz8081q2592",
+          "format": "zip",
+          "filename": "report-tsk_01m4ysf21w99bs96zmk5a74e0c.zip",
+          "byte_count": 67839,
+          "sha256": "f742f51af68c6c3fd9a630775e77756de1401373ae92704f8d66760199eb01cd",
+          "manifest_id": "smf_01m4ysf2412d6w6ya0vk56yrk3"
+        }
+      ],
+      "output": {
+        "output": {
+          "summary": "So sánh ba báo giá Valve-1 (số lượng 12): A tổng 1.520.000 VNĐ (có chứng chỉ), B tổng 1.320.000 VNĐ (không chứng chỉ), C tổng 1.560.000 VNĐ (có chứng chỉ). Tiêu chí: bắt buộc certified=true, sau đó chọn tổng chi phí thấp nhất. Nhà thầu A thắng nhờ đáp ứng chứng chỉ và tổng chi phí thấp nhất trong nhóm đủ điều kiện.",
+          "findings": [
+            {
+              "text": "Báo giá A: đơn giá 120.000 VNĐ, phí giao hàng 80.000 VNĐ, certified=true → tổng = 12×120.000 + 80.000 = 1.520.000 VNĐ",
+              "source_id": "src_01m4ysf1z4peqx6qar5vqb5sn4",
+              "locator": "lines:1-4",
+              "quote": "A,Valve-1,12,120000,80000,true"
+            },
+            {
+              "text": "Báo giá B: đơn giá 110.000 VNĐ, phí giao hàng 0, certified=false → tổng = 12×110.000 = 1.320.000 VNĐ nhưng không đủ điều kiện do thiếu chứng chỉ",
+              "source_id": "src_01m4ysf1z4peqx6qar5vqb5sn4",
+              "locator": "lines:1-4",
+              "quote": "B,Valve-1,12,110000,0,false"
+            },
+            {
+              "text": "Báo giá C: đơn giá 130.000 VNĐ, phí giao hàng 0, certified=true → tổng = 12×130.000 = 1.560.000 VNĐ, đáp ứng chứng chỉ nhưng đắt hơn A",
+              "source_id": "src_01m4ysf1z4peqx6qar5vqb5sn4",
+              "locator": "lines:1-4",
+              "quote": "C,Valve-1,12,130000,0,true"
+            }
+          ],
+          "limitations": [
+            "Không có thông tin về điều khoản thanh toán, bảo hành, thời gian giao hàng cụ thể, hay năng lực tài chính của nhà thầu",
+            "Chỉ so sánh trên một mặt hàng Valve-1, chưa xem xét gói thầu rộng hơn"
+          ],
+          "winner": "A",
+          "total_vnd": 1520000
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4ysf1z4peqx6qar5vqb5sn4",
+              "error": null,
+              "state": "ready",
+              "origin": "mock",
+              "sha256": "05ebf8e68b197ada8d5b88dcee5a7531a1e71ae547ca82596586e21768af37ce",
+              "filename": "mock-quotes-1.csv",
+              "warnings": [],
+              "synthetic": true,
+              "byte_count": 139,
+              "created_at": "2026-10-15T03:25:03.341350+00:00",
+              "media_type": "text/csv",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "4c733fffc052d49b2afc17b2fac32b3ae24ffe6bf0eebc7d35a60eeaa2e74a3e"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4ysf2412d6w6ya0vk56yrk3",
+          "sha256": "45a9fc304fffde52dd3a648901fec56d1b0165dd171b2e01e9c07887502e9f9f"
+        }
+      }
+    },
+    {
+      "mode": "sources",
+      "passed": false,
+      "source_ids": [
+        "src_01m4ysgz4cs599tm9dn0fyn21e"
+      ],
+      "task_id": "tsk_01m4ysgz89jw8phcq1wgm1vt9z",
+      "run": {
+        "task_id": "tsk_01m4ysgz89jw8phcq1wgm1vt9z",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "failed",
+      "error": "openrouter/dots-studio/dots-3-note-preview:free: the provider's content filter refused this prompt",
+      "exception": "{'mode': 'sources', 'passed': False, 'source_ids': ['src_01m4ysgz4cs599tm9dn0fyn21e'], 'task_id': 'tsk_01m4ysgz89jw8phcq1wgm1vt9z', 'run': {'task_id': 'tsk_01m4ysgz89jw8phcq1wgm1vt9z', 'agent_id': 'agt_01m3ycsewvvcwbr1d1xap4f754', 'started': True, 'reason': '', 'already_running': False, 'estimate_seconds': 0, 'estimate_tokens': 0}, 'status': 'failed', 'error': \"openrouter/dots-studio/dots-3-note-preview:free: the provider's content filter refused this prompt\"}"
+    }
+  ]
+}

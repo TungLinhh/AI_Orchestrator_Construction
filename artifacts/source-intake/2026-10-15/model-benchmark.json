@@ -1,0 +1,449 @@
+{
+  "observed_at": "2026-10-14T22:02:09.698523+00:00",
+  "synthetic": true,
+  "scope": "Pinned-model drafting checks; no real workflow or business action acceptance",
+  "rounds": 1,
+  "case_version": 2,
+  "deadline_ms": 30000,
+  "samples": [
+    {
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'nvidia/nemotron-3-ultra-550b-a55b:free': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: required tool call missing",
+      "rejected_completions": [
+        {
+          "output": "[[{\"name\":\"submit_evidence\",\"parameters\":{\"decision\":\"A\",\"total_vnd\":1520000,\"source\":\"quote:A:line1\",\"external_action_completed\":false}}]",
+          "tool_calls": [],
+          "usage": {
+            "prompt_tokens": 518,
+            "completion_tokens": 378,
+            "total_tokens": 896,
+            "cost": 0,
+            "is_byok": false,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 0,
+              "audio_tokens": 0,
+              "video_tokens": 0
+            },
+            "cost_details": {
+              "upstream_inference_cost": 0,
+              "upstream_inference_prompt_cost": 0,
+              "upstream_inference_completions_cost": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 254,
+              "image_tokens": 0,
+              "audio_tokens": 0
+            }
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "elapsed_ms": 8756,
+      "attempted": true
+    },
+    {
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "case": "tool_round_trip",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'nvidia/nemotron-3-ultra-550b-a55b:free': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: required tool call missing",
+      "rejected_completions": [
+        {
+          "output": "[[{ \"name\": \"calculator\", \"parameters\": { \"a\": 17, \"b\": 25 } }]",
+          "tool_calls": [],
+          "usage": {
+            "prompt_tokens": 317,
+            "completion_tokens": 79,
+            "total_tokens": 396,
+            "cost": 0,
+            "is_byok": false,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "cache_write_tokens": 0,
+              "audio_tokens": 0,
+              "video_tokens": 0
+            },
+            "cost_details": {
+              "upstream_inference_cost": 0,
+              "upstream_inference_prompt_cost": 0,
+              "upstream_inference_completions_cost": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 47,
+              "image_tokens": 0,
+              "audio_tokens": 0
+            }
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "elapsed_ms": 3916,
+      "attempted": true
+    },
+    {
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'nvidia/nemotron-3-ultra-550b-a55b:free': openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: inconsistent completion/reasoning usage",
+      "rejected_completions": [],
+      "elapsed_ms": 20130,
+      "attempted": true
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": true,
+      "output": "",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_1b46ed88b1854266beccc08f",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"decision\": \"A\", \"external_action_completed\": false, \"source\": \"quote:A:line1\", \"total_vnd\": 1520000}"
+          }
+        }
+      ],
+      "model_used": "dots-studio/dots-3-note-preview:free",
+      "usage": {
+        "prompt_tokens": 369,
+        "completion_tokens": 411,
+        "total_tokens": 780,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 347,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 780,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "elapsed_ms": 6095,
+      "attempted": true
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "tool_round_trip",
+      "round": 1,
+      "passed": true,
+      "first_turn": {
+        "tool_calls": [
+          {
+            "type": "function",
+            "index": 0,
+            "id": "call_255596c3b4114f5499ed4b54",
+            "function": {
+              "name": "calculator",
+              "arguments": "{\"a\": 17, \"b\": 25}"
+            }
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 203,
+          "completion_tokens": 72,
+          "total_tokens": 275,
+          "cost": 0,
+          "is_byok": false,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+          },
+          "cost_details": {
+            "upstream_inference_cost": 0,
+            "upstream_inference_prompt_cost": 0,
+            "upstream_inference_completions_cost": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 44,
+            "image_tokens": 0,
+            "audio_tokens": 0
+          }
+        }
+      },
+      "output": "",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_47d2d53aa2a645259fe995c7",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"tool_result\": 42}"
+          }
+        }
+      ],
+      "model_used": "dots-studio/dots-3-note-preview:free",
+      "usage": {
+        "prompt_tokens": 264,
+        "completion_tokens": 86,
+        "total_tokens": 350,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 59,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 350,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "elapsed_ms": 4363,
+      "attempted": true
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'dots-studio/dots-3-note-preview:free': openrouter/dots-studio/dots-3-note-preview:free: openrouter/dots-studio/dots-3-note-preview:free: inconsistent completion/reasoning usage",
+      "rejected_completions": [],
+      "elapsed_ms": 5575,
+      "attempted": true
+    }
+  ],
+  "catalogue": {
+    "nvidia/nemotron-3-ultra-550b-a55b:free": {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "canonical_slug": "nvidia/nemotron-3-ultra-550b-a55b-20260604",
+      "hugging_face_id": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+      "name": "NVIDIA: Nemotron 3 Ultra (free)",
+      "created": 1780551208,
+      "description": "NVIDIA Nemotron 3 Ultra is an open frontier-reasoning and orchestration model from NVIDIA, with 55B active parameters out of 550B total (MoE). Built on a hybrid Transformer-Mamba mixture-of-experts architecture, it...",
+      "context_length": 1000000,
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 1000000,
+        "max_completion_tokens": 65536,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "reasoning_effort",
+        "seed",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {
+        "temperature": 1,
+        "top_p": 0.95,
+        "top_k": null,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/nvidia/nemotron-3-ultra-550b-a55b-20260604/endpoints"
+      },
+      "benchmarks": {
+        "design_arena": [
+          {
+            "arena": "models",
+            "category": "3d",
+            "elo": 1130,
+            "win_rate": 38.9,
+            "rank": 75
+          },
+          {
+            "arena": "models",
+            "category": "asciiart",
+            "elo": 1097,
+            "win_rate": 37.5,
+            "rank": 60
+          },
+          {
+            "arena": "models",
+            "category": "codecategories",
+            "elo": 1147,
+            "win_rate": 36,
+            "rank": 84
+          },
+          {
+            "arena": "models",
+            "category": "dataviz",
+            "elo": 1142,
+            "win_rate": 37.4,
+            "rank": 83
+          },
+          {
+            "arena": "models",
+            "category": "gamedev",
+            "elo": 1140,
+            "win_rate": 36.2,
+            "rank": 78
+          },
+          {
+            "arena": "models",
+            "category": "svg",
+            "elo": 1069,
+            "win_rate": 32.4,
+            "rank": 69
+          },
+          {
+            "arena": "models",
+            "category": "uicomponent",
+            "elo": 1142,
+            "win_rate": 36.2,
+            "rank": 78
+          },
+          {
+            "arena": "models",
+            "category": "website",
+            "elo": 1144,
+            "win_rate": 35,
+            "rank": 92
+          }
+        ],
+        "artificial_analysis": {
+          "intelligence_index": 22.9,
+          "coding_index": 49.3,
+          "agentic_index": 20.1
+        }
+      },
+      "reasoning": {
+        "mandatory": false,
+        "default_enabled": true,
+        "supports_max_tokens": true,
+        "supported_efforts": [
+          "high",
+          "medium"
+        ],
+        "default_effort": "high"
+      }
+    },
+    "dots-studio/dots-3-note-preview:free": {
+      "id": "dots-studio/dots-3-note-preview:free",
+      "canonical_slug": "dots-studio/dots-3-note-preview-20260813",
+      "hugging_face_id": null,
+      "name": "Dots Studio: Dots3-Note Preview (free)",
+      "created": 1786680361,
+      "description": "Dots3-Note Preview is an open-weight mixture-of-experts model from Dots Studio, with 16B active parameters out of 280B total. It is the lightest model in the Dots 3 family and is...",
+      "context_length": 512000,
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 512000,
+        "max_completion_tokens": 460800,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": "2026-12-31",
+      "links": {
+        "details": "/api/v1/models/dots-studio/dots-3-note-preview-20260813/endpoints"
+      },
+      "reasoning": {
+        "mandatory": false
+      }
+    }
+  },
+  "summary": [
+    {
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "passed": 0,
+      "total": 3,
+      "attempted": 3,
+      "successful_p50_ms": null,
+      "successful_p95_ms": null
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "passed": 2,
+      "total": 3,
+      "attempted": 3,
+      "successful_p50_ms": 5229.0,
+      "successful_p95_ms": 6095
+    }
+  ],
+  "measured_order": [
+    "dots-studio/dots-3-note-preview:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free"
+  ],
+  "limitations": "Small synthetic sample; ranking is provisional. No weight training."
+}

@@ -1,0 +1,6 @@
+sss                                                                      [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/integration/test_event_stream.py:145: this run delegated nothing
+SKIPPED [1] tests/integration/test_process_spine.py:348: process spine not seeded for this tenant
+SKIPPED [1] tests/integration/test_task_api_and_ui.py:684: no published delegation to check the page against
+3 skipped in 2.35s

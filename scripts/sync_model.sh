@@ -54,6 +54,12 @@ run_pipeline() {
     $PY scripts/rebuild_model_table_args.py
     $PY scripts/dedupe_column_derived_index.py
     $PY scripts/sync_sqlalchemy_imports.py
+    # The rebuild emits string literals with single-quote `repr()` history and a
+    # conservative split width; `ruff format` prefers double quotes and rejoins
+    # short splits. Formatting here (not as a separate manual step) keeps the
+    # generated files converged with `make lint`, and the `--verify` double run
+    # still proves idempotence because generation is deterministic.
+    .venv/bin/ruff format "$PERSISTENCE" >/dev/null
 }
 
 fingerprint() {

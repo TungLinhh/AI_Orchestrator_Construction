@@ -1,0 +1,42 @@
+[
+  {
+    "task_id": "tsk_01m4ysf21w99bs96zmk5a74e0c",
+    "mode": "mock",
+    "executions": {
+      "items": [
+        {
+          "id": "exe_01m4ysf8tks98xctetjdsams47",
+          "attempt": 1,
+          "status": "completed",
+          "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+          "model_used": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "cost_usd": 0.0,
+          "duration_ms": 47920,
+          "error_category": null,
+          "started_at": "2026-10-15T03:25:10.359468+00:00"
+        }
+      ],
+      "count": 1
+    }
+  },
+  {
+    "task_id": "tsk_01m4ysgz89jw8phcq1wgm1vt9z",
+    "mode": "sources",
+    "executions": {
+      "items": [
+        {
+          "id": "exe_01m4ysh32k3b0h6k69196zpzmr",
+          "attempt": 1,
+          "status": "failed",
+          "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+          "model_used": null,
+          "cost_usd": 0.0,
+          "duration_ms": 0,
+          "error_category": "policy_error",
+          "started_at": "2026-10-15T03:26:10.014504+00:00"
+        }
+      ],
+      "count": 1
+    }
+  }
+]

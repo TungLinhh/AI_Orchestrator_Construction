@@ -20,6 +20,7 @@ $("skipContent").onclick = (event) => {
         true,
       );
   }
+  window.SourceUI?.init();
   await loadScenarios();
   await loadOwners();
   // The bell restores its unread count from the last session, so a reload does not wipe

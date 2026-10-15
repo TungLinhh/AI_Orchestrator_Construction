@@ -31,8 +31,7 @@ def _pricing(input_usd: str, output_usd: str) -> ModelPricing:
     )
 
 
-#: Deterministic provider candidates. Always first for the `default` profile so
-#: tests and local runs never spend money or touch the network by accident.
+#: Available only when explicit fake mode registers the deterministic adapter.
 _DETERMINISTIC = ModelCandidate(
     provider="deterministic",
     model="scripted-1",
@@ -40,63 +39,21 @@ _DETERMINISTIC = ModelCandidate(
     max_classification=DataClassification.SECRET,
 )
 
-#: The operator's chosen free OpenRouter model. Keep the configured preference
-#: first; fallback usage is recorded separately by the gateway.
+#: Explicit execution chain requested by the operator. Catalogue checked 2026-10-15.
 _PRIMARY_FREE = ModelCandidate(
     provider="openrouter",
-    model="dots-studio/dots-3-note-preview:free",
+    model="nvidia/nemotron-3-ultra-550b-a55b:free",
+    max_input_tokens=1_000_000,
+    supports_structured_output=False,
     pricing=_pricing("0", "0"),
     max_classification=DataClassification.PUBLIC,
 )
-
-#: Extra **free** OpenRouter models, tried in order when the first is rate limited.
-#:
-#: There was one real candidate, repeated in all three profiles. A free tier is
-#: rate limited *per model*, per account, per window -- and OpenRouter's answer to
-#: a 429 is a `retry-after` measured in **minutes**. Tenacity's 8-second ceiling
-#: cannot clear that, so a single free model means a single free model decides
-#: whether the pipeline runs at all:
-#:
-#:     no usable model for profile 'primary':
-#:       openrouter/qwen/qwen3.8-27b:free: rate limited;
-#:       deterministic/scripted-1: no provider adapter registered
-#:
-#: The gateway already falls through candidates, and it did -- straight past a
-#: model that was answering five minutes ago to a provider that cannot answer at
-#: all. So the fallbacks go here, where the gateway can reach them.
-#:
-#: All are free, all support tools, and all are ordered by how well they plan --
-#: the first is the strongest, and a run that gets through on the fourth is a run
-#: that happened to find one with quota left.
 _FREE_FALLBACKS: tuple[ModelCandidate, ...] = (
     ModelCandidate(
         provider="openrouter",
-        # `inclusionai/ling-3.0-flash-sante:free`. Every id in this tuple was
-        # read off `GET /api/v1/models` and checked for `tools` in
-        # `supported_parameters`. The first attempt at this list used
-        # `qwen/qwen3-235b-a22b:free` and two other plausible-looking slugs, and
-        # every one of them came back `model not found at this provider` -- which
-        # is what a guessed model id looks like, and is why guessing is worse
-        # than asking.
-        model="inclusionai/ling-3.0-flash-sante:free",
-        pricing=_pricing("0", "0"),
-        max_classification=DataClassification.PUBLIC,
-    ),
-    ModelCandidate(
-        provider="openrouter",
-        model="nvidia/nemotron-3.5-lightning:free",
-        pricing=_pricing("0", "0"),
-        max_classification=DataClassification.PUBLIC,
-    ),
-    ModelCandidate(
-        provider="openrouter",
-        model="poolside/laguna-s-2.1:free",
-        pricing=_pricing("0", "0"),
-        max_classification=DataClassification.PUBLIC,
-    ),
-    ModelCandidate(
-        provider="openrouter",
-        model="cohere/north-mini-code:free",
+        model="dots-studio/dots-3-note-preview:free",
+        max_input_tokens=512_000,
+        supports_vision=True,
         pricing=_pricing("0", "0"),
         max_classification=DataClassification.PUBLIC,
     ),
@@ -111,8 +68,8 @@ def default_profiles() -> dict[str, ModelProfile]:
     number wins. See `_cost_from_body` in `providers.py`.
     """
     return {
-        # The operator's chosen model, first in every profile. Free, 512k
-        # context, tools and structured output advertised by the provider catalogue.
+        # NVIDIA supports tools but does not advertise strict JSON Schema. Workflows
+        # validate their tool output independently.
         # Live availability still depends on provider capacity and quota.
         #
         # Placed ahead of the deterministic provider on purpose: the point of
@@ -120,6 +77,9 @@ def default_profiles() -> dict[str, ModelProfile]:
         # first candidate is the scripted stub would never ask it anything.
         "primary": ModelProfile(
             name="primary",
+            requires_structured_output=False,
+            max_latency_ms=60_000,
+            max_retries=0,
             description="The operator's model. Real reasoning, no cost.",
             candidates=(
                 _PRIMARY_FREE,
@@ -129,6 +89,9 @@ def default_profiles() -> dict[str, ModelProfile]:
         ),
         "reasoning": ModelProfile(
             name="reasoning",
+            requires_structured_output=False,
+            max_latency_ms=60_000,
+            max_retries=0,
             description=(
                 "Analysis and planning. The same model with tools, because the "
                 "operator asked for one model rather than a portfolio."
@@ -164,7 +127,8 @@ def default_profiles() -> dict[str, ModelProfile]:
                 ),
                 ModelCandidate(
                     provider="openrouter",
-                    model="thinkingmachines/inkling:free",
+                    model="google/gemma-4-26b-a4b-it:free",
+                    max_input_tokens=262144,
                     pricing=_pricing("0", "0"),
                     max_classification=DataClassification.PUBLIC,
                 ),
@@ -179,6 +143,9 @@ def default_profiles() -> dict[str, ModelProfile]:
         ),
         "default": ModelProfile(
             name="default",
+            requires_structured_output=False,
+            max_latency_ms=60_000,
+            max_retries=0,
             description=(
                 "General purpose. The operator's free models first, because a "
                 "profile whose first candidate is a paid one this key cannot "

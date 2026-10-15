@@ -1,0 +1,24 @@
+{"model": "nvidia/nemotron-3-ultra-550b-a55b:free", "case": "tender_comparison", "round": 1, "passed": false, "elapsed_ms": 8756}
+{"model": "nvidia/nemotron-3-ultra-550b-a55b:free", "case": "tool_round_trip", "round": 1, "passed": false, "elapsed_ms": 3916}
+{"model": "nvidia/nemotron-3-ultra-550b-a55b:free", "case": "missing_evidence_and_injection", "round": 1, "passed": false, "elapsed_ms": 20130}
+{"model": "dots-studio/dots-3-note-preview:free", "case": "tender_comparison", "round": 1, "passed": true, "elapsed_ms": 6095}
+{"model": "dots-studio/dots-3-note-preview:free", "case": "tool_round_trip", "round": 1, "passed": true, "elapsed_ms": 4363}
+{"model": "dots-studio/dots-3-note-preview:free", "case": "missing_evidence_and_injection", "round": 1, "passed": false, "elapsed_ms": 5575}
+[
+  {
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "passed": 0,
+    "total": 3,
+    "attempted": 3,
+    "successful_p50_ms": null,
+    "successful_p95_ms": null
+  },
+  {
+    "model": "dots-studio/dots-3-note-preview:free",
+    "passed": 2,
+    "total": 3,
+    "attempted": 3,
+    "successful_p50_ms": 5229.0,
+    "successful_p95_ms": 6095
+  }
+]

@@ -1,0 +1,241 @@
+{
+  "synthetic": true,
+  "passed": true,
+  "cases": [
+    {
+      "mode": "mock",
+      "passed": true,
+      "source_ids": [
+        "src_01m4yfp1fbcemmv7p3ftrqmxys"
+      ],
+      "task_id": "tsk_01m4yfp1g8d5yc70hnn6vv5err",
+      "run": {
+        "task_id": "tsk_01m4yfp1g8d5yc70hnn6vv5err",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4yftxrpjedzfs3djyg39j7w",
+          "format": "docx",
+          "filename": "report-tsk_01m4yfp1g8d5yc70hnn6vv5err.docx",
+          "byte_count": 37315,
+          "sha256": "1fc5c300a19a4b419376901c49de649ca94de70a6c9fc65e586df0e1bc5629db",
+          "manifest_id": "smf_01m4yfp1h4vhxcptwdffg12zny"
+        },
+        {
+          "id": "art_01m4yftxrpjedzfs3djyg39j7y",
+          "format": "json",
+          "filename": "report-tsk_01m4yfp1g8d5yc70hnn6vv5err.json",
+          "byte_count": 2260,
+          "sha256": "e8a64d0145a6f9638a883e39fae81113f1a90cf6336e889fd3a0b65bfc2ef4ad",
+          "manifest_id": "smf_01m4yfp1h4vhxcptwdffg12zny"
+        },
+        {
+          "id": "art_01m4yftxrpjedzfs3djyg39j7z",
+          "format": "md",
+          "filename": "report-tsk_01m4yfp1g8d5yc70hnn6vv5err.md",
+          "byte_count": 1279,
+          "sha256": "bf174fd95029922490f4337299ce4d8bae9f1feae3c88e0105b73dbf88bc1b5a",
+          "manifest_id": "smf_01m4yfp1h4vhxcptwdffg12zny"
+        },
+        {
+          "id": "art_01m4yftxrpjedzfs3djyg39j7v",
+          "format": "pdf",
+          "filename": "report-tsk_01m4yfp1g8d5yc70hnn6vv5err.pdf",
+          "byte_count": 25041,
+          "sha256": "9d127e012603a5c6e82ad1498ca42be5a08845462436db16bbd2fbac178ee0fb",
+          "manifest_id": "smf_01m4yfp1h4vhxcptwdffg12zny"
+        },
+        {
+          "id": "art_01m4yftxrpjedzfs3djyg39j7x",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4yfp1g8d5yc70hnn6vv5err.xlsx",
+          "byte_count": 5826,
+          "sha256": "1087804dcc75480eb4ec369989708fca42daef2c085633af4d057eeb9ae64220",
+          "manifest_id": "smf_01m4yfp1h4vhxcptwdffg12zny"
+        },
+        {
+          "id": "art_01m4yftxrpjedzfs3djyg39j80",
+          "format": "zip",
+          "filename": "report-tsk_01m4yfp1g8d5yc70hnn6vv5err.zip",
+          "byte_count": 66365,
+          "sha256": "19fb883c0cb5d37fd4ea7e3acab0ed061473d32461aa06d45fdd10ce17563b11",
+          "manifest_id": "smf_01m4yfp1h4vhxcptwdffg12zny"
+        }
+      ],
+      "output": {
+        "output": {
+          "summary": "So sánh 3 báo giá Valve-1: A (1.520.000 VND, có chứng nhận), B (1.320.000 VND, không chứng nhận), C (1.560.000 VND, có chứng nhận). Tiêu chí: phải có certified=true, sau đó chọn tổng chi phí thấp nhất. A thắng vì đáp ứng chứng nhận và tổng chi phí thấp nhất trong nhóm hợp lệ.",
+          "findings": [
+            {
+              "text": "Báo giá A: Valve-1, số lượng 12, đơn giá 120.000, phí giao hàng 80.000, certified=true",
+              "source_id": "src_01m4yfp1fbcemmv7p3ftrqmxys",
+              "locator": "lines:1-4",
+              "quote": "A,Valve-1,12,120000,80000,true"
+            },
+            {
+              "text": "Báo giá B: Valve-1, số lượng 12, đơn giá 110.000, phí giao hàng 0, certified=false",
+              "source_id": "src_01m4yfp1fbcemmv7p3ftrqmxys",
+              "locator": "lines:1-4",
+              "quote": "B,Valve-1,12,110000,0,false"
+            },
+            {
+              "text": "Báo giá C: Valve-1, số lượng 12, đơn giá 130.000, phí giao hàng 0, certified=true",
+              "source_id": "src_01m4yfp1fbcemmv7p3ftrqmxys",
+              "locator": "lines:1-4",
+              "quote": "C,Valve-1,12,130000,0,true"
+            }
+          ],
+          "limitations": [
+            "Không có chứng chỉ gốc để xác minh certified=true/false",
+            "Không có điều khoản thanh toán, bảo hành, thời gian giao hàng chi tiết"
+          ],
+          "winner": "A",
+          "total_vnd": 1520000
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4yfp1fbcemmv7p3ftrqmxys",
+              "error": null,
+              "state": "ready",
+              "origin": "mock",
+              "sha256": "05ebf8e68b197ada8d5b88dcee5a7531a1e71ae547ca82596586e21768af37ce",
+              "filename": "mock-quotes-1.csv",
+              "warnings": [],
+              "synthetic": true,
+              "byte_count": 139,
+              "created_at": "2026-10-15T00:34:06.447144+00:00",
+              "media_type": "text/csv",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "4c733fffc052d49b2afc17b2fac32b3ae24ffe6bf0eebc7d35a60eeaa2e74a3e"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4yfp1h4vhxcptwdffg12zny",
+          "sha256": "4d5b81b36d4c03be908aeebf3a3217884bb7016daf15f927ec29bbf42108b304"
+        }
+      }
+    },
+    {
+      "mode": "sources",
+      "passed": true,
+      "source_ids": [
+        "src_01m4yfv0vmz73ff3zbcxs49eaj"
+      ],
+      "task_id": "tsk_01m4yfv0waj7eyjh13hpeyh8j0",
+      "run": {
+        "task_id": "tsk_01m4yfv0waj7eyjh13hpeyh8j0",
+        "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+        "started": true,
+        "reason": "",
+        "already_running": false,
+        "estimate_seconds": 0,
+        "estimate_tokens": 0
+      },
+      "status": "completed",
+      "error": null,
+      "artifacts": [
+        {
+          "id": "art_01m4yfxbbkpamd36rsarw4ejg9",
+          "format": "docx",
+          "filename": "report-tsk_01m4yfv0waj7eyjh13hpeyh8j0.docx",
+          "byte_count": 37335,
+          "sha256": "55fd44b33dc50696ffc2beb9786231b4612cd6ebeba1e12eaa5c76d3ad6a186e",
+          "manifest_id": "smf_01m4yfv0wmfk0annnj94yp2cah"
+        },
+        {
+          "id": "art_01m4yfxbbkpamd36rsarw4ejgb",
+          "format": "json",
+          "filename": "report-tsk_01m4yfv0waj7eyjh13hpeyh8j0.json",
+          "byte_count": 1900,
+          "sha256": "68aff21c08d986bfcd543df774923b3eaf5b5a23f9340aa8f81353ebc0b9ac67",
+          "manifest_id": "smf_01m4yfv0wmfk0annnj94yp2cah"
+        },
+        {
+          "id": "art_01m4yfxbbkpamd36rsarw4ejgc",
+          "format": "md",
+          "filename": "report-tsk_01m4yfv0waj7eyjh13hpeyh8j0.md",
+          "byte_count": 1108,
+          "sha256": "6645acee0c488c4f6edb70638ebd267b840e653694d23ff4f2d2ec2599f967b8",
+          "manifest_id": "smf_01m4yfv0wmfk0annnj94yp2cah"
+        },
+        {
+          "id": "art_01m4yfxbbjh5p3enezfshke6gr",
+          "format": "pdf",
+          "filename": "report-tsk_01m4yfv0waj7eyjh13hpeyh8j0.pdf",
+          "byte_count": 25614,
+          "sha256": "2de18c874a4c51ad067905399339cd9e534a1b62423b3c74d6b22a6752ff7e54",
+          "manifest_id": "smf_01m4yfv0wmfk0annnj94yp2cah"
+        },
+        {
+          "id": "art_01m4yfxbbkpamd36rsarw4ejga",
+          "format": "xlsx",
+          "filename": "report-tsk_01m4yfv0waj7eyjh13hpeyh8j0.xlsx",
+          "byte_count": 5795,
+          "sha256": "8da566765f11bd4c09a4fc88acd5d62c6dcced8d74c2568b2e5e521402018c2d",
+          "manifest_id": "smf_01m4yfv0wmfk0annnj94yp2cah"
+        },
+        {
+          "id": "art_01m4yfxbbkpamd36rsarw4ejgd",
+          "format": "zip",
+          "filename": "report-tsk_01m4yfv0waj7eyjh13hpeyh8j0.zip",
+          "byte_count": 100693,
+          "sha256": "4cf8ebc35df993339947dbf3a6de72b301f9b88d194ac137f8fd8e26a4ddd79b",
+          "manifest_id": "smf_01m4yfv0wmfk0annnj94yp2cah"
+        }
+      ],
+      "output": {
+        "output": {
+          "findings": [
+            {
+              "text": "Tài liệu cho biết hồ sơ van cần chứng chỉ HSE và đơn hàng chưa được đặt.",
+              "source_id": "src_01m4yfv0vmz73ff3zbcxs49eaj",
+              "locator": "brief.docx#paragraph:1",
+              "quote": "Hồ sơ van cần chứng chỉ HSE. Chưa đặt hàng."
+            }
+          ],
+          "limitations": [
+            "Chỉ có một tài liệu chấp nhận ngắn gọn được cung cấp; không có thông tin chi tiết về thông số kỹ thuật van hoặc yêu cầu chứng chỉ HSE.",
+            "Không có báo giá nhà cung cấp, thông số kỹ thuật hoặc kế hoạch procurement để kiểm tra.",
+            "Trạng thái quá trình lấy chứng chỉ HSE là không xác định."
+          ],
+          "summary": "Tài liệu chấp nhận cho thấy hồ sơ van yêu cầu chứng chỉ HSE nhưng hiện tại chưa có, và đơn hàng chưa được đặt. Điều này xác nhận một khoảng trống về tuân thủ chứng từ trước khi có thể tiến hành đặt hàng."
+        },
+        "manifest": {
+          "sources": [
+            {
+              "id": "src_01m4yfv0vmz73ff3zbcxs49eaj",
+              "error": null,
+              "state": "ready",
+              "origin": "upload",
+              "sha256": "a8a78e346bc89e1c0c63d140e851b0f2ff581837e8e8a77bc9cb16d9937352d0",
+              "filename": "acceptance.zip",
+              "warnings": [],
+              "synthetic": false,
+              "byte_count": 36578,
+              "created_at": "2026-10-15T00:36:49.653372+00:00",
+              "media_type": "application/zip",
+              "org_unit_id": null,
+              "reviewed_from": null,
+              "classification": "internal",
+              "extraction_sha256": "23e6ed66936f413e0beefb96f3c47aba80e98e5265f6d1ff28c9473e02be44cf"
+            }
+          ],
+          "version": 1,
+          "id": "smf_01m4yfv0wmfk0annnj94yp2cah",
+          "sha256": "a2b51c9c5f57856efc39de72ad4790546e70cbdf56a0824bbcf9e12e7a73c2ff"
+        }
+      }
+    }
+  ]
+}

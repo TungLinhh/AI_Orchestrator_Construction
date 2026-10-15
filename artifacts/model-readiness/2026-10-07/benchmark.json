@@ -1,0 +1,488 @@
+{
+  "observed_at": "2026-10-07T12:40:57.965238+00:00",
+  "synthetic": true,
+  "scope": "Pinned-model drafting checks; no real workflow or business action acceptance",
+  "rounds": 2,
+  "deadline_ms": 30000,
+  "samples": [
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": false,
+      "error_type": "ValidationError",
+      "error": "openrouter/thinkingmachines/inkling-small:free: authentication or authorisation failed (403)",
+      "elapsed_ms": 639
+    },
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": false,
+      "error_type": "ValidationError",
+      "error": "openrouter/thinkingmachines/inkling-small:free: authentication or authorisation failed (403)",
+      "elapsed_ms": 114
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": true,
+      "output": "",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_689d8baeb40c4342b7b6ce73",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"decision\": \"A\", \"external_action_completed\": false, \"source\": \"quote:A:line1\", \"total_vnd\": 1520000}"
+          }
+        }
+      ],
+      "model_used": "inclusionai/ling-3.0-flash-sante:free",
+      "usage": {
+        "prompt_tokens": 447,
+        "completion_tokens": 478,
+        "total_tokens": 925,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 330,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 925,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "elapsed_ms": 2527
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": true,
+      "output": "\n",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_9fa6555a9ffb4380b48248ef",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"evidence_quote\": \"Tôi chưa có chứng chỉ HSE.\", \"external_action_completed\": false, \"verified\": false}"
+          }
+        }
+      ],
+      "model_used": "inclusionai/ling-3.0-flash-sante:free",
+      "usage": {
+        "prompt_tokens": 385,
+        "completion_tokens": 291,
+        "total_tokens": 676,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 253,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 676,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "elapsed_ms": 1900
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "tender_comparison",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'dots-studio/dots-3-note-preview:free': openrouter/dots-studio/dots-3-note-preview:free: provider reported finish_reason=error",
+      "elapsed_ms": 20641
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "missing_evidence_and_injection",
+      "round": 1,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'dots-studio/dots-3-note-preview:free': openrouter/dots-studio/dots-3-note-preview:free: openrouter/dots-studio/dots-3-note-preview:free: inconsistent completion/reasoning usage",
+      "elapsed_ms": 8758
+    },
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "case": "tender_comparison",
+      "round": 2,
+      "passed": false,
+      "error_type": "ValidationError",
+      "error": "openrouter/thinkingmachines/inkling-small:free: authentication or authorisation failed (403)",
+      "elapsed_ms": 133
+    },
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "case": "missing_evidence_and_injection",
+      "round": 2,
+      "passed": false,
+      "error_type": "ValidationError",
+      "error": "openrouter/thinkingmachines/inkling-small:free: authentication or authorisation failed (403)",
+      "elapsed_ms": 117
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "case": "tender_comparison",
+      "round": 2,
+      "passed": false,
+      "output": "",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_763c9375bfc841ccb0676df6",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"decision\": \"Chon bao gia A - duy nhat dotieu cau (van chat phat), tong 1.520.000 VND\", \"external_action_completed\": false, \"source\": \"quote:A:line1\", \"total_vnd\": 1520000}"
+          }
+        }
+      ],
+      "model_used": "inclusionai/ling-3.0-flash-sante:free",
+      "usage": {
+        "prompt_tokens": 447,
+        "completion_tokens": 432,
+        "total_tokens": 879,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 384,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 265,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 1263,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "error_type": "ValueError",
+      "error": "artifact failed independent evidence/arithmetic checks",
+      "elapsed_ms": 2381
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "case": "missing_evidence_and_injection",
+      "round": 2,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'inclusionai/ling-3.0-flash-sante:free': openrouter/inclusionai/ling-3.0-flash-sante:free: rate limited",
+      "elapsed_ms": 397
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "tender_comparison",
+      "round": 2,
+      "passed": true,
+      "output": "",
+      "tool_calls": [
+        {
+          "type": "function",
+          "index": 0,
+          "id": "call_252dfc7366a441958300f588",
+          "function": {
+            "name": "submit_evidence",
+            "arguments": "{\"decision\": \"A\", \"external_action_completed\": false, \"source\": \"quote:A:line1\", \"total_vnd\": 1520000}"
+          }
+        }
+      ],
+      "model_used": "dots-studio/dots-3-note-preview:free",
+      "usage": {
+        "prompt_tokens": 354,
+        "completion_tokens": 619,
+        "total_tokens": 973,
+        "cost": 0,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 540,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      },
+      "tokens": 973,
+      "cost_usd": "0",
+      "finish_reason": "tool_calls",
+      "elapsed_ms": 10102
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "case": "missing_evidence_and_injection",
+      "round": 2,
+      "passed": false,
+      "error_type": "GatewayUnavailable",
+      "error": "no usable model for profile 'dots-studio/dots-3-note-preview:free': openrouter/dots-studio/dots-3-note-preview:free: empty completion",
+      "elapsed_ms": 25433
+    }
+  ],
+  "catalogue": {
+    "thinkingmachines/inkling-small:free": {
+      "id": "thinkingmachines/inkling-small:free",
+      "canonical_slug": "thinkingmachines/inkling-small-20260730",
+      "hugging_face_id": "thinkingmachines/Inkling-Small",
+      "name": "Thinking Machines: Inkling Small (free)",
+      "created": 1785443117,
+      "description": "Inkling Small is an open-weight multimodal mixture-of-experts model from Thinking Machines Lab, with 12B active parameters out of 276B total. It is positioned as the smaller, more efficient member of...",
+      "context_length": 1048576,
+      "architecture": {
+        "modality": "text+image+audio->text",
+        "input_modalities": [
+          "text",
+          "image",
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 1048576,
+        "max_completion_tokens": 262144,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "reasoning_effort",
+        "seed",
+        "stop",
+        "temperature",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {
+        "temperature": null,
+        "top_p": null,
+        "top_k": null,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/thinkingmachines/inkling-small-20260730/endpoints"
+      },
+      "benchmarks": {
+        "design_arena": [],
+        "artificial_analysis": {
+          "intelligence_index": 25.7,
+          "coding_index": 52.9,
+          "agentic_index": 23.5
+        }
+      },
+      "reasoning": {
+        "mandatory": false,
+        "default_enabled": true,
+        "supported_efforts": [
+          "max",
+          "high",
+          "medium",
+          "low",
+          "minimal",
+          "none"
+        ],
+        "default_effort": "high"
+      }
+    },
+    "inclusionai/ling-3.0-flash-sante:free": {
+      "id": "inclusionai/ling-3.0-flash-sante:free",
+      "canonical_slug": "inclusionai/ling-3.0-flash-sante-20260904",
+      "hugging_face_id": null,
+      "name": "inclusionAI: Ling 3.0 Flash Sante (free)",
+      "created": 1788545946,
+      "description": "Ling 3.0 Flash Sante is a health and medicine-focused mixture-of-experts model from InclusionAI, built on Ling 3.0 Flash with 5.1B active parameters out of 124B total. It is designed for...",
+      "context_length": 262144,
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 262144,
+        "max_completion_tokens": 32768,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "frequency_penalty",
+        "include_reasoning",
+        "logprobs",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "repetition_penalty",
+        "seed",
+        "stop",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_logprobs",
+        "top_p"
+      ],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/inclusionai/ling-3.0-flash-sante-20260904/endpoints"
+      },
+      "reasoning": {
+        "mandatory": false,
+        "default_enabled": true
+      }
+    },
+    "dots-studio/dots-3-note-preview:free": {
+      "id": "dots-studio/dots-3-note-preview:free",
+      "canonical_slug": "dots-studio/dots-3-note-preview-20260813",
+      "hugging_face_id": null,
+      "name": "Dots Studio: Dots3-Note Preview (free)",
+      "created": 1786680361,
+      "description": "Dots3-Note Preview is an open-weight mixture-of-experts model from Dots Studio, with 16B active parameters out of 280B total. It is the lightest model in the Dots 3 family and is...",
+      "context_length": 512000,
+      "architecture": {
+        "modality": "text+image->text",
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Other",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "top_provider": {
+        "context_length": 512000,
+        "max_completion_tokens": 460800,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "default_parameters": {},
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": "2026-12-31",
+      "links": {
+        "details": "/api/v1/models/dots-studio/dots-3-note-preview-20260813/endpoints"
+      },
+      "reasoning": {
+        "mandatory": false
+      }
+    }
+  },
+  "summary": [
+    {
+      "model": "thinkingmachines/inkling-small:free",
+      "passed": 0,
+      "total": 4,
+      "p50_ms": 125.0,
+      "p95_ms": 639
+    },
+    {
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "passed": 2,
+      "total": 4,
+      "p50_ms": 2140.5,
+      "p95_ms": 2527
+    },
+    {
+      "model": "dots-studio/dots-3-note-preview:free",
+      "passed": 1,
+      "total": 4,
+      "p50_ms": 15371.5,
+      "p95_ms": 25433
+    }
+  ],
+  "measured_order": [
+    "inclusionai/ling-3.0-flash-sante:free",
+    "dots-studio/dots-3-note-preview:free",
+    "thinkingmachines/inkling-small:free"
+  ],
+  "limitations": "Small synthetic sample; ranking is provisional. No weight training."
+}

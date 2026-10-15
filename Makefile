@@ -482,9 +482,9 @@ serve: ## Start the chairman's server: the console on a real model (spends free-
 	@mkdir -p $(RUN) $(LOGS)
 	@if [ -f $(RUN)/serve.pid ] && kill -0 $$(cat $(RUN)/serve.pid) 2>/dev/null; then \
 		kill $$(cat $(RUN)/serve.pid) 2>/dev/null || true; sleep 1; fi
-	@AO_API_AUTH_DISABLED=true AO_MODEL_PROVIDER_DEFAULT=openrouter $(PY) -m uvicorn ai_orchestrator.main:app \
+	@AO_API_AUTH_DISABLED=true AO_MODEL_PROVIDER_DEFAULT=openrouter nohup setsid $(PY) -m uvicorn ai_orchestrator.main:app \
 		--host 127.0.0.1 --port $(SERVE_PORT) --log-level warning \
-		> $(LOGS)/serve.log 2>&1 & echo $$! > $(RUN)/serve.pid
+		> $(LOGS)/serve.log 2>&1 < /dev/null & echo $$! > $(RUN)/serve.pid
 	@for i in $$(seq 1 30); do \
 		curl -sf -o /dev/null "http://127.0.0.1:$(SERVE_PORT)/health" && break; sleep 1; \
 	done; \

@@ -1,0 +1,191 @@
+{
+  "observed_at": "2026-10-14T21:28:22.109207+00:00",
+  "display_date": "2026-10-15 Asia/Saigon",
+  "scope": "Readiness review with focused repairs; not production business acceptance",
+  "gates": {
+    "lint": {
+      "command": "make lint",
+      "passed": true,
+      "log": "lint.txt",
+      "summary": "All checks passed!",
+      "log_sha256": "2c9b5d88bd18dd52ba42a4b5395755d4c9172dda5472d0bfa52dfc245996cfd1"
+    },
+    "typecheck": {
+      "command": "make typecheck",
+      "passed": true,
+      "log": "typecheck.txt",
+      "summary": "Success: no issues found in 177 source files",
+      "log_sha256": "e68792af43c0667696d069366b21aa98c2042c70d71ce1d85d8363247fed28ff"
+    },
+    "test": {
+      "command": "make test",
+      "passed": true,
+      "log": "test.txt",
+      "summary": "3508 passed, 3 skipped, 1 deselected, 10 warnings in 628.12s (0:10:28)",
+      "log_sha256": "acc68bfed0df94f17d5ac515309dfa17ccdfec51bb9259eebd4fe6e20ce16a6c"
+    },
+    "e2e": {
+      "command": "make test-e2e",
+      "passed": true,
+      "log": "e2e.txt",
+      "summary": "34 passed in 193.05s (0:03:13)",
+      "log_sha256": "9e8a473c2726a3834edf25d405c94d253f86d78439b0feaf9db6e155c328b349"
+    },
+    "focused": {
+      "command": "uv run pytest tests/unit/test_pydanticai_bridge.py tests/unit/test_model_completion_fallback.py tests/unit/test_model_entitlement_fallback.py -q",
+      "passed": true,
+      "log": "focused.txt",
+      "summary": "44 passed in 1.08s",
+      "log_sha256": "87b8237c4e6bfeae0e380fe8dc61efa1b6a0cec88c4c5d7dab353505faee9450"
+    }
+  },
+  "http_task": {
+    "passed": true,
+    "id": "tsk_01m4y4d98yg3rspt8860abtjez",
+    "output": {
+      "winner": "A",
+      "total_vnd": 1520000
+    },
+    "model_usage": {
+      "items": [
+        {
+          "id": "mus_01m4y4dh2ed5fkf7124we2jh79",
+          "task_id": "tsk_01m4y4d98yg3rspt8860abtjez",
+          "agent_id": "agt_01m3ycsewvvcwbr1d1xap4f754",
+          "provider": "openrouter",
+          "model_used": "dots-studio/dots-3-note-preview:free",
+          "input_tokens": 1935,
+          "output_tokens": 109,
+          "reasoning_tokens": 255,
+          "cost_usd": 0.0,
+          "latency_ms": 5485,
+          "routing_reason": "fallback",
+          "status": "ok",
+          "created_at": "2026-10-14T21:17:13.178447+00:00"
+        }
+      ],
+      "count": 1,
+      "total": 1,
+      "limit": 50,
+      "offset": 0
+    },
+    "synthetic": true
+  },
+  "backlog": {
+    "counts": [
+      {
+        "status": "assigned",
+        "tasks": 207
+      },
+      {
+        "status": "canceled",
+        "tasks": 181
+      },
+      {
+        "status": "completed",
+        "tasks": 714
+      },
+      {
+        "status": "created",
+        "tasks": 1
+      },
+      {
+        "status": "failed",
+        "tasks": 176
+      },
+      {
+        "status": "waiting_for_approval",
+        "tasks": 15
+      },
+      {
+        "status": "waiting_for_input",
+        "tasks": 1
+      }
+    ],
+    "nonterminal_dependencies": [
+      {
+        "status": "assigned",
+        "is_root": false,
+        "parent_status": "assigned",
+        "tasks": 147
+      },
+      {
+        "status": "assigned",
+        "is_root": false,
+        "parent_status": "waiting_for_input",
+        "tasks": 52
+      },
+      {
+        "status": "assigned",
+        "is_root": true,
+        "parent_status": null,
+        "tasks": 8
+      },
+      {
+        "status": "created",
+        "is_root": true,
+        "parent_status": null,
+        "tasks": 1
+      },
+      {
+        "status": "waiting_for_approval",
+        "is_root": false,
+        "parent_status": "failed",
+        "tasks": 14
+      },
+      {
+        "status": "waiting_for_approval",
+        "is_root": true,
+        "parent_status": null,
+        "tasks": 1
+      },
+      {
+        "status": "waiting_for_input",
+        "is_root": true,
+        "parent_status": null,
+        "tasks": 1
+      }
+    ],
+    "running_executions": 0
+  },
+  "open_items": [
+    "Inkling access denied and Ling absent from public catalogue; free-chain SLA unproven",
+    "Reconcile 14 approval children whose parent failed and triage 11 nonterminal roots; includes fixtures",
+    "Clean-install role catalogue incomplete for register/test preparation",
+    "Three skipped assertions remain coverage gaps; see skipped-details.log",
+    "Source picker/upload/OCR/ZIP, unified artifact export, workflow definitions and tenant provisioning are planned, not delivered"
+  ],
+  "diff_check_passed": true,
+  "acceptance_limits": [
+    "Real-provider HTTP probes use synthetic inputs, no business external actions",
+    "Full suite uses fake/hash providers; E2E uses local dependencies",
+    "No new published skill, live connector canary or multi-tenant production approval"
+  ],
+  "files_sha256": {
+    "PRODUCT_COMPLETION_PLAN.md": "654d16d0ffa6c9daa39fb896de295e7c94f1ca3fed32495f80632915ce9a56fe",
+    "FUTURE_WORK.md": "d00b46b10164c0713f1f68d6eda67cc873626626ad94d1ec1a38b358982e1eb4",
+    "DATA_INTAKE_PLAN.md": "9e1949171c56505a458531cd122c45febfe1e799dbaa60eab2e4bb27df549764",
+    "INTEGRATION_READINESS.md": "15e3484ac164ab175486c18c4cc60b811d4a55da23f56bf56c921e08fdfe65f2",
+    "scripts/probe_task_completion.py": "ad4edf87bb74f75f105951c85ca606176e2c7f27be82dac03d031b6cb037feca",
+    "scripts/benchmark_free_models.py": "0a31967c054b67af6fa2dd070e1df26efd7adea711f402e7739e1ab1ac164c07",
+    "scripts/audit_task_backlog.py": "5b29508d06f9d674314b570a8ede97b4ba5390264f81df593c92ccbb1e0d940e",
+    "scripts/inventory_product_surface.py": "9ed98d56a75e788f851596d2fa6e4169c813fddf229210f58635ccb841e47c9d",
+    "src/ai_orchestrator/agent_runtime/pydanticai_agent.py": "5f7e07c44ea23f394fa33a5499cc3c1cc01f6f68dc5cf86b0291c3fbe4854bf0",
+    "tests/unit/test_pydanticai_bridge.py": "3ecbcc4d8abd6b648044bbc51683ed8721121f91d460160b0bc11f21614a30c4"
+  },
+  "skipped_assertions": [
+    {
+      "test": "tests/integration/test_event_stream.py::TestTheViewBlockSaysWhoAndWhat::test_a_delegation_frame_resolves_both_agent_names",
+      "reason": "this run delegated nothing"
+    },
+    {
+      "test": "tests/integration/test_process_spine.py::TestTheForbiddenZones::test_the_dossier_zones_are_recorded_as_hard_blocks",
+      "reason": "process spine not seeded for this tenant"
+    },
+    {
+      "test": "tests/integration/test_task_api_and_ui.py::TestTheConsoleCanSeeAnything::test_the_page_renders_a_delegation_event",
+      "reason": "no published delegation to check the page against"
+    }
+  ],
+  "runtime_final": true
+}

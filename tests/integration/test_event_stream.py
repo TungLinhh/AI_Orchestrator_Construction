@@ -138,11 +138,12 @@ class TestTheViewBlockSaysWhoAndWhat:
         names. A view built from the event alone shows two opaque ids, and a
         delegation to Finance is indistinguishable from one to Legal.
         """
-        await _one_task(seeded)
+        from tests.integration.delegation_event_fixture import create_delegation_event
+
+        await create_delegation_event(seeded)
         frames = await backfill(seeded.session, seeded.organization_id, 50)
         delegations = [f for f in frames if f["type"].startswith("delegation.")]
-        if not delegations:
-            pytest.skip("this run delegated nothing")
+        assert delegations, "the persisted delegation did not reach the stream projection"
         view = delegations[0]["view"]
         assert view["from_agent"] and " " in view["from_agent"], (
             f"the delegating agent is not a name: {view.get('from_agent')!r}"
