@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 from typing import Any
 
@@ -136,6 +137,17 @@ class OpenAICompatibleProvider(ModelProvider):
 
         try:
             response = await client.post("/chat/completions", json=payload)
+        except asyncio.CancelledError:
+            # Cancellation is BaseException: it must never be converted into a
+            # model error. Log model+elapsed for telemetry, then re-raise.
+            # Cost stays unknown, never zero-filled.
+            elapsed_ms = int((time.monotonic() - started) * 1000)
+            logger.warning(
+                "model request cancelled",
+                model=candidate.key(),
+                elapsed_ms=elapsed_ms,
+            )
+            raise
         except httpx.TimeoutException as exc:
             msg = f"{candidate.key()}: request timed out after {self._timeout_s}s"
             raise ModelUnavailable(msg, details={"model": candidate.key()}, cause=exc) from exc
@@ -166,10 +178,44 @@ class OpenAICompatibleProvider(ModelProvider):
             # Model-specific entitlement can differ between candidates on the
             # same key. Inkling Small currently requires a registered agentic
             # harness. Do not retry or disguise the client; try the next model.
+            if _budget_denied(body):
+                # A budget denial is terminal, never fallback-eligible: trying
+                # the next model would spend past the key/workspace/guardrail
+                # budget the denial protects (OpenRouter surfaces the 402
+                # budget family as HTTP 403 with error.metadata.limit_source
+                # or a "$X of $Y used; resets ..." message).
+                error = _as_error(body)
+                raise ValidationError(
+                    f"{candidate.key()}: budget limit exhausted (403): "
+                    + str(error.get("message", "budget exhausted"))[:300],
+                    details={"model": candidate.key(), "status": 403},
+                )
+            if _guardrail_denied(body):
+                # A guardrail/permission denial (non-content-filter variant) is
+                # a refusal of this request, not a model fault: no other model
+                # may serve it either.
+                raise PolicyDenied(
+                    f"{candidate.key()}: provider guardrail denied this request (403)",
+                    details={"model": candidate.key(), "body": _safe_dict(body)},
+                )
+            # Upstream error shapes vary (dict, string, null): _as_error
+            # normalises them, so a malformed 403 reports a structured
+            # ModelUnavailable instead of an internal AttributeError.
+            error = _as_error(body)
             raise ModelUnavailable(
                 f"{candidate.key()}: model access denied (403): "
-                + str(body.get("error", {}).get("message", "access denied"))[:300],
+                + str(error.get("message", "access denied"))[:300],
                 details={"model": candidate.key(), "status": 403},
+            )
+        if response.status_code == 402:
+            # Payment required is a budget denial by definition: terminal and
+            # never fallback-eligible, for the same reason as a 403 budget body.
+            body = _safe_body(response)
+            error = _as_error(body)
+            raise ValidationError(
+                f"{candidate.key()}: budget limit exhausted (402): "
+                + str(error.get("message", "payment required"))[:300],
+                details={"model": candidate.key(), "status": 402},
             )
         if response.status_code == 401:
             # Never retried. The credential is wrong or insufficient, and
@@ -186,11 +232,12 @@ class OpenAICompatibleProvider(ModelProvider):
             raise ModelUnavailable(msg, details={"model": candidate.key(), "status": 404})
         if response.status_code == 400:
             body = _safe_body(response)
-            msg = (
-                f"{candidate.key()}: request rejected (400): "
-                f"{body.get('error', {}).get('message', 'unknown')}"
-            )
-            raise ValidationError(msg, details={"model": candidate.key(), "body": body})
+            error = _as_error(body if isinstance(body, dict) else {})
+            details = _redacted_400_details(candidate, error)
+            # The denial message is part of the exception text: use the
+            # secret-scrubbed details message, never the raw provider string.
+            msg = f"{candidate.key()}: request rejected (400): {details['message'] or 'unknown'}"
+            raise ValidationError(msg, details=details)
         if response.status_code >= 400:
             msg = f"{candidate.key()}: provider returned {response.status_code}"
             raise ExternalServiceError(
@@ -264,6 +311,143 @@ def _content_filter_refusal(body: dict[str, Any]) -> str | None:
     return None
 
 
+#: OpenRouter `error.metadata.limit_source` values that name a budget, not a
+#: model. A denial carrying one must never fall back to another model, which
+#: would spend past the budget the denial protects.
+#: https://openrouter.ai/docs/api_reference/errors-and-debugging
+_BUDGET_LIMIT_SOURCES = frozenset(
+    {"openrouter_guardrail_budget", "openrouter_workspace_budget", "openrouter_key_limit"}
+)
+
+#: `error.metadata.error_type` (or the error's own type field) naming the
+#: 402-budget family surfaced as HTTP 403.
+_BUDGET_ERROR_TYPES = frozenset({"payment_required"})
+
+#: Guardrail/permission denial variants that are refusals of the request, not
+#: model faults. Non-content-filter-string forms, so `_content_filter_refusal`
+#: does not catch them; they still must not fall back.
+_GUARDRAIL_ERROR_TYPES = frozenset({"permission_denied", "content_policy_violation", "refusal"})
+
+#: The budget-exhausted message shape: "$8 of $10 used; resets ...".
+_BUDGET_MESSAGE_RE = re.compile(
+    r"\$\s*[\d.,]+\s+of\s+\$\s*[\d.,]+\s+used"
+    r"|budget[^.]{0,60}(exceed|exhaust|deplet|limit)"
+    r"|(exceed|exhaust|deplet)[^.]{0,60}budget",
+    re.IGNORECASE,
+)
+
+
+#: Secret-shaped text that must never survive into shared errors or audit rows,
+#: even inside a provider message. Values are replaced, field names kept so the
+#: shape of the denial stays diagnosable.
+_SECRET_TEXT_RES = (
+    re.compile(r"sk-or-v1-[A-Za-z0-9_-]+"),
+    re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=_-]+"),
+    re.compile(
+        r"(?i)\b(api[_-]?key|authorization|client[_-]?secret|secret|passwd|credential)\b"
+        r"\s*[:=]\s*(\"[^\"]*\"|'[^']*'|\S+)"
+    ),
+)
+
+
+def _scrub_secrets(text: str) -> str:
+    """Replace credential-shaped substrings with [redacted]."""
+    scrubbed = str(text or "")
+    for pattern in _SECRET_TEXT_RES:
+        scrubbed = pattern.sub(
+            lambda match: (
+                match.group(0)[: match.group(0).find(" ") + 1] + "[redacted]"
+                if " " in match.group(0)
+                else "[redacted]"
+            ),
+            scrubbed,
+        )
+    return scrubbed
+
+
+def _scalar_or_none(value: Any, *, cap: int = 200) -> str | None:
+    """A whitelisted operational value: scalar-coerced, capped, never a container."""
+    if value is None or isinstance(value, (dict, list)):
+        return None
+    text = str(value)
+    return text[:cap] if text else None
+
+
+def _redacted_400_details(
+    candidate: ModelCandidate, error: dict[str, Any], *, status: int = 400
+) -> dict[str, Any]:
+    """Whitelisted denial metadata: operational fields only, no opaque raw.
+
+    Only known-safe scalar fields are kept (`error_type`, `limit_source`,
+    `provider_code` from `metadata.provider_code`, `status`, plus a
+    secret-scrubbed message prefix). The provider's opaque `raw`/echo
+    containers (`request`, `messages`, `headers`, nested metadata) are never
+    serialized into shared errors or audit rows; full bodies stay in private
+    synthetic replay evidence. Truncation alone is not redaction.
+    """
+    metadata = error.get("metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
+    return {
+        "model": candidate.key(),
+        "status": status,
+        "error_type": _scalar_or_none(
+            metadata.get("error_type") or error.get("error_type") or error.get("type")
+        ),
+        "limit_source": _scalar_or_none(metadata.get("limit_source")),
+        "provider_code": _scalar_or_none(metadata.get("provider_code")),
+        "message": _scrub_secrets(str(error.get("message") or ""))[:300],
+    }
+
+
+def _as_error(body: dict[str, Any]) -> dict[str, Any]:
+    """The inner error dict, whether `body` is a full response or bare error."""
+    if not isinstance(body, dict):
+        return {}
+    error = body.get("error")
+    if isinstance(error, dict):
+        return error
+    if "choices" not in body and any(
+        key in body for key in ("code", "message", "metadata", "error_type", "type")
+    ):
+        return body
+    return {}
+
+
+def _budget_denied(body: dict[str, Any]) -> bool:
+    """Whether this 403-shaped denial is really a budget denial (terminal)."""
+    error = _as_error(body)
+    if not error:
+        return False
+    try:
+        if int(str(error.get("code") or "").strip()) == 402:
+            return True
+    except TypeError, ValueError:
+        pass
+    metadata = error.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+    if str(metadata.get("limit_source") or "").strip() in _BUDGET_LIMIT_SOURCES:
+        return True
+    for error_type in (metadata.get("error_type"), error.get("error_type"), error.get("type")):
+        if str(error_type or "").strip().lower() in _BUDGET_ERROR_TYPES:
+            return True
+    return bool(_BUDGET_MESSAGE_RE.search(str(error.get("message") or "")))
+
+
+def _guardrail_denied(body: dict[str, Any]) -> bool:
+    """Whether this 403-shaped denial is a guardrail/permission refusal (terminal)."""
+    error = _as_error(body)
+    if not error:
+        return False
+    metadata = error.get("metadata")
+    candidates: list[Any] = [error.get("error_type"), error.get("type")]
+    if isinstance(metadata, dict):
+        if metadata.get("patterns"):
+            return True
+        candidates.append(metadata.get("error_type"))
+    return any(str(item or "").strip().lower() in _GUARDRAIL_ERROR_TYPES for item in candidates)
+
+
 def _safe_dict(body: dict[str, Any]) -> dict[str, Any]:
     """A provider body, truncated so a diagnostic cannot become a payload."""
     return {"error": body.get("error"), "model": body.get("model")}
@@ -291,8 +475,12 @@ def _error_envelope_error(candidate: ModelCandidate, error: dict[str, Any]) -> B
     Upstream overloads and rate limits stay retryable/fallback-eligible
     (`ModelUnavailable`/`ModelRateLimited`, bounded by the caller's retry budget
     and the gateway's candidate list). Credential failures stay terminal
-    (`ValidationError`, never retried). Content-filter refusals never reach here:
-    `_content_filter_refusal` runs first and stays terminal. No usage or cost is
+    (`ValidationError`, never retried). Budget denials (402, or 403 carrying a
+    budget `limit_source`/`payment_required`/exhausted message) stay terminal
+    (`ValidationError`): falling back would spend past the budget. Guardrail or
+    permission denials (403 with a refusal-shaped `error_type` or guardrail
+    `patterns`) stay terminal (`PolicyDenied`). Content-filter refusals never
+    reach here: `_content_filter_refusal` runs first and stays terminal. No usage or cost is
     attached — a failed call's cost is unknown, never zero-filled.
     """
     message = str(error.get("message") or "unknown upstream error")[:300]
@@ -310,6 +498,30 @@ def _error_envelope_error(candidate: ModelCandidate, error: dict[str, Any]) -> B
         return ModelRateLimited(
             f"{candidate.key()}: rate limited (upstream 429)",
             details={"model": candidate.key(), "status": 429},
+        )
+    if status == 400:
+        # A malformed request inside the envelope carries the same
+        # whitelisted 400 telemetry as the HTTP 400 path. The message in the
+        # exception text is the secret-scrubbed details message.
+        details = _redacted_400_details(candidate, error, status=400)
+        return ValidationError(
+            f"{candidate.key()}: request rejected (upstream 400): "
+            f"{details['message'] or 'unknown upstream error'}",
+            details=details,
+        )
+    if status == 402 or (status == 403 and _budget_denied(error)):
+        # A budget denial inside the envelope is terminal for the same reason
+        # as an HTTP 403 budget body: falling back would spend past the budget.
+        return ValidationError(
+            f"{candidate.key()}: budget limit exhausted (upstream {status}): {message}",
+            details={"model": candidate.key(), "status": status},
+        )
+    if status == 403 and _guardrail_denied(error):
+        # A guardrail/permission denial is a refusal of the request, not a
+        # model fault, so no other candidate may serve it either.
+        return PolicyDenied(
+            f"{candidate.key()}: provider guardrail denied this request (upstream 403)",
+            details={"model": candidate.key(), "body": _safe_dict({"error": error})},
         )
     shown = status if status else "unknown"
     return ModelUnavailable(

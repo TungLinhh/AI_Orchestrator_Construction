@@ -20,6 +20,7 @@ effect runs through the gateway.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import re
 from collections.abc import Awaitable, Callable, Sequence
@@ -413,13 +414,17 @@ async def run_with_pydantic_ai(
     template = _template_for(task, context)
 
     instructions = _render_instructions(context)
+    # Every real tool receipt is kept beside its call, so the handoff shortcut
+    # below judges the backend's decision rather than the transcript's text.
+    receipts: list[_ToolReceipt] = []
+    recorded_execute = _recording_execute(execute_tool, receipts)
     ai_agent = Agent(
         model=model or _build_gateway_model(model_gateway)(model_gateway, template),
         instructions=instructions,
         # A toolset, through `toolsets`. `tools=` takes plain callables and
         # iterates whatever it is given, so handing it a toolset raises
         # `'FunctionToolset' object has no attribute '__name__'`.
-        toolsets=[_tool_definitions(context, execute_tool)],
+        toolsets=[_tool_definitions(context, recorded_execute)],
         # **Output retries, not transport retries.** These are two different
         # mechanisms and the comment that used to sit here said otherwise.
         #
@@ -445,7 +450,12 @@ async def run_with_pydantic_ai(
 
     execution_id = ExecutionId(str(getattr(task, "execution_id", "") or ExecutionId.create()))
     try:
-        run = await ai_agent.run(
+        # Owners declared in the task input must be covered by the handoff
+        # batch before it may end the run; `None` (declared but
+        # uninterpretable) disables the shortcut rather than guessing.
+        expected_owners = _expected_owners(getattr(context.task, "input", None))
+        driven = await _drive_agent(
+            ai_agent,
             _user_prompt(task, context),
             # A turn loop needs a ceiling. The real model spent 23 consecutive
             # turns on one executive goal — calling a tool, reading the result,
@@ -464,6 +474,14 @@ async def run_with_pydantic_ai(
                 request_limit=min(context.budget.max_requests, context.budget.max_tool_calls),
                 tool_calls_limit=context.budget.max_tool_calls,
             ),
+            # A coordinator whose handoff was accepted has nothing left to ask
+            # the model: the acknowledgement turn only re-reads what the backend
+            # already authorised, and on the chain-acceptance run that turn is
+            # what failed (DOTS strict-parser rejection, then the NVIDIA 60s
+            # deadline) after the delegation itself had succeeded.
+            handoff_shortcut=_may_end_on_handoff(context) and expected_owners is not None,
+            receipts=receipts,
+            expected_owners=expected_owners or (),
         )
     except (ModelUnavailable, ExternalServiceError, ToolUnavailable) as exc:
         logger.warning("runtime.model_failed", error=type(exc).__name__, detail=exc.message)
@@ -525,8 +543,8 @@ async def run_with_pydantic_ai(
     # `usage` is a property on the result, not a method. Calling it raises
     # `TypeError: 'RunUsage' object is not callable`, which reads like a bug in
     # the usage accounting rather than in the call.
-    usage = run.usage
-    text = str(run.output)
+    usage = driven.usage
+    text = driven.output_text
     approval_request = _human_approval_request(text)
     return AgentResult(
         status=AgentResultStatus.NEEDS_APPROVAL
@@ -568,12 +586,311 @@ async def run_with_pydantic_ai(
         ),
         # AgentRunResult owns the transcript; the serving model is on its last
         # response. Reading a nonexistent run.model_name erased fallback provenance.
-        model_used=run.response.model_name or "",
-        follow_up_actions=_proposals_from_run(run),
+        model_used=driven.model_name or "",
+        follow_up_actions=_proposals_from_messages(driven.messages),
     )
 
 
-def _proposals_from_run(run: Any) -> tuple[ActionProposal, ...]:
+def _may_end_on_handoff(context: AgentContext) -> bool:
+    """Coordinators only: a routing task with someone to route to.
+
+    A worker keeps its closing turn -- its answer is contract-checked, and
+    ending on a tool batch would skip the answer the contract exists to check.
+    """
+    coordinating = str(getattr(context.task, "task_type", "")) == "coordination"
+    return coordinating and bool(
+        getattr(context, "delegate_targets", ()) or getattr(context, "delegate_options", ())
+    )
+
+
+@dataclasses.dataclass(slots=True)
+class _DrivenRun:
+    """A manually driven run: final text, usage, serving model, transcript."""
+
+    output_text: str
+    usage: Any
+    model_name: str
+    messages: list[Any]
+    ended_on_handoff: bool
+
+
+@dataclasses.dataclass(slots=True)
+class _ToolReceipt:
+    """What the backend actually decided for one tool call.
+
+    Acceptance is read off this object -- the real `ToolResult` the gateway
+    returned -- never off the transcript text. A model (or a spoofed return)
+    can write `{"accepted": true}` into a message; it cannot mint this.
+    `accepted_children` is empty unless the result is a trusted acceptance
+    with the child ids proving a task was created.
+    """
+
+    tool_name: str
+    arguments_key: str
+    accepted_children: tuple[str, ...] = ()
+
+    @classmethod
+    def from_result(cls, tool_name: Any, arguments: Any, result: Any) -> _ToolReceipt:
+        try:
+            key = json.dumps(arguments, sort_keys=True, default=str)
+        except TypeError, ValueError:
+            key = ""
+        children: tuple[str, ...] = ()
+        if str(tool_name or "") == "delegate_to_agent":
+            output = getattr(result, "output", None)
+            if (
+                bool(getattr(result, "ok", False))
+                and isinstance(output, dict)
+                and output.get("accepted") is True
+                and not output.get("untrusted")
+                and output.get("child_task_ids")
+            ):
+                children = tuple(str(k) for k in output["child_task_ids"])
+        return cls(tool_name=str(tool_name or ""), arguments_key=key, accepted_children=children)
+
+
+def _recording_execute(
+    execute: Callable[..., Awaitable[Any]] | None, receipts: list[_ToolReceipt]
+) -> Callable[..., Awaitable[Any]] | None:
+    """Wrap the tool executor so each real receipt is kept beside its call."""
+    if execute is None:
+        return None
+
+    async def _recorded(**kwargs: Any) -> Any:
+        result = await execute(**kwargs)
+        receipts.append(
+            _ToolReceipt.from_result(kwargs.get("tool_name"), kwargs.get("arguments"), result)
+        )
+        return result
+
+    return _recorded
+
+
+def _normalize_owner(value: Any) -> str:
+    """Slugs and display names into one comparable shape."""
+    return " ".join(str(value).lower().replace("-", " ").replace("_", " ").split())
+
+
+def _expected_owners(task_input: Any) -> tuple[str, ...] | None:
+    """Owners the task input declares, or `()` when it declares none.
+
+    `None` when an owner is declared but uninterpretable: coverage cannot be
+    verified, so the shortcut stays off rather than guessing. The keys are the
+    ones the coordinator prompt already references (`owning_office`,
+    `owning_department`).
+    """
+    if not isinstance(task_input, dict):
+        return ()
+    owners: list[str] = []
+    for key in ("owning_office", "owning_department"):
+        if key not in task_input:
+            continue
+        value = task_input[key]
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        if isinstance(value, str):
+            owners.append(value)
+        elif isinstance(value, (list, tuple)) and all(
+            isinstance(item, str) and item.strip() for item in value
+        ):
+            owners.extend(value)
+        else:
+            return None
+    return tuple(owners)
+
+
+async def _drive_agent(
+    ai_agent: Any,
+    prompt: str,
+    *,
+    usage_limits: Any,
+    handoff_shortcut: bool,
+    receipts: Sequence[_ToolReceipt] = (),
+    expected_owners: tuple[str, ...] = (),
+) -> _DrivenRun:
+    """`Agent.run` on PydanticAI 2.50 `Agent.iter` node control, with one exit.
+
+    The driver may decline to run the next `ModelRequestNode` when the latest
+    tool batch is a fully receipted, fully accepted delegation handoff (see
+    `_accepted_handoff_summary`). No smaller hook exists: `Agent.run` always
+    spends the acknowledgement turn, an output-handoff still needs the model
+    to call it, and that turn is what failed the chain run after the
+    delegation had succeeded. Declining the request is the only way to return
+    without spending it. Exiting the `async with` here stops driving; nothing
+    is cancelled and no success is declared.
+    """
+    from pydantic_ai import ModelRequestNode
+    from pydantic_ai.tool_manager import ToolManager
+    from pydantic_graph import End
+
+    # Sequential tool execution: this run's tools share one session (the
+    # `TaskExecutionService` session), and an `AsyncSession` cannot serve two
+    # operations at once. The framework default runs a batch's tools in
+    # parallel, so two `delegate_to_agent` calls in one batch issued their
+    # ownership checkpoints (`SELECT ... FOR UPDATE OF tasks`) concurrently on
+    # that session: "another operation is in progress", then a poisoned
+    # transaction ("prepared state") that rolled back every delegation the
+    # batch had made. Order is the only thing this changes; every call still
+    # runs, and receipts stay attributable in call order.
+    with ToolManager.parallel_execution_mode("sequential"):
+        async with ai_agent.iter(prompt, usage_limits=usage_limits) as agent_run:
+            node = agent_run.next_node
+            # Receipts before this index belong to an earlier batch and must not
+            # vouch for the current one: an identical call accepted two turns ago
+            # says nothing about the call in front of us.
+            receipt_floor = 0
+            while not isinstance(node, End):
+                if handoff_shortcut and isinstance(node, ModelRequestNode):
+                    # The pending request is not in `all_messages()` yet -- its
+                    # tool returns are appended only when this node runs, which is
+                    # the call being declined -- so the snapshot is history plus
+                    # this request. Scanning history alone would never see the
+                    # returns and the shortcut would never fire.
+                    transcript = [*agent_run.all_messages(), node.request]
+                    batch_receipts = list(receipts[receipt_floor:])
+                    receipt_floor = len(receipts)
+                    summary = _accepted_handoff_summary(
+                        transcript, receipts=batch_receipts, expected_owners=expected_owners
+                    )
+                    if summary is not None:
+                        return _DrivenRun(
+                            output_text=summary,
+                            usage=agent_run.usage,
+                            model_name=_last_model_name(transcript),
+                            messages=transcript,
+                            ended_on_handoff=True,
+                        )
+                node = await agent_run.next(node)
+            result = agent_run.result
+            assert result is not None, "the graph reached End but produced no result"
+            return _DrivenRun(
+                output_text=str(result.output),
+                usage=result.usage,
+                model_name=result.response.model_name or "",
+                messages=list(agent_run.all_messages()),
+                ended_on_handoff=False,
+            )
+
+
+def _accepted_handoff_summary(
+    messages: Sequence[Any],
+    *,
+    receipts: Sequence[_ToolReceipt],
+    expected_owners: tuple[str, ...] = (),
+) -> str | None:
+    """Report for a fully receipted accepted delegation batch, else `None`.
+
+    `None` means "ask the model". It covers: no batch yet; a non-delegation or
+    mixed batch (the model has not reacted to the other results); a batch
+    whose returns are missing (not fully processed); a call repeating an agent
+    delegated in an earlier batch (a re-request loop, not a fresh handoff --
+    transcript order cannot tell what the model "wants next", so any repeat
+    stays with the model); a call without a matching accepted receipt from
+    this batch (refused, untrusted, unresolved, spoofed text, or a stale
+    receipt from an earlier batch); and declared owners the batch does not
+    cover. Only the latest batch is judged.
+    """
+    from pydantic_ai.messages import ModelRequest as AiModelRequest
+    from pydantic_ai.messages import ModelResponse as AiModelResponse
+    from pydantic_ai.messages import ToolCallPart, ToolReturnPart
+
+    batches = [
+        message
+        for message in messages
+        if isinstance(message, AiModelResponse)
+        and any(isinstance(part, ToolCallPart) for part in message.parts)
+    ]
+    if not batches:
+        return None
+    batch = batches[-1]
+    calls = [part for part in batch.parts if isinstance(part, ToolCallPart)]
+    if not calls or any(part.tool_name != "delegate_to_agent" for part in calls):
+        return None
+
+    # Resolve each call to (agent, args) once: later checks need the typed dict
+    # and mypy cannot carry the isinstance through the helper.
+    parsed: list[tuple[Any, str, dict[str, Any]]] = []
+    for call in calls:
+        args = call.args if isinstance(call.args, dict) else None
+        agent = args.get("agent_name") if args is not None else None
+        if args is None or not isinstance(agent, str) or not agent:
+            return None
+        parsed.append((call, agent, args))
+    agents = [agent for _, agent, _ in parsed]
+    earlier = {
+        args.get("agent_name")
+        for prev in batches[:-1]
+        for part in prev.parts
+        if isinstance(part, ToolCallPart) and part.tool_name == "delegate_to_agent"
+        for args in (part.args if isinstance(part.args, dict) else {},)
+    }
+    if any(agent in earlier for agent in agents):
+        return None
+
+    past_batch = False
+    returned: set[str] = set()
+    for message in messages:
+        if message is batch:
+            past_batch = True
+            continue
+        if not past_batch or not isinstance(message, AiModelRequest):
+            continue
+        returned.update(
+            part.tool_call_id for part in message.parts if isinstance(part, ToolReturnPart)
+        )
+    if any(call.tool_call_id not in returned for call in calls):
+        return None
+
+    # Multiset cover against the real receipts: each batch call consumes one
+    # accepted receipt for the same tool and arguments. Order-free, so
+    # concurrent execution cannot misattribute; duplicates need one receipt
+    # each, so a half-accepted fanout never matches.
+    remaining = list(receipts)
+    reports: list[str] = []
+    for _, agent, args in parsed:
+        key = json.dumps(args, sort_keys=True, default=str)
+        match = next(
+            (
+                receipt
+                for receipt in remaining
+                if receipt.tool_name == "delegate_to_agent"
+                and receipt.arguments_key == key
+                and receipt.accepted_children
+            ),
+            None,
+        )
+        if match is None:
+            return None
+        remaining.remove(match)
+        objective = str(args.get("objective", ""))[:500]
+        reports.append(
+            f"delegated to {agent} (child {', '.join(match.accepted_children)}): {objective}"
+        )
+    for owner in expected_owners:
+        wanted = _normalize_owner(owner)
+        if not wanted or not any(
+            wanted in _normalize_owner(agent) or _normalize_owner(agent) in wanted
+            for agent in agents
+        ):
+            return None
+    return (
+        "The handoff was accepted and this run ends here without a further "
+        "model turn; the delegated work is still open and will be settled when "
+        "it finishes. " + " | ".join(reports)
+    )
+
+
+def _last_model_name(messages: Sequence[Any]) -> str:
+    """The serving model on the latest response, or `""` when there is none."""
+    from pydantic_ai.messages import ModelResponse as AiModelResponse
+
+    for message in reversed(list(messages)):
+        if isinstance(message, AiModelResponse):
+            return str(message.model_name or "")
+    return ""
+
+
+def _proposals_from_messages(messages: Sequence[Any]) -> tuple[ActionProposal, ...]:
     """The tool calls the model made, as typed proposals.
 
     Without this the bridge returned the model's prose and dropped everything it
@@ -594,7 +911,7 @@ def _proposals_from_run(run: Any) -> tuple[ActionProposal, ...]:
     from pydantic_ai.messages import ToolCallPart
 
     proposals: list[ActionProposal] = []
-    for message in _all_messages(run):
+    for message in messages:
         if not isinstance(message, AiModelResponse):
             continue
         for part in message.parts:
@@ -613,18 +930,6 @@ def _proposals_from_run(run: Any) -> tuple[ActionProposal, ...]:
                     detail=str(exc)[:200],
                 )
     return tuple(proposals)
-
-
-def _all_messages(run: Any) -> list[Any]:
-    """Every message in the run, across PydanticAI versions.
-
-    `all_messages()` is a method on the result in some versions and a property in
-    others. Calling it when it is a property raises `TypeError: 'list' object is
-    not callable`, which reads like a bug in the run rather than a version skew.
-    """
-    messages = getattr(run, "all_messages", None)
-    out = list((messages() if callable(messages) else messages) or [])
-    return out
 
 
 def _proposal_for(tool_name: str, arguments: dict[str, Any]) -> ActionProposal:
@@ -1165,6 +1470,12 @@ def _user_prompt(task: Any, context: AgentContext) -> str:
             "coordination task that completes without delegating is a FAILED run, so "
             "if you are unsure who to pick, pick the closest one and delegate -- "
             "answering alone is not an option.",
+            "",
+            "FULL-BATCH INITIAL-HANDOFF CONTRACT: your FIRST tool batch must "
+            "contain ALL of this task's independent delegations, one tool call "
+            "per piece. Once that batch is fully accepted, the run ends without "
+            "another model turn -- there is no second round, so work you do not "
+            "hand off in that batch never happens.",
         ]
     elif isinstance(schema, dict) and schema:
         serialized_schema = json.dumps(schema, ensure_ascii=False, allow_nan=False)

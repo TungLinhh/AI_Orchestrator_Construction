@@ -163,6 +163,19 @@ ECHO_MIN_WORDS = 4
 ECHO_MIN_SOURCE = 24
 
 
+def _contract_empty_ok(field_schema: Any, value: Any) -> bool:
+    """Whether an empty value is the valid complete answer for this field.
+
+    True only when the field's own schema declares `x-allow-empty: true`
+    AND the value is an empty list or dict. Every other emptiness --
+    unmarked fields, empty strings, thin text -- still fails the substantive
+    check, so this is not a universal empty acceptance.
+    """
+    if not isinstance(field_schema, dict) or field_schema.get("x-allow-empty") is not True:
+        return False
+    return bool(value == [] or value == {})
+
+
 def _words(text: str) -> set[str]:
     """Distinct lowercased words, ignoring punctuation.
 
@@ -380,6 +393,13 @@ def assess_output(
             )
             continue
         substantive, why = _substantive(value)
+        if not substantive and _contract_empty_ok(field_schema, value):
+            # The field's own contract declares empty the valid complete
+            # answer (e.g. `missing_inputs: []` when every required source
+            # was supplied): rejecting it would penalize exactly what the
+            # contract mandates. Only facet-marked fields are exempt --
+            # an unmarked empty findings/values list still fails below.
+            substantive, why = True, "empty is the contract-complete answer"
         checks.append(Check(f"substantive:{key}", substantive, why))
         if not substantive:
             findings.append(f"'{key}' is too thin to review ({why}). Give the finding itself.")

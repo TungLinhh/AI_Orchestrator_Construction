@@ -40,6 +40,24 @@ _DETERMINISTIC = ModelCandidate(
 )
 
 #: Explicit execution chain requested by the operator. Catalogue checked 2026-10-15.
+#:
+#: Order inside `primary`/`reasoning` is DOTS-first, NVIDIA-fallback. The tuple
+#: position is the preference order (see the module docstring), and the two
+#: candidates below are unchanged apart from position -- every capability,
+#: privacy and pricing field is byte-identical to the NVIDIA-first revision.
+#:
+#: Observed basis, chain-acceptance round 1 (chain-stdout.log): with NVIDIA
+#: primary, the CEO acknowledgement turn failed the whole root -- DOTS was
+#: rejected by the strict parser ("inconsistent completion/reasoning usage")
+#: and the NVIDIA fallback hit its 60s candidate deadline ("candidate deadline
+#: exceeded"). The same NVIDIA model also ReadTimeout'd a 120s parent probe
+#: (parent-free-probe.json). A scoped tenant reorder to DOTS-first
+#: (root-pilot-routing.json, root-validation-reorder.json) then carried the
+#: round-4 verification: 7 persisted department tasks completed on the ordinary
+#: pydantic_ai path with schema/source/grade PASS (root-round4-verification.json).
+#: So fresh orgs, which inherit this builtin order, start DOTS-first instead of
+#: repeating the bad primary. An explicitly persisted operator order still wins
+#: via the loader overlay in application/model_profiles.py (untouched here).
 _PRIMARY_FREE = ModelCandidate(
     provider="openrouter",
     model="nvidia/nemotron-3-ultra-550b-a55b:free",
@@ -72,6 +90,11 @@ def default_profiles() -> dict[str, ModelProfile]:
         # validate their tool output independently.
         # Live availability still depends on provider capacity and quota.
         #
+        # DOTS-first, NVIDIA-fallback: tuple position is the preference order,
+        # and the scoped tenant reorder proved this order on the live chain
+        # (see the note on _PRIMARY_FREE above). `_FREE_FALLBACKS` first is
+        # deliberate, not drift -- do not "tidy" it back to NVIDIA-first.
+        #
         # Placed ahead of the deterministic provider on purpose: the point of
         # this deployment is a real model deciding real work. A profile whose
         # first candidate is the scripted stub would never ask it anything.
@@ -82,8 +105,8 @@ def default_profiles() -> dict[str, ModelProfile]:
             max_retries=0,
             description="The operator's model. Real reasoning, no cost.",
             candidates=(
-                _PRIMARY_FREE,
                 *_FREE_FALLBACKS,
+                _PRIMARY_FREE,
                 _DETERMINISTIC,
             ),
         ),
@@ -97,8 +120,10 @@ def default_profiles() -> dict[str, ModelProfile]:
                 "operator asked for one model rather than a portfolio."
             ),
             candidates=(
-                _PRIMARY_FREE,
+                # Same DOTS-first order as `primary` (see the note there):
+                # reasoning turns hit the same providers under the same quota.
                 *_FREE_FALLBACKS,
+                _PRIMARY_FREE,
                 _DETERMINISTIC,
             ),
         ),

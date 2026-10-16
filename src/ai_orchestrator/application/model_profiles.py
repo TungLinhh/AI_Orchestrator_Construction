@@ -65,6 +65,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ai_orchestrator.domain.enums import DataClassification
+from ai_orchestrator.domain.errors import ValidationError
 from ai_orchestrator.models.gateway import ModelCandidate, ModelProfile
 from ai_orchestrator.models.profiles import default_profiles
 from ai_orchestrator.persistence.session import Database
@@ -75,6 +76,13 @@ logger = logging.getLogger(__name__)
 #: reported. `max_input_tokens` and `pricing` are deliberately absent: they are not in the
 #: column today, and a tenant writing `max_input_tokens: 999999` into a JSON blob and
 #: having it ignored is the same invisible-belief failure as `supports_vision`.
+#: `reasoning` is an explicit-operator config capability only: a row carrying
+#: a `reasoning` key is validated and transmitted verbatim; a row WITHOUT the
+#: key sends no `reasoning` (provider default reasoning applies). There is no
+#: automatic per-model default: a global DOTS reasoning:false default was
+#: measured to break tool calls with HTTP 400 (submissions 19/20), so normal
+#: tool tasks use provider-default reasoning. This key only lets a row carry
+#: what `ModelCandidate` already accepts.
 _CANDIDATE_KEYS = frozenset(
     {
         "model",
@@ -86,6 +94,7 @@ _CANDIDATE_KEYS = frozenset(
         "supports_vision",
         "max_classification",
         "base_url",
+        "reasoning",
     }
 )
 
@@ -140,6 +149,27 @@ def _candidate(
     for key in entry:
         if key not in _CANDIDATE_KEYS:
             warn(f"{where}: providers[] entry for {model!r} has unknown key {key!r}; ignored")
+    # `reasoning` passes through verbatim with the same validation as the gateway's
+    # `_validate_reasoning`: it must be a dict, and `effort` + `max_tokens` together
+    # are rejected. Anything else (`enabled`/`exclude`/`effort`/`max_tokens` alone)
+    # is the operator's contract with the provider and is always transmitted
+    # verbatim, including alongside tools: no silent rewrite, no automatic
+    # per-model default. Absent key (legacy/persisted rows + current defaults)
+    # means None (provider default reasoning). Present key (explicit operator
+    # value, including explicit null) is respected as-is; null stays None
+    # (operator opted out). `ModelCandidate.__post_init__` re-checks on
+    # construction; this check rejects at the config boundary first.
+    reasoning = None
+    if "reasoning" in entry:
+        reasoning = entry.get("reasoning")
+        if reasoning is not None:
+            if not isinstance(reasoning, dict):
+                msg = "model candidate reasoning must be a dict"
+                raise ValidationError(msg, details={"reasoning": reasoning})
+            if "effort" in reasoning and "max_tokens" in reasoning:
+                msg = "model candidate reasoning must not set both effort and max_tokens"
+                raise ValidationError(msg, details={"reasoning": dict(reasoning)})
+            reasoning = dict(reasoning)
     return ModelCandidate(
         provider=provider,
         model=model,
@@ -152,6 +182,7 @@ def _candidate(
             entry.get("max_classification"), where=f"{where} {model!r}", warn=warn
         ),
         base_url=entry.get("base_url") if isinstance(entry.get("base_url"), str) else None,
+        reasoning=reasoning,
     )
 
 

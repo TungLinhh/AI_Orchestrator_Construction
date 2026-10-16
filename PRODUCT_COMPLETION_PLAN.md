@@ -1,6 +1,10 @@
 # Kế hoạch hoàn thiện sản phẩm
 
-> Cập nhật 16/10/2026: OpenRouter còn PARTIAL: runtime thật đạt 3/7; 4 ca lỗi upstream 503.
+> Cập nhật 16/10/2026 (MuseSpark continuation, gates-c4): task đơn ordinary 7/7 PASS
+> trên PydanticAI runtime thật (DOTS, cost 0, DB kiểm chứng độc lập); chain
+> CEO→office→department PARTIAL — round 3 đã tới leaf completed + grade PASS
+> nhưng chưa có vòng settlement hoàn tất (round 1/2/4/5 FAIL trung thực, giữ
+> receipt). Gates-c4: lint/typecheck/4151 test/35 E2E PASS cùng source hash.
 > Baseline đã kiểm tra: 3.870 test, 35 E2E, lint/typecheck PASS; UI trên cổng 8100
 > đã qua 91 kiểm tra điều hướng và 30 kiểm tra nút/phông chữ. Đây là bằng chứng
 > của đợt trước, không thay cho campaign model thật: chưa đạt nghiệm thu.

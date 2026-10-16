@@ -427,3 +427,51 @@ def _pricing(input_usd: str, output_usd: str):
     from ai_orchestrator.domain.budget import ModelPricing
 
     return ModelPricing(input_per_mtok=Money(input_usd), output_per_mtok=Money(output_usd))
+
+
+class TestPlatformFacetsStrippedFromWire:
+    """`x-` facets guide our validators; strict providers must never see them."""
+
+    SCHEMA = {
+        "type": "object",
+        "required": ["decision", "missing_inputs"],
+        "properties": {
+            "decision": {"type": "string"},
+            "missing_inputs": {"type": "array", "x-allow-empty": True},
+            "progress": {"type": "string", "x-source-summary": True},
+        },
+    }
+
+    def test_response_format_schema_has_no_x_keys(self) -> None:
+        candidate = ModelCandidate(provider="openrouter", model="m")
+        payload = ModelRequest(
+            profile="p", prompt="hi", output_schema=dict(self.SCHEMA)
+        ).to_provider_payload(candidate)
+        schema = payload["response_format"]["json_schema"]["schema"]
+        assert schema["properties"]["missing_inputs"] == {"type": "array"}
+        assert schema["properties"]["progress"] == {"type": "string"}
+        assert schema["required"] == ["decision", "missing_inputs"]
+
+    def test_tool_parameters_have_no_x_keys(self) -> None:
+        candidate = ModelCandidate(provider="openrouter", model="m")
+        tool = {
+            "type": "function",
+            "function": {"name": "t", "description": "d", "parameters": dict(self.SCHEMA)},
+        }
+        payload = ModelRequest(profile="p", prompt="hi", tools=[tool]).to_provider_payload(
+            candidate
+        )
+        params = payload["tools"][0]["function"]["parameters"]
+        assert "x-allow-empty" not in params["properties"]["missing_inputs"]
+        assert payload["tools"][0]["function"]["name"] == "t"
+
+    def test_persisted_schema_keeps_facets(self) -> None:
+        # The strip applies to wire bytes only; the caller's schema object that
+        # review reads must be untouched.
+        schema = {
+            "type": "object",
+            "properties": {"missing_inputs": {"type": "array", "x-allow-empty": True}},
+        }
+        candidate = ModelCandidate(provider="openrouter", model="m")
+        ModelRequest(profile="p", prompt="hi", output_schema=schema).to_provider_payload(candidate)
+        assert schema["properties"]["missing_inputs"] == {"type": "array", "x-allow-empty": True}

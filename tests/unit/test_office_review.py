@@ -511,3 +511,84 @@ class TestRequestedSourceSummaries:
         schema = {"required": ["progress"], "properties": {"progress": {"x-source-summary": True}}}
         for value in ("ok", "TBD", ""):
             assert not assess_output(output={"progress": value}, expected_output_schema=schema).ok
+
+
+class TestContractEmptyFields:
+    """`x-allow-empty`: empty is the valid complete answer only where declared."""
+
+    SCHEMA = {
+        "required": ["decision", "values", "findings", "missing_inputs"],
+        "properties": {
+            "decision": {"type": "string"},
+            "values": {"type": "object"},
+            "findings": {"type": "array"},
+            "missing_inputs": {"type": "array", "x-allow-empty": True},
+        },
+    }
+
+    def test_empty_missing_inputs_passes_when_declared(self) -> None:
+        verdict = assess_output(
+            output={
+                "decision": "The draft reply is ready for the sales lead to review.",
+                "values": {"response_status": "draft"},
+                "findings": [
+                    {
+                        "source_id": "mock:sales:evidence",
+                        "evidence_quote": "MOCK-CONTRACT-01 has no discount clause",
+                        "conclusion": "No commitment may be sent without approval.",
+                    }
+                ],
+                "missing_inputs": [],
+            },
+            expected_output_schema=self.SCHEMA,
+        )
+        assert verdict.ok, verdict.findings
+
+    def test_empty_missing_inputs_fails_without_facet(self) -> None:
+        schema = {
+            "required": ["decision", "missing_inputs"],
+            "properties": {"decision": {"type": "string"}, "missing_inputs": {"type": "array"}},
+        }
+        verdict = assess_output(
+            output={
+                "decision": "Adequate decision text for review purposes.",
+                "missing_inputs": [],
+            },
+            expected_output_schema=schema,
+        )
+        assert not verdict.ok
+        assert any(
+            "missing_inputs" in finding and "thin" in finding for finding in verdict.findings
+        )
+
+    def test_empty_findings_still_fail_with_facet_elsewhere(self) -> None:
+        verdict = assess_output(
+            output={
+                "decision": "Adequate decision text for review purposes here.",
+                "values": {"response_status": "draft"},
+                "findings": [],
+                "missing_inputs": [],
+            },
+            expected_output_schema=self.SCHEMA,
+        )
+        assert not verdict.ok
+        assert any("findings" in finding for finding in verdict.findings)
+
+    def test_empty_values_still_fail_with_facet_elsewhere(self) -> None:
+        verdict = assess_output(
+            output={
+                "decision": "Adequate decision text for review purposes here.",
+                "values": {},
+                "findings": [
+                    {
+                        "source_id": "s:evidence",
+                        "evidence_quote": "a quoted fact from evidence",
+                        "conclusion": "A substantive conclusion about the work.",
+                    }
+                ],
+                "missing_inputs": [],
+            },
+            expected_output_schema=self.SCHEMA,
+        )
+        assert not verdict.ok
+        assert any("values" in finding for finding in verdict.findings)

@@ -163,8 +163,8 @@ async def test_workflow_keeps_raw_output_for_its_own_repair_and_ledger():
 async def test_structured_request_skips_models_without_strict_schema_support():
     profiles = default_profiles()
     assert [c.model for c in profiles["primary"].candidates[:2]] == [
-        "nvidia/nemotron-3-ultra-550b-a55b:free",
         "dots-studio/dots-3-note-preview:free",
+        "nvidia/nemotron-3-ultra-550b-a55b:free",
     ]
     gw = ModelGateway(profiles=profiles)
     candidates, _ = gw._select_candidates(

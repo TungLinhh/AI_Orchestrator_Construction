@@ -86,11 +86,21 @@ def output_schema(case: EvaluationCase) -> dict[str, Any]:
     # This contract has one nonrecursive definition. Inline it for providers
     # whose tool grammars do not resolve schema references consistently.
     schema["properties"]["findings"]["items"] = schema.pop("$defs")["Finding"]
+    # The ordinary PydanticAI runtime path enforces only the declared schema,
+    # so declare required value keys here (keys only, never gold values/enums).
+    # Missing-variant keeps required=[]: empty values {} is its correct answer.
+    required = [] if case.variant == "missing" else sorted(VALUE_FIELDS[case.department])
     schema["properties"]["values"] = {
         "type": "object",
         "properties": VALUE_FIELDS[case.department],
+        "required": required,
         "additionalProperties": True,
     }
+    # `missing_inputs: []` is the correct complete answer when every required
+    # source was supplied; the office review honors this facet instead of
+    # rejecting it as thin (domain/review._contract_empty_ok). Findings and
+    # values carry no such facet and are still held to substantive content.
+    schema["properties"]["missing_inputs"]["x-allow-empty"] = True
     return schema
 
 

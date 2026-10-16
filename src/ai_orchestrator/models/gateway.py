@@ -28,6 +28,8 @@ import abc
 import asyncio
 import hashlib
 import json
+import logging
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from decimal import Decimal
@@ -49,6 +51,8 @@ from ai_orchestrator.domain.errors import (
 #: default is a real embedding model; see `docs/MEMORY.md` for the trade-off.
 HASH_EMBEDDING_DIM = 512
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True, slots=True)
 class ModelCandidate:
@@ -68,9 +72,33 @@ class ModelCandidate:
     max_classification: DataClassification = DataClassification.RESTRICTED
     # Optional base URL for OpenAI-compatible providers.
     base_url: str | None = None
+    # Optional per-candidate OpenRouter `reasoning` request object, e.g.
+    # `{"enabled": False}` to disable reasoning generation on a model whose
+    # catalogue entry advertises `supported_parameters: ["reasoning"]`.
+    # Candidate-level only (not request-level): reasoning behaviour is a
+    # property of the model, not of the caller's prompt, and a request-level
+    # override would let one call silently change another candidate's
+    # contract. `None` (default) sends no `reasoning` key: zero behaviour
+    # change for every existing profile.
+    reasoning: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        _validate_reasoning(self.reasoning)
 
     def key(self) -> str:
         return f"{self.provider}/{self.model}"
+
+
+def _validate_reasoning(value: dict[str, Any] | None) -> None:
+    """Minimal shape check for the OpenRouter `reasoning` request object."""
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        msg = "model candidate reasoning must be a dict"
+        raise ValidationError(msg, details={"reasoning": value})
+    if "effort" in value and "max_tokens" in value:
+        msg = "model candidate reasoning must not set both effort and max_tokens"
+        raise ValidationError(msg, details={"reasoning": dict(value)})
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,6 +159,57 @@ class ModelProfile:
             raise ValidationError(msg, details={"profile": self.name})
 
 
+#: Schema-object keys whose values are themselves schemas. Platform `x-`
+#: facets are stripped only at these positions -- never from `properties`
+#: NAMES, `enum`/`required`/`const` data, or message text.
+_SUBSCHEMA_KEYS = frozenset(
+    {"items", "additionalProperties", "contains", "propertyNames", "if", "then", "else", "not"}
+)
+_SUBSCHEMA_LIST_KEYS = frozenset({"allOf", "anyOf", "oneOf", "prefixItems"})
+_SUBSCHEMA_MAP_KEYS = frozenset({"properties", "$defs", "definitions", "patternProperties"})
+
+
+def _strip_platform_facets(schema: Any) -> Any:
+    """Copy a JSON schema without platform `x-` annotation keywords.
+
+    Review/contract facets (`x-allow-empty`, `x-source-summary`,
+    `x-human-review-order`) guide OUR validators, but strict provider grammars
+    may reject unknown keywords -- so they travel in the persisted
+    `expected_output_schema` and are stripped only from wire bytes. Property
+    names, enum/required values and all data are preserved verbatim.
+    """
+    if isinstance(schema, dict):
+        cleaned: dict[str, Any] = {}
+        for key, value in schema.items():
+            if key.startswith("x-"):
+                continue
+            if key in _SUBSCHEMA_MAP_KEYS and isinstance(value, dict):
+                cleaned[key] = {name: _strip_platform_facets(sub) for name, sub in value.items()}
+            elif key in _SUBSCHEMA_KEYS and isinstance(value, dict):
+                cleaned[key] = _strip_platform_facets(value)
+            elif key in _SUBSCHEMA_LIST_KEYS and isinstance(value, list):
+                cleaned[key] = [_strip_platform_facets(sub) for sub in value]
+            else:
+                cleaned[key] = value
+        return cleaned
+    if isinstance(schema, list):
+        return [_strip_platform_facets(sub) for sub in schema]
+    return schema
+
+
+def _strip_tool_facets(tool: Any) -> Any:
+    """Copy a function-tool definition with platform facets stripped from params."""
+    if not isinstance(tool, dict):
+        return tool
+    function = tool.get("function")
+    if not isinstance(function, dict) or "parameters" not in function:
+        return tool
+    return {
+        **tool,
+        "function": {**function, "parameters": _strip_platform_facets(function["parameters"])},
+    }
+
+
 @dataclass(slots=True)
 class ModelRequest:
     """One call to the gateway."""
@@ -185,17 +264,25 @@ class ModelRequest:
         if self.temperature > 0:
             payload["temperature"] = self.temperature
         if self.tools:
-            payload["tools"] = self.tools
+            payload["tools"] = [_strip_tool_facets(tool) for tool in self.tools]
             payload["tool_choice"] = self.tool_choice
         if self.output_schema is not None:
             payload["response_format"] = {
                 "type": "json_schema",
                 "json_schema": {
                     "name": "agent_output",
-                    "schema": self.output_schema,
+                    "schema": _strip_platform_facets(self.output_schema),
                     "strict": True,
                 },
             }
+        if candidate.reasoning is not None:
+            # Always transmitted verbatim, including alongside tools: an
+            # explicit operator value is the operator's contract with the
+            # provider. No silent rewrite, no automatic per-model default
+            # (a global DOTS reasoning:false default was measured to break
+            # tool calls with HTTP 400, submissions 19/20).
+            _validate_reasoning(candidate.reasoning)
+            payload["reasoning"] = dict(candidate.reasoning)
         return payload
 
 
@@ -429,8 +516,20 @@ class ModelGateway:
                 if request.max_provider_retries is not None:
                     retries = min(retries, max(0, request.max_provider_retries))
                 bounded = replace(request, max_provider_retries=retries)
+                candidate_started = time.monotonic()
                 async with asyncio.timeout(profile.max_latency_ms / 1000):
                     response = await provider.complete(candidate, bounded)
+            except asyncio.CancelledError:
+                # Cancellation is not a candidate failure: it must propagate
+                # without being recorded as a fallback or swallowed into
+                # GatewayUnavailable. Cost stays unknown, never zero-filled.
+                elapsed_ms = int((time.monotonic() - candidate_started) * 1000)
+                logger.warning(
+                    "model candidate cancelled: %s after %sms",
+                    candidate.key(),
+                    elapsed_ms,
+                )
+                raise
             except TimeoutError as exc:
                 errors.append(f"{candidate.key()}: candidate deadline exceeded")
                 primary_error = primary_error or exc

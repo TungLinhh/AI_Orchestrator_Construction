@@ -68,6 +68,11 @@ class StepLog:
     depth: int
     review: str = ""
     seconds: float = 0.0
+    # True only for a report of work deliberately not run (terminal ancestor).
+    # The driver uses it to keep the orphan out of future batches and out of
+    # review (nothing executed, nothing to judge); the receipt renders it like
+    # any other step.
+    orphan: bool = False
 
 
 @dataclass(slots=True)
@@ -187,6 +192,70 @@ def _seq(task: Task) -> int:
         return 0
 
 
+def _orphan_reason(child_id: str, blocker: dict[str, str]) -> str:
+    """Why a ready task was not executed, naming the terminal ancestor.
+
+    A single string because it is reported in three places -- the step log,
+    the audit row and the final `stopped_because` -- and three wordings of one
+    fact drift into three facts. The child id, the ancestor id and the
+    ancestor's terminal status are all in it, because a report that omits any
+    of them sends the reader back to the database to find what this already
+    knew.
+    """
+    ancestor = str(blocker.get("id", "?"))
+    status = str(blocker.get("status", "?"))
+    return (
+        f"not executed: ancestor {ancestor} is terminal ({status}), so child "
+        f"{child_id} is orphaned. It stays assigned and was never run under "
+        "the terminal parent; no execution was attempted."
+    )
+
+
+def _orphan_step(task: Any, owner: str, depth: int, blocker: dict[str, str]) -> StepLog:
+    """The honest receipt for a task the driver refused to run.
+
+    Status `blocked`, never a fabricated execution outcome: the task row is
+    untouched (it stays `assigned`), the step only records that the driver saw
+    it, named its terminal ancestor, and moved on. The `review` field carries
+    the reason because that is the column the receipt renders per step.
+    """
+    return StepLog(
+        task_id=str(task.id),
+        title=str(task.title)[:60],
+        owner=owner,
+        status=TaskStatus.BLOCKED.value,
+        depth=depth,
+        review=_orphan_reason(str(task.id), blocker),
+        orphan=True,
+    )
+
+
+async def _partition_orphans(
+    session: Any, organization_id: str, ready: list[Task]
+) -> tuple[list[Task], list[tuple[Task, dict[str, str]]]]:
+    """Split ready tasks into runnable ones and ones orphaned by a terminal ancestor.
+
+    A task whose parent chain holds a terminal task can never execute:
+    `TaskExecutionService` refuses it with `PreconditionError`, and dispatching
+    it anyway is what crashed the chain-acceptance run with an exception
+    verdict instead of an honest report. So the check happens here, before
+    dispatch, and the orphan carries its blocker with it for the report.
+    """
+    runnable: list[Task] = []
+    orphaned: list[tuple[Task, dict[str, str]]] = []
+    if not ready:
+        return runnable, orphaned
+    repo = TaskRepository(session, organization_id)
+    for task in ready:
+        parent_id = getattr(task, "parent_task_id", None)
+        blocker = await repo.terminal_lineage(str(parent_id)) if parent_id else None
+        if blocker:
+            orphaned.append((task, dict(blocker)))
+        else:
+            runnable.append(task)
+    return runnable, orphaned
+
+
 async def _tree(session: Any, org_id: str, root_id: str) -> list[Task]:
     """Every task in the subtree rooted at `root_id`, the root included, BFS.
 
@@ -270,7 +339,8 @@ async def _execute_claimed_step(
     from ai_orchestrator.domain.errors import ConflictError
 
     async with database.tenant_session(organization_id) as session:
-        task = await TaskRepository(session, organization_id).get(task_id)
+        repo = TaskRepository(session, organization_id)
+        task = await repo.get(task_id)
         if task.status not in (*RUNNABLE, TaskStatus.WAITING_FOR_APPROVAL.value):
             return None
         if (
@@ -282,6 +352,14 @@ async def _execute_claimed_step(
         owner = await _owner_name(
             session, organization_id, str(agent_id or task.owner_agent_id or "")
         )
+        # Narrow race guard: the parent may have settled after this task was
+        # dispatched. A reread-confirmed terminal ancestor means no execution
+        # is attempted -- the orphan is reported, never run. Any other refusal
+        # from the runner still propagates exactly as before.
+        if task.parent_task_id:
+            blocker = await repo.terminal_lineage(str(task.parent_task_id))
+            if blocker:
+                return _orphan_step(task, owner, depth, dict(blocker))
     started = asyncio.get_running_loop().time()
     try:
         outcome = await TaskAttemptRunner(
@@ -433,6 +511,11 @@ async def run_pipeline(
     )
     active: dict[str, asyncio.Task[StepLog | None]] = {}
     claimed_elsewhere: set[str] = set()
+    # Tasks seen with a terminal ancestor: never dispatched, never re-queued,
+    # reported once each. Without the set the driver would rediscover the same
+    # orphan every pass and spend the execution bound writing one report per
+    # pass about a task it will never run.
+    orphaned: set[str] = set()
     try:
         while True:
             async with database.committing_tenant_session(organization_id) as session:
@@ -487,13 +570,51 @@ async def run_pipeline(
                         organization_id,
                         root_task_id,
                         max(0, capacity),
-                        exclude=set(active) | claimed_elsewhere,
+                        exclude=set(active) | claimed_elsewhere | orphaned,
                     )
                     if capacity > 0
                     else []
                 )
                 if ready:
-                    for task in ready:
+                    runnable, newly_orphaned = await _partition_orphans(
+                        session, organization_id, ready
+                    )
+                    for task, blocker in newly_orphaned:
+                        task_id = str(task.id)
+                        if task_id in orphaned:
+                            continue
+                        orphaned.add(task_id)
+                        reason = _orphan_reason(task_id, blocker)
+                        logger.warning(
+                            "pipeline.task_orphaned",
+                            task_id=task_id,
+                            ancestor=blocker.get("id"),
+                            ancestor_status=blocker.get("status"),
+                        )
+                        await AuditService(session, organization_id).record(
+                            actor=approver,
+                            action="pipeline.task_orphaned",
+                            resource_type="task",
+                            resource_id=task_id,
+                            task_id=task_id,
+                            outcome="blocked",
+                            context={
+                                "reason": reason,
+                                "ancestor_task_id": str(blocker.get("id", "")),
+                                "ancestor_status": str(blocker.get("status", "")),
+                            },
+                        )
+                        outcome.steps.append(
+                            _orphan_step(
+                                task,
+                                await _owner_name(
+                                    session, organization_id, str(task.owner_agent_id or "")
+                                ),
+                                _depth_of(task, root_task_id),
+                                blocker,
+                            )
+                        )
+                    for task in runnable:
                         task_id = str(task.id)
                         active[task_id] = asyncio.create_task(
                             _execute_step(
@@ -526,6 +647,13 @@ async def run_pipeline(
                             if claimed_elsewhere
                             else "nothing is runnable and no gate can be cleared"
                         )
+                        if orphaned:
+                            sample = ", ".join(sorted(orphaned)[:5])
+                            outcome.stopped_because += (
+                                f"; {len(orphaned)} task(s) orphaned under terminal "
+                                f"ancestors, never executed (e.g. {sample}) -- see "
+                                "the blocked steps for the ancestor each names"
+                            )
                     await session.commit()
                     break
                 await session.commit()
@@ -540,8 +668,18 @@ async def run_pipeline(
                     claimed_elsewhere.add(task_id)
                 else:
                     logs.append(result)
+                    if result.orphan:
+                        orphaned.add(task_id)
             outcome.steps.extend(logs)
-            await _review_steps(database, organization_id, logs, outcome, max_attempts)
+            # Orphans observed nothing and executed nothing, so there is no
+            # review to run for them; the parent they name is terminal.
+            await _review_steps(
+                database,
+                organization_id,
+                [log for log in logs if not log.orphan],
+                outcome,
+                max_attempts,
+            )
     finally:
         # A cancelled driver must not return with orphaned model calls or
         # dispose the database while a sibling still uses it.

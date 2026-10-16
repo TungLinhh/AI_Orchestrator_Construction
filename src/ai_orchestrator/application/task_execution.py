@@ -2643,6 +2643,66 @@ class TaskExecutionService:
             return False
         return transaction is not None and bool(transaction.is_active)
 
+    async def _known_usage_for_execution(self, execution_id: str) -> tuple[int, int, int, float]:
+        """Known per-call usage already durably recorded for one execution.
+
+        The `model_usage` ledger is written per provider call as the run goes,
+        so when the run dies afterwards -- a model error after two good turns --
+        the ledger holds the truth while the execution row still says zero.
+        Scoped to this organisation and execution. Every row counts: a rejected
+        completion with reported usage still consumed those tokens, and a fault
+        with no usage contributes nothing rather than being invented. Unknown
+        stays unknown; no rows are fabricated here.
+        """
+        from sqlalchemy import func
+
+        from ai_orchestrator.persistence.models import ModelUsage
+
+        row = (
+            await self._session.execute(
+                select(
+                    func.coalesce(func.sum(ModelUsage.input_tokens), 0),
+                    func.coalesce(func.sum(ModelUsage.output_tokens), 0),
+                    func.coalesce(func.sum(ModelUsage.reasoning_tokens), 0),
+                    func.coalesce(func.sum(ModelUsage.cost_usd), 0),
+                ).where(
+                    ModelUsage.organization_id == self._org,
+                    ModelUsage.execution_id == execution_id,
+                )
+            )
+        ).one()
+        return int(row[0]), int(row[1]), int(row[2]), float(row[3])
+
+    async def _apply_failure_ledger(self, task: Task, execution_id: str) -> tuple[int, float]:
+        """Converge a failed execution's counters up to its durable ledger.
+
+        Only the gap between the ledger sums and what the execution row already
+        holds is applied, so this is idempotent: running twice, or running when
+        counters were already written, adds nothing the second time. Task spend
+        grows by exactly the same delta, which preserves spend from prior
+        executions -- the task row is cumulative and this execution may only add
+        its own known usage. When the ledger is empty nothing is written, so a
+        fault with unknown usage never becomes a claimed known zero.
+        """
+        known_in, known_out, known_reas, known_cost = await self._known_usage_for_execution(
+            execution_id
+        )
+        execution = await self._executions.get(execution_id)
+        add_in = max(0, known_in - int(execution.input_tokens or 0))
+        add_out = max(0, known_out - int(execution.output_tokens or 0))
+        add_reas = max(0, known_reas - int(execution.reasoning_tokens or 0))
+        add_cost = max(0.0, known_cost - float(execution.cost_usd or 0))
+        if add_in or add_out or add_reas or add_cost > 0:
+            execution.input_tokens = int(execution.input_tokens or 0) + add_in
+            execution.output_tokens = int(execution.output_tokens or 0) + add_out
+            execution.reasoning_tokens = int(execution.reasoning_tokens or 0) + add_reas
+            execution.cost_usd = float(execution.cost_usd or 0) + add_cost
+            await self._session.flush()
+            await self._tasks.record_spend(
+                task.id, tokens=add_in + add_out + add_reas, cost_usd=add_cost
+            )
+        return known_in + known_out + known_reas, known_cost
+
     async def _fail(
         self,
         task: Task,
@@ -2655,6 +2715,7 @@ class TaskExecutionService:
         await self._tasks.transition(
             task.id, Transition.FAIL, error=message[:2000], failure_category=category
         )
+        known_tokens, known_cost = 0, 0.0
         if execution_id:
             execution = await self._executions.get(execution_id)
             if execution.status == "running":
@@ -2682,6 +2743,17 @@ class TaskExecutionService:
                     ],
                 }
                 await self._session.flush()
+            # The per-call ledger already holds this run's known usage -- two good
+            # turns before the model error -- while the execution row above still
+            # says zero. Converge the row up to the ledger (gap-only, so a second
+            # run or pre-existing counters add nothing twice) and carry the same
+            # delta onto the task's cumulative spend. Unknown stays unknown: an
+            # empty ledger writes nothing.
+            known_tokens, known_cost = await self._apply_failure_ledger(task, execution_id)
+            # The exception path never reaches `_finish`, which is the only other
+            # writer of these counts. Overwriting (not incrementing) keeps a
+            # second pass identical to the first.
+            await self._record_call_counts()
         from ai_orchestrator.application.learning_revert import revert_falsified_skills
 
         await revert_falsified_skills(self._session, self._org, task, execution_id)
@@ -2703,6 +2775,8 @@ class TaskExecutionService:
             summary=message,
             execution_id=execution_id,
             failure_category=category,
+            cost_usd=Money(str(known_cost)),
+            tokens=known_tokens,
             duration_ms=int((time.monotonic() - (started or time.monotonic())) * 1000),
         )
 

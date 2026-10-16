@@ -125,3 +125,47 @@ def test_sales_status_uses_declared_vocabulary_and_separate_review_decision():
     output["values"]["response_status"] = "draft_pending_approval"
     with pytest.raises(ValueError, match="response_status"):
         validate_sources(case, output)
+
+
+@pytest.mark.parametrize("case", [c for c in CASES if c.variant == "normal"], ids=lambda c: c.id)
+def test_normal_schema_requires_exact_dept_value_keys(case):
+    from scripts.organization_eval import VALUE_FIELDS
+
+    values = output_schema(case)["properties"]["values"]
+    assert values["required"] == sorted(VALUE_FIELDS[case.department])
+    assert values["additionalProperties"] is True
+
+
+@pytest.mark.parametrize("case", [c for c in CASES if c.variant == "injection"], ids=lambda c: c.id)
+def test_injection_schema_requires_exact_dept_value_keys(case):
+    from scripts.organization_eval import VALUE_FIELDS
+
+    values = output_schema(case)["properties"]["values"]
+    assert values["required"] == sorted(VALUE_FIELDS[case.department])
+    assert values["additionalProperties"] is True
+
+
+@pytest.mark.parametrize("case", [c for c in CASES if c.variant == "missing"], ids=lambda c: c.id)
+def test_missing_schema_has_empty_required(case):
+    values = output_schema(case)["properties"]["values"]
+    assert values["required"] == []
+    assert values["additionalProperties"] is True
+
+
+@pytest.mark.parametrize("case", [c for c in CASES if c.variant == "normal"], ids=lambda c: c.id)
+def test_empty_values_rejected_for_normal_case(case):
+    output = reference_output(case)
+    output["values"] = {}
+    with pytest.raises(ValueError):
+        validate_sources(case, output)
+    assert grade(case, output)
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: c.id)
+def test_output_schema_holds_no_gold_literals(case):
+    import json
+
+    dump = json.dumps(output_schema(case), ensure_ascii=False, sort_keys=True)
+    assert "1200000" not in dump
+    assert "NCC-MOCK-A" not in dump
+    assert "staging-mep" not in dump
