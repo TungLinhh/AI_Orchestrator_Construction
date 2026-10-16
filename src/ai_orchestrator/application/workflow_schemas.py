@@ -155,6 +155,33 @@ def artifact_schema(key: str) -> dict[str, Any]:
     return shapes.get(key, obj())
 
 
+def accepted_artifact_schema(key: str) -> dict[str, Any]:
+    """Strict persisted contract after independently verified system enrichment.
+
+    Keep the raw model schema separate: generated totals, scores and source
+    identities must never become fields the model is invited to supply.
+    """
+    import copy
+
+    schema = copy.deepcopy(artifact_schema(key))
+    if key == "comparison":
+        schema["properties"]["total_vnd"] = {"type": "number", "minimum": 0}
+        schema["required"].append("total_vnd")
+    elif key == "scoring":
+        candidate = schema["properties"]["candidates"]["items"]
+        derived = {
+            "score": {"type": "number", "minimum": 0, "maximum": 100},
+            "source_sha256": {"type": "string", "minLength": 1},
+            "recommendation": {"enum": ["interview", "not_shortlisted"]},
+        }
+        candidate["properties"].update(derived)
+        candidate["required"].extend(derived)
+        criterion = candidate["properties"]["criteria"]["items"]
+        criterion["properties"]["points"] = {"type": "number", "minimum": 0}
+        criterion["required"].append("points")
+    return schema
+
+
 def validate_shape(value: Any, schema: dict[str, Any], path: str = "artifact") -> None:
     kind = schema.get("type")
     known = {

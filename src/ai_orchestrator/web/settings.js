@@ -90,6 +90,12 @@
                 prefs.density,
               ) +
               select(
+                "font",
+                L("Font", "Phông chữ"),
+                UIPreferences.fonts.map((f) => [f.id, L(f.en, f.vi)]),
+                prefs.font,
+              ) +
+              select(
                 "motion",
                 L("Motion", "Chuyển động"),
                 [

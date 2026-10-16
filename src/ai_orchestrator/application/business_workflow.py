@@ -18,7 +18,11 @@ from ai_orchestrator.application.model_profiles import build_tenant_gateway
 from ai_orchestrator.application.task_execution import TaskExecutionService
 from ai_orchestrator.application.workflow_commands import command_for, command_view
 from ai_orchestrator.application.workflow_lifecycle import workflow_run
-from ai_orchestrator.application.workflow_schemas import artifact_schema, validate_shape
+from ai_orchestrator.application.workflow_schemas import (
+    accepted_artifact_schema,
+    artifact_schema,
+    validate_shape,
+)
 from ai_orchestrator.approvals.service import ApprovalRequest, ApprovalService
 from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.config.settings import DEV_DATA_DIR, get_settings
@@ -748,6 +752,7 @@ class BusinessWorkflowService:
                             run_mode=RunMode.LIVE,
                             auto_approve=False,
                             model_usage_checkpoint=checkpoint_usage,
+                            accepted_output_schema=accepted_artifact_schema(stage.key),
                         ).execute_task(
                             task.id,
                             attempt=1

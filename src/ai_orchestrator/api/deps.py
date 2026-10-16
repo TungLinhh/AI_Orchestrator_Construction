@@ -27,10 +27,11 @@ from fastapi import Query, Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ai_orchestrator.config.settings import get_settings
 from ai_orchestrator.domain.contracts import Actor
 from ai_orchestrator.domain.errors import ConflictError, ValidationError
 from ai_orchestrator.persistence.session import Database
-from ai_orchestrator.security.auth import Principal, authenticate
+from ai_orchestrator.security.auth import Principal, authenticate, current_human_principal
 
 #: Hard ceiling on a page. A client asking for 100 000 rows gets 500 and a
 #: message, rather than a table scan.
@@ -84,6 +85,8 @@ async def tenant_session(request: Request) -> AsyncIterator[ApiContext]:
     org_id = principal.organization_id
 
     async with database.tenant_session(org_id) as session:
+        if not principal.is_service and not get_settings().api_auth_disabled:
+            principal = await current_human_principal(session, principal)
         yield ApiContext(
             principal=principal,
             session=session,

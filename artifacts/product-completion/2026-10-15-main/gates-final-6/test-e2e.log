@@ -1,0 +1,4 @@
+preflight ok: postgres, nats, temporal
+uv run pytest tests/e2e -q -m e2e
+...................................                                      [100%]
+35 passed in 16.99s

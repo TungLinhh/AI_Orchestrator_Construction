@@ -151,3 +151,27 @@ class TestTheRefusalIsClassified:
         response = await provider.complete(CANDIDATE, _request())
         await provider._client.aclose()
         assert response.text == "hello"
+
+
+@pytest.mark.parametrize(
+    "choice",
+    [
+        {"finish_reason": "refused", "message": {"content": ""}},
+        {"finish_reason": "stop", "message": {"content": "", "refusal": "Cannot comply"}},
+        {
+            "finish_reason": "tool_calls",
+            "message": {
+                "refusal": "Cannot comply",
+                "tool_calls": [{"function": {"name": "submit_evidence", "arguments": "{}"}}],
+            },
+        },
+    ],
+)
+async def test_message_refusals_are_terminal_before_parsing_artifact(choice):
+    provider = _provider()
+    provider._client = _client({"choices": [choice]})
+    try:
+        with pytest.raises(PolicyDenied):
+            await provider.complete(CANDIDATE, _request())
+    finally:
+        await provider._client.aclose()

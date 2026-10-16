@@ -4,13 +4,40 @@ const UIPreferences = (() => {
     theme: "auto",
     palette: "navy",
     density: "comfortable",
+    font: "inter",
     motion: "auto",
     home: "campaigns",
   };
+  /* Body font choices: small set of locally available stacks, each with
+     Vietnamese coverage through OS fonts or the bundled Inter subset.
+     Code/monospace stays on JetBrains Mono deliberately and is not a choice.
+     Unknown stored values fall back to the default without touching the
+     other stored keys. */
+  const fonts = [
+    {
+      id: "inter",
+      en: "Inter (Default)",
+      vi: "Inter (Mặc định)",
+      stack: '"Inter", "Inter Fallback", Arial, system-ui, sans-serif',
+    },
+    {
+      id: "system",
+      en: "System",
+      vi: "Hệ thống",
+      stack: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Liberation Sans", sans-serif',
+    },
+    {
+      id: "serif",
+      en: "Serif",
+      vi: "Serif (Có chân)",
+      stack: 'Georgia, "Times New Roman", "Noto Serif", "DejaVu Serif", serif',
+    },
+  ];
   const choices = {
     theme: ["auto", "light", "dark"],
     palette: UIPalettes.items.map((p) => p.id),
     density: ["comfortable", "compact"],
+    font: fonts.map((f) => f.id),
     motion: ["auto", "reduced"],
     home: ["campaigns", "organization"],
   };
@@ -79,6 +106,7 @@ const UIPreferences = (() => {
   return {
     resetPreview,
     ready,
+    fonts,
     get: () => ({ ...current }),
     save,
     preview: (values) => {

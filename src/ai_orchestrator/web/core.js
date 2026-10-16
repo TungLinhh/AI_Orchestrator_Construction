@@ -41,6 +41,7 @@ const $ = (id) => document.getElementById(id);
 const ORG_RE = /^org_[0-9a-z]{20,}$/;
 
 $("build").textContent = BUILD;
+
 if (AUTH_OFF) {
   $("authwarn").hidden = false;
   /* The button goes too. A control that cannot do anything is worse than an absent one:
@@ -115,6 +116,93 @@ function askToken(initial) {
   else forgetToken();
   return clean;
 }
+
+/* -------- Credential-refusal 403 reasons that should trigger re-auth --------
+   Only these specific reasons mean "the credential itself was rejected".
+   Other 403s (required_admin, required_human) are authorisation answers: show
+   them, keep the token, do NOT loop login or erase session. */
+const CREDENTIAL_REFUSAL_REASONS = new Set([
+  "invalid",
+  "expired",
+  "missing_credentials",
+  "invalid_service_credential",
+]);
+
+function isCredentialRefusal(detail) {
+  if (!detail || typeof detail !== "object") return false;
+  // API error envelope: { error: { message: "...", reason: "..." } }
+  // or FastAPI validation: { detail: [{ msg: "...", type: "..." }] }
+  const reason = detail.error?.reason ?? detail.reason;
+  return typeof reason === "string" && CREDENTIAL_REFUSAL_REASONS.has(reason);
+}
+
+/* ---------------- human login ---------------- */
+async function loginHuman(organizationId, email, password) {
+  const res = await fetch(API + "/identity/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ organization_id: organizationId, email, password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error?.message || "Login failed");
+    err.status = res.status;
+    err.detail = data;
+    throw err;
+  }
+  return data;
+}
+
+async function fetchMe() {
+  const res = await apiGet("/identity/me");
+  return res;
+}
+
+async function logoutHuman() {
+  const res = await fetch(API + "/identity/logout", {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error?.message || "Logout failed");
+    err.status = res.status;
+    err.detail = data;
+    throw err;
+  }
+  return data;
+}
+
+function setHumanToken(accessToken) {
+  setToken(accessToken);
+}
+
+function clearHumanSession() {
+  forgetToken();
+  sessionStorage.removeItem("ao_member");
+  sessionStorage.removeItem("ao_org_verified");
+}
+
+function saveMember(member) {
+  sessionStorage.setItem("ao_member", JSON.stringify(member));
+}
+
+function getMember() {
+  try {
+    return JSON.parse(sessionStorage.getItem("ao_member") || "null");
+  } catch {
+    return null;
+  }
+}
+
+function setOrgVerified(orgId) {
+  sessionStorage.setItem("ao_org_verified", orgId);
+}
+
+function getOrgVerified() {
+  return sessionStorage.getItem("ao_org_verified");
+}
+
 function authHeaders(extra) {
   const headers = Object.assign({}, extra || {});
   /* With authentication off there is nothing to send, and sending an empty
@@ -130,7 +218,9 @@ function authHeaders(extra) {
   if (ORG) headers["x-organization-id"] = ORG;
   return headers;
 }
-if (!AUTH_OFF && !token() && !ORG_RE.test(ORG)) askToken("");
+/* Boot-time verification is now handled by UIAuth.verifySessionOnBoot().
+   The old eager prompt is removed — it caused a prompt before the page was ready
+   and conflicted with the new login flow. */
 
 /* ---------------- language ----------------
    Bilingual chrome, English default. `tr(key, fallback)` renders the current
@@ -163,8 +253,8 @@ Object.assign(STR.vi, {
   "bell.clear": "Bỏ hết",
   "bell.empty":
     "Chưa có gì. Khi có phê duyệt chờ hoặc task xong, sẽ hiện ở đây lẫn popup.",
-  "nav.org": "Tổ chức",
-  "nav.departments": "Phòng ban",
+  "nav.org": "Công ty",
+  "nav.departments": "Cấu trúc công ty",
   "nav.work": "Công việc",
   "nav.give": "Giao việc",
   "nav.needs": "Cần bạn",
@@ -482,6 +572,20 @@ Object.assign(STR.vi, {
     "Mọi request đều gán cho <code>dev:no-auth</code>. Tiện cho demo local — không bật được ở production hay test — và đừng coi đây là phiên đăng nhập thật.",
   "auth.token_prompt": "Service token (gửi dạng `Authorization: Bearer …`)",
   "auth.need_token": "Chưa được phép. Bấm Token để nhập service token.",
+  "auth.login_title": "Đăng nhập",
+  "auth.login_subtitle": "Chọn tổ chức, nhập email và mật khẩu để truy cập.",
+  "auth.tenant_label": "Tổ chức",
+  "auth.email_label": "Email",
+  "auth.password_label": "Mật khẩu",
+  "auth.login_button": "Đăng nhập",
+  "auth.logging_in": "Đang đăng nhập…",
+  "auth.login_failed": "Đăng nhập thất bại. Kiểm tra lại thông tin.",
+  "auth.tenant_mismatch": "Tổ chức trả về không khớp với lựa chọn.",
+  "auth.member_display": "Đăng nhập với tư cách {name} ({email})",
+  "auth.signout": "Đăng xuất",
+  "auth.signout_all": "Đăng xuất khỏi tất cả các phiên",
+  "auth.signout_confirm": "Đăng xuất sẽ thu hồi mọi phiên làm việc hiện tại. Tiếp tục?",
+  "auth.signing_out": "Đang đăng xuất…",
   "misc.nosummary": "chưa có tóm tắt",
   "prov.live": "Model thật",
   "prov.demo": "Chạy mô phỏng",
@@ -504,7 +608,7 @@ function t_fmt(key, fallback, vars) {
 Object.assign(STR.vi, {
   "nav.workspace": "Không gian làm việc",
   "nav.give": "Công việc",
-  "nav.departments": "Tổ chức",
+  "nav.departments": "Cấu trúc công ty",
   "auth.local": "Môi trường cục bộ · chưa bật xác thực",
   "auth.off_sub":
     "Yêu cầu được ghi dưới tài khoản dev:no-auth. Chế độ này dành cho môi trường cục bộ.",
@@ -542,6 +646,7 @@ Object.assign(STR.vi, {
     "Lần chạy này đã dừng. Đọc nguyên nhân và các bước đã ghi nhận trước khi chạy lại.",
   "task.read_steps": "Đọc các bước đã thực hiện",
   "task.waiting": "Đang chờ người duyệt. Mở mục Quyết định để đọc bản nháp.",
+  "task.need_input": "Chờ bạn bổ sung. Đọc lý do bên dưới để biết cần làm gì tiếp.",
   "task.no_model_recorded": "Tên model chưa được ghi nhận trong hồ sơ này.",
   "task.runhint":
     "Công việc chạy ở chế độ nền. Trang này cập nhật theo trạng thái thực tế.",
@@ -1070,24 +1175,24 @@ async function apiGet(path, params) {
     }
   const res = await fetch(url.toString(), { headers: authHeaders() });
   if (!res.ok) {
-    const detail = await res.text().catch(() => "");
+    const detailText = await res.text().catch(() => "");
     let message = res.status + " " + res.statusText;
+    let detail = null;
     try {
-      message = JSON.parse(detail).error?.message || message;
+      detail = JSON.parse(detailText);
+      message = detail.error?.message || message;
     } catch {
       /* not json */
     }
     const err = new Error(message);
     err.status = res.status;
-    /* Forget it, then ask again. Keeping a rejected credential means every
-       subsequent request is made with it, so the page can never recover without a
-       manual storage clear — and the prompt looks like it worked. This is the failure
-       a person hits when their first paste is wrong. */
-    /* A 403 is an authorisation *answer*, not a rejected credential: `require_human()`
-       and `require_admin()` both use it, and with auth off it means the caller is a
-       service principal doing something only a person may do. It is reported as an error
-       and shown. Only a 401 is "your credential was refused". */
-    if (res.status === 401 || (res.status === 403 && !AUTH_OFF)) {
+    err.detail = detail;
+    /* Forget token only on 401 or credential-refusal 403 (invalid/expired/missing/invalid_service_credential).
+       Other 403s (required_admin, required_human) are authorisation answers: show them, keep token. */
+    const shouldReAuth =
+      res.status === 401 ||
+      (res.status === 403 && !AUTH_OFF && isCredentialRefusal(detail));
+    if (shouldReAuth) {
       forgetToken();
       err.auth = true;
       askToken("");
@@ -1103,14 +1208,15 @@ async function apiPost(path, body) {
     body: JSON.stringify(body || {}),
   });
   if (!r.ok) {
-    const detail = await r.text().catch(() => "");
+    const detailText = await r.text().catch(() => "");
     let message = r.status + " " + r.statusText;
+    let detail = null;
     try {
-      const parsed = JSON.parse(detail);
+      detail = JSON.parse(detailText);
       message =
-        parsed.error?.message ||
-        (Array.isArray(parsed.detail)
-          ? parsed.detail
+        detail.error?.message ||
+        (Array.isArray(detail.detail)
+          ? detail.detail
               .map((d) => `${(d.loc || []).slice(-1)[0]}: ${d.msg}`)
               .join("; ")
           : message);
@@ -1119,7 +1225,11 @@ async function apiPost(path, body) {
     }
     const err = new Error(message);
     err.status = r.status;
-    if (r.status === 401 || (r.status === 403 && !AUTH_OFF)) {
+    err.detail = detail;
+    const shouldReAuth =
+      r.status === 401 ||
+      (r.status === 403 && !AUTH_OFF && isCredentialRefusal(detail));
+    if (shouldReAuth) {
       forgetToken();
       askToken("");
     }
@@ -1132,11 +1242,17 @@ function paintSidebar() {
   const collapsed = document.documentElement.classList.contains("sidebar-collapsed");
   const btn = $("sidebarToggle");
   btn.innerHTML = UIIcon(collapsed ? "panel-left-open" : "panel-left-close");
-  btn.title = state.lang === "vi"
+  btn.title = (state.lang === "vi"
     ? (collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên")
-    : (collapsed ? "Expand sidebar" : "Collapse sidebar");
+    : (collapsed ? "Expand sidebar" : "Collapse sidebar")) + " [";
   btn.setAttribute("aria-label", btn.title);
   btn.setAttribute("aria-expanded", String(!collapsed));
+  const hint = $("sidebarShortcutHint");
+  if (hint) {
+    const label = hint.querySelector("#sidebarShortcutLabel");
+    if (label) label.textContent = state.lang === "vi" ? "bật/tắt thanh bên" : "toggle sidebar";
+    hint.title = btn.title;
+  }
   window.UIShell?.indicator();
   document.querySelectorAll("#navItems a").forEach(a => {
     const label = a.querySelector("[data-i18n]")?.textContent || a.textContent;
@@ -1144,16 +1260,27 @@ function paintSidebar() {
     a.title = label.trim();
   });
 }
-try {
-  if (localStorage.getItem("ao-sidebar-collapsed") === "true")
-    document.documentElement.classList.add("sidebar-collapsed");
-} catch { /* storage may be unavailable */ }
-$("sidebarToggle").onclick = () => {
+function toggleSidebar() {
   document.documentElement.classList.toggle("sidebar-collapsed");
   document.documentElement.classList.remove("sidebar-peek");
   try { localStorage.setItem("ao-sidebar-collapsed", String(document.documentElement.classList.contains("sidebar-collapsed"))); } catch { }
   paintSidebar();
-};
+}
+try {
+  if (localStorage.getItem("ao-sidebar-collapsed") === "true")
+    document.documentElement.classList.add("sidebar-collapsed");
+} catch { /* storage may be unavailable */ }
+$("sidebarToggle").onclick = toggleSidebar;
+/* `[` toggles the sidebar without leaving the keyboard. Guarded like every
+   other single-key shortcut: never while typing, never with modifiers. */
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "[" || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  const tag = e.target?.tagName || "";
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.target?.isContentEditable) return;
+  if (document.querySelector("dialog[open]")) return;
+  e.preventDefault();
+  toggleSidebar();
+});
 (function initSidebarPeek() {
   const bar = $("sidebar");
   if (!bar) return;

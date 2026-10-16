@@ -322,6 +322,7 @@ async def _start_workflow_for(ctx: ApiContext, task: Any) -> dict[str, Any]:
 
 @router.get("/tasks")
 async def list_tasks(
+    include_archived: bool = False,
     status_filter: str | None = None,
     owner_agent_id: str | None = None,
     parent_task_id: str | None = None,
@@ -330,6 +331,7 @@ async def list_tasks(
 ) -> dict[str, Any]:
     repo = TaskRepository(ctx.session, ctx.organization_id)
     tasks = await repo.all(
+        include_archived=include_archived,
         status=status_filter,
         owner_agent_id=owner_agent_id,
         parent_task_id=parent_task_id,
@@ -337,7 +339,7 @@ async def list_tasks(
     )
     limit, offset = page
     body = paginate([_task_dict(t) for t in tasks], limit, offset)
-    body["counts_by_status"] = await repo.count_by_status()
+    body["counts_by_status"] = await repo.count_by_status(include_archived=include_archived)
     return body
 
 

@@ -28,7 +28,6 @@ from typing import Any
 
 import nats
 from nats.aio.msg import Msg
-from nats.errors import TimeoutError as NatsTimeout
 from nats.js import JetStreamContext
 from nats.js.api import (
     AckPolicy,
@@ -321,7 +320,9 @@ class DurableConsumer:
             while not self._stopping.is_set():
                 try:
                     messages = await self._sub.fetch(FETCH_BATCH, timeout=FETCH_TIMEOUT_S)
-                except asyncio.CancelledError, NatsTimeout:
+                except asyncio.CancelledError:
+                    raise
+                except TimeoutError:
                     # No messages in this window is the normal idle case, not an
                     # error; the loop simply asks again.
                     if self._stopping.is_set():
@@ -336,8 +337,9 @@ class DurableConsumer:
         except Exception as exc:
             # The consumer loop must not die silently. A dead consumer is a
             # projection that quietly stops updating.
-            logger.error("consumer.loop_failed", consumer=self._name, error=str(exc))
-            self.stats.last_error = str(exc)
+            error = f"{type(exc).__name__}: {exc}"
+            logger.error("consumer.loop_failed", consumer=self._name, error=error)
+            self.stats.last_error = error
 
     async def _handle(self, msg: Msg) -> None:
         self.stats.received += 1

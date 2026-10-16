@@ -113,7 +113,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     import asyncio
 
+    import anyio
+
     app.state.source_parser_slots = asyncio.Semaphore(2)
+    app.state.identity_hash_limiter = anyio.CapacityLimiter(2)
     app.state.settings = settings
 
     _install_middleware(app, settings)
@@ -170,7 +173,22 @@ def _install_error_handlers(app: FastAPI) -> None:
     message and the detail is logged, not returned: a stack trace in an API
     response is a disclosure of the implementation.
     """
+    from fastapi.exception_handlers import request_validation_exception_handler
+    from fastapi.exceptions import RequestValidationError
+
     from ai_orchestrator.domain.errors import PlatformError
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation_error(request: Any, exc: RequestValidationError) -> Any:
+        if request.url.path.startswith("/api/v1/identity/"):
+            # FastAPI's default includes offending inputs, including passwords
+            # and unknown extra fields. Credential routes never echo that body.
+            return JSONResponse(
+                status_code=422,
+                content={"error": {"kind": "VALIDATION", "message": "Invalid identity request"}},
+                headers={"Cache-Control": "no-store"},
+            )
+        return await request_validation_exception_handler(request, exc)
 
     @app.exception_handler(PlatformError)
     async def _platform_error(_request: Any, exc: PlatformError) -> JSONResponse:
@@ -220,6 +238,7 @@ def _install_routes(app: FastAPI) -> None:
     from ai_orchestrator.api.documents import router as documents_router
     from ai_orchestrator.api.events_audit import router as events_audit_router
     from ai_orchestrator.api.health import router as health_router
+    from ai_orchestrator.api.identity import router as identity_router
     from ai_orchestrator.api.organizations import router as organizations_router
     from ai_orchestrator.api.runtime import router as runtime_router
     from ai_orchestrator.api.scenarios import router as scenarios_router
@@ -234,6 +253,7 @@ def _install_routes(app: FastAPI) -> None:
     from ai_orchestrator.api.tasks import router as tasks_router
 
     app.include_router(source_router, prefix="/api/v1")
+    app.include_router(identity_router, prefix="/api/v1")
     app.include_router(health_router)
 
     # Order is load-bearing, not alphabetical. Starlette matches in registration

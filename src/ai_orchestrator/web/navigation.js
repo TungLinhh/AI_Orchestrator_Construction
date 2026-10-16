@@ -14,7 +14,7 @@ const ROUTES = {
   console: { label: "Work" },
   work: { label: "Issues and approvals" },
   approval: { label: "Approval" },
-  departments: { label: "Departments" },
+  departments: { label: "Company structure" },
   dept: { label: "Department" },
   agent: { label: "Agent controls" },
   processes: { label: "Processes" },
@@ -74,7 +74,7 @@ function renderCrumbs(route) {
       );
       break;
     case "dept":
-      add(tr("nav.departments", "Departments"), "#/departments");
+      add(tr("nav.departments", "Company structure"), "#/departments");
       items.push('<span class="sep">/</span>');
       add(
         $("deptTitle").textContent || tr("crumb.dept", "Department"),
@@ -83,7 +83,7 @@ function renderCrumbs(route) {
       );
       break;
     case "departments":
-      add(tr("nav.departments", "Departments"), null, true);
+      add(tr("nav.departments", "Company structure"), null, true);
       break;
     case "task":
       add(tr("nav.give", "Work"), "#/give");
@@ -205,6 +205,16 @@ document.addEventListener("keydown", (e) => {
     backWithinConsole();
 });
 
+// Visible panels and sidebar groups are independent route properties.
+function routePanel(r) {
+  if (MANAGEMENT_VIEWS.has(r.name)) return "management";
+  if (r.name === "departments" && r.arg) return "dept";
+  return { approval: "work", task: "give", console: "give" }[r.name] || r.name;
+}
+function routeNav(r) {
+  if (["dept", "agent", "departments"].includes(r.name)) return "departments";
+  return routePanel(r) === "management" ? r.name : routePanel(r);
+}
 /* ---------------- the router ---------------- */
 let renderToken = 0;
 async function route() {
@@ -242,11 +252,7 @@ async function route() {
     if (el) el.hidden = true;
   }
   $("view-management").hidden = true;
-  const target = MANAGEMENT_VIEWS.has(r.name)
-    ? "management"
-    : { approval: "work", task: "give", dept: "departments", console: "give" }[
-        r.name
-      ] || r.name;
+  const target = routePanel(r);
   const view = $("view-" + target);
   if (view) view.hidden = false;
   /* Release the previous project's data when leaving the project view.
@@ -263,14 +269,9 @@ async function route() {
   }
   for (const a of document.querySelectorAll("[data-nav]")) {
     const on =
-      a.dataset.nav ===
-        (r.name === "agent"
-          ? "departments"
-          : target === "management"
-            ? r.name
-            : target) &&
+      a.dataset.nav === routeNav(r) &&
       (target !== "work" ||
-        a.getAttribute("href") === `#/work/${r.arg || "issues"}`);
+        a.getAttribute("href") === `#/work/${r.name === "approval" ? "approvals" : r.arg || "issues"}`);
     if (on) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   }

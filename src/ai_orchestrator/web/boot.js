@@ -6,6 +6,13 @@ $("skipContent").onclick = (event) => {
 /* ---------------- boot ---------------- */
 (async function boot() {
   langSet(state.lang);
+  UIAuth.init();
+  const sessionReady = await UIAuth.verifySessionOnBoot();
+  if (!sessionReady && !AUTH_OFF) {
+    // No valid human session - stop protected loads, open login
+    UIAuth.openLoginDialog();
+    return;
+  }
   try {
     await apiGet("/portfolio");
     setConn("ok", "conn.live", "live");

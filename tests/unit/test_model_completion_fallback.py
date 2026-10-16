@@ -53,6 +53,7 @@ def gateway(replies, **kwargs):
         ModelResponse(),
         ModelResponse(text="  \n"),
         ModelResponse(text="looks plausible", finish_reason="error"),
+        ModelResponse(text="plausible but unfinished", finish_reason="length"),
         ModelResponse(tool_calls=[{"function": {"name": "invented", "arguments": "{}"}}]),
     ],
 )
@@ -199,3 +200,28 @@ async def test_neither_privacy_ceiling_can_widen_the_other(profile_ceiling, cand
             ModelRequest(profile="test", data_classification=DataClassification.INTERNAL)
         )
     assert provider.seen == []
+
+
+@pytest.mark.parametrize("finish_reason", ["refused", "content_filter"])
+@pytest.mark.parametrize("caller_validates", [False, True])
+async def test_refusal_finish_is_terminal_with_known_usage_recorded_once(
+    finish_reason, caller_validates
+):
+    bad = ModelResponse(
+        text="refused",
+        finish_reason=finish_reason,
+        usage=TokenUsage(input_tokens=12, output_tokens=3),
+    )
+    gw, provider = gateway({"first": bad, "second": ModelResponse(text="answer")})
+    recorded = []
+
+    async def record(response):
+        recorded.append(response)
+
+    with pytest.raises(PolicyDenied):
+        await _RecordingGateway(gw, record).complete(
+            ModelRequest(profile="test", caller_validates_output=caller_validates)
+        )
+    assert [name for name, _ in provider.seen] == ["first"]
+    assert recorded == [bad]
+    assert recorded[0].total_tokens == 15

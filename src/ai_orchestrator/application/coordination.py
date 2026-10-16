@@ -67,6 +67,7 @@ from ai_orchestrator.application.ports import ReadConnection
 from ai_orchestrator.domain.enums import TaskStatus
 from ai_orchestrator.domain.errors import NotFoundError
 from ai_orchestrator.domain.state_machines import allowed_task_transitions
+from ai_orchestrator.persistence.task_archive import VISIBLE_TASK_SQL
 
 #: The CEO's queue.
 #:
@@ -166,6 +167,17 @@ GROUP BY 1
 """  # noqa: S608 -- the only interpolated value is `WAITING_ON_CASE`, a module constant
 
 _WORK_QUEUE = _WORK_QUEUE.format(WAITING_ON_CASE=WAITING_ON_CASE)
+
+
+_WORK_QUEUE = _WORK_QUEUE.replace(
+    "AND (CAST(:state", "AND " + VISIBLE_TASK_SQL + "\n  AND (CAST(:state"
+)
+_WORK_COUNT = _WORK_COUNT.replace(
+    "AND (CAST(:state", "AND " + VISIBLE_TASK_SQL + "\n  AND (CAST(:state"
+)
+_WORK_COUNT_BY_BUCKET = _WORK_COUNT_BY_BUCKET.replace(
+    "AND (CAST(:state", "AND " + VISIBLE_TASK_SQL + "\n  AND (CAST(:state"
+)
 
 _REPORT_TASK = """
 SELECT t.id, t.title, t.goal, t.task_type, t.status, t.priority, t.requester_type,

@@ -25,6 +25,7 @@ SCRIPTS = (
     "approvals-ui.js",
     "commands.js",
     "source-intake.js",
+    "auth-ui.js",
     "boot.js",
 )
 

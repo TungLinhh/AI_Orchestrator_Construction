@@ -21,7 +21,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from sqlalchemy import select
 
+from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.config.settings import get_settings
+from ai_orchestrator.domain.contracts import Actor
+from ai_orchestrator.domain.enums import ActorType
+from ai_orchestrator.domain.ids import OrganizationId
 from ai_orchestrator.persistence.models import Organization, User
 from ai_orchestrator.persistence.session import Database
 from ai_orchestrator.security.auth import issue_access_token
@@ -29,21 +33,41 @@ from ai_orchestrator.security.auth import issue_access_token
 
 async def issue(email: str, org_slug: str | None) -> int:
     settings = get_settings()
-    admin = Database.from_settings(use_admin_role=True)
+    if not settings.jwt_secret.get_secret_value():
+        sys.stderr.write("JWT_SECRET must be configured before issuing a human token\n")
+        return 1
+    database = Database.from_settings(settings)
     try:
-        async with admin.session() as session:
-            stmt = select(User).where(User.email == email)
-            user = (await session.execute(stmt)).scalar_one_or_none()
-            if user is None:
-                sys.stderr.write(f"no user with email {email!r}\n")
+        async with database.session() as session:
+            query = select(Organization)
+            if org_slug:
+                query = query.where(Organization.slug == org_slug)
+            organizations = (await session.scalars(query.limit(2))).all()
+            if not organizations:
+                sys.stderr.write("selected organization does not exist\n")
                 return 1
-
-            org_stmt = select(Organization).where(Organization.id == user.organization_id)
-            org = (await session.execute(org_stmt)).scalar_one()
-            if org_slug and org.slug != org_slug:
-                sys.stderr.write(f"user {email!r} belongs to {org.slug!r}, not {org_slug!r}\n")
+            if len(organizations) != 1:
+                sys.stderr.write("--org is required when more than one organization exists\n")
                 return 1
-
+            org = organizations[0]
+            if org.status != "active":
+                sys.stderr.write("selected organization is not active\n")
+                return 1
+            org_id, slug = str(org.id), org.slug
+        async with database.tenant_session(org_id) as session:
+            user = await session.scalar(
+                select(User).where(
+                    User.organization_id == org_id, User.email == email.strip().lower()
+                )
+            )
+            if (
+                user is None
+                or not user.is_active
+                or user.disabled_at is not None
+                or user.mfa_enabled
+            ):
+                sys.stderr.write("selected user cannot receive an operator token\n")
+                return 1
             token = issue_access_token(
                 user_id=user.id,
                 organization_id=user.organization_id,
@@ -53,14 +77,28 @@ async def issue(email: str, org_slug: str | None) -> int:
                 token_version=user.token_version,
                 settings=settings,
             )
-            print(f"organization: {org.slug} ({org.id})")
-            print(f"user:         {user.display_name} <{user.email}>  role={user.role}")
-            print("expires in:   30 minutes")
-            print()
-            print(token)
-            return 0
+            await AuditService(session, org_id).record(
+                actor=Actor(
+                    id="svc:operator-cli",
+                    kind=ActorType.SERVICE,
+                    organization_id=OrganizationId(org_id),
+                    display_name="Local operator token issuance",
+                ),
+                action="identity.operator_token_issued",
+                resource_type="user",
+                resource_id=user.id,
+                context={"method": "operator-cli", "expires_in": 1800},
+            )
+            description = f"{user.display_name} <{user.email}>  role={user.role}"
+        # The token is shown only after the audit transaction commits.
+        print(f"organization: {slug} ({org_id})")
+        print(f"user:         {description}")
+        print("expires in:   30 minutes")
+        print()
+        print(token)
+        return 0
     finally:
-        await admin.dispose()
+        await database.dispose()
 
 
 def main() -> int:

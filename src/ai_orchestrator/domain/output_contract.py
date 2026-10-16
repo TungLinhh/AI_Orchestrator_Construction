@@ -25,9 +25,9 @@ Both ask *"which keys must be present?"* and both are answered by the same funct
 113 rows already in the database are enforced **without a data migration** — a migration would
 have had to rewrite rows to express something the field already said.
 
-Everything else in the schema is **documentation** and is left alone. There is no JSON Schema
-validator here and inventing one would be a large piece of machinery to answer a question this
-column was already asking.
+Explicit JSON Schema types and value constraints are checked by `contract_violations`.
+Legacy declarations that only name keys retain their original meaning. Shape validation
+does not establish factual accuracy; source workflows apply separate evidence checks.
 
 ## Why it fails the task rather than warning
 
@@ -46,6 +46,11 @@ from __future__ import annotations
 import json
 import re
 from typing import Any
+
+from jsonschema.exceptions import SchemaError
+from jsonschema.validators import validator_for
+from referencing import Registry
+from referencing.exceptions import Unresolvable
 
 #: The key that means "these keys are required", in its explicit form.
 REQUIRED = "required"
@@ -105,6 +110,67 @@ def missing_keys(output: dict[str, Any] | None, schema: dict[str, Any] | None) -
         return ()
     present = set(output or {})
     return tuple(k for k in needed if k not in present)
+
+
+def contract_violations(
+    output: dict[str, Any] | None, schema: dict[str, Any] | None
+) -> tuple[str, ...]:
+    """Validate a declared JSON Schema while preserving legacy key contracts.
+
+    The registry never retrieves external resources. Local references generated
+    by Pydantic remain supported. Formats follow JSON Schema's annotation
+    semantics; factual accuracy still belongs to independent business validators.
+    """
+    if not schema:
+        return ()
+    normalized = dict(schema)
+    if "produces" in normalized and "required" not in normalized:
+        normalized["required"] = list(required_keys(normalized))
+    try:
+        dialect = normalized.get("$schema")
+        if dialect is not None and dialect not in {
+            "http://json-schema.org/draft-03/schema#",
+            "http://json-schema.org/draft-04/schema#",
+            "http://json-schema.org/draft-06/schema#",
+            "http://json-schema.org/draft-07/schema#",
+            "https://json-schema.org/draft/2019-09/schema",
+            "https://json-schema.org/draft/2020-12/schema",
+        }:
+            return ("output declares an unsupported schema dialect",)
+        cls = validator_for(normalized)
+        cls.check_schema(normalized)
+        # Reject non-JSON numbers and runtime truncation markers before shape
+        # checking. JSON Schema alone treats NaN as a Python number.
+        json.dumps(output or {}, allow_nan=False)
+        pending: list[tuple[Any, str, int]] = [(output or {}, "output", 0)]
+        while pending:
+            value, path, depth = pending.pop()
+            if depth > 64:
+                return ("output exceeds the validation nesting limit",)
+            if _is_truncated(value):
+                return (path + " was truncated",)
+            if isinstance(value, dict):
+                pending.extend((v, path + "." + str(k), depth + 1) for k, v in value.items())
+            elif isinstance(value, list):
+                pending.extend((v, f"{path}[{i}]", depth + 1) for i, v in enumerate(value))
+        validator = cls(normalized, registry=Registry())
+        errors = []
+        for error in validator.iter_errors(output or {}):
+            path = "output" + "".join(
+                f"[{p}]" if isinstance(p, int) else "." + p for p in error.absolute_path
+            )
+            # Paths and violated keywords are sufficient diagnostics. Avoid
+            # copying sensitive artifact contents into failure messages.
+            errors.append(path + " violates " + str(error.validator))
+            if len(errors) >= 10:
+                break
+        return tuple(errors)
+    except SchemaError:
+        return ("output has a malformed schema declaration",)
+    except Unresolvable:
+        return ("output has an unresolved schema reference; external retrieval is disabled",)
+    except TypeError, ValueError, RecursionError:
+        return ("output or its schema is not valid finite JSON",)
 
 
 def describe_mismatch(output: dict[str, Any] | None, schema: dict[str, Any] | None) -> str:

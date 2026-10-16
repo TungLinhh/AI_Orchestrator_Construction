@@ -10,7 +10,7 @@ from typing import Annotated, Any, Literal
 from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from ai_orchestrator.api.deps import (
     ApiContext,
@@ -20,7 +20,7 @@ from ai_orchestrator.api.deps import (
     store_idempotency,
 )
 from ai_orchestrator.api.tasks import _chief_agent_id, _requester_id, _task_dict
-from ai_orchestrator.application.source_intake import SourceIntake, file_metadata
+from ai_orchestrator.application.source_intake import SourceIntake, digest, file_metadata
 from ai_orchestrator.audit.service import AuditService
 from ai_orchestrator.domain.enums import DataClassification
 from ai_orchestrator.domain.errors import NotFoundError, PreconditionError, ValidationError
@@ -30,6 +30,7 @@ from ai_orchestrator.domain.state_machines import Transition
 from ai_orchestrator.persistence.models import Agent, Execution, Task
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.persistence.sources import SourceArtifact, SourceFile, SourceManifest
+from ai_orchestrator.persistence.task_archive import ARCHIVE_KEY
 
 router = APIRouter(tags=["sources"])
 
@@ -49,9 +50,28 @@ class SourceWorkflowRequest(BaseModel):
     owner_agent_id: str | None = None
 
 
+class SourceRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    selection: Selection
+    reason: str = Field(min_length=10, max_length=1000)
+
+
 class ReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     note: str = Field(min_length=10, max_length=1000)
+
+
+async def _source_request_key(ctx: ApiContext, raw_key: str | None, namespace: str) -> str | None:
+    if raw_key is None:
+        return None
+    if len(raw_key) > 128:
+        raise ValidationError("Idempotency-Key must be at most 128 characters")
+    key = namespace + ":" + digest([ctx.organization_id, raw_key])
+    await ctx.session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:org), hashtext(:key))"),
+        {"org": ctx.organization_id, "key": key},
+    )
+    return key
 
 
 @router.get("/source-files")
@@ -187,8 +207,15 @@ async def create_workflow(
 ) -> dict[str, Any]:
     ctx.require_human()
     payload = body.model_dump()
-    key = idem_key(request)
+    raw_key = idem_key(request)
+    key = await _source_request_key(ctx, raw_key, "source-workflow")
     replayed = await check_idempotency(ctx, key=key, operation="source_workflow", payload=payload)
+    if replayed is None and raw_key is not None:
+        # Existing responses predate tenant namespacing. RLS restricts this
+        # lookup to the caller's tenant; preserve their replay contract.
+        replayed = await check_idempotency(
+            ctx, key=raw_key, operation="source_workflow", payload=payload
+        )
     if replayed is not None:
         return {**replayed["response"], "idempotent_replay": True}
     owner_id = body.owner_agent_id or await _chief_agent_id(ctx)
@@ -231,6 +258,103 @@ async def create_workflow(
         operation="source_workflow",
         payload=payload,
         resource_id=task.id,
+        response=response,
+    )
+    return response
+
+
+@router.post("/tasks/{task_id}/source-revisions", status_code=201)
+async def revise_sources(
+    task_id: str,
+    body: SourceRevisionRequest,
+    request: Request,
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
+    """Create unstarted work with new sources, keeping the original as history."""
+    ctx.require_human()
+    raw_key = idem_key(request)
+    if not raw_key:
+        raise ValidationError("Source revisions require an Idempotency-Key of 1-128 characters")
+    # Serialize before replay checks; each tenant owns its request namespace.
+    key = await _source_request_key(ctx, raw_key, "source-revision")
+    payload = {"task_id": task_id, **body.model_dump()}
+    replayed = await check_idempotency(ctx, key=key, operation="source_revision", payload=payload)
+    if replayed is not None:
+        return {**replayed["response"], "idempotent_replay": True}
+    tasks = TaskRepository(ctx.session, ctx.organization_id)
+    original = await tasks.get(task_id)
+    if original.input.get("source_workflow") not in {"document_review", "quote_comparison"}:
+        raise PreconditionError("Only source workflows support source revisions")
+    if original.status not in {"completed", "failed", "canceled", "expired"}:
+        raise PreconditionError("Finish or cancel the original task before revising its sources")
+    if original.input.get("business_workflow") or original.parent_task_id:
+        raise PreconditionError("Revise ordered work through its workflow controller")
+    previous = await ctx.session.scalar(
+        select(SourceManifest).where(
+            SourceManifest.organization_id == ctx.organization_id,
+            SourceManifest.task_id == task_id,
+        )
+    )
+    owner = await ctx.session.scalar(
+        select(Agent).where(
+            Agent.organization_id == ctx.organization_id, Agent.id == original.owner_agent_id
+        )
+    )
+    if owner is None or owner.lifecycle_status != "active":
+        raise PreconditionError("The source workflow needs an active owner before revision")
+    revision = await tasks.create(
+        title=original.title,
+        goal=original.goal,
+        task_type=original.task_type,
+        owner_agent_id=owner.id,
+        org_unit_id=owner.org_unit_id,
+        requester_id=await _requester_id(ctx),
+        requester_type=ctx.actor.kind.value,
+        priority=original.priority,
+        input={
+            "source_workflow": original.input["source_workflow"],
+            "source_selection_mode": body.selection.mode,
+            "source_revision": {
+                "previous_task_id": original.id,
+                "previous_manifest_id": previous.id if previous else None,
+                "reason": body.reason,
+            },
+        },
+        constraints={
+            key: copy.deepcopy(value)
+            for key, value in original.constraints.items()
+            if key != ARCHIVE_KEY
+        },
+        expected_output_schema=copy.deepcopy(original.expected_output_schema),
+        budget_limit_tokens=original.budget_limit_tokens,
+        budget_limit_usd=float(original.budget_limit_usd)
+        if original.budget_limit_usd is not None
+        else None,
+        allow_parallel=True,
+    )
+    manifest = await SourceIntake(ctx.session, ctx.organization_id).bind(
+        revision, body.selection.file_ids, body.selection.mode
+    )
+    await tasks.add_dependency(task_id=revision.id, depends_on_task_id=original.id)
+    await AuditService(ctx.session, ctx.organization_id).record(
+        actor=ctx.actor,
+        action="source.workflow_revised",
+        resource_type="task",
+        resource_id=revision.id,
+        context={
+            "previous_task_id": original.id,
+            "previous_manifest_id": previous.id if previous else None,
+            "manifest_id": manifest.id,
+            "reason": body.reason,
+        },
+    )
+    response = _task_dict(revision)
+    await store_idempotency(
+        ctx,
+        key=key,
+        operation="source_revision",
+        payload=payload,
+        resource_id=revision.id,
         response=response,
     )
     return response

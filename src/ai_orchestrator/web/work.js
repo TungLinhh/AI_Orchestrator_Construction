@@ -350,7 +350,7 @@ async function decide(approvalId, action, extra, reportError = false) {
 /* ---------------- organization navigation ---------------- */
 document.addEventListener("click", async (e) => {
   const box = e.target.closest("[data-agent-box]");
-  if (box) {
+  if (box && !box.matches("a[href]")) {
     const d = await loadDepartments();
     if (!d) return;
     // **Every tier routes by the key the box carries.** This used to search
@@ -586,9 +586,9 @@ function agentBox(a, sel) {
     (!a.running && a.stuck ? " stuck" : "");
   const c = a.counts || {};
   const r = a.rollup || null;
-  return `<div class="${cls}" data-agent-box="${esc(a.id)}" data-agent-name="${esc(a.name)}"
+  return `<a href="#/dept/${encodeURIComponent(a.key || a.id)}" class="${cls}" data-agent-box="${esc(a.id)}" data-agent-name="${esc(a.name)}"
       data-box-key="${esc(a.key || "")}"
-      role="button" tabindex="0" aria-label="${esc(a.name)}">
+      aria-label="${esc(a.name)}">
     <div class="n">${esc(a.label || a.name)}</div>
     ${
       // The subtitle only earns its place when it says something the title does
@@ -635,7 +635,7 @@ function agentBox(a, sel) {
           )}</div>`
         : ""
     }
-  </div>`;
+  </a>`;
 }
 
 function renderTree(target, offices, chief, selId, secondTier) {
@@ -750,8 +750,9 @@ async function renderOneDepartment(d, key) {
   const own =
     tier === "office"
       ? d.offices.filter((x) => x.parent_unit_slug === o.key)
-      : [];
-  setHTML("deptOneTree", renderTree("deptOneTree", own, o, o.id, []));
+      : tier === "chief" ? d.offices : [];
+  setHTML("deptOneTree", renderTree("deptOneTree", own, o, o.id,
+    tier === "chief" ? d.second_tier : []));
 
   if (o.missing) {
     setHTML("runSteps", "");
@@ -1212,6 +1213,7 @@ function renderBanner(t, s) {
     : simulated ? UI.L("The recorded output is simulated. Review the results and steps before relying on it.","Đầu ra được ghi là mô phỏng. Xem kết quả và các bước trước khi sử dụng.")
     : t.status==="completed" ? tr("task.finished_steps","Finished. The steps say what each hand did.")
     : t.status==="waiting_for_approval" ? tr("task.waiting","Waiting for a human decision. Open Decisions to read the draft.")
+    : t.status==="waiting_for_input" ? tr("task.need_input","Waiting for your input. Read the reason below to see what is needed next.")
     : s.in_flight ? tr("task.inflight","Work is in flight; this page follows its status.")
     : tr("task.idle","Ready to start when an owner is assigned.");
   setHTML("taskBanner", UI.callout({title:statusName(t.status),description,

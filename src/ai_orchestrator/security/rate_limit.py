@@ -50,6 +50,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return mapping.get(prefix, 60)
 
     def _key(self, request: Request) -> str:
+        if request.url.path.startswith("/api/v1/identity/"):
+            # Login is unauthenticated. Arbitrary bearer/header changes must not
+            # create a fresh password-guess budget. Forwarded addresses are not
+            # trusted until an explicitly configured proxy validates them.
+            return f"identity-ip:{request.client.host if request.client else 'unknown'}"
         # Prefer the authenticated subject: two operators behind one NAT do not
         # share a budget, and one operator behind many IPs does not get extra.
         auth = request.headers.get("authorization", "")
@@ -75,7 +80,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self._settings.rate_limit_tool_invoke_per_min,
         )
 
-        key = f"{self._key(request)}|{path}"
+        is_login = path.rstrip("/") == "/api/v1/identity/login"
+        if is_login:
+            limit = 10
+
+        bucket = (
+            "/api/v1/identity/login"
+            if is_login
+            else "/api/v1/identity"
+            if path.startswith("/api/v1/identity/")
+            else path
+        )
+        key = f"{self._key(request)}|{bucket}"
         now = time.monotonic()
         window = self._hits[key]
         while window and now - window[0] > 60.0:

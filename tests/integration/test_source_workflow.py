@@ -388,3 +388,289 @@ async def test_retry_keeps_source_owner_and_can_run_from_http(source_client, ten
     assert executions == [], "retry creation must not start a model run"
     result = await run(client, detail)
     assert result["status"] == "completed", result
+
+
+@pytest.mark.parametrize("archived", [False, True])
+async def test_revision_preserves_history_and_starts_with_new_sources_only(
+    source_client, tenant, archived
+):
+    client, provider = source_client
+    files = (await client.post("/api/v1/source-files/mock?workflow=quote_comparison")).json()[
+        "items"
+    ]
+    original = await run(client, await create(client, [files[0]["id"]], "quote_comparison", "mock"))
+    if archived:
+        from ai_orchestrator.persistence.models import Task
+        from ai_orchestrator.persistence.task_archive import ARCHIVE_KEY
+
+        async with tenant.db.tenant_session(tenant.organization_id) as session:
+            archived_task = await session.get(Task, original["id"])
+            archived_task.constraints = {
+                **archived_task.constraints,
+                ARCHIVE_KEY: {"version": 1, "state": "archived"},
+            }
+    old_sources = (await client.get(f"/api/v1/tasks/{original['id']}/sources")).json()
+    old_artifacts = (await client.get(f"/api/v1/tasks/{original['id']}/artifacts")).json()
+    from ai_orchestrator.approvals.service import ApprovalRequest, ApprovalService
+    from ai_orchestrator.domain.contracts import Actor
+    from ai_orchestrator.domain.enums import ActorType
+    from ai_orchestrator.persistence.models import User
+
+    # A real historical review is attached to the original, so "no approval
+    # inherited" is tested against an existing decision rather than an empty set.
+    reviews = ApprovalService(tenant.session, tenant.organization_id)
+    approval = await reviews.create(
+        ApprovalRequest(
+            organization_id=tenant.organization_id,
+            action_type="source.report_review",
+            action_payload={"manifest_sha256": old_sources["manifest"]["sha256"]},
+            requested_by=original["owner_agent_id"],
+            task_id=original["id"],
+        )
+    )
+    reviewer = await tenant.session.scalar(
+        select(User).where(User.organization_id == tenant.organization_id)
+    )
+    await reviews.decide(
+        approval.id,
+        approver=Actor(
+            id=reviewer.id,
+            kind=ActorType.HUMAN,
+            is_privileged_human=True,
+        ),
+        approve=True,
+        note="Synthetic historical review only",
+    )
+    approved_hash = approval.payload_hash
+    approval_id = approval.id
+    await tenant.commit()
+    changed = (
+        await client.post("/api/v1/source-files/mock?workflow=quote_comparison&seed=2")
+    ).json()["items"]
+    payload = {
+        "selection": {"mode": "mock", "file_ids": [changed[0]["id"]]},
+        "reason": "New synthetic source version for independent review",
+    }
+    url = f"/api/v1/tasks/{original['id']}/source-revisions"
+    response = await client.post(url, json=payload, headers={"Idempotency-Key": "revision-1"})
+    assert response.status_code == 201, response.text
+    revision = response.json()
+    assert revision["id"] != original["id"]
+    assert revision["status"] == "assigned"
+    assert revision["output"] in (None, {})
+    assert revision["input"]["source_revision"]["previous_task_id"] == original["id"]
+    assert revision["owner_agent_id"] == original["owner_agent_id"]
+    from ai_orchestrator.persistence.models import Approval, Task
+
+    async with tenant.db.tenant_session(tenant.organization_id) as session:
+        old = await session.get(Task, original["id"])
+        new = await session.get(Task, revision["id"])
+        assert "_synthetic_archive" not in new.constraints
+        if archived:
+            assert old.constraints["_synthetic_archive"]["state"] == "archived"
+        assert new.expected_output_schema == old.expected_output_schema
+        assert new.budget_limit_tokens == old.budget_limit_tokens
+        assert new.budget_limit_usd == old.budget_limit_usd
+        assert not (await session.scalars(select(Approval).where(Approval.task_id == new.id))).all()
+        assert new.spent_tokens == 0 and new.spent_usd == 0
+    assert len(provider.calls) == 1, "Revision creation must not run the model"
+    assert (await client.get(f"/api/v1/tasks/{revision['id']}/executions")).json()["items"] == []
+    assert (await client.get(f"/api/v1/tasks/{revision['id']}/artifacts")).json()["items"] == []
+    manifest = (await client.get(f"/api/v1/tasks/{revision['id']}/sources")).json()["manifest"]
+    assert manifest["id"] != old_sources["manifest"]["id"]
+    assert [f["id"] for f in manifest["sources"]] == [changed[0]["id"]]
+    replay = await client.post(url, json=payload, headers={"Idempotency-Key": "revision-1"})
+    assert replay.status_code == 201 and replay.json()["id"] == revision["id"]
+    assert replay.json()["idempotent_replay"]
+    mismatch = await client.post(
+        url,
+        json={**payload, "reason": "A different revision reason"},
+        headers={"Idempotency-Key": "revision-1"},
+    )
+    assert mismatch.status_code == 409
+    assert (await run(client, revision))["status"] == "completed"
+    assert (await client.get(f"/api/v1/tasks/{original['id']}/sources")).json() == old_sources
+    assert (await client.get(f"/api/v1/tasks/{original['id']}/artifacts")).json() == old_artifacts
+    assert (await client.get(f"/api/v1/tasks/{original['id']}")).json()["status"] == "completed"
+    async with tenant.db.tenant_session(tenant.organization_id) as session:
+        historical = await session.get(Approval, approval_id)
+        assert historical is not None
+        assert historical.status == "approved" and historical.payload_hash == approved_hash
+
+
+async def test_revision_rejects_active_work_bad_sources_and_other_tenant(
+    source_client, other_tenant
+):
+    client, provider = source_client
+    files = (await client.post("/api/v1/source-files/mock")).json()["items"]
+    original = await create(client, [files[0]["id"]])
+    payload = {
+        "selection": {"mode": "mock", "file_ids": [files[0]["id"]]},
+        "reason": "Correct the chosen synthetic source",
+    }
+    url = f"/api/v1/tasks/{original['id']}/source-revisions"
+    assert (await client.post(url, json=payload)).status_code == 422
+    assert (
+        await client.post(url, json=payload, headers={"Idempotency-Key": "active"})
+    ).status_code == 409
+    assert not provider.calls
+    await run(client, original)
+    cross = await client.post(
+        url,
+        json=payload,
+        headers={"Idempotency-Key": "other", "x-organization-id": other_tenant.organization_id},
+    )
+    assert cross.status_code == 404
+    bad = {**payload, "selection": {"mode": "sources", "file_ids": ["src_missing"]}}
+    response = await client.post(url, json=bad, headers={"Idempotency-Key": "bad-sources"})
+    assert response.status_code == 404
+    # A rollback must not poison the key; supplying valid sources can now succeed.
+    fixed = await client.post(url, json=payload, headers={"Idempotency-Key": "bad-sources"})
+    assert fixed.status_code == 201, fixed.text
+
+
+async def test_concurrent_revision_requests_replay_one_new_task(source_client):
+    client, _ = source_client
+    files = (await client.post("/api/v1/source-files/mock")).json()["items"]
+    original = await run(client, await create(client, [files[0]["id"]]))
+    payload = {
+        "selection": {"mode": "mock", "file_ids": [files[0]["id"]]},
+        "reason": "Recheck the same synthetic source version",
+    }
+    url = f"/api/v1/tasks/{original['id']}/source-revisions"
+    responses = await asyncio.gather(
+        *(
+            client.post(url, json=payload, headers={"Idempotency-Key": "concurrent"})
+            for _ in range(2)
+        )
+    )
+    assert [r.status_code for r in responses] == [201, 201], [r.text for r in responses]
+    assert len({r.json()["id"] for r in responses}) == 1
+    assert sum(bool(r.json().get("idempotent_replay")) for r in responses) == 1
+
+
+async def test_revision_requires_human_before_any_task_read(source_client, tenant, monkeypatch):
+    from ai_orchestrator.domain.contracts import Actor
+    from ai_orchestrator.domain.enums import ActorType
+    from ai_orchestrator.security.auth import Principal
+
+    client, _ = source_client
+
+    async def service_principal(request):
+        return Principal(
+            actor=Actor(
+                id="test-service", kind=ActorType.SERVICE, organization_id=tenant.organization_id
+            ),
+            is_service=True,
+        )
+
+    monkeypatch.setattr("ai_orchestrator.api.deps.authenticate", service_principal)
+    response = await client.post(
+        "/api/v1/tasks/unknown/source-revisions",
+        json={
+            "selection": {"mode": "sources", "file_ids": []},
+            "reason": "Synthetic source correction",
+        },
+        headers={"Idempotency-Key": "service-rejected"},
+    )
+    assert response.status_code == 403
+
+
+async def test_revision_rejects_blank_reason(source_client):
+    client, _ = source_client
+    response = await client.post(
+        "/api/v1/tasks/unknown/source-revisions",
+        json={"selection": {"mode": "sources", "file_ids": []}, "reason": " " * 20},
+        headers={"Idempotency-Key": "blank-rejected"},
+    )
+    assert response.status_code == 422
+
+
+async def test_source_create_replays_concurrent_requests_once(source_client):
+    client, _ = source_client
+    files = (await client.post("/api/v1/source-files/mock")).json()["items"]
+    payload = {
+        "title": "Synthetic concurrent create",
+        "goal": "Review selected synthetic sources.",
+        "workflow": "document_review",
+        "selection": {"mode": "mock", "file_ids": [files[0]["id"]]},
+    }
+    responses = await asyncio.gather(
+        *(
+            client.post(
+                "/api/v1/source-workflows", json=payload, headers={"Idempotency-Key": "same-create"}
+            )
+            for _ in range(2)
+        )
+    )
+    assert [r.status_code for r in responses] == [201, 201], [r.text for r in responses]
+    assert len({r.json()["id"] for r in responses}) == 1
+    assert sum(bool(r.json().get("idempotent_replay")) for r in responses) == 1
+
+
+async def test_source_create_keys_are_independent_between_tenants(source_client, other_tenant):
+    client, _ = source_client
+    org = await other_tenant.session.get(Organization, other_tenant.organization_id)
+    await seed(other_tenant.session, into=org)
+    await other_tenant.commit()
+    original_task_ids = []
+    for headers in ({}, {"x-organization-id": other_tenant.organization_id}):
+        files = (await client.post("/api/v1/source-files/mock", headers=headers)).json()["items"]
+        payload = {
+            "title": "Synthetic shared idempotency key",
+            "goal": "Review synthetic sources in the current tenant only.",
+            "workflow": "document_review",
+            "selection": {"mode": "mock", "file_ids": [files[0]["id"]]},
+        }
+        request_headers = {**headers, "Idempotency-Key": "same-key-in-two-tenants"}
+        first = await client.post("/api/v1/source-workflows", json=payload, headers=request_headers)
+        assert first.status_code == 201, first.text
+        replay = await client.post(
+            "/api/v1/source-workflows", json=payload, headers=request_headers
+        )
+        assert replay.status_code == 201, replay.text
+        assert replay.json()["id"] == first.json()["id"], "Tenant-scoped retry created a duplicate"
+        assert replay.json()["idempotent_replay"]
+        original_task_ids.append(first.json()["id"])
+    assert len(set(original_task_ids)) == 2
+
+
+async def test_source_create_replays_pre_namespace_response(source_client, tenant):
+    from ai_orchestrator.api.deps import request_hash
+    from ai_orchestrator.domain.ids import make_id
+    from ai_orchestrator.persistence.models import IdempotencyRecord
+
+    client, _ = source_client
+    legacy_key = "legacy-" + tenant.organization_id
+    files = (await client.post("/api/v1/source-files/mock")).json()["items"]
+    payload = {
+        "title": "Legacy response compatibility",
+        "goal": "Review selected synthetic evidence.",
+        "workflow": "document_review",
+        "selection": {"mode": "mock", "file_ids": [files[0]["id"]]},
+        "owner_agent_id": None,
+    }
+    task = (await client.post("/api/v1/source-workflows", json=payload)).json()
+    async with tenant.db.tenant_session(tenant.organization_id) as session:
+        session.add(
+            IdempotencyRecord(
+                id=make_id("idem"),
+                organization_id=tenant.organization_id,
+                idempotency_key=legacy_key,
+                operation="source_workflow",
+                request_hash=request_hash(payload),
+                resource_id=task["id"],
+                response_body=task,
+            )
+        )
+    response = await client.post(
+        "/api/v1/source-workflows", json=payload, headers={"Idempotency-Key": legacy_key}
+    )
+    assert response.status_code == 201, response.text
+    assert response.json()["id"] == task["id"] and response.json()["idempotent_replay"]
+    mismatch = await client.post(
+        "/api/v1/source-workflows",
+        json={**payload, "goal": "A different synthetic goal"},
+        headers={"Idempotency-Key": legacy_key},
+    )
+    assert mismatch.status_code == 409

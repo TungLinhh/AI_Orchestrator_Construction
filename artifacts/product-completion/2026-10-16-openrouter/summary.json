@@ -1,0 +1,35 @@
+{
+  "status": "PARTIAL_OPENROUTER_NOT_ACCEPTED",
+  "verified_baseline": {
+    "tests": 3870,
+    "e2e": 35,
+    "lint": "PASS",
+    "typecheck": "PASS"
+  },
+  "actual_runtime_fixed_campaign": {
+    "cases": 7,
+    "passed": 3,
+    "failed_upstream_503": 4,
+    "passed_departments": [
+      "QA/QC-HSE",
+      "Design",
+      "HR"
+    ],
+    "failed_departments": [
+      "Sales",
+      "Procurement",
+      "Finance",
+      "IT"
+    ],
+    "scope": "Direct shared runtime, not persisted CEO/office chain",
+    "failed_cost": "UNKNOWN",
+    "successful_reported_cost": 0
+  },
+  "initial_campaign": "Invalid recorder harness, preserved privately and excluded from clean result",
+  "model_restrictions": {
+    "Inkling": "403 agentic-harness eligibility",
+    "DOTS": "raw probe truncated with inconsistent usage; not accepted"
+  },
+  "publication": "Only reviewed technical evidence; no raw sessions or embedded source documents",
+  "new_openrouter_patch": "Not accepted or committed; remaining work retained locally"
+}

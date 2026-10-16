@@ -13,6 +13,10 @@ from ai_orchestrator.domain.source_report import report_schema, validate_report
 class SourceDocumentRuntime(WorkflowEvidenceRuntime):
     name = "source_document"
     output_token_limit = 3500
+    repair_evidence_instruction = (
+        "Every selected source still requires a non-empty exact citation. "
+        "Put missing or unverified information in limitations, never in an empty quote. "
+    )
     transient_response_retries = 1
     transient_gateway_retries = 1
     system_instruction_suffix = (
@@ -22,7 +26,7 @@ class SourceDocumentRuntime(WorkflowEvidenceRuntime):
         "Quote a short single-line exact passage, not an entire table. "
         "Write a substantive summary of at least two sentences (60+ characters) "
         "stating the conclusion; for a quote comparison name the winner, the "
-        "winning total in VND and why the others are ineligible. "
+        "winning total in VND, comparing eligibility and totals for the other quotes. "
         "State missing/unverified information. "
         "No invented approvals or completed transactions. "
         "Invoke submit_evidence as a tool call; never write the artifact or the tool call "
@@ -48,6 +52,16 @@ class SourceDocumentRuntime(WorkflowEvidenceRuntime):
         execute_tool: Any = None,
     ) -> AgentResult:
         schema = report_schema(self.source_context["expected"] is not None)
+        citation_fields = schema["properties"]["findings"]["items"]["properties"]
+        citation_fields["quote"]["minLength"] = 8
+        citation_fields["source_id"]["enum"] = [s["id"] for s in self.source_context["sources"]]
+        citation_fields["locator"]["enum"] = list(
+            dict.fromkeys(
+                segment["locator"]
+                for source in self.source_context["sources"]
+                for segment in source["segments"]
+            )
+        )
         if self.source_context["expected"] is not None:
             # The deterministic calculation already knows whether these values are null.
             # A concrete wire schema avoids ambiguous union grammars in tool adapters.
@@ -57,7 +71,8 @@ class SourceDocumentRuntime(WorkflowEvidenceRuntime):
                     if value is None
                     else "integer"
                     if key == "total_vnd"
-                    else "string"
+                    else "string",
+                    "enum": [value],
                 }
         task = task.model_copy(
             update={

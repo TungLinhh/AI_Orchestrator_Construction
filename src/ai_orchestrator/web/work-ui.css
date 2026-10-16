@@ -143,4 +143,17 @@
   @media (max-width: 760px) {
     #view-task > .page-heading { margin: 0 calc(-1 * var(--space-16)); padding: var(--space-8) var(--space-16); }
   }
+  /* Source hashes and native fieldsets must shrink within the mobile column. */
+  #sourceTaskPanel, #sourceTaskPanel .ui-panel-body,
+  #sourceTaskFiles, #sourceRevisionWrap, #sourceRevisionForm, #revisionFileList {
+    min-width: 0; max-width: 100%; overflow-wrap: anywhere;
+  }
+  #sourceTaskPanel fieldset { min-inline-size: 0; max-inline-size: 100%; }
+  #sourceTaskPanel code { white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+  #sourceTaskPanel input[type="file"] { min-width: 0; max-width: 100%; width: 100%; }
+
+  #revisionFileList { max-height: 22rem; overflow-y: auto; }
+  #revisionFileList .ui-field > span { display: flex; align-items: flex-start; gap: var(--space-8); }
+  #revisionFileList input[type="checkbox"] { width: 20px; height: 20px; flex: none; margin-top: 2px; }
+
 }

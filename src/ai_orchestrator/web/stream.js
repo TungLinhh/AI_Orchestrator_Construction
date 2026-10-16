@@ -102,9 +102,9 @@ function nodeEl(n) {
 
 /* ---------------- streaming ---------------- */
 function setConn(name, key, fallback) {
+  // The sidebar connection badge was removed with the footer cleanup, so the
+  // stream keeps only the last connection state for diagnostics.
   state.connection = [name, key, fallback];
-  $("dot").className = "dot " + name;
-  $("connText").textContent = tr(key, fallback);
 }
 
 /* SSE over `fetch` rather than `EventSource`: `EventSource` cannot set an
@@ -376,12 +376,6 @@ $("runBtn").onclick = async () => {
   } finally {
     btn.disabled = false;
     btn.textContent = tr("give.run", "Run");
-  }
-};
-$("tokenBtn").onclick = () => {
-  if (askToken(token()) !== null) {
-    forgetToken();
-    askToken("");
   }
 };
 /* The language switch. English is the verified default, so the button offers

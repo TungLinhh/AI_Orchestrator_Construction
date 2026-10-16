@@ -423,20 +423,33 @@ class TestTheLoopIsCapped:
         )
         assert result.status is AgentResultStatus.FAILED, result.summary
         assert result.error_code == "budget_exhausted", result.error_code
-        # The point of the test: the loop stopped at the ceiling rather than
-        # running until something less predictable stopped it.
-        #
-        # **Which** ceiling is the thing that changed, and this is why the test
-        # was worth keeping through the change. `max_requests` was removed as a
-        # separate counter and the tool ceiling now governs both counts. That
-        # only works because `_EndlessGateway` never calls a tool: it makes model
-        # calls and nothing else, so a tool-call ceiling alone would never fire
-        # and the run would be unbounded. Removing the request counter outright
-        # turned this test red at 13 calls; the failure is the argument.
-        ceiling = _context(max_requests=4).budget.max_tool_calls
-        assert gateway.calls <= ceiling, (
-            f"the loop made {gateway.calls} calls against a ceiling of {ceiling}"
+        assert gateway.calls == 4
+
+    @pytest.mark.parametrize("requests,tools,expected", [(2, 9, 2), (9, 2, 2)])
+    async def test_the_stricter_request_or_tool_ceiling_wins(
+        self, requests: int, tools: int, expected: int
+    ) -> None:
+        context = _context(max_requests=requests)
+        context = context.model_copy(
+            update={"budget": context.budget.model_copy(update={"max_tool_calls": tools})}
         )
+        gateway = _EndlessGateway()
+        recorded = []
+
+        async def record(response: Any) -> None:
+            recorded.append(response)
+
+        result = await run_with_pydantic_ai(
+            task=_task(),
+            context=context,
+            gateway=gateway,
+            execute_tool=_execute,
+            record_usage=record,
+        )
+        assert result.status is AgentResultStatus.FAILED
+        assert result.error_code == "budget_exhausted"
+        assert gateway.calls == expected
+        assert len(recorded) == expected
 
     async def test_the_failure_says_how_to_raise_the_ceiling(self) -> None:
         """An operator reading only the summary should know which knob to turn.

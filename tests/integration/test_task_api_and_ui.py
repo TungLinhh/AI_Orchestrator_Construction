@@ -316,8 +316,15 @@ class TestTheOperatorView:
         every proxy log on the way. The page reads the stream with `fetch` instead;
         this asserts that did not get reverted."""
         text = (await client.get("/api/v1/ui")).text
-        assert "access_token" not in text, (
-            "the token is being passed in the URL; use fetch so it stays in a header"
+        import re
+
+        # Login legitimately reads data.access_token. Reject URL transport,
+        # including URLSearchParams, rather than the response field's name.
+        assert not re.search(r"[?&](?:access_token|token|authorization)=", text, re.I)
+        assert not re.search(
+            r"searchParams\.(?:set|append)\(\s*[\"'](?:access_token|token|authorization)[\"']",
+            text,
+            re.I,
         )
         assert "Authorization" in text
 
@@ -659,20 +666,16 @@ class TestTheConsoleCanSeeAnything:
         assert response.status_code in (200, 201), response.text
         await tenant.commit()
         frames = await backfill(tenant.session, tenant.organization_id, 50)
-        if not frames:
-            # A task creation writes to `outbox_events`; a **publisher** moves it to
-            # `events`, and the stream reads `events`. Nothing publishes in the test
-            # environment, so a freshly created task produces no frame to check the
-            # page against.
-            #
-            # That is a real property of the system rather than a test gap — the stream
-            # shows published events, and an unpublished one is invisible to a reader —
-            # but it is also the reason this test cannot be the primary guard. The
-            # guard that always runs is
-            # `test_the_page_does_not_read_a_field_that_does_not_exist`, which is the
-            # assertion that actually caught F131.
-            pytest.skip("no published event yet; the outbox publisher is not running")
-        await self._page_reads_a_real_frame(client, tenant, frames[0])
+        # TaskRepository.emit persists Event and OutboxEvent in the task
+        # transaction. Stream backfill reads Event directly, so no NATS relay
+        # is needed for this assertion and an absent frame is a real failure.
+        created = [
+            frame
+            for frame in frames
+            if frame["type"] == "task.created" and frame["subject"] == response.json()["id"]
+        ]
+        assert created, "the committed HTTP task has no persisted creation frame"
+        await self._page_reads_a_real_frame(client, tenant, created[0])
 
     async def test_the_page_renders_a_delegation_event(self, client: Any, tenant: Any) -> None:
         """The one that was blank: 189 real events and zero lines rendered."""

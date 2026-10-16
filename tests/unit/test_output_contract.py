@@ -167,3 +167,103 @@ class TestScenarioContracts:
                 schema["field_meaning"][field]
                 == payload[key]["expected_output"][field]["description"]
             )
+
+
+class TestExplicitContractValidation:
+    @pytest.mark.parametrize("value", [None, True, "3", 3.5])
+    def test_required_keys_with_wrong_values_fail(self, value: object) -> None:
+        from ai_orchestrator.domain.output_contract import contract_violations
+
+        schema = {"required": ["count"], "properties": {"count": {"type": "integer"}}}
+        assert contract_violations({"count": value}, schema) == ("output.count violates type",)
+
+    def test_nested_department_artifact_is_checked(self) -> None:
+        from ai_orchestrator.domain.output_contract import contract_violations
+
+        schema = {
+            "required": ["findings"],
+            "properties": {
+                "findings": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "required": ["accepted"],
+                        "properties": {"accepted": {"type": "boolean"}},
+                        "additionalProperties": False,
+                    },
+                }
+            },
+        }
+        assert contract_violations({"findings": [{"accepted": True}]}, schema) == ()
+        assert contract_violations({"findings": [{"accepted": "yes"}]}, schema)
+        assert contract_violations({"findings": [{}]}, schema)
+        assert contract_violations({"findings": []}, schema)
+        assert contract_violations({"findings": [{"accepted": True, "invented": 1}]}, schema)
+
+    def test_legacy_contracts_keep_key_only_meaning(self) -> None:
+        from ai_orchestrator.domain.output_contract import contract_violations
+
+        assert contract_violations({"count": None}, {"produces": "count"}) == ()
+        assert contract_violations({"count": "anything"}, None) == ()
+        assert contract_violations({}, {"produces": "count"})
+
+    @pytest.mark.parametrize(
+        "department", ["sales", "procurement", "qa", "design", "finance", "hr", "it"]
+    )
+    def test_generic_contract_is_independent_of_department(self, department: str) -> None:
+        from ai_orchestrator.domain.output_contract import contract_violations
+
+        schema = {
+            "required": ["department", "decision"],
+            "properties": {
+                "department": {"type": "string"},
+                "decision": {"enum": ["review", "accept"]},
+            },
+        }
+        assert contract_violations({"department": department, "decision": "review"}, schema) == ()
+        assert contract_violations({"department": department, "decision": "invented"}, schema)
+
+    def test_unchecked_reference_is_explicitly_rejected(self) -> None:
+        from ai_orchestrator.domain.output_contract import contract_violations
+
+        assert "unresolved" in contract_violations({"value": 1}, {"$ref": "#/$defs/value"})[0]
+
+    def test_nullable_type_and_numeric_bounds(self) -> None:
+        from ai_orchestrator.domain.output_contract import contract_violations
+
+        schema = {"properties": {"price": {"type": ["number", "null"], "minimum": 0}}}
+        assert contract_violations({"price": None}, schema) == ()
+        assert contract_violations({"price": 0}, schema) == ()
+        assert contract_violations({"price": -1}, schema)
+        assert contract_violations({"price": True}, schema)
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        {"properties": None},
+        {"properties": {"v": {"enum": None}}},
+        {"properties": {"v": {"type": [{}]}}},
+    ],
+)
+def test_malformed_stored_schema_rejects_without_crashing(schema):
+    from ai_orchestrator.domain.output_contract import contract_violations
+
+    assert "malformed schema" in contract_violations({"v": 1}, schema)[0]
+
+
+def test_pydantic_blueprint_schema_remains_supported():
+    from ai_orchestrator.domain.agent_blueprint import AgentBlueprint
+    from ai_orchestrator.domain.output_contract import contract_violations
+    from tests.unit.test_agent_blueprint import example_plan
+
+    output = AgentBlueprint.model_validate(example_plan()).model_dump(mode="json")
+    assert contract_violations(output, AgentBlueprint.model_json_schema()) == ()
+
+
+def test_remote_schema_reference_is_rejected_without_retrieval():
+    from ai_orchestrator.domain.output_contract import contract_violations
+
+    errors = contract_violations({"v": 1}, {"$ref": "https://example.invalid/schema.json"})
+    assert "external retrieval is disabled" in errors[0]

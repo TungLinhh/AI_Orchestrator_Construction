@@ -103,19 +103,35 @@ class SourceIntake:
             raise NotFoundError("Source not found", resource_type="source", resource_id=file_id)
         return file
 
-    async def admit(self, byte_count: int) -> None:
-        # The same lock owns quota admission for concurrent uploads in this tenant.
+    async def _storage_lock(self) -> None:
         await self.session.execute(
             text("SELECT pg_advisory_xact_lock(hashtext(:org), hashtext('source-quota'))"),
             {"org": self.org},
         )
+
+    async def admit(self, byte_count: int) -> None:
+        # Uploads, extraction-review copies, and exported binaries share admission
+        # and the same transaction lock, so concurrent writers cannot oversubscribe.
+        from ai_orchestrator.config.settings import get_settings
+
+        await self._storage_lock()
         used = await self.session.scalar(
             select(func.coalesce(func.sum(SourceFile.byte_count), 0)).where(
                 SourceFile.organization_id == self.org
             )
         )
-        if int(used or 0) + byte_count > 100 * MAX_BYTES:
-            raise ValidationError("Tenant source quota exceeded (1 GiB)")
+        artifacts_used = await self.session.scalar(
+            select(func.coalesce(func.sum(func.octet_length(SourceArtifact.content)), 0)).where(
+                SourceArtifact.organization_id == self.org
+            )
+        )
+        total = int(used or 0) + int(artifacts_used or 0)
+        quota = get_settings().source_storage_quota_bytes
+        if total + byte_count > quota:
+            raise ValidationError(
+                "Tenant source/artifact storage quota exceeded",
+                details={"used_bytes": total, "requested_bytes": byte_count, "quota_bytes": quota},
+            )
 
     async def upload(
         self,
@@ -318,6 +334,16 @@ class SourceIntake:
         formats = await asyncio.to_thread(
             render_exports, task.title, output, source_context["manifest"], originals
         )
+        await self._storage_lock()
+        # The first read preceded rendering and admission. A concurrent export
+        # may have committed while we waited for this tenant's quota lock.
+        if await self.session.scalar(
+            select(SourceArtifact.id)
+            .where(SourceArtifact.organization_id == self.org, SourceArtifact.task_id == task.id)
+            .limit(1)
+        ):
+            return
+        await self.admit(sum(len(content) for content, _ in formats.values()))
         for extension, (content, media_type) in formats.items():
             self.session.add(
                 SourceArtifact(

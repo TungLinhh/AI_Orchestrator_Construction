@@ -23,7 +23,7 @@ from typing import Any
 
 import jwt
 from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHashError, VerifyMismatchError
+from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -84,7 +84,7 @@ def verify_password(password: str, stored_hash: str | None) -> bool:
         return False
     try:
         _hasher.verify(stored_hash, password)
-    except VerifyMismatchError, InvalidHashError:
+    except VerificationError, InvalidHashError:
         return False
     return True
 
@@ -142,15 +142,73 @@ def decode_access_token(token: str, settings: Settings | None = None) -> dict[st
 
 def principal_from_token(token: str, settings: Settings | None = None) -> Principal:
     claims = decode_access_token(token, settings)
-    return Principal(
-        actor=Actor(
+    # Signed claims still cross a network boundary. Reject malformed identities
+    # instead of coercing them or raising a server error during principal binding.
+    if (
+        any(
+            not isinstance(claims.get(key), str) or not claims[key].strip() or len(claims[key]) > 40
+            for key in ("sub", "org")
+        )
+        or type(claims.get("tv")) is not int
+        or claims["tv"] < 1
+    ):
+        raise AuthorizationError("access token is not valid", details={"reason": "invalid"})
+    try:
+        actor = Actor(
             id=str(claims["sub"]),
             kind=ActorType.HUMAN,
             organization_id=OrganizationId(str(claims["org"])),
             display_name="",
             is_privileged_human=bool(claims.get("is_privileged", False)),
-        ),
+        )
+    except ValueError as exc:
+        # Branded tenant identifiers have a schema too. A signed but malformed
+        # org claim must follow the same credential-refusal path, never a 500.
+        raise AuthorizationError(
+            "access token is not valid", details={"reason": "invalid"}
+        ) from exc
+    return Principal(
+        actor=actor,
         token_version=int(claims.get("tv", 1)),
+    )
+
+
+async def current_human_principal(session: Any, principal: Principal) -> Principal:
+    """Resolve a verified token against current membership in its bound tenant.
+
+    The caller binds the session using the application role. Token flags are a
+    snapshot; disable, forced logout, and privilege changes affect the next request.
+    """
+    from sqlalchemy import select
+
+    from ai_orchestrator.persistence.models import User
+
+    user = (
+        await session.execute(
+            select(User)
+            .where(
+                User.organization_id == principal.organization_id,
+                User.id == str(principal.actor.id),
+            )
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one_or_none()
+    if (
+        user is None
+        or not user.is_active
+        or user.disabled_at is not None
+        or user.token_version != principal.token_version
+    ):
+        raise AuthorizationError("access token is not valid", details={"reason": "invalid"})
+    return Principal(
+        actor=Actor(
+            id=user.id,
+            kind=ActorType.HUMAN,
+            organization_id=OrganizationId(user.organization_id),
+            display_name=user.display_name,
+            is_privileged_human=user.is_privileged,
+        ),
+        token_version=user.token_version,
     )
 
 

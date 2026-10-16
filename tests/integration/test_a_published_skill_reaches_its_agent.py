@@ -302,6 +302,22 @@ class TestRebindingReplacesRatherThanDuplicates:
             task_id=str(task.id), agent_id=agent_id
         )
         await seeded.session.flush()
+        versions = (
+            (
+                await seeded.session.execute(
+                    select(SkillVersion)
+                    .where(SkillVersion.skill_id == skill_id)
+                    .order_by(SkillVersion.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        # Simulate a backwards wall clock without changing revision identity.
+        from datetime import timedelta
+
+        versions[-1].created_at = versions[0].created_at - timedelta(days=1)
+        await seeded.session.flush()
         await _publish(seeded, skill_id)
 
         rows = (

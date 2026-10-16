@@ -92,6 +92,38 @@ class TestThePageIsServed:
         assert "no-store" in response.headers.get("cache-control", "")
 
 
+def _asked_ids(script: str) -> set[str]:
+    """The ids the script reads through `$("id")`."""
+    return set(re.findall(r"""\$\(["']([A-Za-z0-9_-]+)["']\)""", script))
+
+
+def _imperatively_defined_ids(script: str) -> set[str]:
+    """Ids given to elements the script itself builds.
+
+    A `wrap.id = 'name'` assignment only counts when `wrap` holds a
+    `document.createElement(...)` result — with or without a `let`/`const` on
+    that line, since a reassignment (`wrap = document.createElement('div')`
+    after `let wrap = $(...)`) still holds a created element. An `.id`
+    assignment on any other object is not a DOM definition, and neither is a
+    non-literal right-hand side (`g.id = t.id`, `` tip.id = `...${i}` ``):
+    neither puts a knowable id into the document.
+    """
+    holders = set(re.findall(r"""([A-Za-z_$][\w$]*)\s*=\s*document\.createElement\s*\(""", script))
+    return {
+        ident
+        for var, ident in re.findall(
+            r"""([A-Za-z_$][\w$]*)\.id\s*=\s*["']([A-Za-z0-9_-]+)["']""", script
+        )
+        if var in holders
+    }
+
+
+def _missing_ids(page: str, script: str) -> list[str]:
+    """Ids the script asks for that neither the markup nor the script defines."""
+    built = _imperatively_defined_ids(script)
+    return sorted(i for i in _asked_ids(script) if f'id="{i}"' not in page and i not in built)
+
+
 class TestThePageHasConstructionVocabulary:
     """Before this, the page contained no construction words at all.
 
@@ -106,12 +138,18 @@ class TestThePageHasConstructionVocabulary:
         served document. The first version of this file only checked that ids existed,
         which passes even if the script asks for one that does not — so it is written
         the other way round: take the ids the script asks for and demand each one.
+
+        An id counts as defined two ways: a literal `id="..."` in the served
+        document, or an imperative `document.createElement(...)` whose result is
+        given that id in the script (`SourceUI.revisionSection` builds
+        `sourceRevisionWrap` this way, so a literal-only check reports it missing
+        even though the script creates it before it reads it).
         """
         page = (await client.get("/api/v1/ui")).text
         js = _page(page)
-        asked = set(re.findall(r"""\$\(["']([A-Za-z0-9_-]+)["']\)""", js))
+        asked = _asked_ids(js)
         assert asked, "no ids found in the script, so this test is vacuous"
-        missing = sorted(i for i in asked if f'id="{i}"' not in page)
+        missing = _missing_ids(page, js)
         assert not missing, f"the script reads ids the page does not define: {missing}"
 
     async def test_the_script_is_valid_javascript(self, client: Any) -> None:
@@ -148,6 +186,51 @@ class TestThePageHasConstructionVocabulary:
         )
         result = await asyncio.to_thread(run)
         assert result.returncode == 0, result.stderr[:600]
+
+
+class TestImperativeIdsAreStructural:
+    """The `sourceRevisionWrap` guard: building an element is defining its id.
+
+    `test_the_dom_ids_the_script_reaches_for_all_exist` accepts an id the script
+    builds with `document.createElement(...)` plus a literal `.id` assignment.
+    These pin down what that acceptance means, so it cannot drift into counting
+    any assignment as a definition: pure unit checks, no client, no database.
+    """
+
+    def test_a_created_element_given_an_id_is_defined(self) -> None:
+        assert "panel" in _imperatively_defined_ids(
+            "const panel = document.createElement('section');\npanel.id = 'panel';"
+        )
+
+    def test_the_reassignment_shape_counts(self) -> None:
+        """Mirrors `revisionSection`: `let wrap` first, `createElement` later."""
+        js = (
+            "let wrap = $('sourceRevisionWrap');\n"
+            "wrap = document.createElement('div');\n"
+            "wrap.id = 'sourceRevisionWrap';"
+        )
+        assert "sourceRevisionWrap" in _imperatively_defined_ids(js)
+
+    def test_an_id_on_an_ordinary_object_is_not_a_definition(self) -> None:
+        assert "phantom" not in _imperatively_defined_ids("thing.id = 'phantom';")
+
+    def test_a_non_literal_assignment_is_not_a_definition(self) -> None:
+        assert (
+            _imperatively_defined_ids("g = document.createElement('div');\ng.id = t.id;") == set()
+        )
+
+    def test_a_template_literal_id_is_not_a_definition(self) -> None:
+        js = "const tip = document.createElement('span');\ntip.id = `tip-${i}`;"
+        assert _imperatively_defined_ids(js) == set()
+
+    def test_an_unknown_id_is_still_reported_missing(self) -> None:
+        """The guard stays non-vacuous: an id defined nowhere still fails."""
+        page = '<div id="real"></div><script>const x = 1;</script>'
+        assert _missing_ids(page, "$('real'); $('ghost');") == ["ghost"]
+
+    def test_an_id_mentioned_only_in_a_comment_is_not_asked_for(self) -> None:
+        doc = '<script>/* $("ghost") */\n$("real");</script><div id="real"></div>'
+        assert _asked_ids(_page(doc)) == {"real"}
 
 
 class TestYouCanAlwaysGetOut:
@@ -281,7 +364,14 @@ class TestThePageCallsRealEndpoints:
         """A token in a query string lands in history, in `Referer`, and in every
         proxy log between the browser and here."""
         page = (await client.get("/api/v1/ui")).text
-        assert "access_token" not in page
+        # Reading the standard login response field data.access_token is valid;
+        # sending a credential through a URL is the leak this test guards.
+        assert not re.search(r"[?&](?:access_token|token|authorization)=", page, re.I)
+        assert not re.search(
+            r"searchParams\.(?:set|append)\(\s*[\"'](?:access_token|token|authorization)[\"']",
+            page,
+            re.I,
+        )
         assert "Authorization" in page
 
     async def test_the_tenant_header_is_always_sent(self, client: Any) -> None:

@@ -78,6 +78,7 @@ from ai_orchestrator.persistence.models import (
     Task,
     TaskDependency,
 )
+from ai_orchestrator.persistence.task_archive import ARCHIVE_KEY, visible_tasks
 
 #: Only one live task per (organization, fingerprint). Enforced by a partial
 #: unique index in the schema; the pre-check here exists to turn a constraint
@@ -175,6 +176,8 @@ class TaskRepository:
         intent_fingerprint: str | None = None,
         intent_scope: str | None = None,
     ) -> Task:
+        if constraints and ARCHIVE_KEY in constraints:
+            raise ValidationError("reserved task archive metadata cannot be supplied on create")
         if not goal.strip():
             msg = "task goal must not be empty"
             raise ValidationError(msg, details={"field": "goal"})
@@ -524,10 +527,13 @@ class TaskRepository:
         parent_task_id: str | None = None,
         limit: int = 50,
         offset: int = 0,
+        include_archived: bool = False,
     ) -> Sequence[Task]:
         # `Any`: SQLAlchemy 2.0 parameterises `Select` on the *row* type, and
         # which columns a later `.where()` adds is not this function's concern.
         stmt: Select[Any] = select(Task).where(Task.organization_id == self._org)
+        if not include_archived:
+            stmt = stmt.where(visible_tasks())
         if status is not None:
             stmt = stmt.where(Task.status == status)
         if owner_agent_id is not None:
@@ -826,12 +832,11 @@ class TaskRepository:
         await self._session.flush()
         return event
 
-    async def count_by_status(self) -> dict[str, int]:
-        result = await self._session.execute(
-            select(Task.status, func.count())
-            .where(Task.organization_id == self._org)
-            .group_by(Task.status)
-        )
+    async def count_by_status(self, *, include_archived: bool = False) -> dict[str, int]:
+        stmt = select(Task.status, func.count()).where(Task.organization_id == self._org)
+        if not include_archived:
+            stmt = stmt.where(visible_tasks())
+        result = await self._session.execute(stmt.group_by(Task.status))
         return {status: count for status, count in result.all()}
 
     async def stale_passive_tasks(self, *, older_than_seconds: int = 3600) -> Sequence[Task]:

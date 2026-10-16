@@ -1,0 +1,17 @@
+{
+  "nats_py_version": "2.16.0",
+  "reproduction": "consumer-timeout-reproduction.txt: two failures before fix, NatsTimeout control passed",
+  "sdk_evidence": "installed JetStreamContext.PullSubscription._fetch_n explicitly raises asyncio.TimeoutError, not only nats.errors.TimeoutError",
+  "blast_radius": {
+    "constructors_found": [
+      "tests/e2e/test_event_pipeline.py: scoped relay, offline relay, quarantine relay"
+    ],
+    "default_behavior": "organization_ids=None retains ordered global Organization enumeration and round-robin cursor",
+    "scoped_behavior": "only explicitly selected tenant IDs are enumerated; each drain/health query still uses Database.tenant_session and app RLS",
+    "no_schema_or_bus_subject_change": true,
+    "cancellation": "propagates CancelledError; ordinary idle TimeoutError continues; fatal exceptions retain type even with empty message"
+  },
+  "verification": "17 passed in 8.65s, real NATS and least-privilege test DB; explicit two-tenant test proves the unselected outbox stays pending",
+  "first_full_gate": "interrupted own pytest after 405.32s: 1 failed,32 passed,1 deselected; no DB reset/foreign process stop",
+  "fresh_full_gate": ".orchestra/main-continuation/gates-final-2/receipt.json"
+}

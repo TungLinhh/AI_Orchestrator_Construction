@@ -245,6 +245,9 @@ async def publish_skill(
     # published while leaving the agent running on whichever version that was.
     # A publication that does not say which version it published is not a
     # publication at all.
+    # Version IDs are minted by the monotonic ULID generator. Wall-clock
+    # created_at can move backwards, and version labels may be numeric, dotted
+    # or arbitrary, so neither is the revision creation order.
     version = (
         await ctx.session.execute(
             select(SkillVersion)
@@ -252,7 +255,7 @@ async def publish_skill(
                 SkillVersion.skill_id == skill_id,
                 SkillVersion.organization_id == ctx.organization_id,
             )
-            .order_by(SkillVersion.created_at.desc(), SkillVersion.id.desc())
+            .order_by(SkillVersion.id.desc())
             .limit(1)
         )
     ).scalar_one_or_none()
@@ -345,7 +348,7 @@ def _latest_skill_version() -> Any:
     return (
         select(SkillVersion.id)
         .where(SkillVersion.skill_id == Skill.id)
-        .order_by(SkillVersion.created_at.desc(), SkillVersion.id.desc())
+        .order_by(SkillVersion.id.desc())
         .limit(1)
         .correlate(Skill)
         .scalar_subquery()

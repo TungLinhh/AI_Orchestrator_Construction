@@ -43,6 +43,7 @@ from ai_orchestrator.persistence.models import OutboxEvent
 from ai_orchestrator.persistence.repositories.task import TaskRepository
 from ai_orchestrator.persistence.session import Database
 from ai_orchestrator.telemetry.logging import configure_logging
+from tests.integration.conftest import other_tenant  # noqa: F401
 
 pytestmark = [pytest.mark.integration, pytest.mark.e2e]
 
@@ -154,7 +155,7 @@ class TestRelayAndBus:
         )
         await consumer.start()
         try:
-            relay = OutboxRelay(db, transport)
+            relay = OutboxRelay(db, transport, organization_ids=(tenant.organization_id,))
             published = await relay.run_once()
             assert published >= 1
 
@@ -333,7 +334,7 @@ class TestRelayResilience:
         await offline.connect(timeout_s=1.0)
         assert not offline.connected
 
-        relay = OutboxRelay(db, offline)
+        relay = OutboxRelay(db, offline, organization_ids=(tenant.organization_id,))
         assert await relay.run_once() == 0
         assert await relay.pending_count(tenant.organization_id) >= 1, (
             "an undelivered event was dropped"
@@ -360,7 +361,9 @@ class TestRelayResilience:
                 msg = "broker refused the message"
                 raise ConnectionError(msg)
 
-        relay = OutboxRelay(db, _AlwaysFails(), max_attempts=3)  # type: ignore[arg-type]
+        relay = OutboxRelay(
+            db, _AlwaysFails(), max_attempts=3, organization_ids=(tenant.organization_id,)
+        )  # type: ignore[arg-type]
         for _ in range(4):
             await relay.run_once()
 
@@ -374,3 +377,21 @@ class TestRelayResilience:
             "this tenant still has unpublished events after quarantine"
         )
         assert relay.stats.quarantined >= 1
+
+
+async def test_scoped_relay_leaves_unselected_tenant_outbox_pending(
+    tenant,
+    other_tenant,  # noqa: F811 - explicit pytest fixture re-export
+    db,
+    transport,
+):
+    for context in (tenant, other_tenant):
+        await TaskRepository(context.session, context.organization_id).create(
+            title="Synthetic relay partition",
+            goal="Verify scoped delivery without touching another tenant",
+        )
+        await context.commit()
+    relay = OutboxRelay(db, transport, organization_ids=(tenant.organization_id,))
+    assert await relay.run_once() == 1
+    assert await relay.pending_count(tenant.organization_id) == 0
+    assert await relay.pending_count(other_tenant.organization_id) == 1

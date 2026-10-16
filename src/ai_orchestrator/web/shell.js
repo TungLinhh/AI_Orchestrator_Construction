@@ -47,16 +47,20 @@ window.UIShell = (() => {
   }
   function appearance() {
     const prefs = UIPreferences.get();
+    const fontIndex = Math.max(0, UIPreferences.fonts.findIndex(f=>f.id===prefs.font));
     $('appearancePanel').innerHTML = `<h2 id="appearanceTitle">${L('Appearance', 'Giao diện')}</h2>
       <p class="ui-muted">${L('Saved on this device. Preview changes immediately.', 'Lưu trên thiết bị này. Thay đổi được xem trước ngay.')}</p>
       <fieldset><legend>${L('Color mode', 'Chế độ màu')}</legend>${UI.tabs({label:L('Color mode','Chế độ màu'),segmented:true,selected:['auto','light','dark'].indexOf(prefs.theme),items:[{label:L('System','Hệ thống')},{label:L('Light','Sáng')},{label:L('Dark','Tối')}]})}</fieldset>
       <fieldset><legend>${L('Accent color', 'Màu nhấn')}</legend><div class="shell-palettes">${UIPalettes.items.map(p=>`<button class="shell-palette" type="button" data-shell-palette="${p.id}" aria-pressed="${p.id===prefs.palette}"><span class="shell-swatch" style="--swatch:${p[document.documentElement.dataset.colorMode || 'light'][0]}" aria-hidden="true"></span>${esc(p[state.lang])}${p.id===prefs.palette?UIIcon('check'):''}</button>`).join('')}</div></fieldset>
       <fieldset><legend>${L('Density', 'Mật độ')}</legend>${UI.tabs({label:L('Density','Mật độ'),segmented:true,selected:prefs.density==='compact'?1:0,items:[{label:L('Comfortable','Thoải mái')},{label:L('Compact','Gọn')}]})}</fieldset>
+      <fieldset><legend>${L('Font', 'Phông chữ')}</legend>${UI.tabs({label:L('Font','Phông chữ'),segmented:true,selected:fontIndex,items:UIPreferences.fonts.map(f=>({label:L(f.en,f.vi)}))})}</fieldset>
       <button class="ui-btn ui-btn-ghost ui-btn-sm" type="button" popovertarget="appearancePanel" popovertargetaction="hide">${L('Close', 'Đóng')}</button>`;
+    const prefGroups = [['theme',['auto','light','dark']],['density',['comfortable','compact']],['font',UIPreferences.fonts.map(f=>f.id)]];
     const groups = $('appearancePanel').querySelectorAll('.ui-tabs');
     groups.forEach((group,i)=>group.querySelectorAll('button').forEach((button,j)=>{
-      button.dataset.shellPref = i===0?'theme':'density';
-      button.dataset.shellValue = (i===0?['auto','light','dark']:['comfortable','compact'])[j];
+      button.dataset.shellPref = prefGroups[i][0];
+      button.dataset.shellValue = prefGroups[i][1][j];
+      if(prefGroups[i][0]==='font') button.style.fontFamily = UIPreferences.fonts[j]?.stack || '';
     }));
     UI.hydrate($('appearancePanel'));
   }

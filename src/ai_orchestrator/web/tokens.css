@@ -134,6 +134,12 @@
   --ease-standard: cubic-bezier(.2,0,0,1); --ease-enter: cubic-bezier(0,0,.2,1);
   --ease-exit: cubic-bezier(.4,0,1,1); --ease-spring: cubic-bezier(.2,.8,.2,1);
 }
+:root[data-font="system"] {
+  --primitive-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Liberation Sans", sans-serif;
+}
+:root[data-font="serif"] {
+  --primitive-font-sans: Georgia, "Times New Roman", "Noto Serif", "DejaVu Serif", serif;
+}
 :root[data-density="compact"] {
   --btn-height: 32px; --field-height: 34px; --field-padding: 8px 12px;
   --row-min-height: 36px; --row-padding: 8px 16px; --cell-padding: 8px 12px;

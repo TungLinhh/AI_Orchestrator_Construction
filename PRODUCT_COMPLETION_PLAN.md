@@ -1,5 +1,25 @@
 # Kế hoạch hoàn thiện sản phẩm
 
+> Cập nhật 16/10/2026: OpenRouter còn PARTIAL: runtime thật đạt 3/7; 4 ca lỗi upstream 503.
+> Baseline đã kiểm tra: 3.870 test, 35 E2E, lint/typecheck PASS; UI trên cổng 8100
+> đã qua 91 kiểm tra điều hướng và 30 kiểm tra nút/phông chữ. Đây là bằng chứng
+> của đợt trước, không thay cho campaign model thật: chưa đạt nghiệm thu.
+> [Báo cáo công bố đã lọc dữ liệu](artifacts/product-completion/2026-10-16-openrouter/summary.json).
+> Các đường dẫn bằng chứng cục bộ trong nhật ký bên dưới không được phát hành lên Git.
+
+
+> Nhật ký đợt trước, 16-10-2026 (giờ Việt Nam): OpenCode đã chuyển sang
+> session mới dùng `opencode/longcat-2.5-preview-free`; ngừng dispatch Nemotron.
+> Giữ nguyên model chạy tác vụ sản phẩm. Codex kiểm chứng thêm identity/token/operator
+> CLI và quota source+artifact: **51 PASS** (17,69 giây); đây là focused suite,
+> chưa thay thế full gate sau các sửa UI. Hai worker Longcat thực sự chạy song song:
+> recovery preview (C) và audit pilot60 (D); nhóm UI/browser đang được điều phối.
+> Pilot60 đã có đủ60 attempt, artifact đạt32/48 model case (66,7%), không đạt
+> ngưỡng90%; 44/60 expectation có gồm12 negative guard. Chưa có expert ký duyệt.
+> Evidence đợt này đang giữ riêng tại `.orchestra/longcat-2026-10-16/`; chưa công bố
+> receipt cuối, chưa coi thay đổi đang viết hoặc báo cáo agent là đã nghiệm thu.
+
+
 > Cập nhật triển khai 15-10-2026: xem [SOURCE_WORKFLOW_STATUS.md](SOURCE_WORKFLOW_STATUS.md)
 > cho luồng nguồn/mock, upload, executor và export đã viết, giới hạn và bằng chứng.
 > Chuỗi execution hiện hành: NVIDIA Nemotron Ultra free → DOTS free; Ling/Inkling
@@ -11,7 +31,44 @@ thu, không phải danh sách tính năng đã hoàn thành. Phạm vi mặc đ�
 điều hành công việc cho doanh nghiệp, dùng O-Nexus làm tenant thí điểm rồi mở rộng
 bằng gói cấu hình ngành. Giữ PydanticAI, Temporal và PostgreSQL hiện có.
 
+## Delta triển khai trên main, 15-10-2026
+
+Trạng thái chi tiết theo ID/owner/dependency tại [SOURCE_WORKFLOW_STATUS.md](SOURCE_WORKFLOW_STATUS.md).
+Nguồn hiện hành là main baseline `a50f912`; `docs/` chỉ đọc và các snapshot cũ
+phía dưới giữ để đối chiếu. **lint PASS; typecheck PASS; make test **3723 PASS**; E2E **35 PASS**.** [Gate6](artifacts/product-completion/2026-10-15-main/gates-final-6/receipt.json).
+
+- Đã kiểm chứng: clean install hai DB rỗng/register idempotent; source API19 tests;
+  revision terminal root giữ lịch sử và không copy approval/output/spend; event17
+  focused; runtime23/9pages; UI42 checks mỗi desktop/mobile và fix banner waiting-input.
+- R2-REVIEW-01: CLI thực hiện packet8/8 từ run đã có và checklist0/60 chưa chạy.
+  Codex sửa ledger unknown, round/denominator, duplicate, failed artifact claims,
+  relocation/path và CSV provenance;57 unit PASS. Expert fields luôn UNREVIEWED.
+- HARNESS-R2-DELTA-01:28 unit PASS; probe thật42/viewport PASS; ngắt giữa chừng
+  ghi FAIL/exit1 với25 partial checks thay vì false-PASS. Giữ before/after receipt.
+- R2-CORP-01:60ca tổng hợp đóng băng,30 mỗi workflow; offline PASS, live NOT_RUN.
+  V2 tám ca giữ hash cũ; không nhập kết quả tám ca thành60ca đã chạy.
+- R0-HLD-01: **FAIL** real-model holdout:7/8 expectations gồm2 negative guards,
+  chỉ5/6 model attempts có artifact=83.3%, dưới ngưỡng đề xuất90%. qc-injection
+  không gọi tool bắt buộc sau5 submissions; human expert review còn PENDING.
+- Kiểm tra độc lập OpenCode sau các sửa integrity cuối của Codex **BLOCKED** bởi
+  FreeUsageLimitError429 (4 worker + một bounded retry lỗi). Test/đọc lại do Codex
+  không được gắn nhãn kiểm tra độc lập OpenCode. Các vòng độc lập trước giữ scope riêng.
+- WTR-01 SKIP vì23e2 đã mất; WTR-02 PASS: process giữ6737 đã kết thúc,
+  64 file/hash đã giữ; Git bundle phục hồi được verify, rồi Git remove không force.
+  Retirement receipt (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/worktree-retirement-final.json`). Main HEAD không đổi.
+
+Gói hiện hành (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/README.md`); expert packet8 (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/review-packet-root-actual-8-relocated/packet.md`);
+checklist60 (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/review-packet-root-not-run-60/packet.csv`).
+Các code/test đều trên main, chưa commit/push; dist giữ nguyên và docs/ không sửa.
+
+Thứ tự tiếp: khôi phục năng lực OpenCode để kiểm độc lập bản integrity cuối →
+R0 quality/reliability và expert review → pilot60 có nghiệm thu → R3 tenant/identity
+→ connector canary. Checkpoint revision, identity/membership, quota/retention/storage
+và connector vẫn MISSING/NOT_IMPLEMENTED; không coi mọi backlog là provider-blocked.
+
 ## Trạng thái hiện hành sau kiểm chứng agent ngoài
+
+> Lịch sử trước batch cuối trên main; xem trạng thái hiện hành ở đầu file.
 
 Cập nhật 15-10-2026: sidebar có gate mới 111 checks/31 ảnh; focused backend 115
 pass; shell gate 195, runtime 23 và work gate 131 pass. Full suite 3560/E2E 34 đã đối chiếu log

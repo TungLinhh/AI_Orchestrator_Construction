@@ -57,6 +57,7 @@ from typing import Any
 from sqlalchemy import text
 
 from ai_orchestrator.application.ports import ReadConnection
+from ai_orchestrator.persistence.task_archive import VISIBLE_TASK_SQL
 
 
 def _now() -> float:
@@ -266,6 +267,29 @@ WHERE t.organization_id = CAST(:o AS varchar(40)) AND t.parent_task_id IS NOT NU
 ORDER BY t.created_at DESC
 LIMIT 200
 """
+
+
+# Department run counts and summaries describe visible work; audit endpoints
+# still retain every execution for direct inspection.
+def _visible_executions(query: str) -> str:
+    predicate = (
+        "AND NOT EXISTS (SELECT 1 FROM tasks t WHERE t.id = x.task_id "  # noqa: S608
+        "AND t.organization_id = x.organization_id AND NOT (" + VISIBLE_TASK_SQL + "))"
+    )
+    return query.replace("AND x.agent_id = a.id", "AND x.agent_id = a.id " + predicate).replace(
+        "AND x.agent_id = :agent", "AND x.agent_id = :agent " + predicate
+    )
+
+
+_TREE_BY_TIER = _visible_executions(_TREE_BY_TIER)
+_TREE = _visible_executions(_TREE)
+_CHIEF = _visible_executions(_CHIEF)
+_RUNS = _visible_executions(_RUNS)
+
+_TASKS = _TASKS.replace("ORDER BY", "AND " + VISIBLE_TASK_SQL + "\nORDER BY", 1)
+_EDGES = _EDGES.replace(
+    "ORDER BY t.created_at", "AND " + VISIBLE_TASK_SQL + "\nORDER BY t.created_at", 1
+)
 
 
 def _identity(row: Any, *, fallback_key: str) -> dict[str, Any]:

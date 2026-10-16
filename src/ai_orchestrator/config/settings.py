@@ -130,6 +130,10 @@ class Settings(BaseSettings):
     # Applied to the app role, not the owner role. See docs/SECURITY.md.
     db_statement_timeout_ms: int = 30_000
     db_connect_timeout_s: int = 10
+    # Per-tenant binary payload limit across immutable sources and their exports.
+    # Keep the previous 100 x 10 MiB source ceiling as the default; this is not a
+    # claim to measure PostgreSQL indexes, extraction JSON, or physical disk use.
+    source_storage_quota_bytes: int = Field(default=100 * 10 * 1024 * 1024, ge=1)
 
     # -------------------------------------------------------------- events --
     nats_url: str = "nats://127.0.0.1:4222"

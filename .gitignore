@@ -45,3 +45,19 @@ htmlcov/
 # To publish them, you must have the client's permission. If you do:
 #     git add -f docs/*.docx && git commit -m "add the O-Nexus dossier"
 docs/*.docx
+
+# Local worker sessions and retirement backups
+.orchestra/
+
+# Historical local evidence includes embedded source documents.
+/artifacts/product-completion/2026-10-15-main/*
+!/artifacts/product-completion/2026-10-15-main/accounting-contract.md
+!/artifacts/product-completion/2026-10-15-main/event-fix-receipt.json
+!/artifacts/product-completion/2026-10-15-main/source-idempotency-fixed-full-source.txt
+!/artifacts/product-completion/2026-10-15-main/consumer-relay-fixed-rerun.txt
+!/artifacts/product-completion/2026-10-15-main/gates-final-6/
+/artifacts/product-completion/2026-10-15-main/gates-final-6/*
+!/artifacts/product-completion/2026-10-15-main/gates-final-6/receipt.json
+!/artifacts/product-completion/2026-10-15-main/gates-final-6/lint.log
+!/artifacts/product-completion/2026-10-15-main/gates-final-6/typecheck.log
+!/artifacts/product-completion/2026-10-15-main/gates-final-6/test-e2e.log

@@ -78,6 +78,7 @@ class OutboxRelay:
         *,
         batch_size: int = BATCH_SIZE,
         max_attempts: int = MAX_PUBLISH_ATTEMPTS,
+        organization_ids: tuple[str, ...] | None = None,
     ) -> None:
         # A `Database`, not a bare session factory: the relay has to open a
         # tenant-bound session per organisation, and that binding is the
@@ -86,6 +87,9 @@ class OutboxRelay:
         self._transport = transport
         self._batch_size = batch_size
         self._max_attempts = max_attempts
+        # Explicit partitions keep a relay/test from draining unrelated tenants.
+        # None retains the platform-wide production scan.
+        self._organization_ids = organization_ids
         self.stats = RelayStats()
         self._task: asyncio.Task[Any] | None = None
         self._stopping = asyncio.Event()
@@ -114,7 +118,7 @@ class OutboxRelay:
         return total
 
     async def _tenants(self) -> list[str]:
-        """Every organisation that exists.
+        """The configured tenant partition, or every organisation by default.
 
         `organizations` is the one table without row-level security, by design:
         it is the tenant root, and a platform process needs to be able to
@@ -125,7 +129,10 @@ class OutboxRelay:
         from ai_orchestrator.persistence.models import Organization
 
         async with self._db.session() as session:
-            result = await session.execute(select(Organization.id).order_by(Organization.id))
+            statement = select(Organization.id).order_by(Organization.id)
+            if self._organization_ids is not None:
+                statement = statement.where(Organization.id.in_(self._organization_ids))
+            result = await session.execute(statement)
             return [row[0] for row in result.all()]
 
     async def _drain_tenant(self, organization_id: str) -> int:
@@ -258,7 +265,7 @@ class OutboxRelay:
             )
 
     async def pending_count(self, organization_id: str | None = None) -> int:
-        """Pending events, for one tenant or across all of them.
+        """Pending events for one tenant, or across the configured partition.
 
         The all-tenant form sums per tenant rather than running one unbound
         query, because an unbound query sees nothing — that is the isolation

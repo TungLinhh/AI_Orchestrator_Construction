@@ -1,7 +1,113 @@
 # Luồng nguồn → workflow → file kết quả
 
-Cập nhật 15-10-2026, checkout `23e2/ai_orchestrator`. Phạm vi: tài liệu do người
+> Cập nhật 16/10/2026: OpenRouter còn PARTIAL: runtime thật đạt 3/7; 4 ca lỗi upstream 503.
+> Baseline đã kiểm tra: 3.870 test, 35 E2E, lint/typecheck PASS; UI trên cổng 8100
+> đã qua 91 kiểm tra điều hướng và 30 kiểm tra nút/phông chữ. Đây là bằng chứng
+> của đợt trước, không thay cho campaign model thật: chưa đạt nghiệm thu.
+> [Báo cáo công bố đã lọc dữ liệu](artifacts/product-completion/2026-10-16-openrouter/summary.json).
+> Các đường dẫn bằng chứng cục bộ trong nhật ký bên dưới không được phát hành lên Git.
+
+
+> Nhật ký đợt trước, 16-10-2026 (giờ Việt Nam): OpenCode đã chuyển sang
+> session mới dùng `opencode/longcat-2.5-preview-free`; ngừng dispatch Nemotron.
+> Giữ nguyên model chạy tác vụ sản phẩm. Codex kiểm chứng thêm identity/token/operator
+> CLI và quota source+artifact: **51 PASS** (17,69 giây); đây là focused suite,
+> chưa thay thế full gate sau các sửa UI. Hai worker Longcat thực sự chạy song song:
+> recovery preview (C) và audit pilot60 (D); nhóm UI/browser đang được điều phối.
+> Pilot60 đã có đủ60 attempt, artifact đạt32/48 model case (66,7%), không đạt
+> ngưỡng90%; 44/60 expectation có gồm12 negative guard. Chưa có expert ký duyệt.
+> Evidence đợt này đang giữ riêng tại `.orchestra/longcat-2026-10-16/`; chưa công bố
+> receipt cuối, chưa coi thay đổi đang viết hoặc báo cáo agent là đã nghiệm thu.
+
+
+Cập nhật 15-10-2026, checkout hiện hành `/home/vutun/ai_orchestrator`, nhánh `main`.
+Các receipt source-intake bên dưới được nhập từ đợt worktree trước và đã có trên main.
+Phạm vi: tài liệu do người
 vận hành chọn rõ ràng hoặc file mock có nhãn. Không tự lấy dữ liệu tenant làm input.
+
+## Trạng thái hiện hành 15-10-2026
+
+Main tại `/home/vutun/ai_orchestrator`, baseline `a50f912`; diff chưa commit.
+Đây là trạng thái sau triển khai và kiểm chứng cuối; các snapshot phía dưới là lịch sử.
+OpenCode thực hiện UI, corpus, CLI, harness và tài liệu; riêng batch lớn có chín subagent.
+Codex giữ tenant/idempotency, ledger, event correctness, review và gate.
+
+| ID | Owner, tiêu chí và dependency | Kết quả thực tế | Evidence | Việc tiếp theo / giới hạn |
+| --- | --- | --- | --- | --- |
+| WTR-01 | Codex; kiểm kê 23e2 | SKIP: đã mất, không đăng ký Git | inventory (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/worktrees.txt`) | Không can thiệp process còn cwd đã xóa. |
+| WTR-02 | Codex; bảo toàn rồi gỡ6737 | PASS: process đã kết thúc;64 file/hash giữ riêng; bundle verify; Git remove không force | Retirement receipt (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/worktree-retirement-final.json`) | Snapshot detached chỉ để archive3 config/instruction files; không tạo branch triển khai/commit main. |
+| R0-CAT-01 | Codex; fresh DB + seed/register idempotent | PASS: hai DB scratch, migration0036, catalogue13 roles/28 SOP/6 policies | receipt (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/clean-install-final/receipt.json`) | Giữ native PostgreSQL55432; không dùng DB5433. |
+| R0-FIX-01 | Codex; fixture/event/process spine | PASS:62 tests | log (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/r0-fixture-verification.txt`) | Không mở lại gap đã sửa trên main. |
+| R0-IDEM-01 | Codex; source create concurrent/tenant/legacy replay | PASS:19 source integration; hai repro FAIL trước sửa | [source suite](artifacts/product-completion/2026-10-15-main/source-idempotency-fixed-full-source.txt) | Phạm vi source API; generic idempotency ở API khác chưa được công bố đã sửa. |
+| R0-EVT-01 | Codex + OpenCode J; consumer timeout/cancellation + scoped relay | PASS:17 focused; final full gate PASS | [focused](artifacts/product-completion/2026-10-15-main/consumer-relay-fixed-rerun.txt) | Giữ default global relay, RLS tenant sessions và idle timeout semantics. |
+| R0-HLD-02 | Codex; free-policy/preflight/ledger accounting | PASS:58 unit tests | [contract](artifacts/product-completion/2026-10-15-main/accounting-contract.md) | Chỉ ledger authoritative; execution là aggregate của cùng calls, không cộng hai lần. |
+| SRC-REV-01 | Codex; terminal root revision, human/idempotency/rollback | PASS:19 source integration | [suite](artifacts/product-completion/2026-10-15-main/source-idempotency-fixed-full-source.txt) | Task/manifest mới, không chạy hoặc copy output/spend/approval; checkpoint revision vẫn MISSING. |
+| SRC-REV-02 | OpenCode + Codex; sau SRC-REV-01 | PASS kỹ thuật:42 checks MỖI desktop/mobile, More thật, upload/reload/keyboard/retry/history | latest browser (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/review-browser-root-final/acceptance.json`); H độc lập trước đó (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/ui-independent-confirmed/receipt.md`) | Frontend giữ cùng source-intake; H completed-DOCX PASS khác G fresh-Run provider FAIL. |
+| UX-R2-DELTA-01 | OpenCode; banner waiting-input | PASS:bug đã tái hiện/sửa;40 loads triển khai +20 loads độc lập | independent (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/broad-r2-independent/receipt.md`) | Banner hướng dẫn bổ sung input, không đổ cho thiếu owner. |
+| HARNESS-R2-DELTA-01 | OpenCode triển khai; Codex sửa integrity sau review | PARTIAL nghiệm thu độc lập; Codex PASS28 unit +42/viewport; injected mid-fault FAIL đúng exit1 | fault proof (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/midprobe-failure-verification.json`) | Giữ receipt false-positive trước sửa. OpenCode kiểm độc lập bản cuối BLOCKED do quota. |
+| R2-REVIEW-01 | OpenCode CLI; Codex critical ledger/round/path corrections | PARTIAL nghiệm thu độc lập; Codex PASS57 unit; packet8/8 + checklist0/60 có thật | review packet8 (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/review-packet-root-actual-8-relocated/packet.md`); checklist60 (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/review-packet-root-not-run-60/packet.csv`) | Expert UNREVIEWED; không collapse round hoặc zero-fill unknown. OpenCode independent sau sửa BLOCKED quota. |
+| R2-CORP-01 | OpenCode L/M + Codex; tối thiểu30ca mỗi pilot | OFFLINE PASS60ca; live NOT_RUN; expert PENDING | verifier chạy lại được (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/pilot-corpus-independent/verify.py`) | 30 document_review +30 quote_comparison; không biến8ca live thành60ca đã chạy. |
+| R0-HLD-01 | OpenCode I + Codex; corpus v2 real-model synthetic | FAIL:7/8 expectations gồm2 guards;5/6 model attempts có artifact=83.3% | actual run (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/model-corrected-full/run-receipt.json`); independent (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/model-independent-confirmed/receipt.md`) | qc-injection thiếu required submit_evidence sau5 submissions; dưới ngưỡng đề xuất90%; giữ cả failed first run/timeout240s. |
+| API-VERIFY-01 | Codex; owned API8112 + actual retry boundary | PASS23 runtime/9pages; concurrent201 cùng ID, replay1, changed409,0exec/usage | latest runtime (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/runtime-final-root/runtime-check.json`); actual API (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/restarted-api-idempotency.json`) | Auth-disabled synthetic local; không suy ra production RBAC/deployment của API8100. |
+| GATE-MAIN-01 | Codex; lint→typecheck→test→E2E | lint PASS; typecheck PASS; make test **3723 PASS**; E2E **35 PASS** | [final gate6](artifacts/product-completion/2026-10-15-main/gates-final-6/receipt.json) | Gate4 và mọi gate FAIL/interrupted là lịch sử riêng; không xóa. |
+| DEV-OPENCODE-01 | Codex điều phối OpenCode Muse free xhigh | BLOCKED:FreeUsageLimitError429;4 subagent cuối +1 bounded retry không chạy được | quota events (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/final-closeout/opencode-quota-events.json`) | Không đổi model trả phí/fake hoặc retry vô hạn. Metadata36 sessions được export kiểm chứng; completion không suy ra từ metadata. |
+
+Bằng chứng đều là dữ liệu tổng hợp có nhãn hoặc metadata kỹ thuật. Runtime giữ
+NVIDIA Nemotron Ultra free → DOTS free; Muse chỉ dùng cho phát triển OpenCode.
+Ledger quan sát báo $0; không coi đó là bảng giá chung hay SLA. Model runtime đã
+yêu cầu tool call bắt buộc; lỗi thiếu tool vẫn bị loại, không dựng tool call từ text.
+
+Gói review không chấm chuyên môn hoặc ký thay người. Năm bộ artifact đọc lại gồm
+30 file; SHA khi receipt không có claimed hash được ghi **observed_no_claim**,
+không phải xác minh hash lịch sử. Full rerun có `rerun_of` vẫn là8/8, mọi round
+được giữ; subset giữ denominator và nguồn gốc riêng. Mọi expert field còn UNREVIEWED.
+
+R0 reliability và expert acceptance vẫn mở. Identity/membership, checkpoint revision,
+quota/retention/storage và connector là **MISSING/NOT_IMPLEMENTED** theo roadmap,
+không được gộp thành blocker provider. R3 dữ liệu tenant thật/connector canary
+phụ thuộc cổng R0/R2; chưa tuyên bố sản phẩm hoặc production hoàn thành.
+
+Lịch sử lỗi gồm first holdout sai interpreter, timeout240s dù late-complete, G fresh-Run
+provider-truncated, gate1/2/3/5, sáu CLI integrity repro và probe mid-fault false-PASS.
+Chúng được giữ trong gói bằng chứng (bằng chứng cục bộ: `artifacts/product-completion/2026-10-15-main/README.md`); không dùng rerun để xóa verdict cũ.
+
+## HISTORY — Tiếp tục trên main, 15-10-2026 (bản nháp superseded, giữ để đối chiếu)
+
+HISTORY: bảng dưới là bản nháp cũ, đã được hợp nhất vào `## Gói hiện hành` ở trên.
+Không dùng số cũ thay receipt mới. Sai sót đã sửa ở bản hiện hành: path `clean-install-verified`
+là sai (đúng là `clean-install-final`); backend là 19 PASS (16 là subset lịch sử);
+UI H 42 checks/viewport + DOCX completed PASS đã nghiệm thu (không còn "chưa nghiệm thu");
+harness accounting/preflight 58 PASS + event focused 17 PASS đã có (không còn "chưa viết");
+GATE-MAIN-01 hiện hành là gates-final-3 FAIL 1/3630 (không còn RUNNING/“chưa chạy đủ”).
+Timestamps: 05:30 UTC (interrupt/lint FAIL) khác 07:32 UTC (gate3 FAIL 618.91s), giữ riêng.
+
+| ID | Owner | Mục tiêu và dependency | Trạng thái HISTORY (superseded) | Bằng chứng HISTORY |
+| --- | --- | --- | --- | --- |
+| WTR-01 | Codex | Kiểm kê `23e2` | SKIP: đường dẫn đã mất, không đăng ký với Git | Hai process còn cwd đã xóa; không can thiệp phiên khác. |
+| WTR-02 | Codex | Bảo toàn rồi gỡ `6737` | BLOCKED: process khác PID 199181 còn cwd trong worktree | Đã sao lưu 64 file, manifest SHA-256 tại `.orchestra/worktree-retirement/6737/manifest.json`. Không có commit riêng ngoài main; thay đổi chưa commit là cấu hình/hướng dẫn, đã giữ riêng. Chỉ gỡ khi phiên kia kết thúc. |
+| R0-CAT-01 | Codex | Cài từ DB rỗng, catalogue/register đầy đủ và chạy lại không nhân đôi | PASS trong database tạm riêng | `scripts/verify_clean_install.py`; receipt `.orchestra/main-continuation/clean-install-verified/receipt.json`. Migrate cả hai DB mới đến 0036, copy reference từ scratch sang scratch, register hai lượt cùng số bản ghi. Không dùng catalogue dev. |
+| R0-FIX-01 | Codex | Đối chiếu gap fixture với code main | PASS: 62 test task UI/event/process spine | Log `.orchestra/main-continuation/r0-fixture-verification.txt`. Bỏ nhánh skip giả định Event chưa được ghi; assertion đòi đúng frame của task HTTP. Các gap delegation/forbidden-zone cũ đã được sửa trong commit baseline. |
+| R0-IDEM-01 | Codex | Tạo source workflow an toàn khi retry đồng thời và hai tenant dùng cùng key | PASS: hai repro FAIL trước sửa, toàn source suite 19 PASS sau sửa | `.orchestra/main-continuation/source-idempotency-reproduction.txt`, `source-idempotency-fixed-full-source.txt`. Namespace key theo tenant + advisory lock; replay key cũ vẫn giữ. Không thay schema hoặc công bố đã sửa mọi API/consumer. |
+| SRC-REV-01 | Codex | Tạo revision nguồn từ task gốc đã kết thúc | Backend PASS: 19 integration tests, UI đang kiểm độc lập | API tạo task/manifest mới, giữ constraints/schema/budget/owner, không chạy, không copy output/spend/approval. Key theo tenant, serialize request đồng thời; nguồn lỗi rollback. Lịch sử duyệt vẫn thuộc task gốc. |
+| SRC-REV-02 | OpenCode/subagent | UI chọn nguồn thay thế và lý do, dependency SRC-REV-01 | Triển khai một phần, chưa nghiệm thu browser | Bản đầu có code và probe. Còn sửa isolation trạng thái picker, upload/phân trang, copy trạng thái và lỗi harness trước khi nghiệm thu. |
+| R0-HLD-01 | OpenCode/subagent | Corpus cố định và đo model/artifact qua API thật | Triển khai một phần, đang sửa sau review Codex | Harness phải lưu từng attempt, ledger/model/cost, hash/citation/file đọc lại, lỗi và denominator. Chưa có full holdout receipt. |
+| R0-LIVE-01 | Codex | Đường nguồn/mock qua model thật trên tenant tổng hợp riêng | PASS 2/2 trong một lượt, R0 reliability vẫn mở | `.orchestra/main-continuation/live-baseline/acceptance.json` và `provenance.json`. Quote hoàn thành bằng DOTS fallback, hồ sơ bằng NVIDIA primary, ledger báo $0; sáu định dạng tải/mở/hash đều đạt. |
+| GATE-MAIN-01 | Codex | lint → typecheck → toàn suite → E2E | Chưa chạy đủ trên diff cuối | PostgreSQL dev/test cùng 0036. Preflight mới PASS sau khi mở NATS/Temporal. Chờ worker ổn định file rồi chạy gate tuần tự. |
+
+Session OpenCode mới `ses_ec2169b38ffeMRk4L621eQ86Ad` xác minh `pwd` và `main`
+bằng shell. Hai subagent khảo sát đã xác minh qua export cùng model
+`opencode/muse-spark-1.3-contributor-free`, variant `xhigh`; không tái dùng session
+cũ ở 6737. Prompt, raw JSON, exit/time và exports giữ trong `.orchestra/main-continuation/`.
+Codex đọc source/diff và chạy test trực tiếp; báo cáo worker không thay acceptance.
+
+Revision hiện chỉ nhận root source workflow terminal. Task đang chạy/chờ input/chờ
+approval bị chặn; revision checkpoint của workflow nhiều bước vẫn là backlog.
+Artifact và quyết định cũ chỉ có giá trị với hồ sơ gốc, không áp dụng cho revision.
+Nguồn thiếu, sai định dạng, unit không hợp lệ và privacy policy vẫn giữ các guard cũ.
+
+Các số test/UI/live bên dưới là lịch sử trước batch main này, trừ khi có receipt mới
+được nêu rõ. Chưa đóng R0 quality, R2 pilot có người xét, R3 identity/membership,
+connector canary hoặc SaaS. Không tự gửi email, tạo PO, thanh toán hay publish skill.
 
 ## Kiểm chứng lại sau báo cáo agent ngoài, 15-10-2026
 

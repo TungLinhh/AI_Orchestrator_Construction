@@ -435,12 +435,12 @@ async def test_offer_uses_selected_source_and_recovers_without_accepting_invalid
             calls.append(request)
             if failure == "truncation" and len(calls) == 2:
                 assert request.max_output_tokens == calls[0].max_output_tokens * 2
-            if failure == "truncation" or len(calls) < 3:
+            if failure == "truncation" or len(calls) < 3 or failure == "mixed":
                 assert "unit-fake/bad-prose" not in request.excluded_candidates
+                if failure == "mixed" and len(calls) == 3:
+                    assert request.max_output_tokens == calls[0].max_output_tokens * 2
             else:
                 assert "unit-fake/bad-prose" in request.excluded_candidates
-                if failure == "mixed":
-                    assert request.max_output_tokens == calls[0].max_output_tokens
             artifact = {
                 "candidate_id": selected,
                 "offer_draft": "MEP Test A, bản thảo cần HR duyệt",

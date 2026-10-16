@@ -37,6 +37,7 @@ from ai_orchestrator.agent_runtime.source_document import SourceDocumentRuntime
 from ai_orchestrator.domain.budget import Money, TokenUsage
 from ai_orchestrator.domain.contracts import Actor, AgentContext, AgentTask, BudgetEnvelope
 from ai_orchestrator.domain.enums import ActorType
+from ai_orchestrator.domain.errors import ErrorCategory, ValidationError
 from ai_orchestrator.domain.ids import ExecutionId, OrganizationId, TaskId
 from ai_orchestrator.domain.source_report import compare_quotes
 from ai_orchestrator.models.gateway import ModelResponse
@@ -546,11 +547,12 @@ async def test_reopen_spent_fails_fast_with_named_failures() -> None:
     async def record(response: ModelResponse) -> None:
         ledger.append(response)
 
-    with pytest.raises(ValueError, match="every model candidate was excluded") as excinfo:
+    with pytest.raises(ValidationError, match="every model candidate was excluded") as excinfo:
         await runtime.execute(_context().task, _context(), record_usage=record)
     # Turns 1-2 fail, turn 3 reopens the only candidate and fails again, turn 4
     # reports the named failures at once instead of a cryptic ModelUnavailable.
-    assert _ExcludingGateway.NVIDIA_KEY in str(excinfo.value)
+    assert _ExcludingGateway.NVIDIA_KEY in excinfo.value.details["candidate_failures"]
+    assert excinfo.value.category == ErrorCategory.VALIDATION
     assert len(gateway.requests) == 5
     assert len(ledger) == 3 and all(response.validation_error for response in ledger)
     assert gateway.closed
@@ -564,8 +566,14 @@ async def test_repair_loop_is_bounded_at_five_submissions() -> None:
     async def record(response: ModelResponse) -> None:
         ledger.append(response)
 
-    with pytest.raises(ValueError, match="failed verification after five submissions"):
+    with pytest.raises(
+        ValidationError, match="failed verification after five bounded attempts"
+    ) as excinfo:
         await runtime.execute(_context().task, _context(), record_usage=record)
+    assert excinfo.value.category == ErrorCategory.VALIDATION
+    assert excinfo.value.details == {"kind": "artifact_validation_exhausted", "attempt_limit": 5}
+    assert "PREVIOUS SUBMISSION" not in str(excinfo.value)
+    assert "picked A" not in str(excinfo.value)
     assert len(gateway.requests) == 5
     assert len(ledger) == 5 and all(response.validation_error for response in ledger)
 
@@ -644,3 +652,139 @@ async def test_gateway_level_text_shaped_call_falls_through_to_the_fallback() ->
     assert response.decision is not None and response.decision.routing_reason == "fallback"
     assert len(response.rejected_responses) == 1
     assert response.rejected_responses[0].validation_error == "required tool call missing"
+
+
+@pytest.mark.parametrize("finish_reason", ["refused", "content_filter"])
+async def test_refused_completion_never_accepts_even_valid_tool_payload(finish_reason):
+    bad = _call(_review_report())
+    bad.finish_reason = finish_reason
+    gateway = _ScriptedGateway([bad, _call(_review_report())])
+    runtime = SourceDocumentRuntime(gateway, _review_context())
+    from ai_orchestrator.domain.errors import PolicyDenied
+
+    ledger = []
+
+    async def record(response):
+        ledger.append(response)
+
+    with pytest.raises(PolicyDenied):
+        await runtime.execute(_context().task, _context(), record_usage=record)
+    assert len(gateway.requests) == 1
+    assert ledger == [bad]
+    assert bad.usage.total == 100
+    assert bad.validation_error
+    assert gateway.closed
+
+
+async def test_extra_unknown_call_rejects_whole_submission():
+    bad = _call(_review_report())
+    bad.tool_calls.append({"function": {"name": "send_purchase_order", "arguments": "{}"}})
+    gateway = _ScriptedGateway([bad, _call(_review_report())])
+    await SourceDocumentRuntime(gateway, _review_context()).execute(_context().task, _context())
+    assert len(gateway.requests) == 2
+    assert bad.validation_error
+
+
+async def test_source_repair_never_requests_schema_invalid_empty_citations():
+    bad = _call(_review_report())
+    bad.tool_calls[0]["function"]["arguments"] = "{}"
+    gateway = _ScriptedGateway([bad, _call(_review_report())])
+    await SourceDocumentRuntime(gateway, _review_context()).execute(_context().task, _context())
+    prompt = gateway.requests[1].prompt
+    assert "use missing with an empty quotation" not in prompt
+    assert "limitations" in prompt
+    schema = gateway.requests[0].tools[0]["function"]["parameters"]
+    assert schema["properties"]["findings"]["items"]["properties"]["source_id"]["enum"] == [
+        "src_review_one",
+        "src_review_two",
+    ]
+
+
+async def test_first_truncation_still_expands_after_an_earlier_protocol_failure():
+    bad = _call(_review_report(), model=NVIDIA)
+    bad.finish_reason = "length"
+    gateway = _ScriptedGateway([_nvidia_text_shaped_prose(), bad, _call(_review_report())])
+    await SourceDocumentRuntime(gateway, _review_context()).execute(_context().task, _context())
+    assert gateway.requests[2].max_output_tokens == gateway.requests[1].max_output_tokens * 2
+    assert NVIDIA not in gateway.requests[2].excluded_candidates
+
+
+async def test_successful_usage_recording_failure_is_not_repaired_or_recorded_twice():
+    gateway = _ScriptedGateway([_call(_review_report())])
+    calls = []
+
+    async def record(response):
+        calls.append(response)
+        raise ValueError("ledger unavailable")
+
+    with pytest.raises(ValueError, match="ledger unavailable"):
+        await SourceDocumentRuntime(gateway, _review_context()).execute(
+            _context().task, _context(), record_usage=record
+        )
+    assert len(calls) == 1
+    assert len(gateway.requests) == 1
+    assert gateway.closed
+
+
+async def test_cancellation_propagates_and_closes_source_gateway():
+    import asyncio
+
+    class CancelledGateway(_ScriptedGateway):
+        async def complete(self, request):
+            self.requests.append(request)
+            raise asyncio.CancelledError
+
+    gateway = CancelledGateway([])
+    ledger = []
+
+    async def record(response):
+        ledger.append(response)
+
+    with pytest.raises(asyncio.CancelledError):
+        await SourceDocumentRuntime(gateway, _review_context()).execute(
+            _context().task, _context(), record_usage=record
+        )
+    assert len(gateway.requests) == 1
+    assert ledger == []
+    assert gateway.closed
+
+
+async def test_source_wire_contract_uses_computed_values_without_skipping_validation():
+    gateway = _ScriptedGateway([_call(_quote_report(_GOOD_QUOTE_SUMMARY))])
+    source_context = _quote_context()
+    result = await SourceDocumentRuntime(gateway, source_context).execute(
+        _context().task, _context()
+    )
+    fields = gateway.requests[0].tools[0]["function"]["parameters"]["properties"]
+    for key, value in source_context["expected"].items():
+        assert fields[key]["enum"] == [value]
+        assert result.output[key] == value
+    assert fields["findings"]["items"]["properties"]["quote"]["minLength"] == 8
+
+
+async def test_gateway_policy_denial_usage_is_recorded_without_source_retry():
+    from ai_orchestrator.domain.errors import PolicyDenied
+    from ai_orchestrator.models.gateway import GatewayPolicyDenied
+
+    bad = _call(_review_report())
+    bad.finish_reason = "refused"
+    bad.validation_error = "Provider refused the request"
+
+    class RefusingGateway(_ScriptedGateway):
+        async def complete(self, request):
+            self.requests.append(request)
+            raise GatewayPolicyDenied((bad,))
+
+    gateway = RefusingGateway([])
+    ledger = []
+
+    async def record(response):
+        ledger.append(response)
+
+    with pytest.raises(PolicyDenied):
+        await SourceDocumentRuntime(gateway, _review_context()).execute(
+            _context().task, _context(), record_usage=record
+        )
+    assert len(gateway.requests) == 1
+    assert ledger == [bad]
+    assert gateway.closed

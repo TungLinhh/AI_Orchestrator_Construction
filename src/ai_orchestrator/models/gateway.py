@@ -39,6 +39,7 @@ from ai_orchestrator.domain.errors import (
     ExternalServiceError,
     ModelRateLimited,
     ModelUnavailable,
+    PolicyDenied,
     ToolUnavailable,
     ValidationError,
 )
@@ -234,10 +235,20 @@ class GatewayUnavailable(ModelUnavailable):
         self.responses = responses
 
 
+class GatewayPolicyDenied(PolicyDenied):
+    """Terminal provider refusal retaining known completions for the usage ledger."""
+
+    def __init__(self, responses: tuple[ModelResponse, ...]) -> None:
+        super().__init__("Provider refused the request; no artifact was accepted")
+        self.responses = responses
+
+
 def _completion_failure(response: ModelResponse, request: ModelRequest) -> str | None:
     """Reject unusable protocol output. Business validators own semantic quality."""
     if response.finish_reason == "error":
         return "provider reported finish_reason=error"
+    if response.finish_reason == "length":
+        return "provider truncated the completion"
     if not response.text.strip() and not response.tool_calls:
         return "empty completion"
     requires_call = request.tool_choice == "required" or isinstance(request.tool_choice, dict)
@@ -436,6 +447,9 @@ class ModelGateway:
             response.decision = decision
             response.model_used = response.model_used or candidate.model
             response.provider = candidate.provider
+            if response.finish_reason in {"refused", "content_filter"}:
+                response.validation_error = "Provider refused the request"
+                raise GatewayPolicyDenied((*rejected_responses, response))
             if not request.caller_validates_output:
                 finding = _completion_failure(response, request)
                 if finding:

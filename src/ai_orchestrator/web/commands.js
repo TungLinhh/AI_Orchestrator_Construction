@@ -18,6 +18,7 @@ window.UICommands = (() => {
     for(const theme of ['light','dark','auto']) options.push({id:'theme-'+theme,label:L('Display: ','Hiển thị: ')+({light:L('Light','Sáng'),dark:L('Dark','Tối'),auto:L('System','Hệ thống')}[theme]),icon:'sliders-horizontal',run:()=>UIPreferences.save({...UIPreferences.get(),theme})});
     for(const p of UIPalettes.items) options.push({id:'palette-'+p.id,label:L('Palette: ','Màu nhấn: ')+L(p.en,p.vi),icon:'sliders-horizontal',run:()=>UIPreferences.save({...UIPreferences.get(),palette:p.id})});
     for(const density of ['comfortable','compact']) options.push({id:'density-'+density,label:L('Spacing: ','Mật độ: ')+(density==='compact'?L('Compact','Gọn'):L('Comfortable','Thoáng')),icon:'sliders-horizontal',run:()=>UIPreferences.save({...UIPreferences.get(),density})});
+    for(const f of UIPreferences.fonts) options.push({id:'font-'+f.id,label:L('Font: ','Phông chữ: ')+L(f.en,f.vi),icon:'sliders-horizontal',run:()=>UIPreferences.save({...UIPreferences.get(),font:f.id})});
     for(const language of ['vi','en']) options.push({id:'lang-'+language,label:L('Language: ','Ngôn ngữ: ')+(language==='vi'?'Tiếng Việt':'English'),icon:'settings',run:()=>{langSet(language);route();}});
     options.push({id:'help',label:L('Keyboard shortcuts','Phím tắt'),icon:'circle-help',run:help});
     return options;
@@ -71,7 +72,7 @@ window.UICommands = (() => {
   }
   function help() {
     if(document.querySelector('dialog[open]'))return;
-    const keys=[['Ctrl / ⌘ K',L('Search and commands','Tìm kiếm và lệnh')],['/',L('Search tasks on Work','Tìm công việc tại trang Công việc')],['N',L('New task on Work','Giao việc mới tại trang Công việc')],['J / K',L('Next / previous task','Công việc tiếp theo / trước đó')],['Enter',L('Open focused task or command','Mở công việc hoặc lệnh đang chọn')],['Esc',L('Close the top overlay, then go back','Đóng hộp đang mở, rồi quay lại')],['?',L('Keyboard shortcuts','Trợ giúp phím tắt')]];
+    const keys=[['Ctrl / ⌘ K',L('Search and commands','Tìm kiếm và lệnh')],['/',L('Search tasks on Work','Tìm công việc tại trang Công việc')],['N',L('New task on Work','Giao việc mới tại trang Công việc')],['[',L('Collapse or expand the sidebar','Thu gọn hoặc mở rộng thanh bên')],['J / K',L('Next / previous task','Công việc tiếp theo / trước đó')],['Enter',L('Open focused task or command','Mở công việc hoặc lệnh đang chọn')],['Esc',L('Close the top overlay, then go back','Đóng hộp đang mở, rồi quay lại')],['?',L('Keyboard shortcuts','Trợ giúp phím tắt')]];
     UI.dialog({title:L('Keyboard shortcuts','Phím tắt'),description:L('Single-key shortcuts pause while typing. Work shortcuts apply to the task list.','Phím đơn tạm dừng khi nhập liệu. Phím Công việc áp dụng tại danh sách công việc.'),content:`<dl class="ui-shortcut-list">${keys.map(([key,label])=>`<div><dt>${UI.kbd(key)}</dt><dd>${esc(label)}</dd></div>`).join('')}</dl>`});
   }
   document.addEventListener('keydown',e=>{
@@ -79,11 +80,13 @@ window.UICommands = (() => {
     if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k') {e.preventDefault();open();}
     else if(!e.ctrlKey && !e.metaKey && !e.altKey && e.key==='?') {e.preventDefault();help();}
   });
-  if($('commandBtn')) $('commandBtn').onclick=open;if($('shortcutBtn')) $('shortcutBtn').onclick=help;
+  if($('commandBtn')) $('commandBtn').onclick=open;
   const refresh=()=>{
     $('commandBtn').setAttribute('aria-label',L('Search tasks and commands (Ctrl or Command K)','Tìm công việc và lệnh (Ctrl hoặc Command K)'));
     $('commandBtn').title=L('Search tasks and commands','Tìm công việc và lệnh');
-    $('shortcutBtn').setAttribute('aria-label',L('Keyboard shortcuts (?)','Phím tắt (?)'));$('shortcutBtn').title=L('Keyboard shortcuts','Phím tắt');
+    // The footer keeps only the sidebar toggle and its key hint; the shortcuts
+    // dialog stays one `?` keystroke (or one palette command) away, so there is
+    // no shortcut button left to label here.
   };
   refresh();
   return {open,help,refresh};

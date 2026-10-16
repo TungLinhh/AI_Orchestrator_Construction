@@ -1,43 +1,65 @@
 /* Scoped shell migration; follows legacy pages without changing page renderers. */
 @layer pages {
   .app.app-shell { display:grid; grid-template-columns: var(--nav-w) minmax(0,1fr); min-height:100dvh; transition: grid-template-columns var(--motion-base) var(--ease-standard,ease); }
-  #sidebar { display:flex; flex-direction:column; padding: var(--space-12) var(--space-8); height: 100dvh; position: sticky; top:0; background:var(--color-nav); border-right:1px solid var(--color-border-subtle); border-bottom:0; gap:var(--space-8); overflow:clip; }
-  #sidebar .brand { padding:0; display:block; flex-shrink:0; }
+  .app-shell>.main, .app-shell #mainContent { min-width:0; max-width:100%; }
+  #sidebar { display:flex; flex-direction:column; padding: 16px 12px 12px; height: 100dvh; position: sticky; top:0; background:var(--color-nav); border-right:1px solid var(--color-border-subtle); border-bottom:0; gap:20px; overflow:clip; min-width:0; }
+  #sidebar .brand { padding:0 0 16px; display:block; flex-shrink:0; border-bottom:1px solid var(--color-border-subtle); }
   /* Retain label geometry while the viewport and clickable rows animate. */
   #sidebar .brand, #sidebar .items { width:100%; }
-  #sidebar .foot { width:199px; }
-  #sidebar .workspace-trigger { width:100%; justify-content:flex-start; gap:var(--space-8); padding:var(--space-8) var(--space-4); white-space:normal; text-align:left; }
-  #sidebar .mark { display:grid; place-items:center; font-weight:600; flex:0 0 28px; width:28px; height:28px; border-radius:8px; color:var(--color-on-accent); background:var(--color-accent); font-size:14px; }
-  #sidebar .workspace-name { display:flex; flex-direction:column; min-width:0; flex:0 0 127px; }
-  #sidebar .name { font-size:13px; font-weight:600; line-height:20px; }
+  #sidebar .foot { width:100%; }
+  #sidebar .workspace-trigger { width:100%; justify-content:flex-start; gap:10px; padding:4px 0; min-height:40px; white-space:normal; text-align:left; }
+  #sidebar .mark { display:grid; place-items:center; font-weight:600; flex:0 0 36px; width:36px; height:36px; border-radius:11px; color:var(--color-on-accent); background:var(--color-accent); font-size:18px; letter-spacing:-.04em; }
+  #sidebar .workspace-name { display:flex; flex-direction:column; min-width:0; flex:1; }
+  #sidebar .name { font-size:15px; font-weight:600; line-height:20px; }
   #sidebar .sub { display:block; font-size:12px; letter-spacing:0; color:var(--color-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #sidebar .workspace-chevron { width:16px; height:16px; flex-shrink:0; }
-  #sidebar .sidebar-toggle { position:absolute; bottom:var(--space-8); left:16px; right:auto; width:32px; height:32px; padding:0; margin:0; border:0; background:transparent; }
-  #sidebar .items { flex-direction:column; flex-wrap:nowrap; display:flex; position:relative; gap:var(--space-2); overflow-y:auto; min-height:0; padding-bottom:var(--space-8); flex:1; }
-  #sidebar .label { display:block; padding:var(--space-12) var(--space-8) var(--space-4); white-space:nowrap; font-size:12px; font-weight:400; letter-spacing:0; text-transform:none; color:var(--color-text-muted); }
-  #sidebar a[data-nav] { position:relative; display:flex; gap:var(--space-8); padding:var(--space-8); min-height:36px; border-radius:var(--radius-control); font-size:13px; font-weight:400; color:var(--color-text-secondary); box-shadow:none; border:0; }
+  #sidebar .sidebar-toggle { position:static; flex-shrink:0; width:36px; height:36px; padding:0; margin:0; border:0; background:transparent; }
+  #sidebar .foot .sidebar-toggle { width:36px; height:36px; padding:0; flex-shrink:0; }
+  #sidebar .items { flex-direction:column; flex-wrap:nowrap; display:flex; position:relative; gap:4px; overflow-y:auto; overflow-x:hidden; min-height:0; padding:0; flex:1; scrollbar-width:thin; }
+  #sidebar .label { display:block; padding:var(--space-12) var(--space-8) var(--space-4); white-space:nowrap; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--color-text-muted); }
+  #sidebar a[data-nav] { position:relative; display:flex; align-items:center; gap:10px; padding:0 10px; height:42px; min-height:42px; border-radius:9px; font-size:13px; font-weight:400; color:var(--color-text-secondary); box-shadow:none; border:0; }
   #sidebar a[data-nav]:hover { background:var(--color-fill-hover); color:var(--color-text); }
   #sidebar a[aria-current="page"] { background:var(--color-accent-soft); color:var(--color-accent); font-weight:500; }
-  #sidebar .shell-nav-item { display:block; }
+  #sidebar .shell-nav-item { display:block; flex:0 0 auto; min-width:0; }
+  #sidebar a[data-nav]>span[data-i18n] { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  #sidebar .count { margin-left:auto; flex-shrink:0; }
   #sidebar .shell-nav-item:not(.ui-tooltip-host) .ui-tooltip { display:none; }
-  #sidebar .ic { display:flex; flex:0 0 20px; width:20px; }
-  #navIndicator { position:absolute; top:0; left:8px; width:2px; border-radius:2px; background:var(--color-accent); pointer-events:none; z-index:1; transition:transform 200ms ease,height 200ms ease; }
-  #sidebar .foot { display:block; padding:var(--space-12) var(--space-8) 48px; margin-top:auto; border-top:1px solid var(--color-border-subtle); font:12px/1.6 var(--font-mono); color:var(--color-text-muted); flex-shrink:0; }
-  .shell-connection { display:flex; gap:var(--space-8); align-items:center; }
-  #build { margin-top:var(--space-4); overflow-wrap:anywhere; }
+  #sidebar .ic { display:flex; align-items:center; justify-content:center; flex:0 0 20px; width:20px; }
+  #navIndicator { position:absolute; top:0; left:12px; width:3px; border-radius:2px; background:var(--color-accent); pointer-events:none; z-index:1; transition:transform 200ms ease,height 200ms ease; }
+  #sidebar .foot { display:flex; align-items:center; justify-content:flex-start; gap:8px; padding:12px 0 0; margin-top:auto; border-top:1px solid var(--color-border-subtle); min-height:48px; flex-shrink:0; overflow:hidden; }
+  /* The toggle stays left-anchored with identical insets in both states, so its
+     screen position never moves: expanded sidebar padding is 12px, collapsed is
+     10px, and the 2px margin below compensates exactly. The hint is hidden when
+     collapsed (same pattern as before) but remains in the DOM. */
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .foot { justify-content:flex-start; margin-left:2px; }
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .shell-shortcut-hint { display:none; }
+  .shell-shortcut-hint { display:inline-flex; align-items:center; gap:6px; min-width:0; overflow:hidden; white-space:nowrap; font-size:11px; color:var(--color-text-muted); }
+
   #sidebar .workspace-name, #sidebar .workspace-chevron, #sidebar .label,
-  #sidebar .foot, #sidebar a[data-nav]>span:not(.ic):not(.count) {
+  #sidebar a[data-nav]>span:not(.ic):not(.count) {
     opacity:1; visibility:visible;
     transition:opacity var(--motion-base) var(--ease-standard,ease), visibility 0s;
   }
   .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .workspace-name,
   .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .workspace-chevron,
   .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .label,
-  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .foot,
   .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar a[data-nav]>span:not(.ic):not(.count) {
     opacity:0; visibility:hidden;
   }
-  #sidebar a[data-nav] { white-space:nowrap; }
+  #sidebar a[data-nav] { white-space:nowrap; text-decoration:none; }
+  #sidebar a[data-nav]:focus-visible, #sidebar button:focus-visible { outline:2px solid var(--color-accent); outline-offset:-2px; }
+  #sidebar .items>.label:first-child { padding-top:var(--space-4); }
+  #sidebar .label:not(:first-child) { margin-top:var(--space-8); border-top:1px solid var(--color-border-subtle); }
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .label { height:16px; padding:0; margin-top:0; }
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .workspace-name,
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .workspace-chevron { display:none; }
+  .abox[href] { display:block; color:inherit; text-decoration:none; }
+  .abox[href]:focus-visible { outline:2px solid var(--color-accent); outline-offset:2px; }
+
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar { padding-inline:10px; }
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .workspace-trigger { justify-content:center; }
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar a[data-nav] { padding-inline:12px; gap:0; }
+  .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar #navIndicator { left:10px; }
   .sidebar-collapsed:not(.sidebar-peek) .app-shell>#sidebar .count { position:absolute; left:28px; top:0; font-size:10px; }
   #crumbs { position:sticky; top:0; z-index:var(--z-sticky,30); display:flex; align-items:center; flex-wrap:nowrap; gap:var(--space-12); min-height:56px; padding:var(--space-8) var(--space-24); background:var(--color-surface-1); border-bottom:1px solid var(--color-border-subtle); }
   #crumbs .hint { gap:var(--space-8); margin-left:auto; flex-shrink:0; }
@@ -56,6 +78,13 @@
   .shell-auth details { flex:1; min-width:0; }
   .shell-auth summary { cursor:pointer; min-height:20px; }
   .shell-auth p { margin-top:var(--space-8); color:var(--color-warning-fg); }
+  .shell-auth-actions { display:flex; align-items:center; gap:var(--space-8); }
+  .shell-member { display:inline-flex; align-items:center; gap:var(--space-8); padding:var(--space-4) var(--space-8); background:var(--color-accent-soft); border:1px solid var(--color-accent-border); border-radius:var(--radius-control); font-size:12px; color:var(--color-accent); }
+  .shell-member .ui-icon { width:16px; height:16px; }
+  .shell-member .member-name { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width: 760px) {
+    .shell-member .member-name { max-width:100px; }
+  }
   .shell-popover { width:360px; max-width:calc(100vw - 24px); max-height:calc(100dvh - 24px); overflow:auto; padding:var(--space-16); }
   .shell-popover:popover-open { display:block; }
   .shell-popover h2 { font-size:16px; margin:0 0 var(--space-4); font-weight:600; }
@@ -81,7 +110,8 @@
   .shell-drawer #sidebar .label, .shell-drawer #sidebar .foot,
   .shell-drawer #sidebar a[data-nav]>span:not(.ic):not(.count) { opacity:1; visibility:visible; }
   .shell-drawer #sidebar .workspace-name,.shell-drawer #sidebar .workspace-chevron,.shell-drawer #sidebar .label,.shell-drawer #sidebar .foot,.shell-drawer #sidebar a[data-nav]>span { display:flex; }
-  .shell-drawer #sidebar .label,.shell-drawer #sidebar .foot { display:block; }
+  .shell-drawer #sidebar .label { display:block; }
+  .shell-drawer #sidebar .foot { display:flex; }
   .shell-drawer #sidebar .workspace-trigger,.shell-drawer #sidebar a[data-nav] { justify-content:flex-start; }
   .shell-drawer #sidebar .sidebar-toggle { display:none; }
   .shell-drawer #sidebar .count { position:static; }
@@ -108,4 +138,141 @@
 @layer pages {
   .dot.ok { animation:connection-breathe 2400ms var(--ease-standard) infinite alternate; }
   @keyframes connection-breathe { from { opacity:1; } to { opacity:.65; } }
+}
+
+/* Login dialog styles */
+@layer pages {
+  #loginDialog {
+    max-width: min(420px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-lg, 12px);
+    background: var(--color-surface-1);
+    box-shadow: var(--shadow-lg, 0 20px 40px rgba(0,0,0,0.15));
+  }
+  #loginDialog::backdrop {
+    background: var(--color-overlay, rgba(0,0,0,0.4));
+  }
+  #loginDialog .ui-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-16) var(--space-20);
+    border-bottom: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+  }
+  #loginDialog .ui-section-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  #loginDialog .ui-dialog-body {
+    padding: var(--space-20);
+  }
+  #loginDialog .ui-field {
+    margin-bottom: var(--space-16);
+  }
+  #loginDialog .ui-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: var(--space-6);
+    color: var(--color-text);
+  }
+  #loginDialog .ui-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-10) var(--space-12);
+    font-size: 14px;
+    line-height: 1.4;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control, 8px);
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+  }
+  #loginDialog .ui-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+  }
+  #loginDialog .ui-input:invalid:not(:placeholder-shown) {
+    border-color: var(--color-danger);
+  }
+  #loginDialog .ui-help {
+    display: block;
+    margin-top: var(--space-4);
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+  #loginDialog .ui-error {
+    margin-top: var(--space-12);
+    padding: var(--space-8) var(--space-12);
+    font-size: 13px;
+    color: var(--color-danger);
+    background: var(--color-danger-bg);
+    border: 1px solid var(--color-danger-border);
+    border-radius: var(--radius-control, 8px);
+  }
+  #loginDialog .ui-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-8);
+    padding: var(--space-16) var(--space-20);
+    border-top: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+  }
+  #loginDialog .ui-btn {
+    min-height: 40px;
+    padding: var(--space-8) var(--space-16);
+    font-size: 13px;
+  }
+  #loginDialog .ui-btn[aria-busy="true"] {
+    opacity: 0.8;
+    cursor: wait;
+  }
+
+  /* Mobile adjustments for login dialog */
+  @media (max-width: 480px) {
+    #loginDialog {
+      max-width: calc(100vw - 16px);
+      margin: 8px;
+      border-radius: var(--radius-lg, 12px);
+    }
+    #loginDialog .ui-section-header {
+      padding: var(--space-12) var(--space-16);
+    }
+    #loginDialog .ui-dialog-body {
+      padding: var(--space-16);
+    }
+    #loginDialog .ui-toolbar {
+      padding: var(--space-12) var(--space-16);
+    }
+    #loginDialog .ui-btn {
+      min-height: 44px;
+      padding: var(--space-10) var(--space-16);
+    }
+  }
+
+  /* Ensure no horizontal overflow on mobile */
+  @media (max-width: 760px) {
+    .app.app-shell {
+      overflow-x: hidden;
+    }
+    #mainContent {
+      overflow-x: hidden;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .view, .card, .ui-panel, .ui-panel-body {
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    .ui-toolbar {
+      flex-wrap: wrap;
+    }
+  }
 }

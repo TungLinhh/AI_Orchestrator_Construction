@@ -13,6 +13,7 @@
 <style>__CONSOLE_CSS__</style>
 </head>
 <body>
+<span id="build" hidden aria-hidden="true"></span>
 __UI_ICONS__
 <dialog id="sidebarDrawer" class="shell-drawer" aria-label="Navigation"><button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="mobileNavClose" aria-label="Close navigation"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-x"></use></svg></button><div id="sidebarDrawerBody"></div></dialog>
 <a class="skip-link" id="skipContent" href="#mainContent">Skip to content</a>
@@ -22,33 +23,26 @@ __UI_ICONS__
   <nav class="nav" id="sidebar" aria-label="Sections">
     <div class="brand">
       <button class="workspace-trigger ui-btn ui-btn-ghost ui-btn-md" id="workspaceBtn" popovertarget="workspacePanel" aria-label="Workspace">
-        <span class="mark" aria-hidden="true">O</span><span class="workspace-name"><span class="name">Orchestrator</span><span class="sub" id="workspaceName">O-Nexus</span></span>
+        <span class="mark" aria-hidden="true">O</span><span class="workspace-name"><span class="name">O-Nexus</span><span class="sub" id="workspaceName">O-Nexus</span></span>
         <svg class="ui-icon workspace-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-chevron-down"></use></svg>
       </button>
     </div>
-    <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn sidebar-toggle" id="sidebarToggle" aria-controls="navItems" aria-expanded="true" title="Collapse sidebar"></button>
     <span id="navIndicator" aria-hidden="true"></span>
     <div class="items" id="navItems">
-      <div class="label" data-i18n="nav.workspace">Workspace</div>
       <a href="#/give" data-nav="give"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-list-todo"></use></svg></span><span data-i18n="nav.give">Work</span></a>
       <a href="#/work/issues" data-nav="work"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-circle-alert"></use></svg></span><span data-i18n="need.issues">Issues</span><span class="count" id="navIssueCount" hidden></span></a>
       <a href="#/work/approvals" data-nav="work"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-circle-check"></use></svg></span><span data-i18n="need.approvals">Approvals</span><span class="count" id="navApprovalCount" hidden></span></a>
-      <div class="label" data-i18n="nav.org">The organisation</div>
-      <a href="#/departments" data-nav="departments"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-network"></use></svg></span><span data-i18n="nav.departments">Departments</span></a>
+      <a href="#/departments" data-nav="departments"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-network"></use></svg></span><span data-i18n="nav.departments">Company structure</span></a>
       <a href="#/processes" data-nav="processes"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-workflow"></use></svg></span><span data-i18n="nav.processes">Processes</span></a>
-      <div class="label" data-i18n="nav.resources">Resources</div>
       <a href="#/library/skills" data-nav="library"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-library"></use></svg></span><span data-i18n="nav.library">Library</span></a>
       <a href="#/business/projects" data-nav="business"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-database"></use></svg></span><span data-i18n="nav.business">Business records</span></a>
-      <div class="label" data-i18n="nav.manage">Administration</div>
       <a href="#/operations/models" data-nav="operations"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-activity"></use></svg></span><span data-i18n="nav.operations">Operations</span></a>
       <a href="#/settings" data-nav="settings"><span class="ic"><svg class="ui-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><use href="#ui-icon-settings"></use></svg></span><span data-i18n="nav.settings">Settings</span></a>
       <span id="navWorkCount" hidden></span>
     </div>
     <div class="foot">
-      <div class="shell-connection">
-        <span class="dot" id="dot"></span><span id="connText">connecting</span>
-      </div>
-      <div id="build"></div><button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="shortcutBtn" type="button" aria-label="Phím tắt" title="Phím tắt"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-circle-help"></use></svg></button>
+      <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn sidebar-toggle" id="sidebarToggle" aria-controls="navItems" aria-expanded="true" aria-keyshortcuts="[" title="Collapse sidebar ["></button>
+      <span class="shell-shortcut-hint" id="sidebarShortcutHint"><kbd class="ui-kbd">[</kbd><span id="sidebarShortcutLabel">toggle sidebar</span></span>
     </div>
   </nav>
 
@@ -85,12 +79,53 @@ __UI_ICONS__
         </span>
         <div class="ui-tabs shell-language" id="languageGroup" role="group" aria-label="Language" data-ui-segmented><span class="ui-tab-indicator" aria-hidden="true"></span><button id="langBtn" type="button" data-shell-lang="vi" aria-pressed="true">VI</button><button id="langEnBtn" type="button" data-shell-lang="en" aria-pressed="false">EN</button></div>
         <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="appearanceBtn" popovertarget="appearancePanel" aria-label="Appearance"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-sliders-horizontal"></use></svg></button>
-        <button class="btn ghost sm" id="tokenBtn" title="Re-enter the service token">Token</button>
+        <div class="shell-auth-actions" id="authActions" role="group" aria-label="Authentication">
+          <!-- Service token fallback (explicit operator action) -->
+          <button class="btn ghost sm" id="tokenBtn" title="Re-enter the service token" hidden>Token</button>
+          <!-- Human login trigger -->
+          <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="loginBtn" type="button" aria-label="Đăng nhập" title="Đăng nhập" hidden><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-user"></use></svg></button>
+          <!-- Signed-in member display -->
+          <div id="memberDisplay" class="shell-member" hidden role="group" aria-label="Signed in as">
+            <svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-user"></use></svg>
+            <span id="memberName" class="member-name"></span>
+            <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="signoutBtn" type="button" aria-label="Đăng xuất" title="Đăng xuất"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-log-out"></use></svg></button>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="ui-popover shell-popover" id="appearancePanel" popover="auto" role="dialog" aria-labelledby="appearanceTitle"></div>
     <div class="ui-popover shell-popover" id="workspacePanel" popover="auto" role="dialog" aria-labelledby="workspaceTitle"></div>
+    <!-- Login modal dialog -->
+    <form id="loginForm" method="dialog">
+      <dialog id="loginDialog" class="ui-dialog" data-ui-modal="dialog" aria-labelledby="loginTitle">
+        <header class="ui-section-header">
+          <h2 id="loginTitle" data-i18n="auth.login_title">Đăng nhập</h2>
+          <button class="ui-btn ui-btn-ghost ui-btn-sm ui-icon-btn" id="loginClose" type="button" aria-label="Đóng"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#ui-icon-x"></use></svg></button>
+        </header>
+        <div class="ui-dialog-body">
+          <p class="ui-muted" id="loginSubtitle" data-i18n="auth.login_subtitle">Nhập mã tổ chức, email và mật khẩu để truy cập.</p>
+          <div class="ui-field">
+            <label for="loginTenant" data-i18n="auth.tenant_label">Mã tổ chức</label>
+            <input class="ui-input" type="text" id="loginTenant" autocomplete="off" required placeholder="org_abcdefghijklmnopqrst" pattern="org_[a-z0-9]{20,}" aria-describedby="tenantHelp">
+            <span id="tenantHelp" class="ui-help">Mã tổ chức dạng org_ + 20+ ký tự chữ/số</span>
+          </div>
+          <div class="ui-field">
+            <label for="loginEmail" data-i18n="auth.email_label">Email</label>
+            <input class="ui-input" type="email" id="loginEmail" autocomplete="email" required placeholder="you@example.com">
+          </div>
+          <div class="ui-field">
+            <label for="loginPassword" data-i18n="auth.password_label">Mật khẩu</label>
+            <input class="ui-input" type="password" id="loginPassword" autocomplete="current-password" required>
+          </div>
+          <div id="loginError" class="ui-error" hidden role="alert"></div>
+        </div>
+        <footer class="ui-toolbar">
+          <button class="ui-btn ui-btn-ghost ui-btn-sm" id="loginCancel" type="button" data-i18n="sheet.close">Đóng</button>
+          <button class="ui-btn ui-btn-primary ui-btn-sm" id="loginSubmit" type="submit" data-i18n="auth.login_button">Đăng nhập</button>
+        </footer>
+      </dialog>
+    </form>
     <main class="content" id="mainContent" tabindex="-1">
       <div class="shell-auth" id="authwarn" hidden><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><use href="#ui-icon-circle-alert"></use></svg><details id="authDetails"><summary data-i18n="auth.local">Local workspace · authentication off</summary><p data-i18n-html="auth.off_sub">Requests use <code>dev:no-auth</code>. This mode is for this local workspace.</p><p id="authRecommendation"></p></details></div>
       <section class="view" id="view-management" hidden><div id="managementContent" aria-live="polite"></div></section>
@@ -164,7 +199,7 @@ __UI_ICONS__
 
       <!-- ============================ departments ============================ -->
       <section class="view" id="view-departments" hidden>
-        <div class="page-heading"><div><div class="eyebrow" data-i18n="nav.org">The organisation</div><h1 data-i18n="dept.page_title">People and responsibility</h1><p data-i18n="dept.intro">One chief, three offices, and their departments. Open a unit to see only its work.</p></div><a class="btn" href="#/give" data-i18n="nav.give">Work</a></div><div class="stats" id="deptStats"></div>
+        <div class="page-heading"><div><div class="eyebrow" data-i18n="nav.org">Company</div><h1 data-i18n="dept.page_title">People and responsibility</h1><p data-i18n="dept.intro">One chief, three offices, and their departments. Open a unit to see only its work.</p></div><a class="btn" href="#/give" data-i18n="nav.give">Work</a></div><div class="stats" id="deptStats"></div>
         <div class="card">
           <header><h2 id="deptHeading">The organisation</h2><span class="spacer"></span>
             <span class="sub" id="deptSub"></span>

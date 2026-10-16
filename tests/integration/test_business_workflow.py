@@ -709,7 +709,7 @@ async def test_generic_task_controls_preserve_business_workflow_boundaries(clien
     assert retried.json()["business_workflow"] is True
     new_id = retried.json()["task_id"]
     fresh = await client.get("/api/v1/workflows/" + new_id, headers=headers)
-    assert fresh.status_code == 200
+    assert fresh.status_code == 200, fresh.text
     assert fresh.json()["total"] == 13
     assert all(s["status"] == "assigned" for s in fresh.json()["stages"])
     repeated = await client.post("/api/v1/tasks/" + root + "/retry", headers=headers)
@@ -1046,3 +1046,30 @@ async def test_procurement_live_intake_creates_unstarted_source_campaign(client,
     assert (
         await client.post("/api/v1/workflows/procurement", headers=headers, json=malformed)
     ).status_code == 422
+
+
+async def test_enriched_business_output_still_rejects_undeclared_fields(prepared, db):
+    class ForgedRuntime(FixtureRuntime):
+        async def execute(self, task, context, **kwargs):
+            result = await super().execute(task, context, **kwargs)
+            if self.stage.key == "comparison":
+                # Added after the raw artifact and independent arithmetic checks.
+                result.output["forged_model_authority"] = "approved"
+            return result
+
+    root = await new_run(prepared)
+    report = await BusinessWorkflowService(
+        db, prepared.organization_id, runtime_factory=ForgedRuntime
+    ).run(root)
+    assert report["status"] == "failed", report
+    async with db.tenant_session(prepared.organization_id) as session:
+        failed = (
+            await session.execute(
+                select(Task).where(
+                    Task.parent_task_id == root, Task.input["stage_key"].astext == "comparison"
+                )
+            )
+        ).scalar_one()
+        assert failed.status == "failed"
+        assert failed.failure_category == "output_contract_unmet"
+        assert "additionalProperties" in failed.last_error

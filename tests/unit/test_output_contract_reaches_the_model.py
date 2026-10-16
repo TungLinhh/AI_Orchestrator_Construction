@@ -135,3 +135,31 @@ class TestTheAnswerIsReadBack:
         assert parsed == {"headcount": 3, "verdict": "duyệt", "ok": True}
         assert isinstance(parsed["headcount"], int)  # type: ignore[index]
         assert parsed["ok"] is True  # type: ignore[index]
+
+
+def test_full_nested_schema_reaches_worker_prompt() -> None:
+    schema = {
+        "required": ["findings"],
+        "properties": {
+            "findings": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["decision"],
+                    "properties": {"decision": {"type": "string", "enum": ["accept", "review"]}},
+                },
+            }
+        },
+    }
+    prompt = _user_prompt(None, _Context(schema))
+    assert json.dumps(schema, ensure_ascii=False) in prompt
+    assert "Descriptions are documentation" in prompt
+
+
+def test_oversized_schema_fails_before_model_call() -> None:
+    import pytest
+
+    from ai_orchestrator.domain.errors import ValidationError
+
+    with pytest.raises(ValidationError, match="schema exceeds"):
+        _user_prompt(None, _Context({"description": "x" * 32769}))

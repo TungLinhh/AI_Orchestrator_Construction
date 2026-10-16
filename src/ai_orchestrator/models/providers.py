@@ -241,8 +241,15 @@ def _content_filter_refusal(body: dict[str, Any]) -> str | None:
         if isinstance(choices, list) and choices and isinstance(choices[0], dict)
         else None
     )
-    if first is not None and str(first.get("finish_reason") or "") == "content_filter":
-        return "content_filter"
+    if first is not None:
+        finish_reason = str(first.get("finish_reason") or "")
+        if finish_reason in {"content_filter", "refused"}:
+            return finish_reason
+        assistant_message = first.get("message")
+        if isinstance(assistant_message, dict):
+            refusal = assistant_message.get("refusal")
+            if isinstance(refusal, str) and refusal.strip():
+                return "refused"
     return None
 
 

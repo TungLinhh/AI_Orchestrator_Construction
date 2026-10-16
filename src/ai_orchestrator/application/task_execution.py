@@ -83,6 +83,7 @@ from ai_orchestrator.domain.ids import (
     ToolId,
 )
 from ai_orchestrator.domain.output_contract import (
+    contract_violations,
     describe_mismatch,
     missing_keys,
     repair_from_text,
@@ -383,10 +384,14 @@ class TaskExecutionService:
         model_usage_checkpoint: Any = None,
         execution_checkpoint: Any = None,
         lease_seconds: int | None = None,
+        accepted_output_schema: dict[str, Any] | None = None,
     ) -> None:
         self._session = session
         self._org = organization_id
         self._runtime = runtime
+        # Trusted controller contract for independently enriched artifacts.
+        # Never read this override from model output or task-provided metadata.
+        self._accepted_output_schema = copy.deepcopy(accepted_output_schema)
         self._run_mode = run_mode
         self._model_usage_checkpoint = model_usage_checkpoint
         self._execution_checkpoint = execution_checkpoint
@@ -2153,11 +2158,38 @@ class TaskExecutionService:
         source_context: dict[str, Any] | None = None,
         runtime_name: str | None = None,
     ) -> ExecutionOutcome:
+        export_failure_category: str | None = None
         if task.input.get("source_workflow") and result.status is AgentResultStatus.COMPLETED:
             from ai_orchestrator.application.source_intake import SourceIntake
 
             assert source_context is not None
-            await SourceIntake(self._session, self._org).export(task, result.output, source_context)
+            try:
+                # Export is an atomic delivery step. Preserve the provider ledger
+                # outside this savepoint if rendering/admission/persistence fails.
+                async with self._session.begin_nested():
+                    await SourceIntake(self._session, self._org).export(
+                        task, result.output, source_context
+                    )
+            except Exception as exc:
+                if not self._session.is_active:
+                    raise
+                if isinstance(exc, PlatformError):
+                    message, error_code = exc.message, exc.kind.value
+                    export_failure_category = exc.category.value
+                else:
+                    logger.exception("source.export_failed", task_id=task.id)
+                    message, error_code = "Artifact export failed", "INTERNAL"
+                    export_failure_category = "internal_error"
+                result = result.model_copy(
+                    update={
+                        "status": AgentResultStatus.FAILED,
+                        "summary": message,
+                        "error_code": error_code,
+                        "output": {},
+                        "artifacts": (),
+                        "follow_up_actions": (),
+                    }
+                )
         duration_ms = int((time.monotonic() - started) * 1000)
         usage = result.usage
         cost = result.cost_usd or Money("0")
@@ -2187,6 +2219,8 @@ class TaskExecutionService:
             },
             artifacts=[a.model_dump(mode="json") for a in result.artifacts],
             error_kind=result.error_code,
+            error_category=export_failure_category,
+            error_message=result.summary if export_failure_category else None,
             input_tokens=usage.input_tokens if usage else 0,
             output_tokens=usage.output_tokens if usage else 0,
             reasoning_tokens=usage.reasoning_tokens if usage else 0,
@@ -2401,6 +2435,25 @@ class TaskExecutionService:
                         execution_id=execution_id,
                         started=started,
                     )
+            violations = (
+                ()
+                if is_coordinator
+                else contract_violations(
+                    result.output,
+                    self._accepted_output_schema
+                    if self._accepted_output_schema is not None
+                    else task.expected_output_schema,
+                )
+            )
+            if violations:
+                await self._tasks.set_output(task.id, result.output)
+                return await self._fail(
+                    task,
+                    "Declared output contract failed: " + "; ".join(violations[:10]),
+                    "output_contract_unmet",
+                    execution_id=execution_id,
+                    started=started,
+                )
             if result.output:
                 await self._tasks.set_output(task.id, result.output)
             if has_open_work_below:
@@ -2449,7 +2502,7 @@ class TaskExecutionService:
             failed = await self._fail(
                 task,
                 result.summary or result.error_code or "execution failed",
-                _category_for(result.error_code),
+                export_failure_category or _category_for(result.error_code),
                 execution_id=execution_id,
                 started=started,
             )
@@ -2613,6 +2666,22 @@ class TaskExecutionService:
                     error_message=message[:2000],
                     duration_ms=int((time.monotonic() - (started or time.monotonic())) * 1000),
                 )
+            elif execution.status == "completed":
+                # Runtime completion precedes the business acceptance gates.
+                # Correct their rejection without re-finishing, which would
+                # replace token counts and add the recorded cost a second time.
+                execution.status = "failed"
+                execution.error_kind = category
+                execution.error_category = category
+                execution.error_message = message[:2000]
+                execution.decision_record = {
+                    **execution.decision_record,
+                    "steps": [
+                        *execution.decision_record.get("steps", []),
+                        {"action": "acceptance.reject", "status": "failed", "category": category},
+                    ],
+                }
+                await self._session.flush()
         from ai_orchestrator.application.learning_revert import revert_falsified_skills
 
         await revert_falsified_skills(self._session, self._org, task, execution_id)
