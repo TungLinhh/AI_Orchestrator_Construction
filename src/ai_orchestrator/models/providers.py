@@ -217,6 +217,17 @@ class OpenAICompatibleProvider(ModelProvider):
             # for diagnosis and nowhere else.
             msg = f"{candidate.key()}: the provider's content filter refused this prompt"
             raise PolicyDenied(msg, details={"model": candidate.key(), "body": _safe_dict(body)})
+        envelope = _error_envelope(body)
+        if envelope is not None:
+            # An upstream fault delivered inside HTTP 200 with no `choices` and
+            # no `usage`. Measured 2026-10-16 on nemotron: HTTP 200 carrying
+            # `{'error': {'code': 503, 'message': 'Upstream error from Nvidia:
+            # Service temporarily overloaded'}}`. Reporting that as "response
+            # contained no choices" hides the actual status and invites a retry
+            # of a request that was never malformed. No usage is invented here:
+            # the call failed, so its cost stays unknown and the gateway records
+            # the fallback, not a fabricated ledger row.
+            raise _error_envelope_error(candidate, envelope)
 
         return _parse_openai_response(body, candidate, latency_ms)
 
@@ -256,6 +267,55 @@ def _content_filter_refusal(body: dict[str, Any]) -> str | None:
 def _safe_dict(body: dict[str, Any]) -> dict[str, Any]:
     """A provider body, truncated so a diagnostic cannot become a payload."""
     return {"error": body.get("error"), "model": body.get("model")}
+
+
+def _error_envelope(body: dict[str, Any]) -> dict[str, Any] | None:
+    """An upstream fault delivered as HTTP 200 with no usable completion.
+
+    Some OpenRouter upstreams report overloads as `{"error": {...}, "id": ...}`
+    with status 200 and no `choices`/`usage`. A body that carries `choices` is
+    an answer (possibly with warnings) and is parsed normally; only a choiceless
+    body with an `error` payload counts as an envelope.
+    """
+    error = body.get("error")
+    if error is None or body.get("choices"):
+        return None
+    if isinstance(error, dict):
+        return error
+    return {"message": str(error)[:500]}
+
+
+def _error_envelope_error(candidate: ModelCandidate, error: dict[str, Any]) -> BaseException:
+    """Classify a 200-envelope fault the way the matching HTTP status is classified.
+
+    Upstream overloads and rate limits stay retryable/fallback-eligible
+    (`ModelUnavailable`/`ModelRateLimited`, bounded by the caller's retry budget
+    and the gateway's candidate list). Credential failures stay terminal
+    (`ValidationError`, never retried). Content-filter refusals never reach here:
+    `_content_filter_refusal` runs first and stays terminal. No usage or cost is
+    attached — a failed call's cost is unknown, never zero-filled.
+    """
+    message = str(error.get("message") or "unknown upstream error")[:300]
+    try:
+        status = int(str(error.get("code") or "").strip())
+    except TypeError, ValueError:
+        status = 0
+    lowered = message.lower()
+    if status == 401 or ("invalid" in lowered and "key" in lowered) or "unauthorized" in lowered:
+        return ValidationError(
+            f"{candidate.key()}: authentication or authorisation failed (upstream 401)",
+            details={"model": candidate.key(), "status": 401},
+        )
+    if status == 429 or "rate limit" in lowered or "throttle" in lowered:
+        return ModelRateLimited(
+            f"{candidate.key()}: rate limited (upstream 429)",
+            details={"model": candidate.key(), "status": 429},
+        )
+    shown = status if status else "unknown"
+    return ModelUnavailable(
+        f"{candidate.key()}: upstream provider error (status {shown}): {message}",
+        details={"model": candidate.key(), "status": status or None},
+    )
 
 
 def _safe_body(response: httpx.Response) -> dict[str, Any]:

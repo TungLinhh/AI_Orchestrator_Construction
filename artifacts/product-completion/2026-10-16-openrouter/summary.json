@@ -31,5 +31,5 @@
     "DOTS": "raw probe truncated with inconsistent usage; not accepted"
   },
   "publication": "Only reviewed technical evidence; no raw sessions or embedded source documents",
-  "new_openrouter_patch": "Not accepted or committed; remaining work retained locally"
+  "new_openrouter_patch": "Verified gates-envelope-fix-1 (2026-10-16): HTTP200 error-envelope classified (503 ModelUnavailable fallback-eligible, 429 ModelRateLimited, 401 ValidationError terminal, refusals still terminal, no usage invented); 5 MockTransport regressions, suite 3875 passed + 35 e2e, lint/typecheck clean; dept campaign harness kept local, not accepted/published"
 }

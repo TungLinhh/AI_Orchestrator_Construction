@@ -5,6 +5,7 @@
 > đã qua 91 kiểm tra điều hướng và 30 kiểm tra nút/phông chữ. Đây là bằng chứng
 > của đợt trước, không thay cho campaign model thật: chưa đạt nghiệm thu.
 > [Báo cáo công bố đã lọc dữ liệu](artifacts/product-completion/2026-10-16-openrouter/summary.json).
+> Sửa 200-envelope: HTTP 200 mang error.code 503 được phân loại đúng (fallback được, giữ terminal 401/refusal, không bịa usage); 5 regression MockTransport; harness campaign giữ local, chưa nghiệm thu.
 > Các đường dẫn bằng chứng cục bộ trong nhật ký bên dưới không được phát hành lên Git.
 
 
