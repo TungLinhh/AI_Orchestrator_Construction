@@ -387,8 +387,8 @@ class TestRetryingFailedWork:
         assert fresh["goal"] == "Retry carries the goal", "the work must be carried over"
         assert fresh["status"] == "created"
         assert fresh["owner_agent_id"] is None, (
-            "a retry is unassigned until somebody gives it an owner — it is not a rerun wearing "
-            "a new id"
+            "this original had no owner, so the retry has none either — an owned original "
+            "keeps its owner (see test_task_input_resume::test_ordinary_hr_retry_...)"
         )
         assert fresh["last_error"] is None, "and it must not inherit a failure it did not have"
 

@@ -2454,6 +2454,20 @@ class TaskExecutionService:
                     execution_id=execution_id,
                     started=started,
                 )
+            if not is_coordinator:
+                from ai_orchestrator.domain.source_evidence import validate_source_quotes
+
+                try:
+                    validate_source_quotes(task.expected_output_schema, task.input, result.output)
+                except ValueError as exc:
+                    await self._tasks.set_output(task.id, result.output)
+                    return await self._fail(
+                        task,
+                        "Source evidence contract failed: " + str(exc),
+                        "output_contract_unmet",
+                        execution_id=execution_id,
+                        started=started,
+                    )
             if result.output:
                 await self._tasks.set_output(task.id, result.output)
             if has_open_work_below:
@@ -2492,6 +2506,8 @@ class TaskExecutionService:
             )
         elif result.status is AgentResultStatus.NEEDS_INPUT:
             task = await self._tasks.transition(task.id, Transition.REQUEST_INPUT)
+            # Surface the question on task detail until a human supplies clarification.
+            task.last_error = (result.summary or "Additional information is required.")[:20_000]
             final_status = TaskStatus(task.status)
         elif result.status is AgentResultStatus.BLOCKED:
             return await self._block(task, result.summary or "the agent reported a block")

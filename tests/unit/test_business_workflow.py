@@ -557,3 +557,69 @@ async def test_selection_repairs_a_wrong_candidate_identifier_from_reviewed_evid
     ).execute(task, context)
     assert len(calls) == 2 and result.output["recommended_candidate_id"] == ident
     assert task.input["prior"]["cv_intake"]["cvs"][0]["text"] == "RAW CV DATA"
+
+
+async def test_jd_missing_sections_are_rejected_and_exact_keys_survive_repair():
+    """A transport-successful four-section JD must not complete the SOP stage."""
+    import json
+
+    from ai_orchestrator.agent_runtime.workflow_evidence import WorkflowEvidenceRuntime
+    from ai_orchestrator.domain.contracts import Actor, AgentContext, AgentTask, BudgetEnvelope
+    from ai_orchestrator.domain.enums import ActorType
+    from ai_orchestrator.domain.hiring_process import JD_SECTIONS
+    from ai_orchestrator.domain.ids import ExecutionId, OrganizationId, TaskId
+    from ai_orchestrator.models.gateway import ModelResponse
+
+    requests, recorded = [], []
+
+    class Gateway:
+        async def complete(self, request):
+            requests.append(request)
+            assert all(key in request.system_instructions for key in JD_SECTIONS)
+            if len(requests) == 2:
+                assert "Quan hệ công việc" in request.prompt
+                assert "Yêu cầu năng lực" in request.prompt
+                assert "PREVIOUS SUBMISSION" in request.prompt
+            artifact = {
+                "sections": {
+                    key: "Nội dung JD thử nghiệm cần HR duyệt"
+                    for key in (JD_SECTIONS[:4] if len(requests) == 1 else JD_SECTIONS)
+                },
+                "requirements": ["Kinh nghiệm MEP cần xác minh"],
+                "kpis": ["Hồ sơ kỹ thuật được nghiệm thu"],
+            }
+            return ModelResponse(
+                provider="unit-fake",
+                model_used="jd-repair",
+                finish_reason="tool_calls",
+                tool_calls=[
+                    {"function": {"name": "submit_evidence", "arguments": json.dumps(artifact)}}
+                ],
+            )
+
+    async def record(response):
+        recorded.append(response)
+
+    org = OrganizationId.create()
+    schema = artifact_schema("jd")
+    task = AgentTask(
+        task_id=TaskId.create(),
+        organization_id=org,
+        execution_id=ExecutionId.create(),
+        goal="Soạn JD MEP đủ sáu phần",
+        input={"stage_key": "jd", "brief": {}, "prior": {}},
+        expected_output_schema=schema,
+    )
+    context = AgentContext(
+        actor=Actor(id="agent-test", kind=ActorType.AGENT),
+        task=task,
+        system_instructions="Use supplied evidence",
+        organization_id=org,
+        budget=BudgetEnvelope(max_tokens=20000, max_cost_usd=1, max_runtime_s=180, max_requests=5),
+    )
+    result = await WorkflowEvidenceRuntime(
+        Gateway(), lambda artifact: validate_shape(artifact, schema)
+    ).execute(task, context, record_usage=record)
+    assert len(requests) == len(recorded) == 2
+    assert "missing required fields" in recorded[0].validation_error
+    assert set(result.output["sections"]) == set(JD_SECTIONS)

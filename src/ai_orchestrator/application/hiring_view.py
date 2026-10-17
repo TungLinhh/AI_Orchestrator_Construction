@@ -34,7 +34,6 @@ from sqlalchemy import text
 
 from ai_orchestrator.application.ports import ReadConnection
 from ai_orchestrator.domain.hiring_process import (
-    DEMO_REQUEST,
     JD_SECTIONS,
     RUBRIC,
     SOP_CODE,
@@ -68,8 +67,18 @@ SELECT t.id, t.title, t.status, t.goal, t.created_at, t.completed_at, t.last_err
        ) AS blocking
 FROM tasks t
 LEFT JOIN agents a ON a.id = t.owner_agent_id AND a.organization_id = t.organization_id
-WHERE t.organization_id = CAST(:o AS varchar(64)) AND t.input->>'request_key' = :k
-ORDER BY (t.input->>'stage_n')::int
+WHERE t.organization_id = CAST(:o AS varchar(64))
+  AND t.input->>'stage_key' = ANY(:stage_keys)
+  AND t.input->>'sop_code' = :sop
+  AND t.input->>'request_key' = COALESCE(CAST(:k AS text), (
+    SELECT newest.input->>'request_key' FROM tasks newest
+    WHERE newest.organization_id = CAST(:o AS varchar(64))
+      AND newest.input->>'sop_code' = :sop
+      AND newest.input->>'stage_key' = ANY(:stage_keys)
+      AND newest.input->>'request_key' IS NOT NULL
+    ORDER BY newest.created_at DESC, newest.id DESC LIMIT 1
+  ))
+ORDER BY t.created_at, t.id
 """
 
 _APPROVALS = """
@@ -81,10 +90,22 @@ ORDER BY created_at
 """
 
 
-async def hiring_process(conn: ReadConnection, *, organization_id: str) -> dict[str, Any]:
+async def hiring_process(
+    conn: ReadConnection, *, organization_id: str, request_key: str | None = None
+) -> dict[str, Any]:
     """The whole process as a person would describe it, in order."""
     rows = (
-        (await conn.execute(text(_STAGES), {"o": organization_id, "k": "hire:procurement-head"}))
+        (
+            await conn.execute(
+                text(_STAGES),
+                {
+                    "o": organization_id,
+                    "k": request_key,
+                    "sop": SOP_CODE,
+                    "stage_keys": list(STAGES_BY_KEY),
+                },
+            )
+        )
         .mappings()
         .all()
     )
@@ -120,7 +141,10 @@ async def hiring_process(conn: ReadConnection, *, organization_id: str) -> dict[
             continue
         attempts[key] = attempts.get(key, 0) + 1
         seen = newest.get(key)
-        if seen is None or str(row["created_at"]) > str(seen["created_at"]):
+        if seen is None or (str(row["created_at"]), str(row["id"])) > (
+            str(seen["created_at"]),
+            str(seen["id"]),
+        ):
             newest[key] = row
     rows = [newest[k] for k in sorted(newest, key=lambda k: int(STAGES_BY_KEY[k].n))]
 
@@ -157,6 +181,12 @@ async def hiring_process(conn: ReadConnection, *, organization_id: str) -> dict[
             }
         )
 
+    # Vacancy details belong to the selected request, never to a seeded demo.
+    first = rows[0] if rows else None
+    source_input = (first["input"] or {}) if first is not None else {}
+    details = source_input.get("hiring_request", source_input)
+    if not isinstance(details, dict):
+        details = {}
     done = [s for s in stages if s["task_status"] == "completed"]
     on_you = [s for s in stages if s["waiting_on_you"]]
     # **Not a percentage.** A count of stages finished, and a count of stages waiting on a
@@ -166,14 +196,15 @@ async def hiring_process(conn: ReadConnection, *, organization_id: str) -> dict[
     return {
         "sop_code": SOP_CODE,
         "sop_title": SOP_TITLE,
-        "position": DEMO_REQUEST.position,
-        "office": DEMO_REQUEST.office,
-        "department": DEMO_REQUEST.department,
-        "headcount": DEMO_REQUEST.headcount,
-        "jd_reference": DEMO_REQUEST.jd_reference,
+        "request_key": source_input.get("request_key"),
+        "position": details.get("position") or (first["title"] if first is not None else ""),
+        "office": details.get("office", ""),
+        "department": details.get("department", ""),
+        "headcount": details.get("headcount"),
+        "jd_reference": details.get("jd_reference", ""),
         "jd_sections": list(JD_SECTIONS),
         "rubric": [{"level": n, "weight": w} for n, w in RUBRIC],
-        "candidates": [dict(c) for c in DEMO_REQUEST.candidates],
+        "candidates": details.get("candidates", []),
         "stages": stages,
         "stage_count": len(stages),
         "done_count": len(done),

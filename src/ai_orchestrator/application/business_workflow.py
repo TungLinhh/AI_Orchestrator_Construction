@@ -270,7 +270,16 @@ async def create_workflow(
             .one_or_none()
         )
         if row is None:
-            raise PreconditionError("Required O-Nexus SOP is not registered: " + code)
+            raise PreconditionError(
+                "Required O-Nexus SOP is not registered: "
+                + code
+                + ". Ask an administrator to initialize the procedure catalogue for this company.",
+                details={
+                    "missing_sop": code,
+                    "organization_id": org,
+                    "setup_command": "uv run python scripts/seed_process_spine.py --org " + org,
+                },
+            )
         sources.append(dict(row))
     names = {s.owner for s in WORKFLOWS[kind]}
     agents = {
@@ -362,6 +371,20 @@ class BusinessWorkflowService:
                 .scalars()
                 .all()
             )
+            # Stage order is a workflow contract, not a creation-clock property.
+            # A paused selection must not be reported as a later onboarding stage
+            # when timestamps tie or the clock changes during task creation.
+            stage_order = {
+                stage.key: index
+                for index, stage in enumerate(WORKFLOWS[root.input["business_workflow"]])
+            }
+            rows = sorted(
+                rows,
+                key=lambda row: (
+                    stage_order.get(row.input.get("stage_key", ""), len(stage_order)),
+                    row.id,
+                ),
+            )
             ids = [root_id, *(t.id for t in rows)]
             usage = (
                 (
@@ -442,6 +465,7 @@ class BusinessWorkflowService:
                 "id": root.id,
                 "kind": root.input["business_workflow"],
                 "mode": root.input["mode"],
+                "synthetic": root.input["brief"].get("synthetic", False),
                 "title": root.title,
                 "status": root.status,
                 "error": root.last_error

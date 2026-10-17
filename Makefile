@@ -115,7 +115,7 @@ dev-nats: ## Start NATS JetStream
 	@if [ -f $(RUN)/nats.pid ] && kill -0 $$(cat $(RUN)/nats.pid) 2>/dev/null; then \
 	  echo "nats already running ($$(cat $(RUN)/nats.pid))"; \
 	else \
-	  $(NATS_BIN) -js -sd $(DEV)/nats-data -p 4222 -m 8222 > $(LOGS)/nats.log 2>&1 & \
+	  nohup setsid $(NATS_BIN) -js -sd $(DEV)/nats-data -p 4222 -m 8222 > $(LOGS)/nats.log 2>&1 < /dev/null & \
 	  echo $$! > $(RUN)/nats.pid; sleep 1; echo "nats started ($$(cat $(RUN)/nats.pid))"; \
 	fi
 
@@ -124,9 +124,9 @@ dev-temporal: ## Start the Temporal dev server
 	@if [ -f $(RUN)/temporal.pid ] && kill -0 $$(cat $(RUN)/temporal.pid) 2>/dev/null; then \
 	  echo "temporal already running ($$(cat $(RUN)/temporal.pid))"; \
 	else \
-	  $(TEMPORAL_BIN) server start-dev --ip 127.0.0.1 --port 7233 \
+	  nohup setsid $(TEMPORAL_BIN) server start-dev --ip 127.0.0.1 --port 7233 \
 	    --ui-port 8233 --db-filename $(DEV)/temporal.db --log-level warn \
-	    > $(LOGS)/temporal.log 2>&1 & \
+	    > $(LOGS)/temporal.log 2>&1 < /dev/null & \
 	  echo $$! > $(RUN)/temporal.pid; sleep 2; echo "temporal started ($$(cat $(RUN)/temporal.pid))"; \
 	fi
 
@@ -425,7 +425,7 @@ seed-construction: ## Ingest the reference corpus so the construction surfaces h
 # and nothing else, and `make dev` requires both brokers, so following the obvious
 # instruction on a machine without them leaves a person stuck at step one.
 page: ## Start the API, verify the page against real data, print the URL to open
-	@$(PY) scripts/pgctl.py start >/dev/null 2>&1 || true
+	@$(PY) scripts/pgctl.py start
 	@$(PY) scripts/seed_local_operator.py >/dev/null 2>&1 || true
 	@mkdir -p $(RUN) $(LOGS) .devdata/ui
 	@if [ -f $(RUN)/page.pid ] && kill -0 $$(cat $(RUN)/page.pid) 2>/dev/null; then \

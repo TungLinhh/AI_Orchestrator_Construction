@@ -1073,3 +1073,68 @@ async def test_enriched_business_output_still_rejects_undeclared_fields(prepared
         assert failed.status == "failed"
         assert failed.failure_category == "output_contract_unmet"
         assert "additionalProperties" in failed.last_error
+
+
+async def test_report_uses_declared_stage_order_when_creation_clock_is_reversed(prepared, db):
+    from datetime import UTC, datetime, timedelta
+
+    from ai_orchestrator.domain.business_workflow import WORKFLOWS
+
+    root_id = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "simulation", hiring_fixture()
+    )
+    tasks = (
+        await prepared.session.scalars(
+            select(Task).where(
+                Task.organization_id == prepared.organization_id, Task.parent_task_id == root_id
+            )
+        )
+    ).all()
+    stage_order = {stage.key: index for index, stage in enumerate(WORKFLOWS["mep_hiring"])}
+    timestamp = datetime.now(UTC)
+    for task in tasks:
+        task.created_at = timestamp - timedelta(seconds=stage_order[task.input["stage_key"]])
+    await prepared.commit()
+    report = await BusinessWorkflowService(db, prepared.organization_id).report(root_id)
+    assert [stage["key"] for stage in report["stages"]] == list(stage_order)
+
+
+async def test_synthetic_hiring_keeps_real_approval_gate(client, prepared, db):
+    """Fictional inputs are labelled without silently approving the workflow."""
+    from tests.integration.test_console_management import _human_headers
+
+    headers = await _human_headers(prepared)
+    response = await client.post(
+        "/api/v1/workflows/hiring",
+        headers=headers,
+        json={
+            "position": "SYNTHETIC acceptance MEP engineer",
+            "boss_brief": "Fictional workflow acceptance only; no recruitment is authorized.",
+            "salary_min": 20000000,
+            "salary_max": 30000000,
+            "start_date": "2026-11-01",
+            "synthetic": True,
+        },
+    )
+    assert response.status_code == 201, response.text
+    root_id = response.json()["id"]
+    assert response.json()["synthetic"] is True
+    report = await BusinessWorkflowService(db, prepared.organization_id).run(root_id)
+    assert report["synthetic"] is True
+    assert report["mode"] == "live"
+    assert report["status"] == "blocked"
+    active = next(stage for stage in report["stages"] if stage["status"] != "completed")
+    assert active["key"] == "headcount_review"
+    assert active["status"] == "waiting_for_approval"
+    assert report["evidence"]["real_model_calls"] == 0
+    async with db.tenant_session(prepared.organization_id) as session:
+        approvals = (
+            await session.scalars(
+                select(Approval).where(
+                    Approval.organization_id == prepared.organization_id,
+                    Approval.task_id == active["id"],
+                )
+            )
+        ).all()
+        assert len(approvals) == 1
+        assert approvals[0].status == "pending"

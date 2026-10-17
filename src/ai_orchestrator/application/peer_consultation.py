@@ -100,9 +100,11 @@ def build_query(task_title: str, question: str, limit: int = 600) -> str:
     return (
         f'A colleague is working on "{title}" and needs your judgement.\n\n'
         f"Their question: {question}\n\n"
-        f"Answer in at most {limit} characters. State the recommendation first, "
-        f"then the one fact that would change it. If the question depends on "
-        f"something you cannot see, say what is missing rather than guessing. "
-        f"This is a consultation, not a transfer of work: you are not taking this "
-        f"on, and no task has been created for you."
+        f"Your deliverable is a recommendation in at most {limit} characters. "
+        f"State the recommendation first, then the one fact that would change it. "
+        f"If the question depends on something you cannot see, say what is missing "
+        f"rather than guessing. This is a consultation, not a transfer of work: "
+        f"you are not taking this on, and no task has been created for you. "
+        f"If the question is outside your area of expertise, say so and suggest "
+        f"who might be better placed to answer."
     )

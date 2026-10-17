@@ -34,6 +34,7 @@ class ExampleRequest(BaseModel):
 
 class HiringRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    synthetic: bool = Field(default=False, strict=True)
     position: str = Field(min_length=3, max_length=200)
     boss_brief: str = Field(min_length=20, max_length=10000)
     salary_min: int = Field(gt=0)
@@ -52,12 +53,11 @@ async def hiring(body: HiringRequest, ctx: ApiContext = Depends(get_context)) ->
         raise ValidationError("Start date must be a valid calendar date") from exc
     brief = {
         **body.model_dump(),
-        "synthetic": False,
         "headcount": 1,
         "rubric_spec": [{"key": key, "max_points": weight} for key, weight in RUBRIC_SPEC],
     }
     root = await create_workflow(ctx.session, ctx.organization_id, "mep_hiring", "live", brief)
-    return {"id": root, "mode": "live", "synthetic": False, "started": False}
+    return {"id": root, "mode": "live", "synthetic": body.synthetic, "started": False}
 
 
 @router.post("/workflows/procurement", status_code=201)

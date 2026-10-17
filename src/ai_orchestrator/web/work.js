@@ -238,7 +238,10 @@ async function retryTask(id, button) {
     const newId = made.task_id || made.id;
     if (newId) {
       toast(
-        made.started === false
+        // `retry_failed` returns no `started` key: a retry is *queued*, never run,
+        // until the operator presses Run. Testing `=== false` inverted the message
+        // and claimed a run that did not happen.
+        made.started !== true
           ? tr("retry.queued", "Queued for another attempt.")
           : tr("retry.running", "Running the same work again as a new task."),
       );
@@ -1213,14 +1216,56 @@ function renderBanner(t, s) {
     : simulated ? UI.L("The recorded output is simulated. Review the results and steps before relying on it.","Đầu ra được ghi là mô phỏng. Xem kết quả và các bước trước khi sử dụng.")
     : t.status==="completed" ? tr("task.finished_steps","Finished. The steps say what each hand did.")
     : t.status==="waiting_for_approval" ? tr("task.waiting","Waiting for a human decision. Open Decisions to read the draft.")
-    : t.status==="waiting_for_input" ? tr("task.need_input","Waiting for your input. Read the reason below to see what is needed next.")
+    : t.status==="waiting_for_input" ? (t.last_error || tr("task.need_input","Waiting for your input. Read the reason below to see what is needed next."))
     : s.in_flight ? tr("task.inflight","Work is in flight; this page follows its status.")
     : tr("task.idle","Ready to start when an owner is assigned.");
   setHTML("taskBanner", UI.callout({title:statusName(t.status),description,
     status:stopped?"danger":simulated?"warning":t.status==="completed"?"success":"info",
     actions:stopped?`<a href="#/give/${encodeURIComponent(t.id)}/steps">${tr("task.read_steps","Read the recorded steps")}</a>`:""})+
-    (t.last_error?`<details class="work-detail-error"><summary>${tr("task.error_details","Error details")}</summary>${UI.logViewer({label:UI.L("Full error","Lỗi đầy đủ"),text:String(t.last_error),filter:false,copyLabel:UI.L("Copy error","Sao chép lỗi")})}</details>`:""));
+    (t.last_error && t.status!=="waiting_for_input"?`<details class="work-detail-error"><summary>${tr("task.error_details","Error details")}</summary>${UI.logViewer({label:UI.L("Full error","Lỗi đầy đủ"),text:String(t.last_error),filter:false,copyLabel:UI.L("Copy error","Sao chép lỗi")})}</details>`:""));
   UI.hydrate($("taskBanner"));
+}
+
+/* Keep clarification drafts across live status refreshes and retry ambiguous
+   network results with the same idempotency key. Saving never starts inference. */
+const clarificationDrafts = new Map();
+async function renderTaskClarification(task) {
+  if (task.status !== "waiting_for_input" || task.workflow_id || task.agent_workflow_id || task.agent_blueprint_id) return;
+  const [detail, context] = await Promise.all([
+    apiGet(`/tasks/${encodeURIComponent(task.id)}`), apiGet("/console/context"),
+  ]);
+  if (parseHash().arg !== task.id || taskReport?.task?.status !== "waiting_for_input" || taskReport?.task?.id !== task.id) return;
+  if (context.actor_kind !== "human" || detail.input?.source_workflow || detail.input?.business_workflow || detail.input?.agent_workflow || detail.input?.agent_blueprint_draft || detail.input?.workflow_revision_for || detail.input?.workflow_feedback_for) return;
+  if ($("taskClarification")) return;
+  const draft = clarificationDrafts.get(task.id) || {text: "", key: null};
+  clarificationDrafts.set(task.id, draft);
+  const panel = document.createElement("section");
+  panel.id = "taskClarification";
+  panel.className = "ui-panel-body";
+  panel.innerHTML = `<label class="ui-field"><span>${esc(UI.L("Add the missing information", "Bổ sung thông tin còn thiếu"))}</span><textarea class="ui-input" id="taskClarificationText" maxlength="20000" aria-describedby="taskClarificationHelp"></textarea></label><p class="ui-help" id="taskClarificationHelp">${esc(UI.L("Save your clarification, then use Run to continue. Saving does not start work or grant approval.", "Lưu thông tin bổ sung, sau đó nhấn Chạy để tiếp tục. Thao tác lưu không tự chạy việc hoặc cấp phê duyệt."))}</p><button type="button" class="ui-btn ui-btn-primary ui-btn-md" id="taskClarificationSave">${esc(UI.L("Save information", "Lưu thông tin"))}</button><p class="ui-help" id="taskClarificationNotice" role="status" aria-live="polite"></p>`;
+  $("taskBanner").appendChild(panel);
+  const field = $("taskClarificationText"), button = $("taskClarificationSave");
+  field.value = draft.text;
+  field.oninput = () => {if (draft.text !== field.value) {draft.text = field.value; draft.key = null;}};
+  button.onclick = async () => {
+    const text = field.value.trim();
+    if (!text) {$("taskClarificationNotice").textContent = UI.L("Enter the missing information first.", "Nhập thông tin cần bổ sung trước."); return;}
+    if (!draft.key) draft.key = window.crypto?.randomUUID?.() || "input-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+    button.disabled = true;
+    try {
+      const response = await fetch(API + `/tasks/${encodeURIComponent(task.id)}/inputs`, {
+        method: "POST", headers: authHeaders({"Content-Type": "application/json", "Idempotency-Key": draft.key}),
+        body: JSON.stringify({clarification: text}),
+      });
+      const saved = await response.json();
+      if (!response.ok) throw new Error(saved.error?.message || UI.L("Information could not be saved.", "Chưa lưu được thông tin."));
+      clarificationDrafts.delete(task.id);
+      toast(UI.L("Information saved. Use Run to continue the task.", "Đã lưu thông tin. Nhấn Chạy để tiếp tục công việc."));
+      if (parseHash().arg === task.id) await renderOneTask(task.id);
+    } catch (error) {
+      if (parseHash().arg === task.id && $("taskClarificationNotice")) $("taskClarificationNotice").textContent = error.message;
+    } finally {button.disabled = false;}
+  };
 }
 
 /** Full texts of step summaries, by index. Stored rather than embedded because a 10KB
@@ -1592,6 +1637,9 @@ async function renderOneTask(id) {
   // the rest of the page reads, so they cannot disagree with the tiles below.
   const _s = d.summary || {};
   renderBanner(t, _s);
+  renderTaskClarification(t).catch(error => {
+    if (parseHash().arg === t.id) toast(error.message, true);
+  });
   renderAnswer(t);
   renderSteps(d);
 

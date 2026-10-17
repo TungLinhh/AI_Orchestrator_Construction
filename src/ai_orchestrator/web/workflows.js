@@ -91,6 +91,12 @@ const BusinessWorkflows = (() => {
                 "date",
                 "required",
               ) +
+              select(
+                "synthetic",
+                L("Input provenance", "Nguồn dữ liệu"),
+                [["false", L("Real business inputs", "Dữ liệu nghiệp vụ thật")], ["true", L("Fictional acceptance inputs — real review gates", "Dữ liệu nghiệm thu hư cấu — vẫn phải duyệt")]],
+                "false",
+              ) +
               area(
                 "boss_brief",
                 L(
@@ -141,6 +147,7 @@ const BusinessWorkflows = (() => {
         async (values) => {
           const created = await apiPost("/workflows/hiring", {
             ...values,
+            synthetic: values.synthetic === "true",
             salary_min: Number(values.salary_min),
             salary_max: Number(values.salary_max),
           });
@@ -300,7 +307,7 @@ const BusinessWorkflows = (() => {
                 h.evidence.events + " / " + h.evidence.audits,
               ],
             ]) +
-              `<p>${esc(h.mode === "simulation" ? L("SIMULATION: no real person approved, no real candidate was hired and no production purchase was issued.", "MÔ PHỎNG: chưa có người duyệt thật, chưa tuyển người thật và chưa phát hành mua hàng production.") : L("Live: mandatory reviews await real human decisions.", "Luồng thật: các cổng bắt buộc chờ quyết định của người."))}</p>` +
+              `<p>${esc(h.synthetic && h.mode !== "simulation" ? L("FICTIONAL INPUTS: review gates remain required; this run does not authorize hiring a real person.", "DỮ LIỆU HƯ CẤU: vẫn cần duyệt từng cổng; lượt này không cho phép tuyển người thật.") : h.mode === "simulation" ? L("SIMULATION: no real person approved, no real candidate was hired and no production purchase was issued.", "MÔ PHỎNG: chưa có người duyệt thật, chưa tuyển người thật và chưa phát hành mua hàng production.") : L("Live: mandatory reviews await real human decisions.", "Luồng thật: các cổng bắt buộc chờ quyết định của người."))}</p>` +
               details(
                 L(
                   "O-Nexus procedure references",
@@ -582,7 +589,7 @@ const BusinessWorkflows = (() => {
             ]),
           ) +
           link(
-            "#/work/approvals/" + result.approval_id,
+            "#/approval/" + result.approval_id,
             L(
               "Review and approve this exact revision",
               "Xem và duyệt đúng revision này",
@@ -619,7 +626,7 @@ const BusinessWorkflows = (() => {
             .insertAdjacentHTML(
               "beforeend",
               link(
-                "#/work/approvals/" + approvals.items[0].id,
+                "#/approval/" + approvals.items[0].id,
                 L("Review this decision", "Duyệt quyết định này"),
               ),
             );

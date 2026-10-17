@@ -322,7 +322,7 @@
         ],
         [
           "hiring",
-          L("Recruitment example", "Quy trình tuyển dụng mẫu"),
+          L("Recruitment requests", "Yêu cầu tuyển dụng"),
           "#/processes/hiring",
         ],
         [
@@ -357,7 +357,7 @@
       body(
         card(
           h.sop_title || h.sop_code,
-          `<p>${esc(h.position)} · ${esc(h.office)} / ${esc(h.department)}</p><p>${esc(L("This is the seeded recruitment example, not all company recruitment.", "Đây là quy trình tuyển dụng mẫu đã được tạo, không phải toàn bộ tuyển dụng của công ty."))}</p>` +
+          `<p>${esc(h.position)} · ${esc(h.office)} / ${esc(h.department)}</p><p>${esc(L("This view shows the latest recorded recruitment request and its stages.", "Màn hình hiển thị yêu cầu tuyển dụng được ghi nhận gần nhất và các bước của yêu cầu đó."))}</p>` +
             fields([
               [L("Procedure", "Quy trình"), h.sop_code],
               [L("Headcount", "Số lượng tuyển"), h.headcount],

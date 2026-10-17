@@ -87,13 +87,21 @@ window.SourceUI = (() => {
       paint(); notice(L('Select only files this task may use.', 'Chỉ chọn những file được phép dùng cho công việc này.'));
     } catch (error) { notice(error.message, true); throw error; }
   }
+  const isSourceWorkflow = () => ['document_review', 'quote_comparison'].includes($('sourceWorkflow').value);
+  function assertOrdinarySources() {
+    if (chosen.size || $('sourceUploadFiles').files.length || mode()) {
+      throw new Error(L('Selected files are not attached to ordinary tasks. Choose document review or quote comparison, or clear the source selection to continue without files.', 'Nguồn đã chọn chưa được gắn vào công việc thông thường. Chọn rà hồ sơ hoặc so sánh báo giá, hoặc bỏ chọn nguồn để tiếp tục không kèm file.'));
+    }
+  }
   async function generate() {
+    if (!isSourceWorkflow()) throw new Error(L('Choose document review or quote comparison before generating mock files.', 'Chọn rà hồ sơ hoặc so sánh báo giá trước khi tạo file mock.'));
     if (mode() !== 'mock') throw new Error(L('Choose mock sources first.', 'Hãy chọn tạo file mock trước.'));
     const result = await apiPost('/source-files/mock?workflow=' + encodeURIComponent($('sourceWorkflow').value));
     chosen.clear(); result.items.forEach(file => chosen.add(file.id));
     await refresh(); notice(L('Actual mock files generated and extracted.', 'Đã tạo và đọc file mock qua parser.'));
   }
   async function create(body) {
+    if (!isSourceWorkflow()) throw new Error(L('Choose a document workflow first.', 'Chọn cách xử lý hồ sơ trước.'));
     if (!mode()) throw new Error(L('Choose source files or generate mock files before running.', 'Bạn muốn chọn nguồn dữ liệu hay tạo file mock để kiểm thử?'));
     if (mode() === 'mock' && !chosen.size) await generate();
     const ids = [...chosen];
@@ -138,7 +146,7 @@ window.SourceUI = (() => {
         panel.hidden = false;
         $('sourceTaskFiles').innerHTML = `<p>${esc(detail.last_error || L('This workflow needs sources. Select files in the new-task form, then attach them here.', 'Luồng đang cần nguồn. Chọn file ở form giao việc, rồi gắn vào task tại đây.'))}</p><button class="ui-btn ui-btn-secondary ui-btn-md" id="sourcePickForTask">${L('Choose sources for this task', 'Chọn nguồn cho task này')}</button><button class="ui-btn ui-btn-secondary ui-btn-md" id="sourceAttach">${L('Attach selected files', 'Gắn các file đang chọn')}</button>`;
         $('sourcePickForTask').onclick = () => {
-          pendingTask = id; window.location.hash = '#/give';
+          pendingTask = id; $('sourceWorkflow').value = detail.input.source_workflow; window.location.hash = '#/give';
           $('newTaskForm').open = true; $('sourceResume').hidden = false;
           $('sourceHeading').scrollIntoView({behavior: 'smooth'});
           notice(L('Choose or upload files, then resume the existing task.', 'Chọn hoặc upload file rồi tiếp tục task đang chờ.'));
@@ -409,6 +417,13 @@ window.SourceUI = (() => {
     };
   }
   function init() {
+    $('sourceClearSelection').onclick = () => {
+      chosen.clear();
+      document.querySelectorAll('input[name="sourceChoice"]').forEach(input => {input.checked = false;});
+      $('sourceUploadFiles').value = '';
+      paint();
+      notice(L('Source selection cleared. No files will be attached to the new task.', 'Đã bỏ chọn nguồn. Công việc mới sẽ không kèm file.'));
+    };
     $('sourceResume').onclick = async () => {
       if (!pendingTask) return;
       try {
@@ -444,5 +459,5 @@ window.SourceUI = (() => {
     };
     $('newTaskForm').addEventListener('toggle', () => {if ($('newTaskForm').open) refresh().catch(() => {});});
   }
-  return {init, create, task, refresh};
+  return {init, create, task, refresh, isSourceWorkflow, assertOrdinarySources};
 })();

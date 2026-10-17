@@ -54,7 +54,13 @@ _RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504, 529})
 
 
 def _should_retry(exc: BaseException) -> bool:
-    if getattr(exc, "details", {}).get("status") in {400, 401, 403, 404, 422}:
+    details = getattr(exc, "details", {}) or {}
+    if details.get("status") in {400, 401, 403, 404, 422}:
+        return False
+    if details.get("retryable") is False:
+        # A locally rejected response (e.g. inconsistent usage counts): the
+        # provider already answered and we refused it, so re-sending the
+        # identical request cannot help. Fail over instead of re-posting.
         return False
     return isinstance(
         exc,
@@ -565,7 +571,14 @@ def _parse_openai_response(
     if not 0 <= reasoning_tokens <= completion_tokens:
         raise ModelUnavailable(
             f"{candidate.key()}: inconsistent completion/reasoning usage",
-            details={"completion_tokens": completion_tokens, "reasoning_tokens": reasoning_tokens},
+            details={
+                "completion_tokens": completion_tokens,
+                "reasoning_tokens": reasoning_tokens,
+                # Local verdict, not a transport fault: retrying the identical
+                # request cannot change the provider's miscount, so the gateway
+                # must fail over instead of re-posting (see `_should_retry`).
+                "retryable": False,
+            },
         )
     usage = TokenUsage(
         input_tokens=int(raw_usage.get("prompt_tokens") or 0),

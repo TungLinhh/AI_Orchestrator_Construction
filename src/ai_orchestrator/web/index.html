@@ -272,7 +272,8 @@ __UI_ICONS__
           <section class="ui-panel" aria-labelledby="sourceHeading">
             <div class="ui-panel-body">
               <h2 id="sourceHeading">Nguồn dữ liệu cho công việc</h2>
-              <label class="ui-field"><span>Workflow</span><select class="ui-input" id="sourceWorkflow"><option value="document_review">Đọc và rà hồ sơ có trích dẫn</option><option value="quote_comparison">So sánh báo giá CSV, kiểm chứng tiền VND</option></select></label>
+              <label class="ui-field"><span>Cách thực hiện</span><select class="ui-input" id="sourceWorkflow" aria-describedby="sourceWorkflowHelp"><option value="">Công việc theo yêu cầu</option><option value="document_review">Đọc và rà hồ sơ có trích dẫn</option><option value="quote_comparison">So sánh báo giá CSV, kiểm chứng tiền VND</option></select></label>
+              <p class="ui-help" id="sourceWorkflowHelp">Công việc theo yêu cầu dùng mục tiêu và loại việc ở trên. Để xử lý file đính kèm, chọn rà hồ sơ hoặc so sánh báo giá; file không tự được đưa vào công việc thông thường.</p>
               <fieldset><legend>Bạn muốn chọn nguồn dữ liệu hay tạo file mock để kiểm thử?</legend>
                 <label><input id="sourceChooseFiles" type="radio" name="sourceChoice" value="sources"> Chọn nguồn dữ liệu</label>
                 <label><input id="sourceChooseMock" type="radio" name="sourceChoice" value="mock"> Tạo file mock để kiểm thử</label>
@@ -280,7 +281,7 @@ __UI_ICONS__
               <p class="ui-help">Chọn tối đa 10 file. Giới hạn 10 MiB/file; TXT, CSV, JSON, DOCX, XLSX, PDF, PPTX, ZIP và ảnh OCR. File chưa đọc được sẽ chờ bổ sung hoặc kiểm tra. So báo giá cần CSV: quote_id,item,quantity,unit_price,delivery,certified.</p>
               <label class="ui-field"><span>File upload</span><input class="ui-input" type="file" id="sourceUploadFiles" multiple></label>
               <label class="ui-field"><span>Phân loại dữ liệu</span><select class="ui-input" id="sourceClassification"><option value="internal">Internal</option><option value="public">Public</option><option value="confidential">Confidential</option><option value="restricted">Restricted</option><option value="secret">Secret</option></select></label>
-              <div class="btn-row"><button class="ui-btn ui-btn-secondary ui-btn-md" type="button" id="sourceUpload">Upload và đọc file</button><button class="ui-btn ui-btn-secondary ui-btn-md" type="button" id="sourceMock">Tạo và xem file mock</button><button class="ui-btn ui-btn-ghost ui-btn-sm" type="button" id="sourceRefresh">Tải lại kho</button><span id="sourceSelectionCount" role="status">Đã chọn: 0</span></div>
+              <div class="btn-row"><button class="ui-btn ui-btn-secondary ui-btn-md" type="button" id="sourceUpload">Upload và đọc file</button><button class="ui-btn ui-btn-secondary ui-btn-md" type="button" id="sourceMock">Tạo và xem file mock</button><button class="ui-btn ui-btn-ghost ui-btn-sm" type="button" id="sourceRefresh">Tải lại kho</button><button class="ui-btn ui-btn-ghost ui-btn-sm" type="button" id="sourceClearSelection">Bỏ chọn nguồn</button><span id="sourceSelectionCount" role="status">Đã chọn: 0</span></div>
               <button type="button" class="ui-btn ui-btn-primary ui-btn-md" id="sourceResume" hidden>Gắn nguồn và tiếp tục task đang chờ</button><p class="ui-help" id="sourceNotice" role="status" aria-live="polite"></p>
               <div id="sourceLibrary" style="max-height:22rem;overflow:auto" tabindex="0" aria-label="Kho nguồn của tenant"></div><button class="ui-btn ui-btn-ghost ui-btn-sm" type="button" id="sourceMore" hidden>Xem thêm nguồn</button>
             </div>

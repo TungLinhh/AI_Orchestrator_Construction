@@ -24,7 +24,6 @@ import dataclasses
 import json
 import re
 from collections.abc import Awaitable, Callable, Sequence
-from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
@@ -232,6 +231,7 @@ def _to_gateway_request(
     """
     from pydantic_ai.messages import ModelRequest as AiModelRequest
     from pydantic_ai.messages import (
+        RetryPromptPart,
         SystemPromptPart,
         TextPart,
         ToolCallPart,
@@ -260,22 +260,6 @@ def _to_gateway_request(
                 elif isinstance(part, TextPart):
                     latest = part.content
                     history.append({"role": "user", "content": part.content})
-                elif isinstance(part, ToolCallPart):
-                    history.append(
-                        {
-                            "role": "assistant",
-                            "tool_calls": [
-                                {
-                                    "id": part.tool_call_id,
-                                    "type": "function",
-                                    "function": {
-                                        "name": part.tool_name,
-                                        "arguments": _dumps(part.args),
-                                    },
-                                }
-                            ],
-                        }
-                    )
                 elif isinstance(part, ToolReturnPart):
                     # A tool result is context for the next turn, not a new
                     # question, so it is folded into the history rather than
@@ -290,14 +274,46 @@ def _to_gateway_request(
                     # trace if anyone needs it.
                     history.append(
                         {
-                            "role": "user",
+                            "role": "tool",
+                            "tool_call_id": part.tool_call_id,
+                            "name": part.tool_name,
                             "content": _bounded_tool_result(_tool_result_text(part.content)),
                         }
                     )
+                elif isinstance(part, RetryPromptPart):
+                    retry = {
+                        "role": "tool" if part.tool_name else "user",
+                        "content": _bounded_tool_result(part.model_response()),
+                    }
+                    if part.tool_name:
+                        retry.update(tool_call_id=part.tool_call_id, name=part.tool_name)
+                    history.append(retry)
         else:
+            # Tool calls belong to ModelResponse, not ModelRequest. Keep parallel
+            # calls in one assistant message so every result has its matching id.
+            text_parts = []
+            calls = []
             for part in getattr(message, "parts", []):
                 if isinstance(part, TextPart):
-                    history.append({"role": "assistant", "content": part.content})
+                    text_parts.append(part.content)
+                elif isinstance(part, ToolCallPart):
+                    calls.append(
+                        {
+                            "id": part.tool_call_id,
+                            "type": "function",
+                            "function": {
+                                "name": part.tool_name,
+                                "arguments": part.args_as_json_str(),
+                            },
+                        }
+                    )
+            assistant: dict[str, Any] = {"role": "assistant"}
+            if text_parts:
+                assistant["content"] = "\n".join(text_parts)
+            if calls:
+                assistant["tool_calls"] = calls
+            if len(assistant) > 1:
+                history.append(assistant)
 
     # The newest user turn travels as `prompt`, so it must not also appear as the
     # last history message — the provider would see it twice. Dropped by matching
@@ -305,6 +321,10 @@ def _to_gateway_request(
     # a tool call together, and slicing the tail drops whichever came last.
     if latest and history and history[-1] == {"role": "user", "content": latest}:
         history.pop()
+    else:
+        # After a tool response, the original ask already exists in history.
+        # Appending it again restarts the deliverable instead of continuing it.
+        latest = ""
 
     return ModelRequest(
         profile=template.profile,
@@ -448,6 +468,32 @@ async def run_with_pydantic_ai(
         retries=OUTPUT_RETRIES,
     )
 
+    from ai_orchestrator.domain.source_evidence import has_quote_contract, validate_source_quotes
+
+    if has_quote_contract(context.task.expected_output_schema) and not _may_end_on_handoff(context):
+        from pydantic_ai import ModelRetry
+
+        @ai_agent.output_validator
+        def validate_evidence(text: str) -> str:
+            # A reserved control envelope is not a deliverable and must not be judged
+            # as one. `_human_input_request` was already excused; `_human_approval_request`
+            # was not, so a quote-contract task that correctly stopped for human review
+            # had its envelope parsed as the deliverable, failed the quote check (there
+            # is no `findings` key in it), was retried twice and died as FAILED instead
+            # of pausing as NEEDS_APPROVAL -- the prompt told the model to send this
+            # envelope and the validator then refused it.
+            if _human_input_request(text) or _human_approval_request(text):
+                return text
+            try:
+                validate_source_quotes(
+                    context.task.expected_output_schema,
+                    context.task.input,
+                    _declared_output(text, context.task.expected_output_schema) or {},
+                )
+            except ValueError as exc:
+                raise ModelRetry(str(exc)) from exc
+            return text
+
     execution_id = ExecutionId(str(getattr(task, "execution_id", "") or ExecutionId.create()))
     try:
         # Owners declared in the task input must be covered by the handoff
@@ -546,11 +592,14 @@ async def run_with_pydantic_ai(
     usage = driven.usage
     text = driven.output_text
     approval_request = _human_approval_request(text)
+    input_request = _human_input_request(text)
     return AgentResult(
-        status=AgentResultStatus.NEEDS_APPROVAL
+        status=AgentResultStatus.NEEDS_INPUT
+        if input_request
+        else AgentResultStatus.NEEDS_APPROVAL
         if approval_request
         else AgentResultStatus.COMPLETED,
-        summary=approval_request[0] if approval_request else text,
+        summary=input_request or (approval_request[0] if approval_request else text),
         # **The declared output, read back out of the model's answer.**
         #
         # This was simply never set. `AgentResult` was built with `summary=` and no
@@ -572,9 +621,18 @@ async def run_with_pydantic_ai(
         # ("the run finished with an empty output"), which is the message a
         # department needs to read.
         output=(
-            approval_request[1]
+            {}
+            if input_request
+            else approval_request[1]
             if approval_request
-            else _declared_output(text, getattr(context.task, "expected_output_schema", None)) or {}
+            else (
+                _declared_output(text, getattr(context.task, "expected_output_schema", None))
+                or (
+                    {"summary": text}
+                    if text.strip() and not context.task.expected_output_schema
+                    else {}
+                )
+            )
         ),
         execution_id=execution_id,
         task_id=TaskId(str(context.task.task_id)),
@@ -1128,6 +1186,11 @@ def _render_instructions(context: AgentContext) -> str:
         "  tool for it. Do not write that you would delegate.",
         "- If you can do the work yourself, do it and report the result.",
         "- Your final message is a report of what you did, not a plan.",
+        "- If essential task information is missing, do not invent it or mark the task complete.",
+        '- Instead return exactly {"request_input":{"question":"Ask the missing information"}}.',
+        "  This reserved control envelope pauses work for a human answer, even when the task",
+        "  declares an output schema. Once clarification is supplied, use it and complete the",
+        "  actual deliverable. Do not repeat questions already answered in task input.",
         "",
         "--- your standing role ---",
         context.system_instructions,
@@ -1179,6 +1242,27 @@ def _render_instructions(context: AgentContext) -> str:
     if context.history:
         parts += ["", "<prior_turns>", *context.history, "</prior_turns>"]
     return "\n".join(parts)
+
+
+def _human_input_request(text: str) -> str | None:
+    """Parse only an entire reserved control envelope, never quoted/prose data."""
+    candidate = text.strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", candidate, flags=re.S | re.I)
+    if fenced:
+        candidate = fenced.group(1)
+    try:
+        value = json.loads(candidate)
+    except ValueError:
+        return None
+    if not isinstance(value, dict) or set(value) != {"request_input"}:
+        return None
+    request = value["request_input"]
+    if not isinstance(request, dict) or set(request) != {"question"}:
+        return None
+    question = request["question"]
+    if not isinstance(question, str) or not question.strip() or len(question) > 20_000:
+        return None
+    return question.strip()
 
 
 def _human_approval_request(text: str) -> tuple[str, dict[str, Any]] | None:
@@ -1410,6 +1494,10 @@ def _user_prompt(task: Any, context: AgentContext) -> str:
     ]
     if context.task.input:
         lines += ["", f"INPUT: {context.task.input}"]
+        lines += [
+            "When quoting sources, evidence_quote must be an exact substring of source.text. "
+            "Put source identifiers in source_id, never prepend labels to quotations."
+        ]
 
     # **The declared output contract, stated in the prompt.**
     #
@@ -1500,9 +1588,12 @@ def _user_prompt(task: Any, context: AgentContext) -> str:
                 *(f"  - {key}" + (f": {meaning[key]}" if key in meaning else "") for key in wanted),
                 "",
                 "Answer with that JSON and nothing else. Do not explain it, do not "
-                "wrap it in prose, do not add other keys. If you are unsure of a "
-                "value, give your best assessment under that key rather than "
-                "leaving it out -- a missing key is a failed run.\n"
+                "wrap it in prose, do not add other keys. Never invent missing facts. "
+                "If you are unsure of a value, give your best assessment under that key "
+                "rather than leaving it out -- a missing key is a failed run. "
+                "If essential input is absent, return the reserved request_input envelope "
+                "instead of this deliverable; otherwise express supported uncertainty "
+                "within the declared schema.\n"
                 # **The key names are identifiers, not words.**
                 #
                 # Measured on a real design run: the department did the work correctly
@@ -1703,9 +1794,10 @@ def _runner(contract: Any, execute: Any) -> Any:
         result = await execute(tool_name=contract.name, arguments=arguments)
         # Returned as text on purpose. The model reads it, and a dict handed back
         # raw is the shape a prompt-injection payload arrives in.
-        # The same `default` as `_dumps`, for the same reason: a tool result carrying a
-        # `Decimal` must not take the loop down. This site is the one that actually fires
-        # for `internal_database_query`.
+        # `default=str` so a tool result carrying a `Decimal` cannot take the loop down:
+        # `MONEY` is `NUMERIC`, and `internal_database_query` returns whatever the query
+        # selected. `str` rather than `float`, because money arithmetic is exact here and
+        # a float would turn a tenth of a cent into `0.1000000000000000055...`.
         return json.dumps(
             {
                 "ok": getattr(result, "ok", None),
@@ -1808,44 +1900,6 @@ def _tool_result_text(content: Any) -> str:
     if parts is not None:
         return "\n".join(str(getattr(p, "content", p)) for p in parts)
     return str(content)
-
-
-def _dumps(value: Any) -> str:
-    """Serialise for the model, with a fallback that cannot raise.
-
-    `json.dumps` has no answer for a `Decimal`, and **`Decimal` is what money is in this
-    platform** -- `MONEY` is `NUMERIC`. So any tool returning a money column used to take
-    the whole agent loop down with
-    `TypeError: Object of type Decimal is not JSON serializable`.
-
-    That is not a rare path: `internal_database_query` returns whatever the query selected,
-    and `calculator` does arithmetic on quantities that are `NUMERIC(18, 4)`. One money
-    column in one result was enough.
-
-    The fallback is `str`, not `float`. Converting to `float` would hand the model
-    `0.1000000000000000055511151231257827` for a tenth of a cent, and the platform's whole
-    argument for `NUMERIC` over `double precision` is that money arithmetic is exact. A
-    string preserves every digit and costs the model nothing it needs.
-
-    Found by `scripts/run_fleet.py` on the Finance Agent, which is the one agent whose work
-    pulls money out of the database.
-    """
-    import json
-
-    return json.dumps(value, default=_json_fallback)
-
-
-def _json_fallback(value: Any) -> str:
-    """`Decimal` as its exact digits; anything else as its own text.
-
-    Both branches are `str`, and that is deliberate rather than redundant: `Decimal` is the
-    case that was measured crashing, and an unexpected type should also be *rendered*
-    rather than raised, because the whole point of the `default` is that the model loop
-    keeps going and a person reads the transcript afterwards.
-    """
-    if isinstance(value, Decimal):
-        return str(value)
-    return str(value)
 
 
 def _loads(value: str) -> Any:

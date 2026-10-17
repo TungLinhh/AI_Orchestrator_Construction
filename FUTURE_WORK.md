@@ -1,5 +1,17 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
+> Cập nhật 17/10/2026 (nghiệm thu HR qua UI, gates-6): **retry task HR ordinary qua UI PASS**
+> (giữ owner, giữ clarification, task cũ bất biến, Run tường minh, đọc toàn văn + copy) và
+> **workflow SOP tuyển dụng qua UI** tới JD rồi dừng ở **jd_review chờ người duyệt** (đủ sáu
+> mục; DOA CHƯA XÁC ĐỊNH cần Boss/HR; KPI là ĐỀ XUẤT; không trọng số rubric; review nội dung
+> độc lập PASS). **Không phải tuyển dụng hoàn tất** — chưa có ứng viên/offer/quyết định thật.
+> Gates-6: **lint PASS; typecheck PASS; make test 4256 PASS; E2E 35 PASS**, hash source không
+> đổi trong lúc chạy. Việc còn lại không đổi thứ tự: **checkpoint revision của workflow nhiều
+> bước**, identity/membership, connector canary, và artifact download thật cho `write_report`;
+> SourceManifest upload dạng ordinary task vẫn unsupported. Bằng chứng cục bộ tại
+> `.orchestra/hr-ui-acceptance-2026-10-18/`; báo cáo lọc tại
+> [artifacts/hr-ui-acceptance/2026-10-18/summary.json](artifacts/hr-ui-acceptance/2026-10-18/summary.json).
+
 > Cập nhật 16/10/2026 (MuseSpark continuation, gates-c4): task đơn ordinary 7/7 PASS
 > trên PydanticAI runtime thật (DOTS, cost 0, DB kiểm chứng độc lập); chain
 > CEO→office→department PARTIAL — round 3 đã tới leaf completed + grade PASS

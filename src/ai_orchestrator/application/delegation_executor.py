@@ -278,6 +278,27 @@ class DelegationExecutor:
         # Child limits can only ever be narrower. The verdict carries the clamped set, and the
         # child task is created with it, so a subagent cannot hand itself a larger envelope
         # than the parent had.
+        from ai_orchestrator.domain.source_evidence import canonical_sources
+
+        inherited_input = {k: v for k, v in (parent.input or {}).items() if k in ROUTING_INPUT_KEYS}
+        if "sources" in (parent.input or {}) or "required_sources" in (parent.input or {}):
+            try:
+                inherited_input["sources"] = canonical_sources(parent.input.get("sources", []))
+                required = parent.input.get("required_sources", [])
+                if (
+                    not isinstance(required, list)
+                    or len(required) > 100
+                    or any(
+                        not isinstance(item, str) or not item.strip() or len(item) > 255
+                        for item in required
+                    )
+                ):
+                    raise ValueError("Required source identifiers are invalid")
+                inherited_input["required_sources"] = list(required)
+            except ValueError as exc:
+                outcome.refused.append((str(target.id), str(exc)))
+                await self._record_refusal(parent, source_agent_id, target.id, str(exc))
+                return
         title = proposal.objective[:120] or f"Delegated from {parent.title}"
         try:
             child = await self._tasks.create(
@@ -325,7 +346,7 @@ class DelegationExecutor:
                 # and a copy of it at every tier is a copy that can disagree with
                 # the original. These two keys say where the work goes, and the
                 # office may restate them for its own departments.
-                input={k: v for k, v in (parent.input or {}).items() if k in ROUTING_INPUT_KEYS},
+                input=inherited_input,
                 intent_fingerprint=intent_key,
             )
         except ConflictError as exc:

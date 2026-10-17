@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ai_orchestrator.application.workflow_schemas import validate_shape
 
-VALUE_FIELDS = {
+VALUE_FIELDS: dict[str, dict[str, dict[str, object]]] = {
     "hr": {"score": {"type": "number"}},
     "procurement": {"winner": {"type": "string"}, "total_vnd": {"type": "number"}},
     "design": {"clash_ids": {"type": "array", "items": {"type": "string"}}},
@@ -88,7 +88,7 @@ def output_schema(case: EvaluationCase) -> dict[str, Any]:
     schema["properties"]["findings"]["items"] = schema.pop("$defs")["Finding"]
     # The ordinary PydanticAI runtime path enforces only the declared schema,
     # so declare required value keys here (keys only, never gold values/enums).
-    # Missing-variant keeps required=[]: empty values {} is its correct answer.
+    # Missing sources correctly produce empty values, without revealing gold.
     required = [] if case.variant == "missing" else sorted(VALUE_FIELDS[case.department])
     schema["properties"]["values"] = {
         "type": "object",

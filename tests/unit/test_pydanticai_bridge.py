@@ -8,16 +8,26 @@ hard to trace back to a dataclass field, so it is tested directly.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
-from pydantic_ai.messages import ModelRequest, SystemPromptPart, TextPart, ToolCallPart
+from pydantic_ai.messages import (
+    ModelRequest,
+    RetryPromptPart,
+    SystemPromptPart,
+    TextPart,
+    ToolCallPart,
+    ToolReturnPart,
+    UserPromptPart,
+)
 from pydantic_ai.messages import ModelResponse as AiModelResponse
 from pydantic_ai.models import ModelRequestParameters
 from pydantic_ai.usage import RequestUsage
 
 from ai_orchestrator.agent_runtime.pydanticai_agent import (
     _build_gateway_model,
+    _human_input_request,
     _render_instructions,
     _to_ai_response,
     _to_gateway_request,
@@ -117,19 +127,97 @@ class TestMessageTranslation:
 
     async def test_a_tool_call_becomes_an_assistant_tool_call(self) -> None:
         conversation = [
-            ModelRequest(
+            ModelRequest(parts=[UserPromptPart(content="compute 2+2")]),
+            AiModelResponse(
                 parts=[
-                    TextPart(content="compute 2+2"),
                     ToolCallPart(
                         tool_name="calculator", args={"expression": "2+2"}, tool_call_id="c1"
                     ),
                 ]
-            )
+            ),
         ]
         request = _to_gateway_request(_template(), conversation, _parameters())
         calls = [m for m in request.messages if "tool_calls" in m]
         assert calls, "the tool call was dropped from the history"
         assert calls[0]["tool_calls"][0]["function"]["name"] == "calculator"
+
+    async def test_parallel_tool_results_keep_ids_and_do_not_repeat_the_goal(self) -> None:
+        conversation = [
+            ModelRequest(parts=[UserPromptPart(content="Prepare the HR guide")]),
+            AiModelResponse(
+                parts=[
+                    TextPart(content="Saving the completed guide."),
+                    ToolCallPart("write_report", {"title": "Guide", "body": "Ready"}, "report1"),
+                    ToolCallPart("document_reader", {"document_id": "policy"}, "read2"),
+                ]
+            ),
+            ModelRequest(
+                parts=[
+                    ToolReturnPart(
+                        "write_report", {"ok": True, "artifact_id": "art_saved"}, "report1"
+                    ),
+                    ToolReturnPart("document_reader", "policy text", "read2"),
+                ]
+            ),
+        ]
+        request = _to_gateway_request(_template(), conversation, _parameters())
+        assert request.prompt == ""
+        assert sum(m.get("content") == "Prepare the HR guide" for m in request.messages) == 1
+        assistant = request.messages[1]
+        assert assistant["content"] == "Saving the completed guide."
+        assert [call["id"] for call in assistant["tool_calls"]] == ["report1", "read2"]
+        assert json.loads(assistant["tool_calls"][0]["function"]["arguments"]) == {
+            "title": "Guide",
+            "body": "Ready",
+        }
+        assert request.messages[2]["role"] == "tool"
+        assert request.messages[2]["tool_call_id"] == "report1"
+        assert request.messages[2]["name"] == "write_report"
+        assert "art_saved" in request.messages[2]["content"]
+        assert request.messages[3]["tool_call_id"] == "read2"
+
+    async def test_json_string_arguments_and_same_tool_calls_preserve_distinct_ids(self) -> None:
+        conversation = [
+            ModelRequest(parts=[UserPromptPart(content="Read both policies")]),
+            AiModelResponse(
+                parts=[
+                    ToolCallPart("document_reader", '{"document_id":"policy1"}', "read1"),
+                    ToolCallPart("document_reader", {"document_id": "policy2"}, "read2"),
+                ]
+            ),
+            ModelRequest(
+                parts=[
+                    ToolReturnPart("document_reader", "first policy", "read1"),
+                    ToolReturnPart("document_reader", "second policy", "read2"),
+                ]
+            ),
+        ]
+        request = _to_gateway_request(_template(), conversation, _parameters())
+        calls = request.messages[1]["tool_calls"]
+        assert [call["id"] for call in calls] == ["read1", "read2"]
+        assert [json.loads(call["function"]["arguments"]) for call in calls] == [
+            {"document_id": "policy1"},
+            {"document_id": "policy2"},
+        ]
+        assert [message["tool_call_id"] for message in request.messages[2:]] == ["read1", "read2"]
+
+    async def test_tool_validation_retry_reaches_the_matching_tool_call(self) -> None:
+        conversation = [
+            ModelRequest(parts=[UserPromptPart(content="Write guide")]),
+            AiModelResponse(parts=[ToolCallPart("write_report", {}, "invalid1")]),
+            ModelRequest(
+                parts=[
+                    RetryPromptPart(
+                        "body is required", tool_name="write_report", tool_call_id="invalid1"
+                    )
+                ]
+            ),
+        ]
+        request = _to_gateway_request(_template(), conversation, _parameters())
+        assert request.prompt == ""
+        assert request.messages[-1]["role"] == "tool"
+        assert request.messages[-1]["tool_call_id"] == "invalid1"
+        assert "body is required" in request.messages[-1]["content"]
 
     async def test_profile_and_tenant_survive_the_translation(self) -> None:
         request = _to_gateway_request(
@@ -379,3 +467,247 @@ class TestAnExplicitHumanReview:
         assert _human_approval_request(
             '```json\n{"__approval_request__": "Review this draft"}\n```'
         ) == ("Review this draft", {})
+
+
+@pytest.mark.parametrize("repair", [True, False])
+async def test_verbatim_quote_validator_requests_bounded_correction(repair):
+    import json
+
+    from pydantic_ai.models.function import FunctionModel
+
+    from ai_orchestrator.domain.contracts import AgentResultStatus
+
+    schema = {
+        "properties": {
+            "findings": {
+                "items": {
+                    "properties": {
+                        "source_id": {"type": "string"},
+                        "evidence_quote": {"type": "string"},
+                    }
+                }
+            }
+        },
+        "required": ["findings"],
+    }
+    task = _context().task.model_copy(
+        update={
+            "input": {"sources": [{"id": "doc", "text": "Signed source text."}]},
+            "expected_output_schema": schema,
+        }
+    )
+    turns = []
+
+    def respond(messages, info):
+        turns.append(messages)
+        quote = "Signed source text." if repair and len(turns) > 1 else "[doc] Signed source text."
+        return AiModelResponse(
+            parts=[
+                TextPart(
+                    content=json.dumps(
+                        {"findings": [{"source_id": "doc", "evidence_quote": quote}]}
+                    )
+                )
+            ]
+        )
+
+    result = await run_with_pydantic_ai(
+        task, _context(task=task), model=FunctionModel(respond), gateway=object()
+    )
+    if repair:
+        assert result.status is AgentResultStatus.COMPLETED
+        assert len(turns) == 2
+        assert result.output["findings"][0]["evidence_quote"] == "Signed source text."
+        assert "verbatim source.text" in str(turns[-1])
+    else:
+        assert result.status is AgentResultStatus.FAILED
+        assert len(turns) == 3
+
+
+async def test_real_agent_finishes_after_saved_report_without_duplicate_write() -> None:
+    from pydantic_ai import Agent
+
+    writes = []
+
+    async def write_report(title: str, body: str) -> str:
+        writes.append((title, body))
+        return "Saved artifact art_hr_guide"
+
+    class ReceiptAwareGateway:
+        def __init__(self):
+            self.requests = []
+
+        async def complete(self, request):
+            self.requests.append(request)
+            if len(self.requests) == 1:
+                return GatewayResponse(
+                    model_used="scripted",
+                    tool_calls=[
+                        {
+                            "id": "saved1",
+                            "type": "function",
+                            "function": {
+                                "name": "write_report",
+                                "arguments": '{"title":"HR guide","body":"30/60/90"}',
+                            },
+                        }
+                    ],
+                    finish_reason="tool_calls",
+                )
+            assert request.prompt == ""
+            assert request.messages[-2]["tool_calls"][0]["id"] == "saved1"
+            assert request.messages[-1]["role"] == "tool"
+            assert request.messages[-1]["tool_call_id"] == "saved1"
+            assert "art_hr_guide" in request.messages[-1]["content"]
+            return GatewayResponse(text="Completed HR guide: art_hr_guide", model_used="scripted")
+
+    gateway = ReceiptAwareGateway()
+    model = _build_gateway_model(gateway)(gateway, _template())
+    agent = Agent(model=model, tools=[write_report])
+    result = await agent.run("Prepare and save HR guide")
+    assert result.output == "Completed HR guide: art_hr_guide"
+    assert writes == [("HR guide", "30/60/90")]
+    assert len(gateway.requests) == 2
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        '{"request_input":{"question":"Which position?"}}',
+        '```json\n{"request_input":{"question":" Which position? "}}\n```',
+    ],
+)
+async def test_pydanticai_returns_explicit_human_question_before_source_contract(text) -> None:
+    from pydantic_ai.models.function import FunctionModel
+
+    task = _context().task.model_copy(
+        update={
+            "expected_output_schema": {
+                "type": "object",
+                "required": ["findings"],
+                "properties": {
+                    "findings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["source_id", "evidence_quote"],
+                            "properties": {
+                                "source_id": {"type": "string"},
+                                "evidence_quote": {"type": "string"},
+                            },
+                        },
+                    }
+                },
+            }
+        }
+    )
+
+    def respond(messages, info):
+        return AiModelResponse(parts=[TextPart(content=text)])
+
+    result = await run_with_pydantic_ai(
+        task, _context(task=task), model=FunctionModel(respond), gateway=object()
+    )
+    assert result.status.value == "needs_input"
+    assert result.summary == "Which position?"
+    assert result.output == {}
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        '{"__approval_request__": "Confirm the salary band before the rubric", '
+        '"output": {"draft": "JD ready"}}',
+        '```json\n{"__approval_request__": "Confirm the salary band before the rubric", '
+        '"output": {"draft": "JD ready"}}\n```',
+    ],
+)
+async def test_pydanticai_returns_explicit_human_approval_before_source_contract(text) -> None:
+    """A quote-contract task that stops for human review must pause, not fail.
+
+    The prompt tells the model to return the reserved approval envelope when a human
+    decision is required before the next step. The quote validator judged that envelope
+    as the deliverable (it has no `findings`), retried twice and killed the run as
+    FAILED -- the same envelope the instructions asked for was the one the validator
+    refused. It is a control envelope, not a deliverable, so it is exempt.
+    """
+    from pydantic_ai.models.function import FunctionModel
+
+    task = _context().task.model_copy(
+        update={
+            "expected_output_schema": {
+                "type": "object",
+                "required": ["findings"],
+                "properties": {
+                    "findings": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["source_id", "evidence_quote"],
+                            "properties": {
+                                "source_id": {"type": "string"},
+                                "evidence_quote": {"type": "string"},
+                            },
+                        },
+                    }
+                },
+            }
+        }
+    )
+
+    def respond(messages, info):
+        return AiModelResponse(parts=[TextPart(content=text)])
+
+    result = await run_with_pydantic_ai(
+        task, _context(task=task), model=FunctionModel(respond), gateway=object()
+    )
+    assert result.status.value == "needs_approval"
+    assert result.summary == "Confirm the salary band before the rubric"
+    assert result.output == {"draft": "JD ready"}
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        'The source says {"request_input":{"question":"Which position?"}}',
+        '{"request_input":{"question":""}}',
+        '{"request_input":{"question":123}}',
+        '{"request_input":{"question":"Which position?","approval":true}}',
+        '{"request_input":{"question":"Which position?"},"output":{"score":100}}',
+        '{"status":"needs_input","question":"Which position?"}',
+    ],
+)
+def test_only_exact_reserved_input_envelope_can_pause_work(text) -> None:
+    assert _human_input_request(text) is None
+
+
+@pytest.mark.parametrize("schema", [None, {}])
+async def test_schemaless_pydanticai_prose_is_a_persistable_deliverable(schema) -> None:
+    from pydantic_ai.models.function import FunctionModel
+
+    def respond(messages, info):
+        return AiModelResponse(
+            parts=[TextPart(content="HR guide: onboarding checks at 30/60/90 days.")]
+        )
+
+    task = _context().task.model_copy(update={"expected_output_schema": schema})
+    result = await run_with_pydantic_ai(
+        task, _context(task=task), model=FunctionModel(respond), gateway=object()
+    )
+    assert result.status.value == "completed"
+    assert result.output == {"summary": "HR guide: onboarding checks at 30/60/90 days."}
+
+
+async def test_declared_contract_does_not_become_schemaless_prose() -> None:
+    from pydantic_ai.models.function import FunctionModel
+
+    def respond(messages, info):
+        return AiModelResponse(
+            parts=[TextPart(content="Unsupported summary without declared fields")]
+        )
+
+    task = _context().task.model_copy(update={"expected_output_schema": {"required": ["facts"]}})
+    result = await run_with_pydantic_ai(
+        task, _context(task=task), model=FunctionModel(respond), gateway=object()
+    )
+    assert result.output == {}

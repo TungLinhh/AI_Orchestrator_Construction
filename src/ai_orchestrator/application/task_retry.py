@@ -48,13 +48,16 @@ not terminal, and refusing to run would be the correct response to that impossib
 Copied: `goal`, `task_type`, `priority`, `input`, `constraints`, the requested output schema,
 and the budget ceilings. Those are the *work*.
 
-Not copied: `status` (a retry starts `created`, except a source-workflow retry keeps
-its owner so `create` marks it `assigned` — owned but unstarted, so Run stays allowed
-and no model run begins), `owner_agent_id` (the retry is unassigned until somebody or
-the coordinator gives it an owner, except a source-workflow retry keeps the previous
-owner so the executor's owner checks pass), `last_error`, `attempt_count`, the lease, and
-every spend figure. Those are the *history of the first attempt*, and copying them would make
-the new row claim a cost it did not incur.
+Copied too: `owner_agent_id`. A retry of work that already has an owner is still *that
+worker's* work — dropping the owner when the first attempt failed left an ordinary retry
+unowned and unrunnable, while a source-workflow retry kept it, so the same operation behaved
+two different ways depending on a marker in `input`. There is one rule now: the owner comes
+across and `create` derives the status from it (`assigned` when owned — owned but unstarted,
+so Run stays allowed and no model run begins — and `created` when nobody owns it yet).
+
+Not copied: `status` (derived from the copied owner, above), `last_error`, `attempt_count`, the
+lease, and every spend figure. Those are the *history of the first attempt*, and copying them
+would make the new row claim a cost it did not incur.
 
 The title is copied with an attempt marker rather than verbatim, because a queue that lists
 two identical titles gives an operator nothing to tell them apart — the same defect the
@@ -169,7 +172,7 @@ async def retry_failed(
         # piece of work rather than starting a second tree beside it.
         parent_task_id=original["parent_task_id"],
         requester_type="human",
-        owner_agent_id=source.owner_agent_id if source.input.get("source_workflow") else None,
+        owner_agent_id=source.owner_agent_id,
         priority=source.priority,
         input=source.input,
         constraints=source.constraints,

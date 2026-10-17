@@ -1,5 +1,19 @@
 # Luồng nguồn → workflow → file kết quả
 
+> Cập nhật 17/10/2026 (nghiệm thu HR qua UI, gates-6): **retry task HR ordinary qua UI PASS**
+> và **workflow SOP tuyển dụng qua UI** chạy tới JD rồi dừng ở **jd_review chờ người duyệt**
+> (đủ sáu mục; DOA CHƯA XÁC ĐỊNH cần Boss/HR; KPI là ĐỀ XUẤT; không trọng số rubric; review
+> nội dung độc lập PASS). **Không phải tuyển dụng hoàn tất**: JD → người duyệt, không có ứng
+> viên/offer/tuyển người thật. Gates-6: **lint PASS; typecheck PASS; make test 4256 PASS; E2E
+> 35 PASS**, hash source không đổi trong lúc chạy. Sửa gốc: `task_retry.py` chỉ giữ owner khi
+> `source_workflow` → nay giữ owner cho mọi retry; validator output không còn từ chối envelope
+> xin duyệt trên task có hợp đồng trích dẫn; khôi phục câu "missing key is a failed run" trong
+> prompt. **Luồng nguồn/Kết quả vẫn giới hạn như ghi bên dưới**: task ordinary từ SourceManifest
+> upload vẫn **unsupported**; `write_report` chỉ trả lời inline, file do nó ghi chưa nằm trong
+> registry artifact tải được; nguồn lỗi/thiếu vẫn giữ guard cũ. Bằng chứng cục bộ tại
+> `.orchestra/hr-ui-acceptance-2026-10-18/` và `.orchestra/hr-ui-sop-2026-10-18/`; báo cáo lọc
+> tại [artifacts/hr-ui-acceptance/2026-10-18/summary.json](artifacts/hr-ui-acceptance/2026-10-18/summary.json).
+
 > Cập nhật 16/10/2026 (MuseSpark continuation, gates-c4): task đơn ordinary 7/7 PASS
 > trên PydanticAI runtime thật (DOTS, cost 0, DB kiểm chứng độc lập); chain
 > CEO→office→department PARTIAL — round 3 đã tới leaf completed + grade PASS

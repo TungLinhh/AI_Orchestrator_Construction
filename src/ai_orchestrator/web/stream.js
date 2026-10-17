@@ -266,7 +266,9 @@ $("runBtn").onclick = async () => {
     // screen did nothing: the task was created with nobody to do it.
     const chosen = $("scenario").value;
     const scenario = (state.scenarios || []).find((sc) => sc.key === chosen);
-    const made = window.SourceUI ? await window.SourceUI.create({
+    const sourceWorkflow = !!window.SourceUI?.isSourceWorkflow();
+    if (!sourceWorkflow) window.SourceUI?.assertOrdinarySources();
+    const made = sourceWorkflow ? await window.SourceUI.create({
       title: (scenario ? scenario.title : goal).slice(0, 60), goal,
       owner_agent_id: $("agent").value || null,
     }) : await apiPost("/tasks", {
@@ -415,6 +417,9 @@ async function loadScenarios() {
   }
 }
 $("scenario").onchange = () => {
+  // Choosing catalogue/custom work restores its task contract; source selection
+  // stays intact and must be explicitly cleared or used in a document workflow.
+  if ($("sourceWorkflow")) $("sourceWorkflow").value = "";
   const sc = (state.scenarios || []).find((s) => s.key === $("scenario").value);
   const hint = $("scenarioHint");
   if (!sc) {
@@ -460,7 +465,9 @@ async function loadOwners() {
     const d = await apiGet("/departments");
     const rows = [];
     const add = (n, tier) => {
-      if (n && n.id && n.name) rows.push({ id: n.id, name: n.name, tier });
+      if (n && n.id && n.name && (!n.lifecycle_status || n.lifecycle_status === "active")) {
+        rows.push({ id: n.id, name: n.name, tier });
+      }
     };
     // In the `/departments` payload `second_tier` is the offices and `offices`
     // is the departments — a legacy naming that once had these two labels

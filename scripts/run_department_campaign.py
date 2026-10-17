@@ -110,7 +110,6 @@ class Ledger:
     def __init__(self, path: Path, owner: str, max_submissions: int = GLOBAL_MAX) -> None:
         self._path = path
         self._owner = owner
-        self._max = max_submissions
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, dict):
             raise ValueError(f"ledger at {path} must be a JSON object")
@@ -127,6 +126,12 @@ class Ledger:
             raise ValueError(
                 f"ledger at {path}: used={used} outside [0, {file_max}]; refusing to resume"
             )
+        if file_max < 1 or max_submissions < 1:
+            raise ValueError("ledger limits must be positive")
+        self._max = min(file_max, max_submissions)
+        if used > self._max:
+            raise ValueError("ledger usage exceeds requested limit; refusing resume")
+        self._metadata = {k: v for k, v in raw.items() if k not in {"used", "max", "entries"}}
         self.used: int = used
         self.initial_used: int = used
         self._entries: list[dict[str, Any]] = list(entries)
@@ -157,7 +162,10 @@ class Ledger:
 
     def _persist(self) -> None:
         self._path.write_text(
-            json.dumps({"used": self.used, "max": self._max, "entries": self._entries}, indent=2)
+            json.dumps(
+                self._metadata | {"used": self.used, "max": self._max, "entries": self._entries},
+                indent=2,
+            )
             + "\n",
             encoding="utf-8",
         )
@@ -716,6 +724,16 @@ def _install_counting(ledger: Ledger, observer: list[dict[str, Any]], gate: Subm
         except ValueError:
             parsed = {}
         parsed = parsed if isinstance(parsed, dict) else {}
+        # Keep a lookup reference for investigating provider accounting without
+        # retaining message bodies, reasoning text, or authentication headers.
+        for field in ("id", "provider"):
+            if isinstance(parsed.get(field), str):
+                record[field] = parsed[field][:256]
+        choices = parsed.get("choices")
+        if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+            finish = choices[0].get("finish_reason")
+            if isinstance(finish, str):
+                record["finish_reason"] = finish[:64]
         # Capture raw usage + sanitized diagnosis BEFORE any strict parsing,
         # so a counts failure (e.g. reasoning > completion) keeps provenance.
         raw_usage = extract_raw_usage(parsed)

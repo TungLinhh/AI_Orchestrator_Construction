@@ -364,7 +364,7 @@ class TestTheDuplicateGuardOutlivesTheProcess:
             "a finished child must not block the work being asked for again; "
             f"got {len(after)} children"
         )
-        assert after[0].id == child.id, "and the finished one is still there"
+        assert any(item.id == child.id for item in after), "and the finished one is still there"
 
     async def test_a_reworded_objective_still_counts_as_the_same_work(self, seeded) -> None:
         """The measured failure, exactly: **wording is not what makes work the same.**
@@ -659,3 +659,43 @@ class TestTheRefusalIsReadable:
             "an unresolvable agent name closed the delegation budget for the task"
         )
         assert "once more" in runtime.last_result.output["next_step"]
+
+
+@pytest.mark.parametrize("sources_present", [True, False])
+async def test_delegation_preserves_canonical_sources_but_not_gold_or_authority(
+    seeded, sources_present
+):
+    org_id = seeded.organization_id
+    executive = await seeded.session.scalar(
+        select(Agent).where(Agent.organization_id == org_id, Agent.name == "Executive Agent")
+    )
+    sources = [
+        {
+            "id": "policy",
+            "text": "Only approved purchases may be issued.",
+            "expected_values": {"gold": 42},
+        }
+    ]
+    task = await TaskRepository(seeded.session, org_id).create(
+        title="Review source-backed purchase",
+        goal="Review purchase evidence",
+        task_type="coordination",
+        owner_agent_id=executive.id,
+        input={
+            **({"sources": sources} if sources_present else {}),
+            "required_sources": ["policy", "missing-invoice"],
+            "expected_values": {"gold": 42},
+            "approved_human_reviews": [{"approved": True}],
+        },
+    )
+    await TaskExecutionService(seeded.session, org_id, runtime=_DelegatingRuntime()).execute_task(
+        task.id
+    )
+    child = await seeded.session.scalar(select(Task).where(Task.parent_task_id == task.id))
+    assert child is not None
+    assert child.input["sources"] == (
+        [{"id": "policy", "text": sources[0]["text"]}] if sources_present else []
+    )
+    assert child.input["required_sources"] == ["policy", "missing-invoice"]
+    assert "expected_values" not in child.input
+    assert "approved_human_reviews" not in child.input

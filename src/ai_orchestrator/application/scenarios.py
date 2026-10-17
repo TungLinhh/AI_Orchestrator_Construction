@@ -83,6 +83,9 @@ class Scenario:
     objective: str = ""
     #: The first draft that must stop for a human before later stages can run.
     human_review_field: str = ""
+    #: Every scenario is fictional data, so no run is mistaken for a real
+    #: company's record and no gold answer is treated as production truth.
+    synthetic: bool = True
 
 
 #: The catalogue. Ordered so the cheapest, most self-contained work comes first:
@@ -461,6 +464,7 @@ def catalogue() -> list[dict[str, object]]:
             "expected_output": s.expected_output,
             "expected_output_schema": schema_from_fields(s.expected_output),
             "deliverable": s.deliverable,
+            "synthetic": s.synthetic,
         }
         for s in SCENARIOS
     ]

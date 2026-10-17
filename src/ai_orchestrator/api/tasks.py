@@ -60,6 +60,12 @@ class CreateTaskRequest(BaseModel):
     organization_id: str | None = None
 
 
+class TaskInputRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    clarification: str = Field(min_length=1, max_length=20_000)
+
+
 class CreateDelegationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -577,6 +583,112 @@ async def list_executions(task_id: str, ctx: ApiContext = Depends(get_context)) 
         ],
         "count": len(items),
     }
+
+
+@router.post("/tasks/{task_id}/inputs")
+async def provide_task_inputs(
+    task_id: str,
+    body: TaskInputRequest,
+    request: Request,
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
+    """Append human clarification and queue ordinary work; execution stays explicit."""
+    import hashlib
+
+    from sqlalchemy import func, select, text
+
+    from ai_orchestrator.audit import AuditService
+    from ai_orchestrator.domain.errors import NotFoundError, PreconditionError
+    from ai_orchestrator.domain.state_machines import Transition
+    from ai_orchestrator.persistence.models import Execution, Task
+
+    ctx.require_human()
+    key = idem_key(request)
+    if not key or len(key) > 200:
+        raise ValidationError("A nonempty Idempotency-Key of at most 200 characters is required")
+    key = "task-inputs:" + hashlib.sha256(f"{ctx.organization_id}:{key}".encode()).hexdigest()
+    payload = {"task_id": task_id, **body.model_dump()}
+    # Serialize this key before looking up its receipt, including across tasks.
+    await ctx.session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:scope, 0))"),
+        {"scope": f"{ctx.organization_id}:task_inputs:{key}"},
+    )
+    replay = await check_idempotency(ctx, key=key, operation="task_inputs", payload=payload)
+    if replay is not None:
+        return {**replay["response"], "idempotent_replay": True}
+    task = await ctx.session.scalar(
+        select(Task)
+        .where(Task.organization_id == ctx.organization_id, Task.id == task_id)
+        .with_for_update()
+    )
+    if task is None:
+        raise NotFoundError("Task not found", resource_type="task", resource_id=task_id)
+    if any(
+        task.input.get(name)
+        for name in (
+            "business_workflow",
+            "agent_workflow",
+            "source_workflow",
+            "workflow_revision_for",
+            "workflow_feedback_for",
+            "agent_blueprint_draft",
+        )
+    ):
+        raise PreconditionError("Use this workflow's dedicated input or source endpoint")
+    if task.status != "waiting_for_input":
+        raise PreconditionError("Clarification requires a task waiting for input")
+    repo = TaskRepository(ctx.session, ctx.organization_id)
+    if task.parent_task_id and await repo.terminal_lineage(task.parent_task_id):
+        raise PreconditionError("Cannot resume work under a terminal ancestor")
+    active = await ctx.session.scalar(
+        select(Execution.id)
+        .where(
+            Execution.organization_id == ctx.organization_id,
+            Execution.task_id == task_id,
+            Execution.status == "running",
+        )
+        .limit(1)
+    )
+    now = (await ctx.session.execute(select(func.now()))).scalar_one()
+    if active or (task.lease_expires_at and task.lease_expires_at > now):
+        raise PreconditionError("The task still has an active execution or lease")
+    clarifications = task.input.get("clarifications", [])
+    if not isinstance(clarifications, list) or len(clarifications) >= 50:
+        raise PreconditionError("Clarification history is invalid or has reached its limit")
+    task.input = {
+        **task.input,
+        "clarifications": [
+            *clarifications,
+            {
+                "text": body.clarification,
+                "actor_id": str(ctx.actor.id),
+                "source": "human_clarification",
+            },
+        ],
+    }
+    task = await repo.transition(task_id, Transition.RESUME)
+    task.last_error = None
+    await AuditService(ctx.session, ctx.organization_id).record(
+        actor=ctx.actor,
+        action="task.input_provided",
+        resource_type="task",
+        resource_id=task_id,
+        context={
+            "clarification_sha256": hashlib.sha256(body.clarification.encode()).hexdigest(),
+            "clarification_length": len(body.clarification),
+            "status": task.status,
+        },
+    )
+    response = _task_dict(task)
+    await store_idempotency(
+        ctx,
+        key=key,
+        operation="task_inputs",
+        payload=payload,
+        resource_id=task_id,
+        response=response,
+    )
+    return response
 
 
 @router.post("/tasks/{task_id}/run")

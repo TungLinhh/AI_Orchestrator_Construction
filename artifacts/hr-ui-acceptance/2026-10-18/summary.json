@@ -1,0 +1,77 @@
+{
+  "report": "hr-ui-acceptance",
+  "date": "2026-10-18",
+  "scope": "HR free-form task retry through the UI, and the HR hiring SOP workflow (JD stage up to the human JD review). Free :free models only. Synthetic-only data; no real candidate or hiring decision.",
+  "base_commit": "359b27d5e1d573e7a15653d599c007879e4f5a14",
+  "gates": {
+    "receipt": ".orchestra/hr-ui-acceptance-2026-10-18/gates-6/receipt.json (local evidence, not published)",
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "test": "PASS (4256 passed, 1 deselected)",
+    "test_e2e": "PASS (35 passed; preflight postgres/nats/temporal ok)",
+    "files_unchanged_during_gate": true,
+    "hashed_files": 612,
+    "aggregate_source_hash_sha256": "fb8701f422f24ee76d1c37c0778ed4d4f5f06a88219fbe7c11fbfef4a82b34b5"
+  },
+  "hr_custom_retry": {
+    "path": "failed ordinary HR task -> Retry -> new task -> explicit Run -> completed",
+    "source_task": "tsk_01m5600nbtarvnv10svasn1kf2",
+    "retry_task": "tsk_01m5621bp2zv7rrc1prw27rzr0",
+    "owner_agent_id": "agt_01m4zffayhn6p3720mndhantv4",
+    "verified": [
+      "the retry kept the HR owner (earlier ordinary retries lost it and could not run)",
+      "the stored clarification survived the retry",
+      "the failed row is unchanged (still failed, same last_error, same empty output)",
+      "Run is explicit: Retry alone does not start a run",
+      "the completed answer renders in the UI with read-all and copy"
+    ],
+    "defect_fixed": "application/task_retry.py copied owner_agent_id only for source_workflow retries; now the owner is always carried and status is derived from it."
+  },
+  "hr_sop_workflow": {
+    "kind": "synthetic clarified acceptance (independent of the earlier NEEDS_REVISION draft)",
+    "root": "tsk_01m5603cgnzr9a4tp2z763w5wx",
+    "headcount_approval": "apr_01m5603d4c8ctna5q848skrmk9",
+    "jd_task": "tsk_01m5603chx5tbtsmd9p8pfcmwp",
+    "jd_review_task": "tsk_01m5603cj63f5tahj98v4mbr4e",
+    "jd_sections": ["KPI", "Thẩm quyền (DOA)", "Trách nhiệm chính", "Mục đích vị trí", "Quan hệ công việc", "Yêu cầu năng lực"],
+    "independent_content_review": "PASS",
+    "review_notes": [
+      "authority is CHƯA XÁC ĐỊNH and explicitly needs Boss/HR confirmation",
+      "every numeric KPI is labelled ĐỀ XUẤT / needs HR + manager confirmation",
+      "no rubric scores or point weights in the JD",
+      "salary and location come from the explicit brief, not invented"
+    ],
+    "next_stage": "jd_review waiting_for_approval (JD not approved, no hire)",
+    "earlier_draft": "tsk_01m55zs4m85m7q5wznje72dmxz remains NEEDS_REVISION and is not replaced or deleted"
+  },
+  "budget": {
+    "ledger": ".orchestra/hr-ui-acceptance-2026-10-18/submission-ledger-final.json",
+    "hard_max": 8,
+    "used": 3,
+    "models": ["dots-studio/dots-3-note-preview:free"],
+    "paid_calls": 0,
+    "note": "HR retry reserved 4 and used 2; the synthetic clarified SOP JD used 1. Bounded ledger, no expansion, positive-cost stop, no invented usage."
+  },
+  "final_ui_verification": {
+    "receipt": ".orchestra/hr-ui-acceptance-2026-10-18/final-verify/receipt.json (local evidence)",
+    "api": "reloaded on gates-6 code before verification",
+    "retry_answer_rendered": true,
+    "read_all_checked": true,
+    "copy_checked": true,
+    "clarification_stored": true,
+    "sop_jd_completed_six_sections": true,
+    "sop_jd_review_pending": true,
+    "page_errors": 0,
+    "tenant_scoped": "cross-tenant reads return 404"
+  },
+  "limitations": [
+    "This tested the HR hiring SOP only up to JD, then the human JD review. It is JD -> human review, NOT recruitment-completed; no candidate, interview, offer or hire occurred.",
+    "No real personnel data and no real hiring; the JD is a draft awaiting human approval.",
+    "A generic task from an uploaded SourceManifest is still unsupported as an ordinary task; the retry/ordinary path was exercised on ordinary tasks, not on an uploaded source manifest.",
+    "write_report stores a tenant-local file that is not exposed by a downloadable artifact registry; the accepted deliverable is the full inline answer rendered in the UI.",
+    "Older negative/edge cases were verified offline, not on the live provider.",
+    "Free providers are flaky: Nvidia returned 503 and one DOTS response carried inconsistent reasoning/completion usage that the strict parser refused. The parser was not loosened and usage was not invented.",
+    "The retry fix changes ordinary retry semantics on purpose: owned work stays owned. This is covered by a focused integration test and the full suite."
+  ],
+  "evidence": "All raw receipts and screenshots are under .orchestra/hr-ui-acceptance-2026-10-18/ and .orchestra/hr-ui-sop-2026-10-18/ (local, gitignored, not published)."
+}
