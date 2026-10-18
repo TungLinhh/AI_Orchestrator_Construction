@@ -79,7 +79,9 @@ const ProcurementIntake = (() => {
     const host = document.getElementById("procurement-intake");
     if (!host) return;
     let materialSequence = 0,
-      supplierSequence = 0;
+      supplierSequence = 0,
+      rowSequence = 0;
+    const quoteHost = () => document.getElementById("intake-quotes");
     const rowValues = (node) =>
       Object.fromEntries(
         Array.from(node.querySelectorAll("input,select,textarea")).map((el) => [
@@ -87,87 +89,125 @@ const ProcurementIntake = (() => {
           el.value,
         ]),
       );
-    const materials = () =>
-      Array.from(host.querySelectorAll("[data-intake-material]")).map(
-        rowValues,
-      );
-    const suppliers = () =>
-      Array.from(host.querySelectorAll("[data-intake-supplier]")).map(
-        rowValues,
-      );
-    const pairKey = (supplier, material) => supplier + ":" + material;
-    const quotes = new Map();
-    function rebuildQuotes() {
-      host
-        .querySelectorAll("[data-intake-quote]")
-        .forEach((node) =>
-          quotes.set(node.dataset.intakeQuote, rowValues(node)),
-        );
-      document.getElementById("intake-quotes").innerHTML = suppliers()
-        .map(
-          (s) =>
-            `<h3>${esc(s.supplier_id)}</h3>` +
-            materials()
-              .map((m) => {
-                const key = pairKey(s.supplier_id, m.material_id),
-                  q = quotes.get(key) || {};
-                return (
-                  `<div class="intake-line" data-intake-quote="${esc(key)}"><h4>${esc(m.material_id)} · ${esc(m.name)} — ${esc(m.quantity)} ${esc(m.unit)}</h4><div class="manage-form">` +
-                  input(
-                    "unit_price",
-                    L("Unit price (VND)", "Đơn giá (VND)"),
-                    q.unit_price || "",
-                    "number",
-                    "required min=1 step=1",
-                  ) +
-                  input(
-                    "delivery_days",
-                    L("Delivery (days)", "Giao trong (ngày)"),
-                    q.delivery_days ?? "",
-                    "number",
-                    "required min=0 max=3650 step=1",
-                  ) +
-                  input(
-                    "warranty_months",
-                    L("Warranty (months)", "Bảo hành (tháng)"),
-                    q.warranty_months ?? "",
-                    "number",
-                    "required min=0 max=1200 step=1",
-                  ) +
-                  input(
-                    "certificate_ref",
-                    L(
-                      "Certificate source (blank if missing)",
-                      "Nguồn chứng chỉ (để trống nếu thiếu)",
-                    ),
-                    q.certificate_ref || "",
-                  ) +
-                  select(
-                    "spec_compliant",
-                    L(
-                      "Technical source confirms compliance",
-                      "Nguồn kỹ thuật xác nhận phù hợp",
-                    ),
-                    [
-                      ["false", L("Unverified / no", "Chưa xác minh / không")],
-                      [
-                        "true",
-                        L("Yes, subject to QA review", "Có, chờ QA kiểm tra"),
-                      ],
-                    ],
-                    q.spec_compliant || "false",
-                  ) +
-                  `</div></div>`
-                );
-              })
-              .join(""),
-        )
-        .join("");
+    const materialRows = () =>
+      Array.from(host.querySelectorAll("[data-intake-material]"));
+    const supplierRows = () =>
+      Array.from(host.querySelectorAll("[data-intake-supplier]"));
+    const materials = () => materialRows().map(rowValues);
+    // A quotation belongs to a supplier *row* and a material *row*, keyed by
+    // their stable data-row-id, never by the user-editable business IDs. Editing
+    // a business ID therefore keeps that row's quotation, and removing a row
+    // drops its quotation for good so a later row cannot inherit it.
+    const pairKey = (sRow, mRow) => sRow.dataset.rowId + "|" + mRow.dataset.rowId;
+    const quoteNodes = new Map();
+    function quoteLine(key) {
+      const line = document.createElement("div");
+      line.className = "intake-line";
+      line.dataset.intakeQuote = key;
+      line.innerHTML =
+        `<h4></h4><div class="manage-form">` +
+        input(
+          "unit_price",
+          L("Unit price (VND)", "Đơn giá (VND)"),
+          "",
+          "number",
+          "required min=1 step=1",
+        ) +
+        input(
+          "delivery_days",
+          L("Delivery (days)", "Giao trong (ngày)"),
+          "",
+          "number",
+          "required min=0 max=3650 step=1",
+        ) +
+        input(
+          "warranty_months",
+          L("Warranty (months)", "Bảo hành (tháng)"),
+          "",
+          "number",
+          "required min=0 max=1200 step=1",
+        ) +
+        input(
+          "certificate_ref",
+          L(
+            "Certificate source (blank if missing)",
+            "Nguồn chứng chỉ (để trống nếu thiếu)",
+          ),
+        ) +
+        select(
+          "spec_compliant",
+          L(
+            "Technical source confirms compliance",
+            "Nguồn kỹ thuật xác nhận phù hợp",
+          ),
+          [
+            ["false", L("Unverified / no", "Chưa xác minh / không")],
+            ["true", L("Yes, subject to QA review", "Có, chờ QA kiểm tra")],
+          ],
+          "false",
+        ) +
+        `</div>`;
+      quoteNodes.set(key, line);
+      return line;
+    }
+    // Field edits only refresh the visible labels. They never replace an input
+    // node, so a blur cannot discard a quotation being typed.
+    function syncQuoteLabels() {
+      for (const [key, line] of quoteNodes) {
+        const [sId, mId] = key.split("|");
+        const sRow = host.querySelector('[data-row-id="' + sId + '"]');
+        const mRow = host.querySelector('[data-row-id="' + mId + '"]');
+        if (!sRow || !mRow) continue;
+        const group = line.closest("[data-quote-group]");
+        if (group) {
+          group.querySelector("h3").textContent = rowValues(sRow).supplier_id;
+        }
+        const m = rowValues(mRow);
+        line.querySelector("h4").textContent =
+          m.material_id + " · " + m.name + " — " + m.quantity + " " + m.unit;
+      }
+    }
+    // Reconcile the quotation panel with the current rows. Existing lines are
+    // kept in place (values, validation state and focus survive); only lines for
+    // new or removed rows are added or dropped. Structural work happens on row
+    // add/remove only.
+    function ensureQuotes() {
+      const panel = quoteHost();
+      const materialIds = new Set(materialRows().map((r) => r.dataset.rowId));
+      const supplierIds = new Set(supplierRows().map((r) => r.dataset.rowId));
+      for (const [key, line] of Array.from(quoteNodes)) {
+        const parts = key.split("|");
+        if (!supplierIds.has(parts[0]) || !materialIds.has(parts[1])) {
+          line.remove();
+          quoteNodes.delete(key);
+        }
+      }
+      for (const group of Array.from(panel.querySelectorAll("[data-quote-group]"))) {
+        if (!supplierIds.has(group.dataset.quoteGroup)) group.remove();
+      }
+      for (const sRow of supplierRows()) {
+        const sId = sRow.dataset.rowId;
+        let group = panel.querySelector('[data-quote-group="' + sId + '"]');
+        if (!group) {
+          group = document.createElement("div");
+          group.dataset.quoteGroup = sId;
+          group.innerHTML = "<h3></h3>";
+        }
+        for (const mRow of materialRows()) {
+          const key = pairKey(sRow, mRow);
+          let line = quoteNodes.get(key);
+          if (!line) line = quoteLine(key);
+          group.appendChild(line);
+        }
+        panel.appendChild(group);
+      }
+      syncQuoteLabels();
     }
     function addMaterial() {
       const row = document.createElement("div");
       row.className = "intake-line";
       row.dataset.intakeMaterial = "true";
+      row.dataset.rowId = "r" + ++rowSequence;
       row.innerHTML =
         `<div class="manage-form">` +
         input(
@@ -206,15 +246,17 @@ const ProcurementIntake = (() => {
       document.getElementById("intake-materials").appendChild(row);
       row.querySelector("[data-remove]").onclick = () => {
         row.remove();
-        rebuildQuotes();
+        ensureQuotes();
       };
-      row.onchange = rebuildQuotes;
-      rebuildQuotes();
+      row.oninput = syncQuoteLabels;
+      row.onchange = syncQuoteLabels;
+      ensureQuotes();
     }
     function addSupplier() {
       const row = document.createElement("div");
       row.className = "intake-line";
       row.dataset.intakeSupplier = "true";
+      row.dataset.rowId = "r" + ++rowSequence;
       row.innerHTML =
         `<div class="manage-form">` +
         input(
@@ -246,10 +288,11 @@ const ProcurementIntake = (() => {
       document.getElementById("intake-suppliers").appendChild(row);
       row.querySelector("[data-remove]").onclick = () => {
         row.remove();
-        rebuildQuotes();
+        ensureQuotes();
       };
-      row.onchange = rebuildQuotes;
-      rebuildQuotes();
+      row.oninput = syncQuoteLabels;
+      row.onchange = syncQuoteLabels;
+      ensureQuotes();
     }
     document.getElementById("intake-add-material").onclick = addMaterial;
     document.getElementById("intake-add-supplier").onclick = addSupplier;
@@ -265,30 +308,29 @@ const ProcurementIntake = (() => {
           quantity: Number(m.quantity),
           long_lead: m.long_lead === "true",
         }));
-        const supplierRows = suppliers().map((s) => ({
-          ...s,
-          synthetic,
-          legal_valid: s.legal_valid === "true",
-          quotes: boq.map((m) => {
-            const q = rowValues(
-              Array.from(host.querySelectorAll("[data-intake-quote]")).find(
-                (el) =>
-                  el.dataset.intakeQuote ===
-                  pairKey(s.supplier_id, m.material_id),
-              ),
-            );
-            return {
-              ...q,
-              material_id: m.material_id,
-              quantity: m.quantity,
-              unit_price: Number(q.unit_price),
-              delivery_days: Number(q.delivery_days),
-              warranty_months: Number(q.warranty_months),
-              spec_compliant: q.spec_compliant === "true",
-              currency: "VND",
-            };
-          }),
-        }));
+        const suppliersPayload = supplierRows().map((sRow) => {
+          const s = rowValues(sRow);
+          return {
+            ...s,
+            synthetic,
+            legal_valid: s.legal_valid === "true",
+            quotes: materialRows().map((mRow) => {
+              const m = rowValues(mRow);
+              const line = quoteNodes.get(pairKey(sRow, mRow));
+              const q = line ? rowValues(line) : {};
+              return {
+                ...q,
+                material_id: m.material_id,
+                quantity: Number(m.quantity),
+                unit_price: Number(q.unit_price),
+                delivery_days: Number(q.delivery_days),
+                warranty_months: Number(q.warranty_months),
+                spec_compliant: q.spec_compliant === "true",
+                currency: "VND",
+              };
+            }),
+          };
+        });
         const created = await apiPost("/workflows/procurement", {
           ...Object.fromEntries(
             [
@@ -301,7 +343,7 @@ const ProcurementIntake = (() => {
           ),
           synthetic,
           boq,
-          suppliers: supplierRows,
+          suppliers: suppliersPayload,
         });
         if (guard.current()) go("#/processes/workflows/" + created.id);
       },

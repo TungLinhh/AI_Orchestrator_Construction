@@ -51,7 +51,7 @@ PAGE_ORG = $(shell $(PY) scripts/first_org.py 2>/dev/null)
 .PHONY: help install setup migrate migrate-test downgrade seed seed-process dev dev-api dev-worker dev-nats \
         dev-temporal stop status logs test test-unit test-integration test-e2e test-live \
         lint format typecheck check verify-secrets smoke bench clean distclean \
-        audit-db audit-outbox verify-page page page-stop seed-construction \
+        audit-db audit-outbox verify-page verify-intake-form page page-stop seed-construction \
         reset-test-db test-fresh preflight-e2e model-sync seed-test-reference seed-agents seed-docs seed-docs-dry mock-corpus mock-corpus-norun mock-corpus-reset run-fleet fmt seed-free-model demo
 
 help: ## Show this help
@@ -495,6 +495,17 @@ verify-page: ## Execute the served UI against the live API and check what it ren
 		|| (echo "could not fetch the page from $(BASE)" && exit 1)
 	@node scripts/verify_page.mjs "$(BASE)" "$(ORG)" .devdata/ui/served.html \
 	  --departments "$(DEPARTMENT_COUNT)"
+
+# Drive the procurement intake form in a real browser and assert that quotation
+# values stay bound while a person works. No model, no database writes: it only
+# loads the served page and never presses submit. Requires Playwright + Chromium.
+verify-intake-form: ## Browser regression for the procurement intake form (needs BASE + ORG)
+	@test -n "$(BASE)" || (echo "set BASE=http://127.0.0.1:8000 and ORG=<org_...>" && exit 2)
+	@$(PY) python -c "import playwright" 2>/dev/null || \
+		(echo "Playwright is not installed. Install it with: uv pip install playwright && playwright install chromium" && exit 2)
+	@$(PY) scripts/procurement_intake_form_regression.py --base "$(BASE)" --org "$(ORG)" \
+	  $(if $(CHROMIUM),--chromium "$(CHROMIUM)")
+
 
 # ----------------------------------------------------------------- clean ---
 clean: ## Remove caches and build artifacts
