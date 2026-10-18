@@ -1,5 +1,36 @@
 # Kế hoạch hoàn thiện sản phẩm
 
+> Cập nhật 18/10/2026 (nghiệm thu nội dung HR đã đạt). Revision qua UI sau bản sửa đã
+> **PASS kiểm tra nội dung độc lập**: báo cáo tiếng Việt không lẫn ký tự ngoại lai, mọi
+> finding khớp nguyên văn nguồn, câu giới hạn L2 nêu rõ quyết định nhân sự thuộc con người,
+> file DOCX tải được từ UI. Campaign hậu-sửa riêng cap 8 dùng 6/8 lượt `:free`; chi phí
+> báo cáo 0, usage chưa biết giữ unknown; ledger cũ không đổi. Gate đầy đủ: lint/typecheck
+> PASS, 4282 test PASS (một test `advisory-lock` flaky PASS khi chạy lại), 35 E2E PASS,
+> nguồn không đổi. Kèm đó: task analysis tự do đính kèm file dùng báo cáo trích dẫn; tải
+> câu trả lời Markdown; nhận CV trực tiếp sau duyệt rubric; định danh ứng viên bằng SHA-256.
+> Nghiệm thu end-to-end SOP tuyển dụng ngoài MEP và nhận CV qua UI vẫn là bước kế tiếp
+> (cần dữ liệu tổng hợp được phép + cổng người duyệt), chưa tuyên bố tuyển người thật.
+
+> Cập nhật cục bộ 18/10/2026, **PARTIAL, chưa commit/push**. Đã nối task HR tự do
+> với file upload qua báo cáo có trích dẫn; tải câu trả lời Markdown; nhận CV trực tiếp
+> sau duyệt rubric; dùng SHA của CV xuyên suốt phỏng vấn/chọn ứng viên; chuyển API
+> khỏi bộ đếm nghiệm thu sang `make serve` có xác minh PID/cổng/readiness. Sửa lỗi
+> runtime làm mất lý do revision và thông tin bổ sung trước khi gửi model.
+> Gates-4 mới: lint/typecheck PASS, **4280 test + 35 E2E PASS**, 618 hash nguồn khớp.
+> Trình duyệt thật đã kiểm tra upload/báo cáo DOCX/tải Markdown. Nhận CV dùng fixture
+> tổng hợp có các bước trước chuẩn bị bằng máy, không phải duyệt hay tuyển người thật.
+> **Nghiệm thu nội dung HR chưa đạt**: báo cáo model có chữ Trung Quốc và câu diễn giải
+> quyền AI chưa làm rõ quyết định nhân sự thuộc con người. Citation đúng không bảo đảm
+> diễn giải đúng. Lượt sửa sau gặp usage sai/deadline và giới hạn campaign 8/8; không
+> nới giới hạn. Campaign riêng mới tối đa 4 lượt kiểm chứng bản sửa feedback đã xác nhận
+> feedback tới cả 4 request OpenRouter thật; nhưng DOTS trả finish_reason=error hai lần,
+> Nvidia quá tải 503 hai lần, không có artifact được chấp nhận. Campaign mới đóng 4/4,
+> không gộp thành PASS nội dung; chi phí/usage chưa biết vẫn giữ unknown.
+> Bằng chứng chỉ giữ cục bộ tại `.orchestra/hr-system-completion-2026-10-18/`;
+> `final-status.json` và `CONTINUE_SYSTEM_FINAL.txt` ghi kết quả và việc tiếp theo.
+> Chỉ commit/push sau khi revision qua UI đạt kiểm tra nội dung độc lập. SOP vẫn là
+> MEP và còn các cổng người duyệt, chưa phải quy trình tuyển dụng hoàn tất.
+
 > Cập nhật 17/10/2026 (nghiệm thu HR qua UI, gates-6): **retry task HR ordinary qua UI PASS**
 > (giữ owner HR, giữ clarification, task cũ vẫn failed bất biến, Run tường minh, kết quả
 > render + đọc toàn văn + copy) và **workflow SOP tuyển dụng qua UI** chạy tới JD rồi dừng ở

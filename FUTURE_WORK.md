@@ -1,5 +1,36 @@
 # FUTURE_WORK — kế hoạch O-Nexus
 
+> Cập nhật 18/10/2026 (nghiệm thu nội dung HR đã đạt): revision qua UI với feedback rõ
+> (AI chỉ hỗ trợ trong L2; quyết định tuyển/thôi việc/kỷ luật/lương thuộc con người;
+> viết tiếng Việt) đã **PASS trên model thật**: báo cáo tiếng Việt, không ký tự ngoại lai,
+> 7 finding khớp nguyên văn nguồn, nêu rõ giới hạn người quyết định, và tải DOCX từ UI.
+> Campaign hậu-sửa riêng (cap 8) dùng 6 lượt `:free`, chi phí báo cáo 0; các ledger cũ
+> giữ nguyên. Gate đầy đủ đạt: lint/typecheck PASS, 4282 test PASS (một test `advisory-lock`
+> flaky PASS khi chạy lại), 35 E2E PASS, nguồn không đổi trong suốt gate.
+> Hạ tầng đã sửa: task analysis tự do đính kèm file dùng báo cáo có trích dẫn; tải câu trả
+> lời Markdown; nhận CV trực tiếp sau duyệt rubric; định danh ứng viên bằng SHA-256 xuyên
+> suốt phỏng vấn/chọn. Bằng chứng cục bộ tại
+> `.orchestra/hr-business-acceptance-2026-10-18/postfix/`.
+> Bước kế tiếp: chạy đầy đủ SOP tuyển dụng bằng dữ liệu tổng hợp được phép với các cổng
+> người duyệt; Procurement kế tiếp, rồi Sales/Design/QA-QC. Finance để sau, IT tạm dừng.
+
+> Ưu tiên hiện tại 18/10/2026: **chưa commit/push các thay đổi cục bộ**. Hạ tầng task HR
+> có nguồn/upload/export/nhận CV/định danh SHA và native API đã sửa; gates-4 đạt
+> lint/typecheck/4280 test/35 E2E. Nghiệm thu nội dung vẫn mở, không tuyên bố hoàn tất.
+> Bước kế tiếp là revision qua UI với feedback rõ AI chỉ hỗ trợ trong L2, quyết định
+> nhân sự thuộc con người, và yêu cầu tiếng Việt; kiểm từng diễn giải cùng file tải về.
+> Bản sửa giữ feedback đã có test và được xác nhận trong 4 request OpenRouter thật.
+> Campaign riêng mới 4/4 dừng trung thực: DOTS finish_reason=error, Nvidia 503, không
+> có artifact mới. API thử 8101 đã dừng; native 8100 không bị giới hạn campaign cũ.
+> Campaign cũ 8/8 đã đóng; không lách bằng cách bỏ bộ đếm hay gán lỗi thành hết quota
+> tài khoản. Nghiệm thu tiếp cần campaign mới có giới hạn được phê duyệt rõ.
+> Sau đó mới mở rộng SOP tuyển dụng ngoài MEP bằng rubric theo vị trí, tiếp tục các
+> cổng người duyệt và dữ liệu ứng viên/phỏng vấn được phép dùng; Procurement kế tiếp,
+> rồi Sales/Design/QA-QC. Finance để sau, IT giữ tạm dừng và bảo toàn lịch sử.
+> Fixture browser nhận CV được ghi rõ tổng hợp, đã hủy và archive 21 hàng có audit,
+> không xóa dữ liệu. Bằng chứng và prompt tiếp nối tại
+> `.orchestra/hr-system-completion-2026-10-18/CONTINUE_SYSTEM_FINAL.txt`.
+
 > Cập nhật 17/10/2026 (nghiệm thu HR qua UI, gates-6): **retry task HR ordinary qua UI PASS**
 > (giữ owner, giữ clarification, task cũ bất biến, Run tường minh, đọc toàn văn + copy) và
 > **workflow SOP tuyển dụng qua UI** tới JD rồi dừng ở **jd_review chờ người duyệt** (đủ sáu

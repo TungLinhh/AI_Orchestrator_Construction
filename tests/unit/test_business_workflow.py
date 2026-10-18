@@ -216,15 +216,31 @@ def test_mailbox_account_cannot_be_reused_by_another_tenant():
         RecruitmentMailbox("other", Settings(recruitment_mail_org="owner"))
 
 
-async def test_live_intake_without_cvs_waits_instead_of_claiming_completion():
+async def test_live_intake_without_cvs_waits_instead_of_claiming_completion(monkeypatch):
+    from contextlib import asynccontextmanager
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
     from ai_orchestrator.application.business_workflow import BusinessWorkflowService
     from ai_orchestrator.domain.business_workflow import HIRING
+    from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+    class EmptyManualIntakeDatabase:
+        @asynccontextmanager
+        async def tenant_session(self, org):
+            yield None
+
+    monkeypatch.setattr(
+        TaskRepository, "get", AsyncMock(return_value=SimpleNamespace(constraints={}))
+    )
 
     class EmptyMailbox:
         def read_cvs(self, root):
             return {"cvs": [], "messages": [], "rejected": [], "readonly": True, "count": 0}
 
-    service = BusinessWorkflowService(None, "unit", mailbox_factory=lambda org: EmptyMailbox())
+    service = BusinessWorkflowService(
+        EmptyManualIntakeDatabase(), "unit", mailbox_factory=lambda org: EmptyMailbox()
+    )
     stage = next(s for s in HIRING if s.key == "cv_intake")
     result = await service._mechanical("tsk_" + "a" * 26, stage, "live", {}, {})
     assert result["awaiting_cv"] is True
@@ -503,7 +519,7 @@ async def test_selection_repairs_a_wrong_candidate_identifier_from_reviewed_evid
 
     ident = hashlib.sha256(b"fictional CV A").hexdigest()
     cv = {"candidate_id": ident, "filename": "A.txt", "text": "RAW CV DATA"}
-    interviews = {"transcripts": [{"filename": "A.txt", "result": "pass"}]}
+    interviews = {"transcripts": [{"candidate_id": ident, "filename": "A.txt", "result": "pass"}]}
     prior = {
         "rubric": {"threshold": 70},
         "scoring": {"candidates": [{"candidate_id": ident, "score": 86}]},
@@ -623,3 +639,55 @@ async def test_jd_missing_sections_are_rejected_and_exact_keys_survive_repair():
     assert len(requests) == len(recorded) == 2
     assert "missing required fields" in recorded[0].validation_error
     assert set(result.output["sections"]) == set(JD_SECTIONS)
+
+
+def test_interviews_use_received_sha_identity_even_when_cv_filenames_collide():
+    from ai_orchestrator.domain.business_workflow import hiring_blocker
+
+    first, second = "a" * 64, "b" * 64
+    prior = {
+        "rubric": {"threshold": 70},
+        "scoring": {
+            "candidates": [
+                {"candidate_id": first, "score": 85},
+                {"candidate_id": second, "score": 90},
+            ]
+        },
+        "cv_intake": {
+            "cvs": [
+                {"candidate_id": first, "filename": "CV.pdf"},
+                {"candidate_id": second, "filename": "CV.pdf"},
+            ]
+        },
+        "interview_technical": {"transcripts": [{"candidate_id": first, "result": "pass"}]},
+        "interview_hr": {"transcripts": [{"candidate_id": second, "result": "pass"}]},
+    }
+    assert hiring_blocker("selection", prior)["code"] == "no_interview_qualified_candidates"
+    output = {"recommended_candidate_id": first}
+    with pytest.raises(ValueError, match="both interview rounds"):
+        validate_artifact("selection", output, {}, prior)
+    prior["interview_hr"]["transcripts"][0]["candidate_id"] = first
+    assert hiring_blocker("selection", prior) is None
+    validate_artifact("selection", output, {}, prior)
+
+
+@pytest.mark.parametrize(
+    "transcripts",
+    [
+        [{"filename": "CV.pdf", "result": "pass"}],
+        [{"candidate_id": "c" * 64, "result": "pass"}],
+        [
+            {"candidate_id": "a" * 64, "result": "pass"},
+            {"candidate_id": "a" * 64, "result": "fail"},
+        ],
+    ],
+)
+def test_ambiguous_legacy_unknown_or_duplicate_interview_identity_is_rejected(transcripts):
+    from ai_orchestrator.domain.business_workflow import passing_interview_candidates
+
+    cvs = [
+        {"candidate_id": "a" * 64, "filename": "CV.pdf"},
+        {"candidate_id": "b" * 64, "filename": "CV.pdf"},
+    ]
+    with pytest.raises(ValueError, match="candidate_id"):
+        passing_interview_candidates({"transcripts": transcripts}, cvs)

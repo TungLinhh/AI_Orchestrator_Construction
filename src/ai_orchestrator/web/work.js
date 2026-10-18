@@ -1071,6 +1071,8 @@ async function renderGive(id, refresh = true) {
   setHTML("taskAnswerSub", "");
   const _ac = $("taskAnswerCopy");
   if (_ac) _ac.hidden = true;
+  const _ad = $("taskAnswerDownload");
+  if (_ad) { _ad.hidden = true; _ad.onclick = null; }
   const _ae = $("taskAnswerEmpty");
   if (_ae) _ae.hidden = true;
   state.taskId = null;
@@ -1141,6 +1143,30 @@ function renderAnswer(t) {
     : [];
   const sub = $("taskAnswerSub");
   const copy = $("taskAnswerCopy");
+  let download = $("taskAnswerDownload");
+  if (!download && copy) {
+    download = document.createElement("button");
+    download.id = "taskAnswerDownload";
+    download.className = "ui-btn ui-btn-ghost ui-btn-sm";
+    download.type = "button";
+    copy.after(download);
+  }
+  if (download) {
+    download.textContent = UI.L("Download answer", "Tải câu trả lời");
+    download.hidden = t.status !== "completed" || !keys.length;
+    download.onclick = async () => {
+      try {
+        const response = await fetch(API + `/tasks/${encodeURIComponent(t.id)}/answer/download`, {headers: authHeaders()});
+        if (!response.ok) throw new Error(UI.L("Could not download answer.", "Không thể tải câu trả lời."));
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "task-answer.md";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (error) { toast(error.message, true); }
+    };
+  }
   const empty = $("taskAnswerEmpty");
   if (!keys.length) {
     setHTML("taskAnswer", "");

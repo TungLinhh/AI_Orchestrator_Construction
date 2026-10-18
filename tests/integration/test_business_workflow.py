@@ -1138,3 +1138,241 @@ async def test_synthetic_hiring_keeps_real_approval_gate(client, prepared, db):
         ).all()
         assert len(approvals) == 1
         assert approvals[0].status == "pending"
+
+
+async def test_manual_cv_upload_preserves_provenance_and_requires_explicit_run(
+    client, prepared, other_tenant, db, tmp_path, monkeypatch
+):
+    """Fictional source upload survives fresh sessions without executing or mailing."""
+    import hashlib
+
+    from ai_orchestrator.application import hiring_intake
+    from ai_orchestrator.domain.business_workflow import HIRING
+    from ai_orchestrator.integrations import recruitment_mail
+    from tests.integration.api_client import auth_headers
+    from tests.integration.test_console_management import _human_headers
+
+    monkeypatch.setattr(recruitment_mail, "DEV_DATA_DIR", tmp_path)
+    monkeypatch.setattr(hiring_intake, "DEV_DATA_DIR", tmp_path)
+    headers = await _human_headers(prepared)
+    brief = {**hiring_fixture(), "synthetic": True}
+    root_id = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "live", brief
+    )
+    await prepared.commit()
+    endpoint = "/api/v1/workflows/" + root_id + "/cvs"
+    data = b"SYNTHETIC candidate. Five years of MEP engineering and BIM coordination."
+    files = {"file": ("fictional.txt", data, "text/plain")}
+    # Creation/upload cannot silently bypass either prior human review.
+    denied = await client.post(endpoint, headers=headers, files=files, data={"synthetic": "true"})
+    assert denied.status_code == 409, denied.text
+    async with db.tenant_session(prepared.organization_id) as session:
+        stages = (await session.scalars(select(Task).where(Task.parent_task_id == root_id))).all()
+        for stage in stages:
+            if stage.input["stage_key"] in {
+                "brief",
+                "headcount_review",
+                "jd",
+                "jd_review",
+                "rubric",
+                "rubric_review",
+            }:
+                stage.status = "completed"  # Explicit offline setup, not a real approval receipt.
+    denied = await client.post(
+        endpoint,
+        headers={
+            k: v for k, v in auth_headers(prepared.organization_id).items() if k != "Content-Type"
+        },
+        files=files,
+        data={"synthetic": "true"},
+    )
+    assert denied.status_code == 403
+    wrong = await client.post(endpoint, headers=headers, files=files, data={"synthetic": "false"})
+    assert wrong.status_code == 422, wrong.text
+    from sqlalchemy import text
+
+    async with db.engine.begin() as controller_lock:
+        await controller_lock.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext(:org), hashtext(:root))"),
+            {"org": prepared.organization_id, "root": root_id},
+        )
+        busy = await client.post(endpoint, headers=headers, files=files, data={"synthetic": "true"})
+        assert busy.status_code == 409, busy.text
+        assert "running" in busy.json()["error"]["message"]
+    response = await client.post(endpoint, headers=headers, files=files, data={"synthetic": "true"})
+    assert response.status_code == 201, response.text
+    digest = hashlib.sha256(data).hexdigest()
+    assert response.json()["candidate_id"] == digest
+    assert response.json()["started"] is False
+    # Untrusted malformed files are refused without publishing an orphan source.
+    malformed = await client.post(
+        endpoint,
+        headers=headers,
+        files={"file": ("broken.docx", b"not a zip", "application/octet-stream")},
+        data={"synthetic": "true"},
+    )
+    assert malformed.status_code == 422, malformed.text
+    assert "cannot be read" in malformed.json()["error"]["message"]
+    assert not (
+        tmp_path
+        / "recruitment"
+        / prepared.organization_id
+        / root_id
+        / (hashlib.sha256(b"not a zip").hexdigest() + ".docx")
+    ).exists()
+    import subprocess
+
+    def timeout_pdf(*args):
+        raise subprocess.TimeoutExpired("private-parser-path", 20)
+
+    with monkeypatch.context() as parser_patch:
+        parser_patch.setattr(recruitment_mail, "extract_cv", timeout_pdf)
+        bad_pdf = await client.post(
+            endpoint,
+            headers=headers,
+            files={"file": ("broken.pdf", b"%PDF-fake", "application/pdf")},
+            data={"synthetic": "true"},
+        )
+    assert bad_pdf.status_code == 422, bad_pdf.text
+    assert "private-parser-path" not in bad_pdf.text
+    assert not (
+        tmp_path
+        / "recruitment"
+        / prepared.organization_id
+        / root_id
+        / (hashlib.sha256(b"%PDF-fake").hexdigest() + ".pdf")
+    ).exists()
+    foreign = await client.post(
+        endpoint,
+        headers=await _human_headers(other_tenant),
+        files=files,
+        data={"synthetic": "true"},
+    )
+    assert foreign.status_code == 404, foreign.text
+    duplicate = await client.post(
+        endpoint, headers=headers, files=files, data={"synthetic": "true"}
+    )
+    assert duplicate.json()["duplicate"] is True
+    assert duplicate.json()["count"] == 1
+    async with db.tenant_session(prepared.organization_id) as session:
+        root = await session.get(Task, root_id)
+        records = root.constraints["manual_cv_intake"]
+        assert len(records) == 1
+        assert records[0]["synthetic"] is True
+        assert records[0]["untrusted"] is True
+        assert root.status == "assigned"
+        assert not await session.scalar(select(Approval.id).where(Approval.task_id == root_id))
+    service = BusinessWorkflowService(db, prepared.organization_id)
+    intake = next(stage for stage in HIRING if stage.key == "cv_intake")
+    output = await service._mechanical(root_id, intake, "live", brief, {})
+    assert output["protocol"] == "manual-upload"
+    assert output["cvs"][0]["candidate_id"] == digest
+    assert output["cvs"][0]["text"] == data.decode()
+    assert output["cvs"][0]["source"] == "manual_cv"
+    async with db.tenant_session(prepared.organization_id) as session:
+        stage = await session.scalar(
+            select(Task).where(
+                Task.parent_task_id == root_id, Task.input["stage_key"].astext == "cv_intake"
+            )
+        )
+        stage.status = "completed"
+    frozen = await client.post(endpoint, headers=headers, files=files, data={"synthetic": "true"})
+    assert frozen.status_code == 409, frozen.text
+
+
+async def test_unconfigured_recruitment_mailbox_waits_for_manual_cv(prepared, db, monkeypatch):
+    """Missing connector capability must not irreversibly fail an HR campaign."""
+    from ai_orchestrator.config.settings import reset_settings_cache
+
+    monkeypatch.setenv("AO_RECRUITMENT_MAIL_ORG", "not-this-tenant")
+    reset_settings_cache()
+    root_id = await create_workflow(
+        prepared.session,
+        prepared.organization_id,
+        "mep_hiring",
+        "live",
+        {**hiring_fixture(), "synthetic": True},
+    )
+    await prepared.commit()
+    async with db.tenant_session(prepared.organization_id) as session:
+        stages = (await session.scalars(select(Task).where(Task.parent_task_id == root_id))).all()
+        for stage in stages:
+            if stage.input["stage_key"] in {
+                "brief",
+                "headcount_review",
+                "jd",
+                "jd_review",
+                "rubric",
+                "rubric_review",
+            }:
+                stage.status = "completed"  # Offline setup only.
+    service = BusinessWorkflowService(db, prepared.organization_id)
+    report = await service.run(root_id)
+    assert report["status"] == "blocked", report
+    stage = next(s for s in report["stages"] if s["key"] == "cv_intake")
+    assert stage["status"] == "waiting_for_input"
+    assert stage["output"]["reason"].startswith("Upload CVs")
+    assert report["mail_intake"]["manual_upload_allowed"] is True
+    assert report["evidence"]["real_model_calls"] == 0
+    reset_settings_cache()
+
+
+async def test_interview_evidence_api_requires_received_candidate_id_not_filename(
+    client, prepared, db, monkeypatch
+):
+    from ai_orchestrator.application.workflow_drivers import WorkflowDrivers
+    from tests.integration.test_console_management import _human_headers
+
+    headers = await _human_headers(prepared)
+    root_id = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "live", hiring_fixture()
+    )
+    await prepared.commit()
+    first, second = "a" * 64, "b" * 64
+    async with db.tenant_session(prepared.organization_id) as session:
+        intake = await session.scalar(
+            select(Task).where(
+                Task.parent_task_id == root_id, Task.input["stage_key"].astext == "cv_intake"
+            )
+        )
+        intake.status = "completed"  # Offline phase setup, not a real recruitment receipt.
+        intake.output = {
+            "cvs": [
+                {"candidate_id": first, "filename": "same.pdf"},
+                {"candidate_id": second, "filename": "same.pdf"},
+            ]
+        }
+    continuations = []
+
+    async def continuation(self, org, root, *args, **kwargs):
+        continuations.append((org, root))
+        return True
+
+    monkeypatch.setattr(WorkflowDrivers, "submit", continuation)
+    endpoint = f"/api/v1/workflows/{root_id}/evidence"
+    record = {
+        "source": "authorized interview record",
+        "synthetic": False,
+        "transcripts": [
+            {"filename": "same.pdf", "result": "pass", "notes": "Actual recorded discussion."}
+        ],
+    }
+    rejected = await client.post(
+        endpoint, headers=headers, json={"stage_key": "interview_technical", "evidence": record}
+    )
+    assert rejected.status_code == 422, rejected.text
+    assert continuations == []
+    async with db.tenant_session(prepared.organization_id) as session:
+        root = await session.get(Task, root_id)
+        assert root.input["brief"]["interview_technical"]["synthetic"] is True
+    record["transcripts"][0]["candidate_id"] = second
+    accepted = await client.post(
+        endpoint, headers=headers, json={"stage_key": "interview_technical", "evidence": record}
+    )
+    assert accepted.status_code == 200, accepted.text
+    assert continuations == [(prepared.organization_id, root_id)]
+    async with db.tenant_session(prepared.organization_id) as session:
+        root = await session.get(Task, root_id)
+        assert (
+            root.input["brief"]["interview_technical"]["transcripts"][0]["candidate_id"] == second
+        )

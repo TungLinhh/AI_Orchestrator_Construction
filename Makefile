@@ -478,26 +478,13 @@ page-stop: ## Stop the API started by `make page`
 	else echo "nothing started by \`make page\`"; fi
 
 serve: ## Start the chairman's server: the console on a real model (spends free-model quota)
-	@$(PY) scripts/pgctl.py start >/dev/null 2>&1 || true
-	@mkdir -p $(RUN) $(LOGS)
-	@if [ -f $(RUN)/serve.pid ] && kill -0 $$(cat $(RUN)/serve.pid) 2>/dev/null; then \
-		kill $$(cat $(RUN)/serve.pid) 2>/dev/null || true; sleep 1; fi
-	@AO_API_AUTH_DISABLED=true AO_MODEL_PROVIDER_DEFAULT=openrouter nohup setsid $(PY) -m uvicorn ai_orchestrator.main:app \
-		--host 127.0.0.1 --port $(SERVE_PORT) --log-level warning \
-		> $(LOGS)/serve.log 2>&1 < /dev/null & echo $$! > $(RUN)/serve.pid
-	@for i in $$(seq 1 30); do \
-		curl -sf -o /dev/null "http://127.0.0.1:$(SERVE_PORT)/health" && break; sleep 1; \
-	done; \
-	curl -sf -o /dev/null "http://127.0.0.1:$(SERVE_PORT)/health" || \
-		{ echo "the API did not come up. $(LOGS)/serve.log:"; tail -20 $(LOGS)/serve.log; exit 1; }
+	@$(PY) scripts/pgctl.py start
+	@AO_API_AUTH_DISABLED=true AO_MODEL_PROVIDER_DEFAULT=openrouter $(PY) python scripts/serve_service.py start --port $(SERVE_PORT)
 	@echo ""; echo "  Open this (real work, real model):  http://127.0.0.1:$(SERVE_PORT)/api/v1/ui?org=$(PAGE_ORG)";
 	@echo "  Stop it:    make serve-stop"; echo ""
 
 serve-stop: ## Stop the API started by `make serve`
-	@if [ -f $(RUN)/serve.pid ]; then \
-		kill $$(cat $(RUN)/serve.pid) 2>/dev/null || true; rm -f $(RUN)/serve.pid; \
-		echo "stopped"; \
-	else echo "nothing started by \`make serve\`"; fi
+	@$(PY) python scripts/serve_service.py stop
 
 verify-page: ## Execute the served UI against the live API and check what it rendered
 	@echo "The API must already be running.  \`make page\` does that for you;"

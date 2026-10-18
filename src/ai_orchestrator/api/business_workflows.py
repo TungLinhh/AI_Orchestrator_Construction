@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, text
 
@@ -95,6 +95,31 @@ class EvidenceRequest(BaseModel):
         "interview_technical", "interview_hr", "offer_acceptance", "onboarding_evidence", "delivery"
     ]
     evidence: dict[str, Any]
+
+
+@router.post("/workflows/{root_id}/cvs", status_code=201)
+async def upload_cv(
+    root_id: str,
+    request: Request,
+    file: Annotated[UploadFile, File()],
+    synthetic: Annotated[bool, Form()],
+    ctx: ApiContext = Depends(get_context),
+) -> dict[str, Any]:
+    from ai_orchestrator.application.hiring_intake import receive_cv
+    from ai_orchestrator.config.settings import get_settings
+
+    ctx.require_human()
+    content = await file.read(get_settings().recruitment_mail_max_bytes + 1)
+    async with request.app.state.source_parser_slots:
+        return await receive_cv(
+            ctx.session,
+            ctx.organization_id,
+            root_id,
+            filename=file.filename or "upload",
+            content=content,
+            synthetic=synthetic,
+            actor=ctx.actor,
+        )
 
 
 @router.get("/workflows")
@@ -210,6 +235,23 @@ async def evidence(
     ).scalar_one_or_none()
     if stage is None or stage.status not in {"assigned", "waiting_for_input"}:
         raise PreconditionError("Cannot replace evidence for an executed or in-flight stage")
+    if body.stage_key in {"interview_technical", "interview_hr"}:
+        from ai_orchestrator.domain.business_workflow import passing_interview_candidates
+
+        intake = await ctx.session.scalar(
+            select(Task).where(
+                Task.organization_id == ctx.organization_id,
+                Task.parent_task_id == root_id,
+                Task.input["stage_key"].astext == "cv_intake",
+                Task.status == "completed",
+            )
+        )
+        if intake is None:
+            raise PreconditionError("Receive and review CV identities before recording interviews")
+        try:
+            passing_interview_candidates(body.evidence, intake.output.get("cvs", []))
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
     brief = {**root.input["brief"], body.stage_key: body.evidence}
     root.input = {**root.input, "brief": brief}
     await AuditService(ctx.session, ctx.organization_id).record(

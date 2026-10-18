@@ -33,8 +33,8 @@
     "hiring/mep-test-c.txt": "43afb403bc2a25f3bd293051d66415e4b3eaaae250e264fa52ca14b44be57e4f",
     "hiring/headcount.json": "bb6ae4afc7df940058c430db1ffd3ce58b257458a0f533badba418c50c16e0b9",
     "hiring/role-and-induction.md": "742f63c9b1b900f53a1b24dd165116c822006f70e64d3e9461d62ebcd7a5554c",
-    "hiring/interview_technical.json": "7e2a49a6328a73af63d7b6a87c4d350ccf1a4c285e26b4c0e6db8bad8adbd427",
-    "hiring/interview_hr.json": "a25b40a04fbcba3f54e7f29b799d14e8e85ae54a67ff77dfeb4ef506e8c89824",
+    "hiring/interview_technical.json": "57f12236300d28c79f763a6746893d0c01b5be20544e202c03e080dcc36a32be",
+    "hiring/interview_hr.json": "2462def574a18505f28e52e8a98b967c6106f3cd8846673a571aa50577f19e42",
     "hiring/offer_acceptance.json": "cb8b18a4bb458a2d83e62d8866fad2ba7b72e0d596cebfb4020ad23531eb5d85",
     "hiring/review-policy.json": "af8fa59b41d9862e3f073ca704c7476ba19f502f56a98fa82f8f311d7aba00e9",
     "procurement/boq.json": "e3e51a1da34e2e58f32c394da868c7598b825ef3bd69b0fdb84d64845165f72d",
@@ -59,7 +59,7 @@
     "procurement/delivery-and-invoice.json": "73d6795a56fc55ad3ddad7f90126cfbd5cf4d90859ecf0a89c4f169a1e4bdf3f",
     "procurement/rfq-and-review.md": "da0d1483a49c2794c27cb69e9b51be118a251ee7d131e29ecf0181094b2493cf",
     "expectations.json": "f951bed0a76947cbf1b56c7b5d90b2e49de35d6a3f2d9fa1917c2fb226cce625",
-    "briefs/mep_hiring.json": "5f6300c7ac8f71ea30c1a83d2b6c8a45b9f80bdf25e192d7a5839451ea042d1c",
+    "briefs/mep_hiring.json": "0dc1c5ccbb6dccebfcf9861dc15b6b06b03558515d1e5b20fec15774e74cf327",
     "briefs/procurement.json": "bf32e11f5c490ebae907966439b76c96b9e74c2d206e9d0d85c0a5ef352ce9f9"
   }
 }

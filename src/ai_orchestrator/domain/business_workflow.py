@@ -308,6 +308,34 @@ def validate_match(
     return round(total, 2)
 
 
+def passing_interview_candidates(record: dict[str, Any], cvs: list[dict[str, Any]]) -> set[str]:
+    """Bind interview evidence to immutable received CV identities, never filenames."""
+    known = {cv["candidate_id"] for cv in cvs}
+    transcripts = record.get("transcripts")
+    if not isinstance(transcripts, list) or not 1 <= len(transcripts) <= 50:
+        raise ValueError("Interview evidence requires one to fifty transcripts")
+    seen: set[str] = set()
+    passed: set[str] = set()
+    for row in transcripts:
+        if not isinstance(row, dict):
+            raise ValueError("Each interview transcript must identify its candidate_id")
+        ident = row.get("candidate_id")
+        if not isinstance(ident, str) or ident not in known:
+            raise ValueError(
+                "Interview candidate_id must equal a received CV SHA-256 ID; "
+                "filename-only legacy records must be resubmitted with candidate_id"
+            )
+        if ident in seen:
+            raise ValueError("Interview evidence must identify each candidate_id at most once")
+        result = row.get("result")
+        if not isinstance(result, str) or result not in {"pass", "fail", "needs_development"}:
+            raise ValueError("Interview result must be pass, fail or needs_development")
+        seen.add(ident)
+        if row["result"] == "pass":
+            passed.add(ident)
+    return passed
+
+
 def hiring_blocker(stage_key: str, prior: dict[str, Any]) -> dict[str, Any] | None:
     """Detect an empty reviewed shortlist before invoking impossible downstream work."""
     if stage_key not in {"interview_technical", "selection"} or "scoring" not in prior:
@@ -318,14 +346,18 @@ def hiring_blocker(stage_key: str, prior: dict[str, Any]) -> dict[str, Any] | No
     code = "no_eligible_candidates"
     message = "Không có CV đạt ngưỡng đã duyệt. Cần bổ sung nguồn ứng viên trong revision mới."
     if eligible and stage_key == "selection":
-        cvs = {cv["candidate_id"]: cv for cv in prior["cv_intake"]["cvs"]}
-        for interview in ("interview_technical", "interview_hr"):
-            passed = {
-                row["filename"]
-                for row in prior[interview]["transcripts"]
-                if row.get("result") == "pass"
+        try:
+            for interview in ("interview_technical", "interview_hr"):
+                eligible &= passing_interview_candidates(
+                    prior[interview], prior["cv_intake"]["cvs"]
+                )
+        except ValueError as exc:
+            return {
+                "code": "interview_candidate_identity_invalid",
+                "message": str(exc),
+                "stage_key": stage_key,
+                "requires_revision": True,
             }
-            eligible = {ident for ident in eligible if cvs[ident]["filename"] in passed}
         code = "no_interview_qualified_candidates"
         message = (
             "Không có ứng viên đạt ngưỡng và cả hai vòng phỏng vấn. "

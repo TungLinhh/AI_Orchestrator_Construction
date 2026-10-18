@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -365,21 +366,66 @@ async def bind_sources(
     task_id: str, body: Selection, ctx: ApiContext = Depends(get_context)
 ) -> dict[str, Any]:
     ctx.require_human()
-    task = await TaskRepository(ctx.session, ctx.organization_id).get(task_id)
-    if task.input.get("source_workflow") not in {
+    # Match TaskAttemptRunner's admission lock before inspecting task state.
+    # A row lock alone cannot exclude the runner's pre-claim read.
+    if not await ctx.session.scalar(
+        text("SELECT pg_try_advisory_xact_lock(hashtext(:org), hashtext(:key))"),
+        {"org": ctx.organization_id, "key": "task-attempt:" + task_id},
+    ):
+        raise PreconditionError("Task execution is being admitted; attach sources before running")
+    task = await ctx.session.scalar(
+        select(Task)
+        .where(Task.organization_id == ctx.organization_id, Task.id == task_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if task is None:
+        raise NotFoundError("Task not found", resource_type="task", resource_id=task_id)
+    source_workflow = task.input.get("source_workflow") in {
         "document_review",
         "quote_comparison",
-    } or task.status not in {"created", "assigned", "waiting_for_input"}:
-        raise PreconditionError("Sources can only be bound to an unexecuted source workflow")
+    }
+    ordinary_analysis = (
+        not task.input.get("source_workflow")
+        and task.task_type == "analysis"
+        and not task.expected_output_schema
+        and not task.input.get("business_workflow")
+        and not task.parent_task_id
+    )
+    if not (source_workflow or ordinary_analysis) or task.status not in {
+        "created",
+        "assigned",
+        "waiting_for_input",
+    }:
+        raise PreconditionError(
+            "Attach sources only to an unexecuted document workflow or ordinary "
+            "analysis without a declared output schema; ordered work uses its controller"
+        )
     if await ctx.session.scalar(
         select(Execution.id)
         .where(Execution.organization_id == ctx.organization_id, Execution.task_id == task_id)
         .limit(1)
     ):
         raise PreconditionError("Create a revision instead of changing an executed task")
+    # Binding is an explicit opt-in to the existing cited-report contract.
+    # Never silently replace a declared schema or a workflow stage contract.
     manifest = await SourceIntake(ctx.session, ctx.organization_id).bind(
         task, body.file_ids, body.mode
     )
+    if ordinary_analysis:
+        task.input = {
+            **task.input,
+            "source_workflow": "document_review",
+            "source_selection_mode": body.mode,
+        }
+        task.expected_output_schema = report_schema(False)
+        await AuditService(ctx.session, ctx.organization_id).record(
+            actor=ctx.actor,
+            action="task.sources_attached",
+            resource_type="task",
+            resource_id=task.id,
+            context={"manifest_id": manifest.id, "contract": "document_review"},
+        )
     if task.status == "waiting_for_input":
         await TaskRepository(ctx.session, ctx.organization_id).transition(
             task.id, Transition.RESUME
@@ -401,6 +447,39 @@ async def task_sources(task_id: str, ctx: ApiContext = Depends(get_context)) -> 
         if manifest
         else None
     }
+
+
+@router.get("/tasks/{task_id}/answer/download")
+async def download_task_answer(task_id: str, ctx: ApiContext = Depends(get_context)) -> Response:
+    """Export the persisted completed answer, never a model-supplied filesystem path.
+
+    This is an answer export, not a registered source artifact or proof of human
+    approval. All fields are retained without truncation or model interpretation.
+    """
+    task = await TaskRepository(ctx.session, ctx.organization_id).get(task_id)
+    if task.status != "completed":
+        raise PreconditionError("An answer can be downloaded only after task completion")
+    output = task.output or {}
+    fields = [(key, value) for key, value in output.items() if value is not None and value != ""]
+    if not fields:
+        raise PreconditionError("This task has no written answer to export")
+    sections = []
+    for key, value in fields:
+        rendered = (
+            value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, indent=2)
+        )
+        sections.append(f"## {key}\n\n{rendered}")
+    content = ("\n\n".join(sections) + "\n").encode("utf-8")
+    return Response(
+        content,
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="task-answer.md"',
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "private, no-store",
+            "ETag": '"' + hashlib.sha256(content).hexdigest() + '"',
+        },
+    )
 
 
 @router.get("/tasks/{task_id}/artifacts")

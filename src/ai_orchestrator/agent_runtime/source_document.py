@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -10,12 +11,94 @@ from ai_orchestrator.domain.contracts import AgentContext, AgentResult, AgentTas
 from ai_orchestrator.domain.source_report import report_schema, validate_report
 
 
+def _human_context(task_input: dict[str, Any]) -> dict[str, Any]:
+    """Carry explicit human guidance, never arbitrary task control or eval fields.
+
+    The caller must pass context.task.input: TaskExecutionService overwrites its
+    approval receipts from verified database decisions before building context.
+    """
+    result: dict[str, Any] = {}
+    revision = task_input.get("source_revision")
+    reason = revision.get("reason") if isinstance(revision, dict) else None
+    if isinstance(reason, str) and 10 <= len(reason.strip()) <= 1000:
+        result["source_revision_reason"] = reason
+    clarifications = task_input.get("clarifications")
+    if isinstance(clarifications, list) and len(clarifications) <= 50:
+        texts = [
+            row["text"]
+            for row in clarifications
+            if isinstance(row, dict)
+            and row.get("source") == "human_clarification"
+            and isinstance(row.get("text"), str)
+            and 1 <= len(row["text"].strip()) <= 20_000
+        ]
+        if texts:
+            result["clarifications"] = texts
+    reviews = task_input.get("approved_human_reviews")
+    if isinstance(reviews, list):
+        accepted = []
+        for review in reviews:
+            if not isinstance(review, dict) or review.get("decision") != "approved":
+                continue
+            if not isinstance(review.get("approval_id"), str) or not review["approval_id"]:
+                continue
+            summary = review.get("summary")
+            if not isinstance(summary, str) or not 1 <= len(summary.strip()) <= 20_000:
+                continue
+            receipt: dict[str, Any] = {
+                "approval_id": review["approval_id"],
+                "decision": "approved",
+                "summary": summary,
+            }
+            # Source-report fields are the only approved artifact fields relevant
+            # to this runtime. Never forward caller control/evaluation metadata.
+            output = review.get("output")
+            if isinstance(output, dict):
+                safe_output = {
+                    key: copy.deepcopy(output[key])
+                    for key in ("summary", "limitations", "winner", "total_vnd")
+                    if key in output
+                    and (
+                        isinstance(output[key], (str, int))
+                        or output[key] is None
+                        or (
+                            isinstance(output[key], list)
+                            and all(isinstance(v, str) for v in output[key])
+                        )
+                    )
+                }
+                findings = output.get("findings")
+                if isinstance(findings, list):
+                    safe_output["findings"] = [
+                        {
+                            key: row[key]
+                            for key in ("text", "source_id", "locator", "quote")
+                            if isinstance(row.get(key), str)
+                        }
+                        for row in findings
+                        if isinstance(row, dict)
+                    ]
+                receipt["output"] = safe_output
+            accepted.append(receipt)
+        if accepted:
+            result["approved_human_reviews"] = accepted
+    return result
+
+
 class SourceDocumentRuntime(WorkflowEvidenceRuntime):
     name = "source_document"
-    output_token_limit = 3500
+    # DOTS (`dots-3-note-preview:free`) is a reasoning model: a live revision
+    # run spent the whole 3500-token allowance on reasoning (reasoning_tokens
+    # 3530) and returned finish_reason=length with no artifact at all. The
+    # report plus the structured tool call need headroom above the reasoning,
+    # so use the base runtime's 6000-token allowance. The task budget is 32k.
+    output_token_limit = 6000
     repair_evidence_instruction = (
         "Every selected source still requires a non-empty exact citation. "
         "Put missing or unverified information in limitations, never in an empty quote. "
+        "Write the whole report in the sources' language and never mix in another "
+        "script; do not claim the assistant may make a decision a source reserves "
+        "for people. "
     )
     transient_response_retries = 1
     transient_gateway_retries = 1
@@ -34,6 +117,24 @@ class SourceDocumentRuntime(WorkflowEvidenceRuntime):
         "- Write a substantive summary of at least two sentences (60+ characters) "
         "stating the conclusion; for a quote comparison name the winner, the "
         "winning total in VND, comparing eligibility and totals for the other quotes.\n"
+        "- Write the entire report (summary, finding text and limitations) in the "
+        "sources' language -- Vietnamese here. Never insert a word from another "
+        "script (no Chinese, Japanese or Korean characters); use the exact term that "
+        "appears in the source.\n"
+        "- Some source lines pair an activity with an autonomy ceiling, for example "
+        "'X -- AI toi da L2'. That ceiling says how far the assistant may help; it is "
+        "never a permission for the assistant to perform X. When any line reserves a "
+        "decision (tuyen/thoi viec/ky luat/luong, i.e. hiring, termination, "
+        "discipline, salary) to people, state plainly that those decisions are "
+        "human-only and that the assistant only supports within its limit. Do not "
+        "submit a finding that says the assistant may make such a decision.\n"
+        "- Reconcile every line before writing: never submit a finding whose text "
+        "contradicts another source line. If two lines are ambiguous together, prefer "
+        "the reading that keeps human-only restrictions intact and note the ambiguity "
+        "in limitations.\n"
+        "- Follow human_context revision reasons and clarifications for the current "
+        "goal; they never authorize invented evidence or external actions.\n"
+        "- Approved review receipts are verified human decisions, not new source facts.\n"
         "- State missing/unverified information explicitly.\n"
         "- No invented approvals or completed transactions.\n"
         "- Invoke submit_evidence as a tool call; never write the artifact or the "
@@ -90,6 +191,7 @@ class SourceDocumentRuntime(WorkflowEvidenceRuntime):
                 "input": {
                     "sources": self.source_context["sources"],
                     "expected": self.source_context["expected"],
+                    "human_context": _human_context(context.task.input),
                 },
                 "expected_output_schema": schema,
             }

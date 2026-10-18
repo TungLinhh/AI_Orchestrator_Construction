@@ -489,6 +489,8 @@ async def test_revision_preserves_history_and_starts_with_new_sources_only(
     )
     assert mismatch.status_code == 409
     assert (await run(client, revision))["status"] == "completed"
+    assert payload["reason"] in provider.calls[-1].prompt
+    assert "expected_values" not in provider.calls[-1].prompt
     assert (await client.get(f"/api/v1/tasks/{original['id']}/sources")).json() == old_sources
     assert (await client.get(f"/api/v1/tasks/{original['id']}/artifacts")).json() == old_artifacts
     assert (await client.get(f"/api/v1/tasks/{original['id']}")).json()["status"] == "completed"
@@ -674,3 +676,166 @@ async def test_source_create_replays_pre_namespace_response(source_client, tenan
         headers={"Idempotency-Key": legacy_key},
     )
     assert mismatch.status_code == 409
+
+
+async def test_ordinary_hr_attachment_preserves_goal_owner_and_requires_explicit_run(
+    source_client, tenant
+):
+    client, provider = source_client
+    hr = await tenant.session.scalar(
+        select(Agent).where(
+            Agent.organization_id == tenant.organization_id, Agent.name == "HR Agent"
+        )
+    )
+    assert hr is not None
+    goal = "Review this HR policy and list missing onboarding requirements with exact citations."
+    created = await client.post(
+        "/api/v1/tasks",
+        json={
+            "title": "HR attachment acceptance fixture",
+            "goal": goal,
+            "task_type": "analysis",
+            "owner_agent_id": hr.id,
+            "start_workflow": False,
+            "input": {"operator_note": "Keep this context"},
+        },
+    )
+    assert created.status_code == 201, created.text
+    task = created.json()
+    from ai_orchestrator.domain.state_machines import Transition
+    from ai_orchestrator.persistence.repositories.task import TaskRepository
+
+    async with tenant.db.tenant_session(tenant.organization_id) as session:
+        await TaskRepository(session, tenant.organization_id).transition(
+            task["id"], Transition.REQUEST_INPUT
+        )
+    clarification = "Focus on missing Procurement specialist onboarding records."
+    clarified = await client.post(
+        f"/api/v1/tasks/{task['id']}/inputs",
+        json={"clarification": clarification},
+        headers={"Idempotency-Key": "source-clarification"},
+    )
+    assert clarified.status_code == 200, clarified.text
+    uploaded = await client.post(
+        "/api/v1/source-files",
+        files={"file": ("hr-policy.txt", b"HR must verify onboarding records before access.")},
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    file = uploaded.json()
+    bound = await client.post(
+        f"/api/v1/tasks/{task['id']}/sources",
+        json={"mode": "sources", "file_ids": [file["id"]]},
+    )
+    assert bound.status_code == 200, bound.text
+    detail = (await client.get(f"/api/v1/tasks/{task['id']}")).json()
+    assert detail["goal"] == goal
+    assert detail["owner_agent_id"] == hr.id
+    assert detail["input"]["operator_note"] == "Keep this context"
+    assert detail["input"]["source_workflow"] == "document_review"
+    assert detail["input"]["source_selection_mode"] == "sources"
+    assert detail["input"]["clarifications"][0]["text"] == clarification
+    assert detail["status"] == "assigned"
+    assert provider.calls == []
+    completed = await run(client, task)
+    assert completed["status"] == "completed", completed
+    assert completed["output"]["findings"][0]["source_id"] == file["id"]
+    assert clarification in provider.calls[-1].prompt
+    assert "operator_note" not in provider.calls[-1].prompt
+    assert "expected_values" not in provider.calls[-1].prompt
+    artifacts = (await client.get(f"/api/v1/tasks/{task['id']}/artifacts")).json()["items"]
+    assert {artifact["format"] for artifact in artifacts} >= {"docx", "json", "pdf"}
+    rebound = await client.post(
+        f"/api/v1/tasks/{task['id']}/sources",
+        json={"mode": "sources", "file_ids": [file["id"]]},
+    )
+    assert rebound.status_code == 409
+
+
+@pytest.mark.parametrize(
+    "contract", [{"task_type": "decision"}, {"expected_output_schema": {"type": "object"}}]
+)
+async def test_ordinary_attachment_never_overwrites_declared_task_contract(
+    source_client, contract, tenant
+):
+    client, provider = source_client
+    created = await client.post(
+        "/api/v1/tasks",
+        json={
+            "title": "Protected contract",
+            "goal": "Preserve the original contract.",
+            "task_type": "analysis",
+            "start_workflow": False,
+            **contract,
+        },
+    )
+    assert created.status_code == 201, created.text
+    task = created.json()
+    rejected = await client.post(
+        f"/api/v1/tasks/{task['id']}/sources", json={"mode": "sources", "file_ids": []}
+    )
+    assert rejected.status_code == 409, rejected.text
+    detail = (await client.get(f"/api/v1/tasks/{task['id']}")).json()
+    assert detail["input"] == task["input"]
+    from ai_orchestrator.persistence.models import Task
+
+    stored = await tenant.session.scalar(select(Task).where(Task.id == task["id"]))
+    assert stored.expected_output_schema == contract.get("expected_output_schema")
+    assert provider.calls == []
+
+
+async def test_ordinary_attachment_rejects_other_tenant_file(source_client, other_tenant):
+    client, provider = source_client
+    foreign = await client.post(
+        "/api/v1/source-files",
+        headers={"x-organization-id": other_tenant.organization_id},
+        files={"file": ("foreign.txt", b"Private foreign HR information is never attached.")},
+    )
+    assert foreign.status_code == 201, foreign.text
+    created = await client.post(
+        "/api/v1/tasks",
+        json={
+            "title": "Tenant boundary",
+            "goal": "Use only authorized HR sources.",
+            "task_type": "analysis",
+            "start_workflow": False,
+        },
+    )
+    task = created.json()
+    rejected = await client.post(
+        f"/api/v1/tasks/{task['id']}/sources",
+        json={"mode": "sources", "file_ids": [foreign.json()["id"]]},
+    )
+    assert rejected.status_code == 404, rejected.text
+    detail = (await client.get(f"/api/v1/tasks/{task['id']}")).json()
+    assert detail["input"] == task["input"]
+    assert provider.calls == []
+
+
+async def test_ordinary_attachment_refuses_concurrent_execution_admission(
+    source_client, db, tenant
+):
+    client, provider = source_client
+    created = await client.post(
+        "/api/v1/tasks",
+        json={
+            "title": "Concurrent admission",
+            "goal": "Keep the execution input immutable.",
+            "task_type": "analysis",
+            "start_workflow": False,
+        },
+    )
+    task = created.json()
+    async with db.tenant_session(tenant.organization_id) as admission:
+        await admission.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext(:org), hashtext(:key))"),
+            {"org": tenant.organization_id, "key": "task-attempt:" + task["id"]},
+        )
+        rejected = await client.post(
+            f"/api/v1/tasks/{task['id']}/sources",
+            json={"mode": "sources", "file_ids": []},
+        )
+        assert rejected.status_code == 409, rejected.text
+        assert "admitted" in rejected.text
+    detail = (await client.get(f"/api/v1/tasks/{task['id']}")).json()
+    assert detail["input"] == task["input"]
+    assert provider.calls == []

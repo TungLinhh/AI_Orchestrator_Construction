@@ -267,11 +267,12 @@ $("runBtn").onclick = async () => {
     const chosen = $("scenario").value;
     const scenario = (state.scenarios || []).find((sc) => sc.key === chosen);
     const sourceWorkflow = !!window.SourceUI?.isSourceWorkflow();
-    if (!sourceWorkflow) window.SourceUI?.assertOrdinarySources();
-    const made = sourceWorkflow ? await window.SourceUI.create({
+    if (!sourceWorkflow) window.SourceUI?.assertOrdinarySources(scenario, $("taskType").value);
+    const ordinarySources = !sourceWorkflow && !!window.SourceUI?.hasOrdinarySources();
+    const made = (sourceWorkflow || ordinarySources) ? await window.SourceUI.create({
       title: (scenario ? scenario.title : goal).slice(0, 60), goal,
       owner_agent_id: $("agent").value || null,
-    }) : await apiPost("/tasks", {
+    }, ordinarySources) : await apiPost("/tasks", {
       title: (scenario ? scenario.title : goal).slice(0, 60),
       goal,
       task_type: $("taskType").value,

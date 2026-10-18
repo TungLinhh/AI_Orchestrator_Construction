@@ -88,9 +88,17 @@ window.SourceUI = (() => {
     } catch (error) { notice(error.message, true); throw error; }
   }
   const isSourceWorkflow = () => ['document_review', 'quote_comparison'].includes($('sourceWorkflow').value);
-  function assertOrdinarySources() {
-    if (chosen.size || $('sourceUploadFiles').files.length || mode()) {
-      throw new Error(L('Selected files are not attached to ordinary tasks. Choose document review or quote comparison, or clear the source selection to continue without files.', 'Nguồn đã chọn chưa được gắn vào công việc thông thường. Chọn rà hồ sơ hoặc so sánh báo giá, hoặc bỏ chọn nguồn để tiếp tục không kèm file.'));
+  const hasOrdinarySources = () => chosen.size > 0 || !!mode() || $('sourceUploadFiles').files.length > 0;
+  function assertOrdinarySources(scenario, taskType) {
+    if (!hasOrdinarySources()) return;
+    if (scenario || taskType !== 'analysis') {
+      throw new Error(L('Attachments use a cited document report. Choose a free-text analysis task or clear sources to preserve this task contract.', 'File đính kèm dùng báo cáo có trích nguồn. Chọn công việc phân tích tự do hoặc bỏ nguồn để giữ hợp đồng đầu ra hiện tại.'));
+    }
+    if ($('sourceUploadFiles').files.length) {
+      throw new Error(L('Upload and select readable files before running.', 'Upload và chọn file đọc được trước khi chạy.'));
+    }
+    if (!mode() || !chosen.size) {
+      throw new Error(L('Select at least one readable source file before running.', 'Chọn ít nhất một file nguồn đọc được trước khi chạy.'));
     }
   }
   async function generate() {
@@ -100,15 +108,15 @@ window.SourceUI = (() => {
     chosen.clear(); result.items.forEach(file => chosen.add(file.id));
     await refresh(); notice(L('Actual mock files generated and extracted.', 'Đã tạo và đọc file mock qua parser.'));
   }
-  async function create(body) {
-    if (!isSourceWorkflow()) throw new Error(L('Choose a document workflow first.', 'Chọn cách xử lý hồ sơ trước.'));
+  async function create(body, ordinary = false) {
+    if (!ordinary && !isSourceWorkflow()) throw new Error(L('Choose a document workflow first.', 'Chọn cách xử lý hồ sơ trước.'));
     if (!mode()) throw new Error(L('Choose source files or generate mock files before running.', 'Bạn muốn chọn nguồn dữ liệu hay tạo file mock để kiểm thử?'));
     if (mode() === 'mock' && !chosen.size) await generate();
     const ids = [...chosen];
     if (mode() === 'mock' && ids.some(id => !library.find(f => f.id === id)?.synthetic)) {
       throw new Error(L('Mock mode only accepts generated mock files.', 'Chế độ mock chỉ nhận file mock được tạo trong hệ thống.'));
     }
-    return apiPost('/source-workflows', {...body, workflow: $('sourceWorkflow').value, selection: {mode: mode(), file_ids: ids}});
+    return apiPost('/source-workflows', {...body, workflow: ordinary ? 'document_review' : $('sourceWorkflow').value, selection: {mode: mode(), file_ids: ids}});
   }
   async function task(id) {
     /* A revision form belongs to exactly one original task. Drop a stale one
@@ -452,12 +460,13 @@ window.SourceUI = (() => {
           const form = new FormData(); form.append('file', file); form.append('classification', $('sourceClassification').value);
           const saved = await (await binary('/source-files', {method: 'POST', body: form})).json();
           if (saved.state === 'ready') chosen.add(saved.id);
-          else notice(`${saved.filename}: ${saved.state} ${saved.error || ''}`, true);
+          else throw new Error(`${saved.filename}: ${saved.state} ${saved.error || ''}`);
         }
+        $('sourceUploadFiles').value = '';
         await refresh();
       } catch (error) {notice(error.message, true);} finally {$('sourceUpload').disabled = false;}
     };
     $('newTaskForm').addEventListener('toggle', () => {if ($('newTaskForm').open) refresh().catch(() => {});});
   }
-  return {init, create, task, refresh, isSourceWorkflow, assertOrdinarySources};
+  return {init, create, task, refresh, isSourceWorkflow, hasOrdinarySources, assertOrdinarySources};
 })();

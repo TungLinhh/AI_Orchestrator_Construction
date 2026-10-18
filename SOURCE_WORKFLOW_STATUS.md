@@ -1,5 +1,32 @@
 # Luồng nguồn → workflow → file kết quả
 
+> Cập nhật 18/10/2026 (nội dung đã đạt): revision source qua UI trên model thật PASS —
+> báo cáo tiếng Việt, không ký tự ngoại lai, 7 finding khớp nguyên văn nguồn, nêu rõ giới
+> hạn L2 và quyết định nhân sự thuộc con người, tải DOCX từ UI. Guard xác định trong
+> `domain/source_report.py` (`foreign_script_leakage`) chặn ký tự ngoại lai; prompt
+> `source_document.py` bắt viết đúng ngôn ngữ nguồn và không đọc trần quyền tự chủ thành
+> quyền của AI; trần `output_token_limit` nâng 3500 → 6000 cho model suy luận DOTS.
+> Bằng chứng cục bộ: `.orchestra/hr-business-acceptance-2026-10-18/postfix/` (ledger 6/8,
+> `content-review.json`, `revision-1/report.docx`). Gate: lint/typecheck PASS, 4282 test,
+> 35 E2E PASS, nguồn không đổi.
+
+> Trạng thái cục bộ 18/10/2026, **chưa phát hành**. Task analysis tự do không có
+> schema riêng nay nhận file được chọn rõ và dùng contract document_review, giữ goal
+> và owner HR. Không đổi contract của scenario/SOP/decision. Gắn nguồn dùng chung khóa
+> admission với executor; UI chặn file chưa upload. Runtime giữ lý do source revision,
+> clarification và biên nhận duyệt đã xác minh khi tạo request model; loại dữ liệu
+> điều khiển/đáp án kiểm thử và biên nhận giả. Tải DOCX có trích dẫn và tải câu trả lời
+> Markdown đã kiểm qua browser thật; Markdown lấy từ output DB, không đọc đường dẫn
+> model trả về. File vật lý `write_report` chưa trở thành artifact được đăng ký.
+> Gates-4: lint/typecheck/4280 test/35 E2E PASS, nguồn không đổi. **Chất lượng nghiệp vụ
+> còn NEEDS_REVISION** vì câu quyền AI chưa rõ và lẫn ngôn ngữ; lần chạy sửa không đạt.
+> Không coi kiểm citation là kiểm đúng nghĩa. Campaign cũ đóng 8/8, không tăng giới hạn;
+> campaign riêng kiểm chứng bản sửa feedback dùng 4/4 lượt, xác nhận request thật có
+> feedback nhưng không có artifact: DOTS finish_reason=error và Nvidia 503. Đây không
+> phải hết quota tài khoản. Chưa đạt nghiệm thu nội dung. API 8100 hiện chạy native bằng
+> `make serve PAGE_ORG=org_01m4zffad8ejxeje1p8898d65a`, không dùng bộ đếm campaign.
+> Xem bằng chứng cục bộ `.orchestra/hr-system-completion-2026-10-18/final-status.json`.
+
 > Cập nhật 17/10/2026 (nghiệm thu HR qua UI, gates-6): **retry task HR ordinary qua UI PASS**
 > và **workflow SOP tuyển dụng qua UI** chạy tới JD rồi dừng ở **jd_review chờ người duyệt**
 > (đủ sáu mục; DOA CHƯA XÁC ĐỊNH cần Boss/HR; KPI là ĐỀ XUẤT; không trọng số rubric; review

@@ -7,6 +7,44 @@ from typing import Any
 
 CLASSIFICATIONS = ("public", "internal", "confidential", "restricted", "secret")
 
+#: Scripts a report must not *introduce*: the prose is written in the sources'
+#: language, so a character from one of these ranges is leakage unless the
+#: sources themselves contain it. This is the deterministic half of the
+#: content-quality rule -- an observed live failure mixed the Chinese term
+#: 筛查 into an otherwise Vietnamese finding while its quote stayed Vietnamese.
+_FOREIGN_SCRIPT_RANGES: tuple[tuple[int, int], ...] = (
+    (0x0370, 0x03FF),  # Greek
+    (0x0400, 0x04FF),  # Cyrillic
+    (0x0530, 0x058F),  # Armenian
+    (0x0590, 0x05FF),  # Hebrew
+    (0x0600, 0x06FF),  # Arabic
+    (0x0900, 0x097F),  # Devanagari
+    (0x0E00, 0x0E7F),  # Thai
+    (0x3040, 0x30FF),  # Hiragana / Katakana
+    (0x3400, 0x4DBF),  # CJK Unified Ideographs Extension A
+    (0x4E00, 0x9FFF),  # CJK Unified Ideographs
+    (0xAC00, 0xD7AF),  # Hangul syllables
+    (0xF900, 0xFAFF),  # CJK compatibility ideographs
+    (0x20000, 0x2FA1F),  # CJK extensions B-F and compatibility supplement
+)
+
+
+def foreign_script_leakage(text: str, source_characters: set[str]) -> list[str]:
+    """Characters in *text* from a script the sources never use.
+
+    Returns a sorted, de-duplicated list. A character is allowed when it falls
+    outside every foreign range, or when the selected sources already contain
+    it, so a genuinely multilingual source is not misflagged.
+    """
+    leaked: set[str] = set()
+    for char in text:
+        code = ord(char)
+        if char in source_characters:
+            continue
+        if any(low <= code <= high for low, high in _FOREIGN_SCRIPT_RANGES):
+            leaked.add(char)
+    return sorted(leaked)
+
 
 def highest_classification(values: list[str]) -> str:
     return max(("internal", *values), key=CLASSIFICATIONS.index)
@@ -137,6 +175,19 @@ def validate_report(
         covered.add(finding["source_id"])
     if covered != {s["id"] for s in sources}:
         raise ValueError("Every selected source needs at least one grounded finding")
+    # Surface-integrity guard: the report is written in the sources' language.
+    # A quote can be an exact substring while the finding text around it leaks a
+    # foreign script (the live 筛查 case), so check the prose, not the citation.
+    source_characters = set("".join(segments.values()))
+    prose = [output["summary"], *(f["text"] for f in findings), *output["limitations"]]
+    leaked = sorted(
+        {char for text in prose for char in foreign_script_leakage(text, source_characters)}
+    )
+    if leaked:
+        raise ValueError(
+            "Report prose uses characters from a script absent from the sources "
+            "(write in the sources' language): " + "".join(leaked)
+        )
     if expected is not None and any(
         output.get(key) != value or isinstance(output.get(key), bool)
         for key, value in expected.items()

@@ -339,7 +339,11 @@ const BusinessWorkflows = (() => {
                     L("Required email subject", "Subject email cần có"),
                     h.mail_intake.subject,
                   ],
-                ]),
+                  [L("Uploaded CVs", "CV đã tải lên"), h.mail_intake.manual_count || 0],
+                ]) +
+                  (h.mail_intake.manual_upload_allowed && ctx.can_approve
+                    ? `<form id="workflow-cv-upload"><p>${esc(h.synthetic ? L("Synthetic campaign: upload fictional CVs only.", "Đợt thử nghiệm: chỉ tải CV hư cấu.") : L("Real campaign: upload authorized candidate data only.", "Đợt thực tế: chỉ tải dữ liệu ứng viên được phép sử dụng."))}</p><input type="file" id="workflow-cv-file" accept=".pdf,.docx,.txt" required><button type="submit" class="btn">${esc(L("Upload CV", "Tải CV lên"))}</button><p>${esc(L("Upload records the source only. Press Run / resume when all CVs are ready.", "Tải lên chỉ lưu nguồn. Bấm Chạy / tiếp tục khi đã đủ CV."))}</p><p id="workflow-cv-status" role="status"></p></form>`
+                    : ""),
               )
             : "") +
           card(L("Result", "Kết quả"), record(h.summary)) +
@@ -355,6 +359,33 @@ const BusinessWorkflows = (() => {
           `</div></div>`,
         guard,
       );
+      const cvUpload = document.getElementById("workflow-cv-upload");
+      if (cvUpload) {
+        cvUpload.onsubmit = async (event) => {
+          event.preventDefault();
+          const button = cvUpload.querySelector("button");
+          const status = document.getElementById("workflow-cv-status");
+          button.disabled = true;
+          try {
+            const file = document.getElementById("workflow-cv-file").files[0];
+            if (!file) throw new Error(L("Choose a CV file", "Chọn tệp CV"));
+            const data = new FormData();
+            data.append("file", file);
+            data.append("synthetic", String(h.synthetic === true));
+            const response = await fetch(API + "/workflows/" + encodeURIComponent(h.id) + "/cvs", {
+              method: "POST", headers: authHeaders(), body: data,
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error?.message || result.detail || result.message || L("Upload failed", "Tải lên thất bại"));
+            status.textContent = L("Recorded CVs: ", "Đã lưu CV: ") + result.count + ". " + L("Press Run / resume when ready.", "Bấm Chạy / tiếp tục khi đã sẵn sàng.");
+            document.getElementById("workflow-cv-file").value = "";
+          } catch (error) {
+            status.textContent = error.message;
+          } finally {
+            button.disabled = false;
+          }
+        };
+      }
       const evidenceStage =
         h.mode === "live" &&
         h.stages.find(
@@ -385,12 +416,12 @@ const BusinessWorkflows = (() => {
               "required minlength=5",
             ) +
               (evidenceStage.key.startsWith("interview_")
-                ? input(
-                    "filename",
-                    L("CV filename", "Tên file CV"),
-                    "",
-                    "text",
-                    "required",
+                ? select(
+                    "candidate_id",
+                    L("Received candidate (SHA-256 ID)", "Ứng viên đã tiếp nhận (ID SHA-256)"),
+                    (h.stages.find((stage) => stage.key === "cv_intake")?.output?.cvs || []).map(
+                      (cv) => [cv.candidate_id, `${cv.filename} · ${cv.candidate_id}`],
+                    ),
                   ) +
                   select("result", L("Interview result", "Kết quả phỏng vấn"), [
                     ["pass", L("Pass", "Đạt")],
@@ -466,8 +497,8 @@ const BusinessWorkflows = (() => {
             L("Record evidence", "Ghi nhận chứng cứ"),
             false,
             L(
-              "Include source and the actual records. Interview: transcripts with filename, result and notes. Acceptance: accepted and the approved offer_hash. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Recording does not approve the next gate.",
-              "Ghi source và hồ sơ thực tế. Phỏng vấn: transcripts gồm filename, result, notes. Nhận offer: accepted và offer_hash đã duyệt. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Ghi nhận chưa duyệt cổng tiếp theo.",
+              "Include source and the actual records. Interview: transcripts with candidate_id (received CV SHA-256), result and notes. Acceptance: accepted and the approved offer_hash. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Recording does not approve the next gate.",
+              "Ghi source và hồ sơ thực tế. Phỏng vấn: transcripts gồm candidate_id (SHA-256 của CV đã nhận), result, notes. Nhận offer: accepted và offer_hash đã duyệt. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Ghi nhận chưa duyệt cổng tiếp theo.",
             ),
           ),
         );
@@ -486,7 +517,7 @@ const BusinessWorkflows = (() => {
                     synthetic: false,
                     transcripts: [
                       {
-                        filename: values.filename,
+                        candidate_id: values.candidate_id,
                         result: values.result,
                         notes: values.notes,
                       },

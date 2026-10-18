@@ -32,6 +32,7 @@ from ai_orchestrator.domain.business_workflow import (
     WORKFLOWS,
     WorkflowStage,
     hiring_blocker,
+    passing_interview_candidates,
     score_cv,
     validate_match,
 )
@@ -126,11 +127,9 @@ def validate_artifact(
                 "Selection candidate_id must equal an eligible reviewed SHA-256 ID above the"
                 " threshold. Allowed IDs: " + json.dumps(eligible)
             )
-        cv = next(c for c in prior["cv_intake"]["cvs"] if c["candidate_id"] == candidate)
         for interview in ("interview_technical", "interview_hr"):
-            if not any(
-                r.get("filename") == cv["filename"] and r.get("result") == "pass"
-                for r in prior[interview]["transcripts"]
+            if candidate not in passing_interview_candidates(
+                prior[interview], prior["cv_intake"]["cvs"]
             ):
                 raise ValueError(
                     "Recommended candidate requires passing evidence from both interview rounds"
@@ -385,6 +384,7 @@ class BusinessWorkflowService:
                     row.id,
                 ),
             )
+            current_stages = {row.input.get("stage_key"): row for row in rows}
             ids = [root_id, *(t.id for t in rows)]
             usage = (
                 (
@@ -478,6 +478,18 @@ class BusinessWorkflowService:
                     if get_settings().recruitment_mail_org == self.org
                     else None,
                     "subject": RecruitmentMailbox.subject(root.id),
+                    "manual_count": len(root.constraints.get("manual_cv_intake", [])),
+                    "manual_upload_allowed": root.input["mode"] == "live"
+                    and any(
+                        row.input.get("stage_key") == "rubric_review" and row.status == "completed"
+                        for row in current_stages.values()
+                    )
+                    and any(
+                        row.input.get("stage_key") == "cv_intake"
+                        and row.status in {"assigned", "waiting_for_input"}
+                        for row in current_stages.values()
+                    )
+                    and root.status not in {"completed", "failed", "canceled", "expired"},
                 }
                 if root.input["business_workflow"] == "mep_hiring"
                 else None,
@@ -856,7 +868,8 @@ class BusinessWorkflowService:
                     await self._pause(
                         root_id,
                         execution_id,
-                        "Chờ CV; hệ thống sẽ kiểm tra lại hộp thư theo mã đợt",
+                        output.get("reason")
+                        or "Chờ CV; hệ thống sẽ kiểm tra lại hộp thư theo mã đợt",
                     )
                     return await self.report(root_id)
                 if stage.kind != "model":
@@ -1054,6 +1067,34 @@ class BusinessWorkflowService:
                 root, stage_task, self.mailbox_factory(self.org), brief["test_cvs"]
             )
         if stage.kind == "mail_read":
+            async with self.db.tenant_session(self.org) as session:
+                request = await TaskRepository(session, self.org).get(root)
+                uploaded = copy.deepcopy(request.constraints.get("manual_cv_intake", []))
+            if uploaded:
+                return {
+                    "cvs": uploaded,
+                    "count": len(uploaded),
+                    "readonly": True,
+                    "messages": [],
+                    "rejected": [],
+                    "protocol": "manual-upload",
+                }
+            settings = get_settings()
+            if self.mailbox_factory is RecruitmentMailbox and (
+                settings.recruitment_mail_org != self.org
+                or not settings.recruitment_mail_address
+                or not settings.recruitment_mail_password.get_secret_value()
+            ):
+                return {
+                    "cvs": [],
+                    "count": 0,
+                    "readonly": True,
+                    "messages": [],
+                    "rejected": [],
+                    "awaiting_cv": True,
+                    "protocol": "manual-upload-or-mailbox",
+                    "reason": "Upload CVs here or connect a recruitment mailbox, then resume",
+                }
             mailbox = self.mailbox_factory(self.org)
             output = {}
             for attempt in range(6):
@@ -1083,6 +1124,8 @@ class BusinessWorkflowService:
                 raise ValueError("Synthetic interview/acceptance evidence required in simulation")
             if mode == "live" and record.get("synthetic"):
                 raise ValueError("Live run cannot use synthetic interview/acceptance evidence")
+            if stage.key in {"interview_technical", "interview_hr"}:
+                passing_interview_candidates(record, prior["cv_intake"]["cvs"])
             if stage.key == "offer_acceptance":
                 if record.get("accepted") is not True:
                     raise ValueError("Offer has not been accepted")

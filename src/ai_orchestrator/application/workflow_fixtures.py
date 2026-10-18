@@ -1,5 +1,6 @@
 """Explicit fictional acceptance inputs. No project/client or real applicant data."""
 
+import hashlib
 from typing import Any
 
 from ai_orchestrator.domain.business_workflow import RUBRIC_SPEC
@@ -72,6 +73,7 @@ def hiring_fixture() -> dict[str, Any]:
             "source": "fixture:technical-interview-v1",
             "transcripts": [
                 {
+                    "candidate_id": hashlib.sha256(cv["text"].encode("utf-8")).hexdigest(),
                     "filename": cv["filename"],
                     "result": "pass" if i == 0 else "needs_development",
                     "notes": (
@@ -92,6 +94,7 @@ def hiring_fixture() -> dict[str, Any]:
             "source": "fixture:hr-interview-v1",
             "transcripts": [
                 {
+                    "candidate_id": hashlib.sha256(cv["text"].encode("utf-8")).hexdigest(),
                     "filename": cv["filename"],
                     "result": "pass",
                     "notes": (

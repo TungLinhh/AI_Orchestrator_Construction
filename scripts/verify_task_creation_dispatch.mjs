@@ -70,7 +70,7 @@ for (const workflow of ['document_review', 'quote_comparison']) {
 const selected = harness(); selected.radios[0].checked = true;
 await selected.run();
 assert.equal(selected.calls.length, 0);
-assert.ok(selected.notices.some(text => text.includes('not attached')));
+assert.ok(selected.notices.some(text => text.includes('readable source')));
 selected.element('sourceClearSelection').onclick();
 await selected.run();
 assert.equal(selected.calls[0].path, '/tasks');
@@ -78,7 +78,37 @@ assert.equal(selected.calls[0].path, '/tasks');
 const pendingUpload = harness(); pendingUpload.element('sourceUploadFiles').files = [{name: 'authorized.txt'}];
 await pendingUpload.run();
 assert.equal(pendingUpload.calls.length, 0);
-assert.ok(pendingUpload.notices.some(text => text.includes('not attached')));
+assert.ok(pendingUpload.notices.some(text => text.includes('Upload and select')));
+
+const attached = harness();
+attached.radios[0].checked = true;
+attached.element('sourceUploadFiles').files = [new Blob(['Authorized HR policy source.'])];
+attached.context.API = '/api/v1';
+attached.context.authHeaders = headers => headers;
+attached.context.FormData = FormData;
+attached.context.fetch = async () => ({ok: true, json: async () => ({id: 'src_hr', state: 'ready'})});
+await attached.element('sourceUpload').onclick();
+// Native file inputs clear FileList when value is cleared; mirror that DOM behavior.
+attached.element('sourceUploadFiles').files = [];
+await attached.run();
+assert.deepEqual(attached.calls.map(call => call.path), ['/source-workflows', '/tasks/tsk_dispatch/run']);
+assert.equal(attached.calls[0].body.workflow, 'document_review');
+assert.equal(attached.calls[0].body.goal, attached.element('goal').value);
+assert.equal(attached.calls[0].body.owner_agent_id, 'agent_authorized');
+assert.deepEqual(attached.calls[0].body.selection, {mode: 'sources', file_ids: ['src_hr']});
+attached.calls.length = 0;
+attached.element('sourceUploadFiles').files = [new Blob(['Unuploaded additional HR source.'])];
+await attached.run();
+assert.equal(attached.calls.length, 0, 'new pending files cannot be silently dropped beside old selection');
+assert.ok(attached.notices.some(text => text.includes('Upload and select')));
+
+const protectedScenario = harness();
+protectedScenario.context.state.scenarios = [{key: 'contract', expected_output_schema: {type: 'object'}}];
+protectedScenario.element('scenario').value = 'contract';
+protectedScenario.radios[0].checked = true;
+await protectedScenario.run();
+assert.equal(protectedScenario.calls.length, 0);
+assert.ok(protectedScenario.notices.some(text => text.includes('preserve this task contract')));
 
 const missingSelection = harness(); missingSelection.element('sourceWorkflow').value = 'document_review';
 await missingSelection.run();
@@ -156,7 +186,7 @@ vm.runInContext('taskReport={task:{id:"tsk_source",status:"waiting_for_input"}}'
 await specialized.context.renderTaskClarification({id:'tsk_source',status:'waiting_for_input'});
 assert.equal(specialized.nodes.has('taskClarification'), false);
 console.log(JSON.stringify({passed: true, checks: ['ordinary payload', 'scenario contract', 'two explicit source workflows',
-  'selected sources rejected on ordinary path', 'explicit clear allows ordinary', 'pending upload not silently dropped',
+  'ordinary selected uploads use cited-report runtime preserving HR goal/owner', 'scenario contract never silently replaced', 'explicit clear allows ordinary', 'pending upload not silently dropped',
   'source workflow requires selection mode', 'clarification saves with tenant/idempotency and never auto-runs',
   'specialized source workflow keeps its own input controller', 'empty clarification rejected',
   'ambiguous save retries same idempotency key', 'owner picker excludes paused/retired agents and keeps active HR'], live_requests: 0}));

@@ -54,16 +54,19 @@
     "source": "fixture:packet-v1:hiring/interview_technical.json",
     "transcripts": [
       {
+        "candidate_id": "f908e7d85d6b8e6884fa09258dad501090879e937fb51b0dc633b16aa046d340",
         "filename": "mep-test-a.txt",
         "result": "pass",
         "notes": "SIMULATED technical panel: candidate explained 420 kW cooling load and 35 m3/h pump sizing, voltage-drop/derating checks, clash escalation, TAB measurement and LOTO. Panel reviewed fictional TR-M01/E01/B01/C01/H01/D01. Result pass for the exercise; not an actual interview or verified credential."
       },
       {
+        "candidate_id": "b456118d53c5552f9f30343b8ce493b25b9e31f1f53dabb600b60a90114fdb6e",
         "filename": "mep-test-b.txt",
         "result": "needs_development",
         "notes": "Candidate needs supervised engineering practice; missing independent design evidence."
       },
       {
+        "candidate_id": "43afb403bc2a25f3bd293051d66415e4b3eaaae250e264fa52ca14b44be57e4f",
         "filename": "mep-test-c.txt",
         "result": "needs_development",
         "notes": "Candidate needs supervised engineering practice; missing independent design evidence."
@@ -75,16 +78,19 @@
     "source": "fixture:packet-v1:hiring/interview_hr.json",
     "transcripts": [
       {
+        "candidate_id": "f908e7d85d6b8e6884fa09258dad501090879e937fb51b0dc633b16aa046d340",
         "filename": "mep-test-a.txt",
         "result": "pass",
         "notes": "Discussed collaboration, mentor, availability and salary expectations; synthetic interview record."
       },
       {
+        "candidate_id": "b456118d53c5552f9f30343b8ce493b25b9e31f1f53dabb600b60a90114fdb6e",
         "filename": "mep-test-b.txt",
         "result": "pass",
         "notes": "Discussed collaboration, mentor, availability and salary expectations; synthetic interview record."
       },
       {
+        "candidate_id": "43afb403bc2a25f3bd293051d66415e4b3eaaae250e264fa52ca14b44be57e4f",
         "filename": "mep-test-c.txt",
         "result": "pass",
         "notes": "Discussed collaboration, mentor, availability and salary expectations; synthetic interview record."

@@ -172,3 +172,50 @@ def test_real_office_exports_open_and_escape_formulas():
     parsed = extract("report.docx", exports["docx"][0])
     assert parsed["state"] == "ready"
     assert any("tiếng Việt" in s["text"] for s in parsed["segments"])
+
+
+def test_report_must_not_mix_in_a_foreign_script():
+    """The live failure: an exact Vietnamese quote, a Chinese word in the text.
+
+    A quote can be a verbatim substring while the prose around it leaks a
+    different script, so the surface guard reads the finding text, not just the
+    citation.
+    """
+    source_item = {
+        "id": "src_hr",
+        "segments": [
+            {
+                "locator": "lines:1-2",
+                "text": "HR Agent tối đa L2 (sàng lọc, soạn thảo, nhắc quy trình). "
+                "Vùng cấm AI: mọi quyết định tuyển/thôi việc/kỷ luật/lương do con người.",
+            }
+        ],
+    }
+    output = {
+        "summary": "Bản tổng hợp HR giữ nguyên giới hạn quyền của trợ lý.",
+        "findings": [
+            {
+                "text": "HR Agent tối đa L2 với chức năng筛查, soạn thảo, nhắc quy trình.",
+                "source_id": "src_hr",
+                "locator": "lines:1-2",
+                "quote": "HR Agent tối đa L2 (sàng lọc, soạn thảo, nhắc quy trình)",
+            }
+        ],
+        "limitations": ["Chỉ dùng nguồn được chọn."],
+    }
+    with pytest.raises(ValueError, match="script absent from the sources"):
+        validate_report(output, [source_item])
+    # The same finding written in the source's own Vietnamese passes.
+    output["findings"][0]["text"] = (
+        "HR Agent tối đa L2 với chức năng sàng lọc, soạn thảo, nhắc quy trình."
+    )
+    validate_report(output, [source_item])
+
+
+def test_foreign_script_is_allowed_when_the_source_contains_it():
+    from ai_orchestrator.domain.source_report import foreign_script_leakage
+
+    assert foreign_script_leakage("筛查", set()) == ["查", "筛"]
+    # A genuinely multilingual source is not misflagged.
+    assert foreign_script_leakage("筛查", {"筛", "查"}) == []
+    assert foreign_script_leakage("sàng lọc — 30-60-90", set()) == []
