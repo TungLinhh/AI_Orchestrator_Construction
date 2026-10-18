@@ -614,7 +614,11 @@ class BusinessWorkflowService:
                     "onboarding_evidence" if stage.key == "onboarding_setup" else stage.key
                 )
                 needs_input = stage.kind == "input" and stage.key != "brief"
-                needs_input = needs_input or (mode == "live" and stage.key == "onboarding_setup")
+                needs_input = needs_input or (
+                    mode == "live"
+                    and stage.key == "onboarding_setup"
+                    and not brief.get("synthetic")
+                )
                 if needs_input and not brief.get(evidence_key):
                     if task.status == "assigned":
                         await repo.transition(task.id, Transition.REQUEST_INPUT)
@@ -1044,6 +1048,12 @@ class BusinessWorkflowService:
         brief: dict[str, Any],
         prior: dict[str, Any],
     ) -> dict[str, Any]:
+        # `synthetic` is the workflow's provenance label, set once at creation.
+        # In a live run it decides two things, so an operator cannot silently mix
+        # a fictional workflow with real personal data (or the reverse):
+        #   * interview/acceptance/onboarding evidence must match this label;
+        #   * onboarding runs in the sandbox when the workflow is synthetic.
+        synthetic_run = bool(brief.get("synthetic"))
         if stage.key == "brief":
             return {
                 "boss_brief": brief["boss_brief"],
@@ -1120,10 +1130,13 @@ class BusinessWorkflowService:
             record = copy.deepcopy(brief.get(stage.key))
             if not record or not record.get("source"):
                 raise ValueError("Evidence input is missing: " + stage.key)
-            if mode == "simulation" and record.get("synthetic") is not True:
-                raise ValueError("Synthetic interview/acceptance evidence required in simulation")
-            if mode == "live" and record.get("synthetic"):
-                raise ValueError("Live run cannot use synthetic interview/acceptance evidence")
+            # Provenance is a contract, not a mode: a synthetic workflow must
+            # carry synthetic evidence and a real one must carry real evidence,
+            # in simulation and live alike.
+            if bool(record.get("synthetic")) is not synthetic_run:
+                raise ValueError(
+                    "Evidence provenance must match the workflow's synthetic/real label"
+                )
             if stage.key in {"interview_technical", "interview_hr"}:
                 passing_interview_candidates(record, prior["cv_intake"]["cvs"])
             if stage.key == "offer_acceptance":
@@ -1135,7 +1148,7 @@ class BusinessWorkflowService:
                 record["candidate_id"] = prior["selection"]["recommended_candidate_id"]
             return dict(record)
         if stage.kind == "onboard":
-            if mode != "simulation":
+            if mode != "simulation" and not synthetic_run:
                 record = brief.get("onboarding_evidence")
                 if (
                     not record
@@ -1232,11 +1245,11 @@ class BusinessWorkflowService:
                 "lines": copy.deepcopy(prior["comparison"]["recommended_awards"]),
                 "quality_review_hash": payload_hash(prior["material_review"]),
                 "award_review_hash": payload_hash(prior["award_review"]),
-                "synthetic": mode == "simulation",
+                "synthetic": mode == "simulation" or synthetic_run,
             }
         if stage.key == "delivery":
             source = copy.deepcopy(brief.get("delivery", {}))
-            if mode == "simulation":
+            if mode == "simulation" or synthetic_run:
                 if source.get("synthetic") is not True:
                     raise ValueError("Synthetic warehouse/invoice fixture is required")
                 pairs = {(r["supplier_id"], r["material_id"]) for r in prior["po"]["lines"]}
@@ -1276,7 +1289,7 @@ class BusinessWorkflowService:
                 "grn_hash": payload_hash(prior["delivery"]["grn"]),
                 "invoice_hash": payload_hash(prior["delivery"]["invoice"]),
                 "payment_executed": False,
-                "synthetic": mode == "simulation",
+                "synthetic": mode == "simulation" or synthetic_run,
             }
         if stage.kind == "close":
             required = [
@@ -1292,12 +1305,18 @@ class BusinessWorkflowService:
                     "yệt đều là phê duyệt mô phỏng."
                 )
                 if mode == "simulation"
-                else "Đã hoàn thành workflow với chứng cứ và quyết định phê duyệt thật."
+                else (
+                    "Đã hoàn thành WORKFLOW TỔNG HỢP (SYNTHETIC): model thật và cổng phê "
+                    "duyệt của người thật, nhưng chứng cứ là hư cấu và không có hành động "
+                    "tuyển dụng hay mua sắm thật nào được thực hiện."
+                    if synthetic_run
+                    else "Đã hoàn thành workflow với chứng cứ và quyết định phê duyệt thật."
+                )
             )
             result = {
                 "summary": summary,
                 "mode": mode,
-                "synthetic": mode == "simulation",
+                "synthetic": mode == "simulation" or synthetic_run,
                 "completed_stages": [*required, "close"],
                 "stage_evidence_hashes": {key: payload_hash(value) for key, value in prior.items()},
                 "simulated_reviews": sum(

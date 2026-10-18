@@ -218,6 +218,156 @@ async def test_all_hiring_stages_run_offline_with_actual_sandbox_files(
         )
 
 
+async def test_live_synthetic_hiring_completes_with_real_gates_and_sandbox_onboarding(
+    prepared, db, tmp_path, monkeypatch
+):
+    """A fictional live run keeps real human gates and synthetic provenance to the end.
+
+    This is the state-model contract the console offers as "Fictional acceptance
+    inputs - real review gates": model stages run for real (a fake runtime here),
+    every gate is a real Approval a person must decide, yet interview/acceptance
+    evidence and onboarding stay explicitly synthetic and sandboxed. Before the
+    provenance fix, a synthetic workflow could not supply synthetic interview
+    evidence in a live run at all.
+    """
+    from ai_orchestrator.application import business_workflow, hiring_intake
+    from ai_orchestrator.application.hiring_intake import receive_cv
+    from ai_orchestrator.integrations import recruitment_mail
+
+    monkeypatch.setattr(business_workflow, "DEV_DATA_DIR", tmp_path)
+    monkeypatch.setattr(recruitment_mail, "DEV_DATA_DIR", tmp_path)
+    monkeypatch.setattr(hiring_intake, "DEV_DATA_DIR", tmp_path)
+
+    brief = hiring_fixture()
+    root = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "live", brief
+    )
+    await prepared.commit()
+    service = BusinessWorkflowService(
+        db, prepared.organization_id, runtime_factory=HiringFixtureRuntime
+    )
+
+    async def privileged_human(session):
+        human = (
+            (
+                await session.execute(
+                    select(User).where(
+                        User.organization_id == prepared.organization_id,
+                        User.is_privileged.is_(True),
+                    )
+                )
+            )
+            .scalars()
+            .first()
+        )
+        assert human is not None
+        return Actor(id=human.id, kind=ActorType.HUMAN, is_privileged_human=True)
+
+    report = await service.run(root)
+    for _ in range(40):
+        if report["status"] in {"completed", "failed", "canceled", "expired"}:
+            break
+        blocked = next(stage for stage in report["stages"] if stage["status"] != "completed")
+        if blocked["status"] == "waiting_for_approval":
+            async with db.tenant_session(prepared.organization_id) as session:
+                approval = (
+                    await session.execute(
+                        select(Approval).where(
+                            Approval.organization_id == prepared.organization_id,
+                            Approval.task_id == blocked["id"],
+                            Approval.status == "pending",
+                        )
+                    )
+                ).scalar_one()
+                await ApprovalService(session, prepared.organization_id).decide(
+                    approval.id,
+                    approver=await privileged_human(session),
+                    approve=True,
+                    note="Synthetic acceptance review of the exact reviewed artifact",
+                )
+                await session.commit()
+        elif blocked["key"] == "cv_intake":
+            async with db.tenant_session(prepared.organization_id) as session:
+                actor = await privileged_human(session)
+                for cv in hiring_fixture()["test_cvs"]:
+                    await receive_cv(
+                        session,
+                        prepared.organization_id,
+                        root,
+                        filename=cv["filename"],
+                        content=cv["text"].encode("utf-8"),
+                        synthetic=True,
+                        actor=actor,
+                    )
+                await session.commit()
+        else:
+            raise AssertionError("Unexpected block at " + blocked["key"])
+        async with db.tenant_session(prepared.organization_id) as session:
+            # The console prefills the reviewed offer hash; mirror that here so a
+            # synthetic acceptance can only confirm the exact artifact a person approved.
+            offer = next((s for s in report["stages"] if s["key"] == "offer"), None)
+            if offer and offer["status"] == "completed":
+                root_task = await session.get(Task, root)
+                acceptance = dict(root_task.input["brief"].get("offer_acceptance") or {})
+                if acceptance.get("offer_hash") != offer["artifact_hash"]:
+                    acceptance["offer_hash"] = offer["artifact_hash"]
+                    root_task.input = {
+                        **root_task.input,
+                        "brief": {**root_task.input["brief"], "offer_acceptance": acceptance},
+                    }
+                    await session.commit()
+        report = await service.run(root)
+
+    assert report["status"] == "completed", report
+    assert report["mode"] == "live"
+    assert report["synthetic"] is True
+    assert report["completed"] == report["total"] == 20
+    assert report["summary"]["synthetic"] is True
+    assert report["summary"]["human_approvals"] == 7
+    assert report["summary"]["simulated_reviews"] == 0
+    assert "SYNTHETIC" in report["summary"]["summary"]
+    assert report["summary"]["onboarding"]["production_access"] is False
+    assert report["summary"]["future_day_30_60_90_completed"] is False
+    assert report["evidence"]["real_model_calls"] == 0
+    assert report["evidence"]["fake_model_calls"] == 6
+    folder = tmp_path / "recruitment" / prepared.organization_id / root / "onboarding"
+    assert len(list(folder.glob("*.json"))) == 5
+    async with db.tenant_session(prepared.organization_id) as session:
+        approvals = (
+            await session.scalars(
+                select(Approval).where(Approval.organization_id == prepared.organization_id)
+            )
+        ).all()
+        assert len(approvals) == 7
+        assert {a.status for a in approvals} == {"approved"}
+
+
+async def test_live_evidence_provenance_must_match_workflow_label(prepared, db):
+    """A real workflow rejects synthetic evidence and a synthetic one rejects real evidence."""
+    from ai_orchestrator.domain.business_workflow import HIRING
+
+    service = BusinessWorkflowService(db, prepared.organization_id)
+    stage = next(s for s in HIRING if s.key == "interview_technical")
+    prior = {
+        "cv_intake": {
+            "cvs": [{"candidate_id": "a" * 64, "text": "synthetic text", "filename": "a.txt"}]
+        }
+    }
+    real_brief = {**hiring_fixture(), "synthetic": False}
+    with pytest.raises(ValueError, match="provenance"):
+        await service._mechanical("root", stage, "live", real_brief, prior)
+    forced_real_evidence = {
+        **hiring_fixture(),
+        "synthetic": True,
+        "interview_technical": {
+            **hiring_fixture()["interview_technical"],
+            "synthetic": False,
+        },
+    }
+    with pytest.raises(ValueError, match="provenance"):
+        await service._mechanical("root", stage, "live", forced_real_evidence, prior)
+
+
 async def test_operator_creates_live_hiring_without_synthetic_evidence(client, prepared, db):
     from tests.integration.api_client import auth_headers
     from tests.integration.test_console_management import _human_headers

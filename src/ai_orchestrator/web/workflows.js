@@ -514,7 +514,7 @@ const BusinessWorkflows = (() => {
               evidence: evidenceStage.key.startsWith("interview_")
                 ? {
                     source: values.source,
-                    synthetic: false,
+                    synthetic: h.synthetic === true,
                     transcripts: [
                       {
                         candidate_id: values.candidate_id,
@@ -526,12 +526,12 @@ const BusinessWorkflows = (() => {
                 : evidenceStage.key === "offer_acceptance"
                   ? {
                       source: values.source,
-                      synthetic: false,
+                      synthetic: h.synthetic === true,
                       accepted: values.accepted === "true",
                       offer_hash: values.offer_hash,
                     }
                   : evidenceStage.key === "onboarding_setup"
-                    ? { ...values, synthetic: false }
+                    ? { ...values, synthetic: h.synthetic === true }
                     : JSON.parse(values.evidence),
             });
             return result;
