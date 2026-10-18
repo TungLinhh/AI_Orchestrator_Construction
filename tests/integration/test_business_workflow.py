@@ -1290,6 +1290,82 @@ async def test_synthetic_hiring_keeps_real_approval_gate(client, prepared, db):
         assert approvals[0].status == "pending"
 
 
+async def test_candidate_identity_is_content_hash_not_filename(prepared, db, tmp_path, monkeypatch):
+    """Two different CVs that share a filename stay two distinct candidates.
+
+    Identity is the content SHA-256, so a shared filename can neither merge two
+    applicants nor let interview evidence for one stand in for the other. The
+    live campaign uploaded distinct filenames, so the collision is pinned here.
+    """
+    import hashlib
+
+    from ai_orchestrator.application import hiring_intake
+    from ai_orchestrator.application.hiring_intake import receive_cv
+    from ai_orchestrator.integrations import recruitment_mail
+
+    monkeypatch.setattr(recruitment_mail, "DEV_DATA_DIR", tmp_path)
+    monkeypatch.setattr(hiring_intake, "DEV_DATA_DIR", tmp_path)
+
+    brief = {**hiring_fixture(), "synthetic": True}
+    root_id = await create_workflow(
+        prepared.session, prepared.organization_id, "mep_hiring", "live", brief
+    )
+    await prepared.commit()
+    async with db.tenant_session(prepared.organization_id) as session:
+        stages = (await session.scalars(select(Task).where(Task.parent_task_id == root_id))).all()
+        for stage in stages:
+            if stage.input["stage_key"] in {
+                "brief",
+                "headcount_review",
+                "jd",
+                "jd_review",
+                "rubric",
+                "rubric_review",
+            }:
+                stage.status = "completed"
+    first = b"SYNTHETIC Alpha. Eight years of HVAC and electrical coordination."
+    second = b"SYNTHETIC Beta. One year of office administration only."
+    async with db.tenant_session(prepared.organization_id) as session:
+        human = (
+            (
+                await session.execute(
+                    select(User).where(
+                        User.organization_id == prepared.organization_id,
+                        User.is_privileged.is_(True),
+                    )
+                )
+            )
+            .scalars()
+            .first()
+        )
+        actor = Actor(id=human.id, kind=ActorType.HUMAN, is_privileged_human=True)
+        received = [
+            await receive_cv(
+                session,
+                prepared.organization_id,
+                root_id,
+                filename="candidate-cv.txt",
+                content=content,
+                synthetic=True,
+                actor=actor,
+            )
+            for content in (first, second)
+        ]
+    assert [r["candidate_id"] for r in received] == [
+        hashlib.sha256(first).hexdigest(),
+        hashlib.sha256(second).hexdigest(),
+    ]
+    assert received[0]["candidate_id"] != received[1]["candidate_id"]
+    async with db.tenant_session(prepared.organization_id) as session:
+        root = await session.get(Task, root_id)
+        stored = root.constraints["manual_cv_intake"]
+    assert {cv["filename"] for cv in stored} == {"candidate-cv.txt"}
+    assert {cv["candidate_id"] for cv in stored} == {
+        received[0]["candidate_id"],
+        received[1]["candidate_id"],
+    }
+
+
 async def test_manual_cv_upload_preserves_provenance_and_requires_explicit_run(
     client, prepared, other_tenant, db, tmp_path, monkeypatch
 ):
