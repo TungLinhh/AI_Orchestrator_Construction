@@ -47,6 +47,21 @@ const ProcurementIntake = (() => {
               "date",
               "required",
             ) +
+            select(
+              "synthetic",
+              L("Input provenance", "Nguồn dữ liệu"),
+              [
+                ["false", L("Real purchase sources", "Nguồn mua sắm thật")],
+                [
+                  "true",
+                  L(
+                    "Fictional acceptance sources — real review gates",
+                    "Nguồn nghiệm thu hư cấu — vẫn phải duyệt thật",
+                  ),
+                ],
+              ],
+              "false",
+            ) +
             `<fieldset class="wide intake-group"><legend>1 · ${esc(L("BOQ materials", "Danh mục vật tư BOQ"))}</legend><div id="intake-materials"></div><button class="btn sm" type="button" id="intake-add-material">${esc(L("Add material", "Thêm vật tư"))}</button></fieldset>` +
             `<fieldset class="wide intake-group"><legend>2 · ${esc(L("Supplier source records", "Hồ sơ nguồn nhà cung cấp"))}</legend><p class="form-notice">${esc(L("At least three suppliers. Record actual legal, financial, HSE and quotation sources.", "Tối thiểu ba NCC. Ghi nguồn pháp lý, tài chính, HSE và báo giá thực tế."))}</p><div id="intake-suppliers"></div><button class="btn sm" type="button" id="intake-add-supplier">${esc(L("Add supplier", "Thêm nhà cung cấp"))}</button></fieldset>` +
             `<fieldset class="wide intake-group"><legend>3 · ${esc(L("Quote each BOQ line", "Báo giá từng dòng BOQ"))}</legend><p class="form-notice">${esc(L("Quantities follow the BOQ. Certificates and conformity are source claims for QA to verify; a human material review remains mandatory.", "Số lượng lấy từ BOQ. Chứng chỉ và tính phù hợp là khai báo nguồn để QA kiểm tra; vẫn phải qua người vật tư duyệt."))}</p><div id="intake-quotes"></div></fieldset>`,
@@ -244,6 +259,7 @@ const ProcurementIntake = (() => {
       "procurement-intake",
       async () => {
         const value = (name) => host.querySelector(`[name="${name}"]`).value;
+        const synthetic = value("synthetic") === "true";
         const boq = materials().map((m) => ({
           ...m,
           quantity: Number(m.quantity),
@@ -251,6 +267,7 @@ const ProcurementIntake = (() => {
         }));
         const supplierRows = suppliers().map((s) => ({
           ...s,
+          synthetic,
           legal_valid: s.legal_valid === "true",
           quotes: boq.map((m) => {
             const q = rowValues(
@@ -282,6 +299,7 @@ const ProcurementIntake = (() => {
               "g3_date",
             ].map((k) => [k, value(k)]),
           ),
+          synthetic,
           boq,
           suppliers: supplierRows,
         });

@@ -740,6 +740,145 @@ async def test_real_human_review_resumes_only_the_exact_approved_artifact(prepar
         assert next(s for s in resumed["stages"] if s["key"] == "po")["status"] == "assigned"
 
 
+async def _approve_gate(db, organization_id, gate_id, note):
+    async with db.tenant_session(organization_id) as session:
+        approval = (
+            await session.execute(
+                select(Approval).where(
+                    Approval.organization_id == organization_id,
+                    Approval.task_id == gate_id,
+                )
+            )
+        ).scalar_one()
+        human = (
+            (
+                await session.execute(
+                    select(User).where(
+                        User.organization_id == organization_id,
+                        User.is_privileged.is_(True),
+                    )
+                )
+            )
+            .scalars()
+            .first()
+        )
+        assert human is not None
+        await ApprovalService(session, organization_id).decide(
+            approval.id,
+            approver=Actor(id=human.id, kind=ActorType.HUMAN, is_privileged_human=True),
+            approve=True,
+            note=note,
+        )
+
+
+async def test_live_synthetic_procurement_completes_through_both_gates_and_sandbox_delivery(
+    prepared, db
+):
+    """A labelled synthetic purchase runs live with real gates, a draft PO and a
+    three-way match over sandbox GRN/invoice; no production action is claimed."""
+    brief = procurement_fixture()
+    root = await new_run(prepared, "live", brief)
+    service = BusinessWorkflowService(db, prepared.organization_id, runtime_factory=FixtureRuntime)
+
+    report = await service.run(root)
+    assert report["status"] == "blocked", report
+    material = next(s for s in report["stages"] if s["key"] == "material_review")
+    assert material["status"] == "waiting_for_approval"
+    await _approve_gate(
+        db, prepared.organization_id, material["id"], "Reviewed the quality artifact"
+    )
+
+    report = await service.run(root)
+    award = next(s for s in report["stages"] if s["key"] == "award_review")
+    assert award["status"] == "waiting_for_approval", report
+    await _approve_gate(
+        db, prepared.organization_id, award["id"], "Approved the selection proposal"
+    )
+
+    report = await service.run(root)
+    assert report["status"] == "completed", report
+    summary = report["summary"]
+    assert summary["synthetic"] is True
+    assert summary["human_approvals"] == 2
+    assert summary["simulated_reviews"] == 0
+    assert summary["po_status"] == "draft_not_issued"
+    assert summary["payment_executed"] is False
+    assert summary["three_way_match"]["matched"] is True
+    # Highest legal quote per material: PIPE-01 A 60000*100 + CABLE-01 B 175000*200
+    # + PUMP-01 A 18000000*2; the cheapest supplier is legally red and excluded.
+    assert summary["total_vnd"] == 77_000_000
+    chosen = {
+        line["material_id"]: line["supplier_id"]
+        for line in summary["selected_materials_and_suppliers"]
+    }
+    assert chosen == {"PIPE-01": "NCC-TEST-A", "CABLE-01": "NCC-TEST-B", "PUMP-01": "NCC-TEST-A"}
+    assert report["completed"] == 13
+
+
+async def test_live_synthetic_procurement_refuses_a_real_delivery_label(prepared, db):
+    brief = procurement_fixture()
+    brief["delivery"] = {**brief["delivery"], "synthetic": False, "grn": [], "invoice": []}
+    root = await new_run(prepared, "live", brief)
+    service = BusinessWorkflowService(db, prepared.organization_id, runtime_factory=FixtureRuntime)
+    report = await service.run(root)
+    material = next(s for s in report["stages"] if s["key"] == "material_review")
+    await _approve_gate(db, prepared.organization_id, material["id"], "Reviewed")
+    report = await service.run(root)
+    award = next(s for s in report["stages"] if s["key"] == "award_review")
+    await _approve_gate(db, prepared.organization_id, award["id"], "Approved")
+    report = await service.run(root)
+    assert report["status"] == "failed", report
+    delivery = next(s for s in report["stages"] if s["key"] == "delivery")
+    assert delivery["status"] == "failed"
+    assert "Synthetic warehouse/invoice fixture is required" in (delivery["error"] or "")
+
+
+async def test_live_real_procurement_records_delivery_in_the_console_shape(prepared, db):
+    """The console sends per-line `grn_lines`/`invoice_lines`. A real run must
+    accept that shape, keep the `grn`/`invoice` comparison, and stay real."""
+
+    brief = procurement_fixture()
+    brief["synthetic"] = False
+    for supplier in brief["suppliers"]:
+        supplier["synthetic"] = False
+    # The console renders one row per awarded PO line: PIPE-01/NCC-TEST-A,
+    # CABLE-01/NCC-TEST-B, PUMP-01/NCC-TEST-A (the cheapest vendor is red).
+    awarded = {("NCC-TEST-A", "PIPE-01"), ("NCC-TEST-B", "CABLE-01"), ("NCC-TEST-A", "PUMP-01")}
+    brief["delivery"] = {
+        "source": "site:daily-delivery-report",
+        "synthetic": False,
+        "grn_lines": [
+            {key: row[key] for key in ("supplier_id", "material_id", "quantity")}
+            for row in brief["delivery"]["grn_lines"]
+            if (row["supplier_id"], row["material_id"]) in awarded
+        ],
+        "invoice_lines": [
+            dict(row)
+            for row in brief["delivery"]["invoice_lines"]
+            if (row["supplier_id"], row["material_id"]) in awarded
+        ],
+    }
+    root = await new_run(prepared, "live", brief)
+    service = BusinessWorkflowService(db, prepared.organization_id, runtime_factory=FixtureRuntime)
+    report = await service.run(root)
+    material = next(s for s in report["stages"] if s["key"] == "material_review")
+    await _approve_gate(db, prepared.organization_id, material["id"], "Reviewed")
+    report = await service.run(root)
+    award = next(s for s in report["stages"] if s["key"] == "award_review")
+    await _approve_gate(db, prepared.organization_id, award["id"], "Approved")
+    report = await service.run(root)
+    assert report["status"] == "completed", [
+        (s["key"], s["status"], s["error"]) for s in report["stages"] if s["status"] != "completed"
+    ]
+    summary = report["summary"]
+    assert summary["synthetic"] is False
+    assert summary["three_way_match"]["matched"] is True
+    assert summary["payment_executed"] is False
+    delivery = next(s for s in report["stages"] if s["key"] == "delivery")["output"]
+    assert len(delivery["grn"]) == 3 and len(delivery["invoice"]) == 3
+    assert delivery["synthetic"] is False
+
+
 async def test_failed_runtime_leaves_no_running_execution(prepared, db):
     class BrokenRuntime(FixtureRuntime):
         async def execute(self, *args, **kwargs):

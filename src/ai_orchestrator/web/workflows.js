@@ -400,6 +400,42 @@ const BusinessWorkflows = (() => {
             ].includes(s.key),
         );
       if (evidenceStage && !h.waiting && ctx.can_approve) {
+        // Procurement delivery evidence is captured per awarded PO line so the
+        // three-way match compares real quantities and prices, not a free blob.
+        const poLines = h.stages.find((s) => s.key === "po")?.output?.lines || [];
+        const deliveryFields =
+          (poLines.length
+            ? poLines
+                .map(
+                  (line, i) =>
+                    `<div class="intake-line"><h4>${esc(line.material_id)} · ${esc(line.supplier_id)} — PO ${esc(line.quantity)} @ ${esc(line.unit_price)} VND</h4>` +
+                    `<input type="hidden" name="delivery_supplier_${i}" value="${esc(line.supplier_id)}">` +
+                    `<input type="hidden" name="delivery_material_${i}" value="${esc(line.material_id)}">` +
+                    input(
+                      `grn_qty_${i}`,
+                      L("Received quantity (GRN)", "Số lượng nhận (GRN)"),
+                      line.quantity,
+                      "number",
+                      "required min=0 step=0.001",
+                    ) +
+                    input(
+                      `invoice_qty_${i}`,
+                      L("Invoiced quantity", "Số lượng trên hóa đơn"),
+                      line.quantity,
+                      "number",
+                      "required min=0 step=0.001",
+                    ) +
+                    input(
+                      `invoice_price_${i}`,
+                      L("Invoiced unit price (VND)", "Đơn giá hóa đơn (VND)"),
+                      line.unit_price,
+                      "number",
+                      "required min=0 step=1",
+                    ) +
+                    `</div>`,
+                )
+                .join("")
+            : `<p class="form-notice">${esc(L("Draft the PO before recording delivery.", "Cần lập PO trước khi ghi nhận giao hàng."))}</p>`);
         const container = document.createElement("div");
         container.innerHTML = card(
           L("Supply the missing evidence", "Bổ sung chứng cứ đang chờ"),
@@ -488,17 +524,12 @@ const BusinessWorkflows = (() => {
                           ),
                         )
                         .join("")
-                    : area(
-                        "evidence",
-                        L("Delivery record (JSON)", "Hồ sơ giao hàng (JSON)"),
-                        "",
-                        "required",
-                      )),
+                    : deliveryFields),
             L("Record evidence", "Ghi nhận chứng cứ"),
             false,
             L(
-              "Include source and the actual records. Interview: transcripts with candidate_id (received CV SHA-256), result and notes. Acceptance: accepted and the approved offer_hash. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Recording does not approve the next gate.",
-              "Ghi source và hồ sơ thực tế. Phỏng vấn: transcripts gồm candidate_id (SHA-256 của CV đã nhận), result, notes. Nhận offer: accepted và offer_hash đã duyệt. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Ghi nhận chưa duyệt cổng tiếp theo.",
+              "Include source and the actual records. Interview: transcripts with candidate_id (received CV SHA-256), result and notes. Acceptance: accepted and the approved offer_hash. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Delivery: received and invoiced quantity and unit price for each awarded PO line; the three-way match refuses any difference. Recording does not approve the next gate.",
+              "Ghi source và hồ sơ thực tế. Phỏng vấn: transcripts gồm candidate_id (SHA-256 của CV đã nhận), result, notes. Nhận offer: accepted và offer_hash đã duyệt. Onboarding: hr_documents, safety_induction, role_briefing, access_verified, mentor_handover. Giao nhận: số lượng nhận và số lượng/đơn giá trên hóa đơn cho từng dòng PO; đối chiếu ba bên từ chối mọi sai khác. Ghi nhận chưa duyệt cổng tiếp theo.",
             ),
           ),
         );
@@ -532,7 +563,23 @@ const BusinessWorkflows = (() => {
                     }
                   : evidenceStage.key === "onboarding_setup"
                     ? { ...values, synthetic: h.synthetic === true }
-                    : JSON.parse(values.evidence),
+                    : evidenceStage.key === "delivery"
+                      ? {
+                          synthetic: h.synthetic === true,
+                          source: values.source,
+                          grn_lines: poLines.map((_, i) => ({
+                            supplier_id: values[`delivery_supplier_${i}`],
+                            material_id: values[`delivery_material_${i}`],
+                            quantity: Number(values[`grn_qty_${i}`]),
+                          })),
+                          invoice_lines: poLines.map((_, i) => ({
+                            supplier_id: values[`delivery_supplier_${i}`],
+                            material_id: values[`delivery_material_${i}`],
+                            quantity: Number(values[`invoice_qty_${i}`]),
+                            unit_price: Number(values[`invoice_price_${i}`]),
+                          })),
+                        }
+                      : JSON.parse(values.evidence),
             });
             return result;
           },

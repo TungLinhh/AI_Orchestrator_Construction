@@ -65,9 +65,9 @@ async def procurement(
     body: ProcurementIntake, ctx: ApiContext = Depends(get_context)
 ) -> dict[str, Any]:
     ctx.require_admin()
-    brief = {**body.model_dump(mode="json"), "synthetic": False}
+    brief = body.model_dump(mode="json")
     root = await create_workflow(ctx.session, ctx.organization_id, "procurement", "live", brief)
-    return {"id": root, "mode": "live", "synthetic": False, "started": False}
+    return {"id": root, "mode": "live", "synthetic": body.synthetic, "started": False}
 
 
 class RevisionRequest(BaseModel):

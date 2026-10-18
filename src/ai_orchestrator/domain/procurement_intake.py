@@ -3,7 +3,7 @@
 from datetime import date
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Text = Annotated[str, Field(min_length=1, max_length=1000)]
 Identifier = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,80}$")]
@@ -13,12 +13,23 @@ Amount = Annotated[float, Field(gt=0, allow_inf_nan=False)]
 class SourceModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    @field_validator("*", mode="after")
-    @classmethod
-    def refuse_fixture_refs(cls, value: object) -> object:
-        if isinstance(value, str) and value.lower().startswith(("fixture:", "synthetic:", "test:")):
-            raise ValueError("Live intake requires actual sources, not fixture references")
-        return value
+
+FIXTURE_PREFIXES = ("fixture:", "synthetic:", "test:")
+
+
+def fixture_references(value: object) -> list[str]:
+    """Walk every string in a dumped model and return fixture-labelled values."""
+    found: list[str] = []
+    if isinstance(value, str):
+        if value.lower().startswith(FIXTURE_PREFIXES):
+            found.append(value)
+    elif isinstance(value, dict):
+        for item in value.values():
+            found.extend(fixture_references(item))
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            found.extend(fixture_references(item))
+    return found
 
 
 class Material(SourceModel):
@@ -43,7 +54,7 @@ class Quote(SourceModel):
 
 class Supplier(SourceModel):
     supplier_id: Identifier
-    synthetic: Literal[False] = False
+    synthetic: bool = False
     legal_valid: bool
     legal_ref: Text
     financial_ref: Text
@@ -60,6 +71,10 @@ class ProcurementIntake(SourceModel):
     material_review_owner: Text
     need_date: date
     g3_date: date
+    # A live intake is real by default. Only an explicitly synthetic acceptance
+    # exercise may carry fixture-labelled records, and the lab running it stays
+    # a live, human-reviewed workflow -- never a real purchase.
+    synthetic: bool = Field(default=False, strict=True)
     boq: list[Material] = Field(min_length=1, max_length=100)
     suppliers: list[Supplier] = Field(min_length=3, max_length=20)
 
@@ -78,4 +93,14 @@ class ProcurementIntake(SourceModel):
                 )
         if self.need_date > self.g3_date:
             raise ValueError("Materials must be needed no later than G3")
+        if not self.synthetic:
+            if any(supplier.synthetic for supplier in self.suppliers):
+                raise ValueError(
+                    "Live intake requires actual sources, not synthetic supplier records"
+                )
+            references = fixture_references(self.model_dump())
+            if references:
+                raise ValueError(
+                    "Live intake requires actual sources, not fixture references: " + references[0]
+                )
         return self

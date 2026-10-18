@@ -35,6 +35,20 @@ def test_procurement_source_intake_keeps_qa_refusals_and_human_owner():
     assert result.suppliers[-1].legal_valid is False
     assert result.suppliers[-1].quotes[0].certificate_ref == ""
     assert result.material_review_owner == "Mock materials reviewer"
+    assert result.synthetic is False
+
+
+def test_labelled_synthetic_acceptance_intake_is_allowed():
+    """An explicitly synthetic exercise may carry fixture-labelled sources."""
+    data = procurement_fixture()
+    data.pop("delivery")
+    data.update(boq_source="fixture:boq-v1", material_review_owner="Synthetic reviewer")
+    for supplier in data["suppliers"]:
+        supplier.setdefault("quote_ref", "fixture:quotation:" + supplier["supplier_id"])
+    result = ProcurementIntake.model_validate(data)
+    assert result.synthetic is True
+    assert result.suppliers[-1].synthetic is True
+    assert result.suppliers[0].quotes[0].certificate_ref.startswith("fixture:")
 
 
 @pytest.mark.parametrize(

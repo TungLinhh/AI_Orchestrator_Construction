@@ -40,6 +40,7 @@ from ai_orchestrator.domain.contracts import Actor
 from ai_orchestrator.domain.enums import ActorType, EventType, RunMode
 from ai_orchestrator.domain.errors import PreconditionError, ValidationError
 from ai_orchestrator.domain.hiring_process import JD_SECTIONS
+from ai_orchestrator.domain.procurement_intake import fixture_references
 from ai_orchestrator.domain.state_machines import Transition
 from ai_orchestrator.domain.workflow_lifecycle import WorkflowKind
 from ai_orchestrator.domain.workflow_text import validate_generated_text
@@ -1055,6 +1056,16 @@ class BusinessWorkflowService:
         #   * onboarding runs in the sandbox when the workflow is synthetic.
         synthetic_run = bool(brief.get("synthetic"))
         if stage.key == "brief":
+            if brief.get("boq") is not None:
+                return {
+                    "boss_brief": brief["boss_brief"],
+                    "boq_materials": len(brief["boq"]),
+                    "supplier_ids": [s["supplier_id"] for s in brief["suppliers"]],
+                    "need_date": brief.get("need_date"),
+                    "g3_date": brief.get("g3_date"),
+                    "mode": mode,
+                    "synthetic": brief.get("synthetic", False),
+                }
             return {
                 "boss_brief": brief["boss_brief"],
                 "position": brief.get("position"),
@@ -1249,18 +1260,21 @@ class BusinessWorkflowService:
             }
         if stage.key == "delivery":
             source = copy.deepcopy(brief.get("delivery", {}))
+            # The console records delivery per awarded PO line as `grn_lines` /
+            # `invoice_lines`; older callers sent ready `grn` / `invoice` rows.
+            # Accept both so the same form works for real and synthetic runs.
+            grn_lines = source.get("grn_lines", source.get("grn"))
+            invoice_lines = source.get("invoice_lines", source.get("invoice"))
             if mode == "simulation" or synthetic_run:
                 if source.get("synthetic") is not True:
                     raise ValueError("Synthetic warehouse/invoice fixture is required")
                 pairs = {(r["supplier_id"], r["material_id"]) for r in prior["po"]["lines"]}
                 grn = [
-                    r
-                    for r in source.get("grn_lines", [])
-                    if (r["supplier_id"], r["material_id"]) in pairs
+                    r for r in (grn_lines or []) if (r["supplier_id"], r["material_id"]) in pairs
                 ]
                 invoice = [
                     r
-                    for r in source.get("invoice_lines", [])
+                    for r in (invoice_lines or [])
                     if (r["supplier_id"], r["material_id"]) in pairs
                 ]
                 if len(grn) != len(pairs) or len(invoice) != len(pairs):
@@ -1274,9 +1288,13 @@ class BusinessWorkflowService:
                     "invoice": invoice,
                     "external_delivery_claimed": False,
                 }
-            if source.get("synthetic") or not source.get("grn") or not source.get("invoice"):
+            if source.get("synthetic") or not grn_lines or not invoice_lines:
                 raise ValueError("Actual GRN and invoice evidence required")
-            return dict(source)
+            if fixture_references(
+                {"source": source.get("source"), "grn": grn_lines, "invoice": invoice_lines}
+            ):
+                raise ValueError("Real delivery evidence cannot carry fixture references")
+            return {**source, "grn": grn_lines, "invoice": invoice_lines, "synthetic": False}
         if stage.kind == "match":
             total = validate_match(
                 prior["po"]["lines"], prior["delivery"]["grn"], prior["delivery"]["invoice"]
